@@ -1,0 +1,119 @@
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from "react";
+import ExcelJS from "exceljs/dist/exceljs.min.js";
+import { Download, FileSpreadsheet, ImagePlus, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { ModulePage } from "@/components/ModulePage";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/lib/supabase";
+import { useSchoolProContext } from "@/hooks/useSchoolProContext";
+import { schoolSections } from "./schoolShared";
+
+type School={id:string;name:string};
+type Student={id:string;first_name:string;last_name:string;admission_number:string;class_name:string};
+type Component={key:string;label:string;maxScore:number};
+type Scheme={id:string;name:string;components:Component[]};
+type CustomField={id:string;label:string;cell:string;source:string;value:string};
+type Template={id:string;name:string;storage_path:string;sheet_name:string;start_row:number;field_cells:Record<string,string>;columns:Record<string,string>;component_columns:Record<string,string>;custom_fields?:CustomField[];logo_storage_path?:string|null;logo_cell?:string;logo_width?:number;logo_height?:number};
+type ResultRow={assessment_scores:Record<string,number>;total_score:number;status:string;subject:{name:string}|null};
+
+const initialFields:Record<string,string>={school_name:"A1",student_name:"B4",admission_number:"B5",class_name:"F5",term:"B6",session:"F6"};
+const initialColumns:Record<string,string>={subject:"A",total:"G",grade:"H",status:"I"};
+const sources=[["school_name","School name"],["student_name","Student name"],["admission_number","Admission number"],["class_name","Class"],["term","Term"],["session","Session"],["literal","Custom text/value"]];
+const grade=(score:number)=>score>=80?"A":score>=70?"B":score>=60?"C":score>=50?"D":score>=40?"E":"F";
+const saveFile=(data:BlobPart,name:string)=>{const url=URL.createObjectURL(new Blob([data],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));const a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);};
+const cleanCell=(value:string)=>value.toUpperCase().replace(/[^A-Z0-9]/g,"");
+const cleanColumn=(value:string)=>value.toUpperCase().replace(/[^A-Z]/g,"");
+const cellPosition=(cell:string)=>{const match=/^([A-Z]+)(\d+)$/.exec(cleanCell(cell));if(!match)return{col:0,row:0};let col=0;for(const char of match[1])col=col*26+(char.charCodeAt(0)-64);return{col:Math.max(0,col-1),row:Math.max(0,Number(match[2])-1)};};
+
+export function SchoolProResultTemplates(){
+ const {user,profile}=useAuth();const ctx=useSchoolProContext();
+ const [schools,setSchools]=useState<School[]>([]),[schoolId,setSchoolId]=useState(""),[students,setStudents]=useState<Student[]>([]),[schemes,setSchemes]=useState<Scheme[]>([]);
+ const [template,setTemplate]=useState<Template|null>(null),[file,setFile]=useState<File|null>(null),[logoFile,setLogoFile]=useState<File|null>(null);
+ const [selectedStudent,setSelectedStudent]=useState(""),[term,setTerm]=useState("First Term"),[session,setSession]=useState("2026/2027");
+ const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null),[message,setMessage]=useState<string|null>(null);
+ const [config,setConfig]=useState({name:"School Branded Result",sheet_name:"Result",start_row:10,field_cells:{...initialFields},columns:{...initialColumns},component_columns:{} as Record<string,string>,custom_fields:[] as CustomField[],logo_storage_path:null as string|null,logo_cell:"A1",logo_width:120,logo_height:80});
+ const userName=profile?[profile.first_name,profile.last_name].filter(Boolean).join(" ")||profile.email:"School User";
+ const components=useMemo(()=>schemes[0]?.components||[],[schemes]);
+
+ const loadSchools=useCallback(async()=>{if(!supabase||!user||ctx.loading)return;if(ctx.schoolId){setSchools([{id:ctx.schoolId,name:ctx.schoolName}]);setSchoolId(ctx.schoolId);}else{setSchools([]);setSchoolId("");}},[user,ctx.loading,ctx.schoolId,ctx.schoolName]);
+ const load=useCallback(async()=>{if(!supabase||!schoolId)return;const [a,b,c]=await Promise.all([
+  supabase.from("schoolpro_students").select("id,first_name,last_name,admission_number,class_name").eq("school_id",schoolId).order("first_name"),
+  supabase.from("schoolpro_assessment_schemes").select("id,name,components").eq("school_id",schoolId).order("is_default",{ascending:false}),
+  supabase.from("schoolpro_result_templates").select("*").eq("school_id",schoolId).maybeSingle()
+ ]);const e=a.error||b.error||c.error;if(e)setError(e.message);setStudents((a.data||[]) as Student[]);const nextSchemes=(b.data||[]) as Scheme[];setSchemes(nextSchemes);const t=c.data as unknown as Template|null;setTemplate(t);
+ if(t)setConfig({name:t.name,sheet_name:t.sheet_name,start_row:t.start_row,field_cells:{...initialFields,...t.field_cells},columns:{...initialColumns,...t.columns},component_columns:t.component_columns||{},custom_fields:t.custom_fields||[],logo_storage_path:t.logo_storage_path||null,logo_cell:t.logo_cell||"A1",logo_width:t.logo_width||120,logo_height:t.logo_height||80});
+ else setConfig({name:"School Branded Result",sheet_name:"Result",start_row:10,field_cells:{...initialFields},columns:{...initialColumns},component_columns:Object.fromEntries((nextSchemes[0]?.components||[]).map((x,i)=>[x.key,String.fromCharCode(66+i)])),custom_fields:[],logo_storage_path:null,logo_cell:"A1",logo_width:120,logo_height:80});
+ },[schoolId]);
+ useEffect(()=>{void loadSchools();},[loadSchools]);useEffect(()=>{void load();},[load]);
+
+ async function downloadStarter(){
+  setBusy(true);setError(null);
+  try{
+   const workbook=new ExcelJS.Workbook();const sheet=workbook.addWorksheet("Result");
+   sheet.getCell("A1").value="SCHOOL NAME";sheet.getCell("A1").font={bold:true,size:18};
+   sheet.getCell("A3").value="STUDENT RESULT";sheet.getCell("A3").font={bold:true,size:14};
+   [["A4","Student Name"],["A5","Admission Number"],["E5","Class"],["A6","Term"],["E6","Session"]].forEach(([cell,value])=>sheet.getCell(cell).value=value);
+   const headers=["Subject",...components.map(x=>x.label),"Total","Grade","Status"];
+   headers.forEach((value,index)=>{const cell=sheet.getCell(9,index+1);cell.value=value;cell.font={bold:true};cell.border={bottom:{style:"thin"}};});
+   sheet.columns.forEach(column=>{column.width=18;});
+   sheet.views=[{state:"frozen",ySplit:9}];
+   const output=await workbook.xlsx.writeBuffer();saveFile(output,"SchoolPro-Editable-Result-Template.xlsx");
+   setMessage("Editable SchoolPro Excel starter template downloaded. Add your school name, logo, colours, borders and other design elements in Excel, then upload it here.");
+  }catch(err){setError(err instanceof Error?err.message:"Unable to create starter workbook.");}
+  setBusy(false);
+ }
+
+ async function saveTemplate(e:FormEvent){
+  e.preventDefault();if(!supabase||!user||!schoolId)return;if(!file&&!template){setError("Choose an Excel .xlsx template or download and edit the SchoolPro starter template first.");return;}
+  setBusy(true);setError(null);let path=template?.storage_path||`${schoolId}/result-template.xlsx`;let logoPath=config.logo_storage_path;
+  if(file){if(!file.name.toLowerCase().endsWith(".xlsx")){setError("Only .xlsx Excel templates are supported.");setBusy(false);return;}const upload=await supabase.storage.from("school-result-templates").upload(path,file,{contentType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",upsert:true});if(upload.error){setError(upload.error.message);setBusy(false);return;}path=upload.data.path;}
+  if(logoFile){const ext=logoFile.name.toLowerCase().endsWith(".png")?"png":"jpeg";logoPath=`${schoolId}/school-logo.${ext}`;const upload=await supabase.storage.from("school-result-templates").upload(logoPath,logoFile,{contentType:logoFile.type||`image/${ext}`,upsert:true});if(upload.error){setError(upload.error.message);setBusy(false);return;}}
+  const payload={school_id:schoolId,name:config.name,storage_path:path,sheet_name:config.sheet_name,start_row:Number(config.start_row),field_cells:config.field_cells,columns:config.columns,component_columns:config.component_columns,custom_fields:config.custom_fields,logo_storage_path:logoPath,logo_cell:cleanCell(config.logo_cell)||"A1",logo_width:Number(config.logo_width),logo_height:Number(config.logo_height),updated_by:user.id,updated_at:new Date().toISOString()};
+  const {error}=await supabase.from("schoolpro_result_templates").upsert(payload as never,{onConflict:"school_id"});if(error)setError(error.message);else{setMessage("Excel template, logo and cell mappings saved.");setFile(null);setLogoFile(null);await load();}setBusy(false);
+ }
+
+ async function generate(){
+  if(!supabase||!template||!selectedStudent)return;setBusy(true);setError(null);const student=students.find(s=>s.id===selectedStudent);
+  const [download,resultQuery,schoolQuery]=await Promise.all([
+   supabase.storage.from("school-result-templates").download(template.storage_path),
+   supabase.from("schoolpro_results").select("assessment_scores,total_score,status,subject:schoolpro_subjects(name)").eq("student_id",selectedStudent).eq("term",term).eq("session",session).order("created_at"),
+   supabase.from("schoolpro_schools").select("name").eq("id",schoolId).maybeSingle()
+  ]);
+  const e=download.error||resultQuery.error||schoolQuery.error;if(e||!download.data||!student){setError(e?.message||"Unable to generate result.");setBusy(false);return;}
+  try{
+   const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await download.data.arrayBuffer());const sheet=workbook.getWorksheet(template.sheet_name)||workbook.worksheets[0];if(!sheet)throw new Error("The workbook has no worksheet.");
+   const values:Record<string,string>={school_name:schoolQuery.data?.name||"",student_name:`${student.first_name} ${student.last_name}`,admission_number:student.admission_number,class_name:student.class_name,term,session};
+   Object.entries(template.field_cells||{}).forEach(([key,cell])=>{if(cell)sheet.getCell(cell).value=values[key]||"";});
+   (template.custom_fields||[]).forEach(field=>{if(!field.cell)return;sheet.getCell(field.cell).value=field.source==="literal"?field.value:(values[field.source]||field.value||"");});
+   ((resultQuery.data||[]) as unknown as ResultRow[]).forEach((result,index)=>{const row=template.start_row+index;if(template.columns.subject)sheet.getCell(`${template.columns.subject}${row}`).value=result.subject?.name||"Subject";components.forEach(component=>{const col=template.component_columns[component.key];if(col)sheet.getCell(`${col}${row}`).value=Number(result.assessment_scores?.[component.key]||0);});if(template.columns.total)sheet.getCell(`${template.columns.total}${row}`).value=Number(result.total_score);if(template.columns.grade)sheet.getCell(`${template.columns.grade}${row}`).value=grade(Number(result.total_score));if(template.columns.status)sheet.getCell(`${template.columns.status}${row}`).value=result.status;});
+   if(template.logo_storage_path){const logo=await supabase.storage.from("school-result-templates").download(template.logo_storage_path);if(!logo.error&&logo.data){const ext=template.logo_storage_path.toLowerCase().endsWith(".png")?"png":"jpeg";const imageId=workbook.addImage({buffer:await logo.data.arrayBuffer() as never,extension:ext});const pos=cellPosition(template.logo_cell||"A1");sheet.addImage(imageId,{tl:pos,ext:{width:template.logo_width||120,height:template.logo_height||80}});}}
+   const output=await workbook.xlsx.writeBuffer();saveFile(output,`${student.admission_number}-${term.replaceAll(" ","-")}-result.xlsx`);setMessage("Customized Excel result generated and downloaded.");
+  }catch(err){setError(err instanceof Error?err.message:"Invalid Excel template.");}
+  setBusy(false);
+ }
+
+ const updateField=(key:string,value:string)=>setConfig({...config,field_cells:{...config.field_cells,[key]:cleanCell(value)}}),updateColumn=(key:string,value:string)=>setConfig({...config,columns:{...config.columns,[key]:cleanColumn(value)}}),updateComponent=(key:string,value:string)=>setConfig({...config,component_columns:{...config.component_columns,[key]:cleanColumn(value)}});
+ const addCustom=()=>setConfig({...config,custom_fields:[...config.custom_fields,{id:crypto.randomUUID(),label:"Custom field",cell:"A1",source:"literal",value:""}]});
+ const updateCustom=(id:string,patch:Partial<CustomField>)=>setConfig({...config,custom_fields:config.custom_fields.map(field=>field.id===id?{...field,...patch}:field)});
+ const removeCustom=(id:string)=>setConfig({...config,custom_fields:config.custom_fields.filter(field=>field.id!==id)});
+
+ return <ModulePage product="schoolpro" sections={schoolSections} title="Custom Excel Results" description="Use SchoolPro's editable workbook or upload any school's branded Excel result sheet. Map cells once, then generate completed results without rebuilding the design." userName={userName} userRole="School Administrator" primaryAction="Generate Excel" metrics={[{label:"Template",value:template?"Configured":"Not set"},{label:"Students",value:String(students.length)},{label:"Custom mappings",value:String(config.custom_fields.length)},{label:"Format",value:"XLSX"}]}>
+  {(error||message)&&<div className={`rounded-xl border p-3 text-sm ${error?"border-rose-200 bg-rose-50 text-rose-700":"border-emerald-200 bg-emerald-50 text-emerald-700"}`}>{error||message}</div>}
+  <div className="flex flex-wrap items-center justify-between gap-3"><select value={schoolId} onChange={e=>setSchoolId(e.target.value)} className="rounded-lg border bg-white px-3 py-2 text-sm">{schools.map(s=><option key={s.id} value={s.id}>{s.name}</option>)}</select><div className="flex gap-2"><Button variant="secondary" size="sm" leftIcon={<Download className="h-4 w-4"/>} onClick={()=>void downloadStarter()}>Download Editable Template</Button><Button variant="secondary" size="sm" leftIcon={<RefreshCw className="h-4 w-4"/>} onClick={()=>void load()}>Refresh</Button></div></div>
+  <div className="grid gap-5 xl:grid-cols-[1.25fr_.75fr]"><Card>
+   <div className="flex items-center gap-2"><FileSpreadsheet className="h-5 w-5 text-emerald-600"/><h3 className="font-bold">1. Workbook & mapping builder</h3></div>
+   <p className="mt-2 text-sm text-muted">Upload your own .xlsx design or download the editable SchoolPro workbook. You may edit school name, logo, colours, borders, formulas and layout in Excel. Uploading a new workbook replaces the previous workbook for this school.</p>
+   <form onSubmit={saveTemplate} className="mt-5 space-y-6">
+    <div className="grid gap-3 md:grid-cols-3"><input required value={config.name} onChange={e=>setConfig({...config,name:e.target.value})} placeholder="Template name" className="rounded-lg border p-2 text-sm"/><input required value={config.sheet_name} onChange={e=>setConfig({...config,sheet_name:e.target.value})} placeholder="Worksheet name" className="rounded-lg border p-2 text-sm"/><label className="text-xs text-muted">First subject row<input required type="number" min="1" value={config.start_row} onChange={e=>setConfig({...config,start_row:Number(e.target.value)})} className="mt-1 w-full rounded-lg border p-2 text-sm"/></label></div>
+    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-purple-200 bg-purple-50 p-5 text-sm font-bold text-purple-700"><Upload className="h-4 w-4"/>{file?.name||template?.name||"Choose result workbook (.xlsx)"}<input type="file" accept=".xlsx" className="hidden" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
+    <div><h4 className="text-sm font-bold">Student & school cells</h4><p className="text-xs text-muted">Enter any Excel address such as A1, B4 or F6.</p><div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">{Object.entries({school_name:"School name",student_name:"Student name",admission_number:"Admission number",class_name:"Class",term:"Term",session:"Session"}).map(([key,label])=><label key={key} className="text-xs text-muted">{label}<input value={config.field_cells[key]||""} onChange={e=>updateField(key,e.target.value)} placeholder="e.g. A1" className="mt-1 w-full rounded-lg border p-2 text-sm"/></label>)}</div></div>
+    <div><div className="flex items-center justify-between"><div><h4 className="text-sm font-bold">Unlimited custom cell mappings</h4><p className="text-xs text-muted">Add, edit or remove as many mappings as your result design needs.</p></div><Button type="button" size="sm" variant="secondary" leftIcon={<Plus className="h-4 w-4"/>} onClick={addCustom}>Add mapping</Button></div><div className="mt-3 space-y-2">{config.custom_fields.map(field=><div key={field.id} className="grid gap-2 rounded-xl border p-3 md:grid-cols-[1.2fr_.6fr_1fr_1.2fr_auto]"><input value={field.label} onChange={e=>updateCustom(field.id,{label:e.target.value})} placeholder="Label" className="rounded-lg border p-2 text-sm"/><input value={field.cell} onChange={e=>updateCustom(field.id,{cell:cleanCell(e.target.value)})} placeholder="A1" className="rounded-lg border p-2 text-sm"/><select value={field.source} onChange={e=>updateCustom(field.id,{source:e.target.value})} className="rounded-lg border p-2 text-sm">{sources.map(([value,label])=><option key={value} value={value}>{label}</option>)}</select><input value={field.value} onChange={e=>updateCustom(field.id,{value:e.target.value})} placeholder={field.source==="literal"?"Text/value":"Fallback value"} className="rounded-lg border p-2 text-sm"/><button type="button" aria-label="Remove mapping" onClick={()=>removeCustom(field.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50"><Trash2 className="h-4 w-4"/></button></div>)}</div></div>
+    <div><h4 className="text-sm font-bold">Result table mapping</h4><p className="text-xs text-muted">Choose the first subject row above, then map each result item to a column letter.</p><div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-4">{Object.entries({subject:"Subject",total:"Total",grade:"Grade",status:"Status"}).map(([key,label])=><label key={key} className="text-xs text-muted">{label}<input value={config.columns[key]||""} onChange={e=>updateColumn(key,e.target.value)} placeholder="Column e.g. A" className="mt-1 w-full rounded-lg border p-2 text-sm"/></label>)}</div><div className="mt-2 grid grid-cols-2 gap-2 md:grid-cols-3">{components.map(component=><label key={component.key} className="text-xs text-muted">{component.label} / {component.maxScore}<input value={config.component_columns[component.key]||""} onChange={e=>updateComponent(component.key,e.target.value)} placeholder="Column letter" className="mt-1 w-full rounded-lg border p-2 text-sm"/></label>)}</div></div>
+    <div><h4 className="flex items-center gap-2 text-sm font-bold"><ImagePlus className="h-4 w-4"/>School logo</h4><div className="mt-2 grid gap-2 md:grid-cols-4"><label className="cursor-pointer rounded-lg border p-2 text-sm">{logoFile?.name||config.logo_storage_path?"Logo selected":"Choose PNG/JPG"}<input type="file" accept=".png,.jpg,.jpeg" className="hidden" onChange={e=>setLogoFile(e.target.files?.[0]||null)}/></label><input value={config.logo_cell} onChange={e=>setConfig({...config,logo_cell:cleanCell(e.target.value)})} placeholder="Top-left cell e.g. A1" className="rounded-lg border p-2 text-sm"/><input type="number" min="20" value={config.logo_width} onChange={e=>setConfig({...config,logo_width:Number(e.target.value)})} placeholder="Width" className="rounded-lg border p-2 text-sm"/><input type="number" min="20" value={config.logo_height} onChange={e=>setConfig({...config,logo_height:Number(e.target.value)})} placeholder="Height" className="rounded-lg border p-2 text-sm"/></div></div>
+    <Button disabled={busy} leftIcon={<Upload className="h-4 w-4"/>}>{busy?"Saving…":"Save / Replace Template"}</Button>
+   </form>
+  </Card>
+  <Card><div className="flex items-center gap-2"><Download className="h-5 w-5 text-purple-700"/><h3 className="font-bold">2. Generate completed result</h3></div><p className="mt-2 text-sm text-muted">SchoolPro writes live approved scores into the configured cells while preserving the uploaded workbook design.</p><div className="mt-5 space-y-3"><select value={selectedStudent} onChange={e=>setSelectedStudent(e.target.value)} className="w-full rounded-lg border p-2.5 text-sm"><option value="">Select student</option>{students.map(s=><option key={s.id} value={s.id}>{s.first_name} {s.last_name} · {s.class_name}</option>)}</select><input value={term} onChange={e=>setTerm(e.target.value)} className="w-full rounded-lg border p-2.5 text-sm"/><input value={session} onChange={e=>setSession(e.target.value)} className="w-full rounded-lg border p-2.5 text-sm"/><Button type="button" className="w-full" onClick={()=>void generate()} disabled={busy||!template||!selectedStudent} leftIcon={<Download className="h-4 w-4"/>}>{busy?"Preparing workbook…":"Download Customized Excel"}</Button></div>{!template&&<div className="mt-4 rounded-xl bg-amber-50 p-3 text-xs text-amber-700">No workbook is configured yet. Download the editable template, customize it in Excel and upload it above.</div>}<div className="mt-5 rounded-xl bg-gray-50 p-4 text-xs text-muted"><b>Example:</b> set School name = A1, first subject row = 10 and Subject = column A. Add unlimited extra mappings for any other cell your school design requires.</div></Card></div>
+ </ModulePage>;
+}

@@ -1,0 +1,1 @@
+create index schoolpro_result_templates_updated_by_idx on public.schoolpro_result_templates (updated_by);

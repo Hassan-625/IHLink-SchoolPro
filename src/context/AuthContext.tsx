@@ -162,7 +162,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/signin?verified=1`,
+            emailRedirectTo: `${window.location.origin}/verify-email?verified=1`,
             data: {
               first_name: firstName,
               middle_name: middleName,
@@ -183,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase)
           return "Google sign-in is awaiting the Supabase connection.";
         const next = sessionStorage.getItem("ih_auth_next");
-        const callback = new URL("/signin", window.location.origin);
+        const callback = new URL("/schoolpro/login", window.location.origin);
         if (next && next.startsWith("/") && !next.startsWith("//")) callback.searchParams.set("next", next);
         const { error } = await supabase.auth.signInWithOAuth({
           provider: "google",

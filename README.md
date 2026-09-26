@@ -12,3 +12,8 @@ Independent school management SaaS frontend.
 - Cross-platform access: controlled by shared IHLink entitlements and RLS
 
 This repository is extracted from `IHLink_Design_System_1` while the original repository remains the migration reference until production verification is complete.
+
+
+## Deployment
+
+This repository is the authoritative standalone source for IHLink SchoolPro. Production is deployed through the dedicated `ihlink-schoolpro` Vercel project.

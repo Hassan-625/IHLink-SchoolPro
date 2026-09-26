@@ -1,0 +1,52 @@
+-- SchoolPro remote migration synchronization ledger
+-- Generated from the linked production Supabase project on 2026-09-26.
+--
+-- IMPORTANT:
+-- The migrations below were applied directly to production through the
+-- Supabase migration API after 20260925210000_expand_schoolpro_datasub_features.sql.
+-- This file intentionally does NOT replay their DDL because replaying inferred
+-- production DDL against another database is unsafe. It establishes an auditable
+-- repository record of the production migration boundary. New schema changes must
+-- be committed as normal executable migrations after this boundary.
+--
+-- Production project: lnqsroyiybutkfngbyge
+-- Last synchronized production migration:
+-- 20260926102630 schoolpro_completion_security_cleanup
+--
+-- Applied remote migrations:
+-- 20260925210820 schoolpro_admission_lifecycle
+-- 20260925211458 expand_school_member_roles
+-- 20260925211509 schoolpro_admission_communications
+-- 20260925211837 schoolpro_public_admission_and_candidate_cbt
+-- 20260925212303 schoolpro_custom_managed_websites
+-- 20260925213322 schoolpro_managed_site_provisioning
+-- 20260925213536 schoolpro_new_tables_rls
+-- 20260925213705 schoolpro_admission_documents_candidate_tokens
+-- 20260925213836 schoolpro_enrollment_and_portal_invites
+-- 20260925214057 schoolpro_candidate_cbt_secure_flow
+-- 20260925214223 schoolpro_admission_officer_workflow
+-- 20260925214636 schoolpro_document_verification_and_cbt_assignment
+-- 20260925215753 schoolpro_management_authorization_helper
+-- 20260925220129 schoolpro_broadsheet_reporting
+-- 20260925220153 schoolpro_offline_payment_recording
+-- 20260925220434 schoolpro_result_publication
+-- 20260926084225 schoolpro_secure_offer_acceptance
+-- 20260926084244 schoolpro_candidate_cbt_hardening
+-- 20260926084255 schoolpro_role_and_enrollment_hardening
+-- 20260926084351 schoolpro_safe_public_application
+-- 20260926090548 schoolpro_result_review_and_default_assessment
+-- 20260926090600 schoolpro_library_and_promotion_workflows
+-- 20260926090701 schoolpro_revoke_internal_workflows_from_anon
+-- 20260926091005 schoolpro_three_education_level_assessment_standards
+-- 20260926091653 schoolpro_theory_marking_and_subscription_control
+-- 20260926092047 schoolpro_health_documents_and_entitlements
+-- 20260926092538 schoolpro_email_queue_reliability
+-- 20260926101318 schoolpro_cbt_eligibility_controls
+-- 20260926101535 schoolpro_secure_student_cbt_execution
+-- 20260926101605 schoolpro_student_cbt_listing
+-- 20260926101655 tighten_schoolpro_cbt_helper_grants
+-- 20260926102010 schoolpro_results_finance_operations_completion
+-- 20260926102055 schoolpro_result_lock_enforcement
+-- 20260926102147 schoolpro_transactional_email_events
+-- 20260926102630 schoolpro_completion_security_cleanup
+select 1;

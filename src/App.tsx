@@ -47,6 +47,9 @@ import { SchoolProOperationalModule } from "@/pages/schoolpro/SchoolProOperation
 import { SchoolProBroadsheet } from "@/pages/schoolpro/SchoolProBroadsheet";
 import { SchoolProDocumentStudio } from "@/pages/schoolpro/SchoolProDocumentStudio";
 import { SchoolProDocumentVerification } from "@/pages/schoolpro/SchoolProDocumentVerification";
+import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
+import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
+import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 
 const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResultTemplates").then(m=>({default:m.SchoolProResultTemplates})));
 const Guard=({children}:{children:ReactNode})=><ProtectedRoute product="schoolpro" requireServiceAccess>{children}</ProtectedRoute>;
@@ -109,6 +112,9 @@ export default function App(){
   {studentViews.map(kind=><Route key={kind} path={"/schoolpro/student-"+kind} element={<Guard><SchoolProStudentPortalView kind={kind}/></Guard>}/>)}
 
   <Route path="/signin" element={<Navigate to="/schoolpro/login" replace/>}/>
+  <Route path="/reset-password" element={<ResetPasswordPage/>}/>
+  <Route path="/auth/update-password" element={<UpdatePasswordPage/>}/>
+  <Route path="/verify-email" element={<VerifyEmailPage/>}/>
   <Route path="/register" element={<Navigate to="/schoolpro/register" replace/>}/>
   <Route path="/admin/access-denied" element={<Navigate to="/schoolpro" replace/>}/>
   <Route path="*" element={<Navigate to="/schoolpro" replace/>}/>

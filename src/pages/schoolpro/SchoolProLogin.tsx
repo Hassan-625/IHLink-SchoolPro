@@ -23,8 +23,8 @@ const roleConfig = {
 export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const config = roleConfig[role];
   const navigate = useNavigate();
-  const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false);
-  const signIn=async()=>{ if(!supabase){setError('Authentication is not configured.');return;} setLoading(true);setError('');const {error:e}=await supabase.auth.signInWithPassword({email,password});setLoading(false);if(e){setError(e.message);return;}navigate(config.dashboard); };
+  const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
+  const signIn=async()=>{ if(!supabase){setError('Authentication is not configured.');return;} setLoading(true);setError('');const {error:e}=await supabase.auth.signInWithPassword({email,password});setLoading(false);if(e){setError(e.message);return;}if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard); };
 
   return (
     <PageShell product="schoolpro" showAnnouncement={false} showHeader={false} showFooter={false}>
@@ -62,7 +62,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm"><input type="checkbox" className="w-4 h-4 rounded border-border text-purple-500" /> <span className="text-ink">Remember me</span></label>
+                <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} className="w-4 h-4 rounded border-border text-purple-500" /> <span className="text-ink">Remember me</span></label>
                 <Link to="/reset-password" className="text-sm font-semibold text-purple-600 hover:underline">Forgot password?</Link>
               </div>
               {error&&<p className="text-sm text-red-600">{error}</p>}<Button fullWidth size="lg" disabled={loading||!email||!password} themeClass="bg-purple-600 hover:bg-purple-700" rightIcon={<ArrowRight className="w-4 h-4" />} onClick={signIn}>{loading?'Signing in…':'Sign In'}</Button>

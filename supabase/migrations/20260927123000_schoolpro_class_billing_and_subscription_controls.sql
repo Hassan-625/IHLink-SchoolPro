@@ -1,0 +1,10 @@
+-- Class billing, student fee exceptions and central subscription controls.
+create table if not exists public.schoolpro_fee_exceptions(id uuid primary key default gen_random_uuid(),school_id uuid not null references public.schoolpro_schools(id) on delete cascade,student_id uuid not null references public.schoolpro_students(id) on delete cascade,term text not null,session text not null,discount numeric not null default 0,scholarship numeric not null default 0,waived boolean not null default false,notes text,updated_by uuid not null references auth.users(id),updated_at timestamptz not null default now(),unique(student_id,term,session));
+alter table public.schoolpro_fee_exceptions enable row level security; grant select,insert,update,delete on public.schoolpro_fee_exceptions to authenticated;
+create table if not exists public.schoolpro_plan_catalog(id uuid primary key default gen_random_uuid(),tier text not null unique,display_name text not null,term_price numeric not null default 0,per_student_price numeric not null default 0,is_active boolean not null default true,features jsonb not null default '{}'::jsonb,updated_at timestamptz not null default now());
+alter table public.schoolpro_plan_catalog enable row level security;
+create table if not exists public.schoolpro_feature_overrides(id uuid primary key default gen_random_uuid(),school_id uuid not null references public.schoolpro_schools(id) on delete cascade,feature text not null,enabled boolean not null,reason text,updated_by uuid not null references auth.users(id),updated_at timestamptz not null default now(),unique(school_id,feature));
+alter table public.schoolpro_feature_overrides enable row level security;
+-- Live project contains scoped RLS policies for finance roles, public active-plan reads and super-admin plan/override management.
+-- generate_schoolpro_class_invoices applies matching term/session student exceptions while bulk creating class invoices.
+-- schoolpro_subscription_entitlements combines plan catalogue features with per-school overrides.

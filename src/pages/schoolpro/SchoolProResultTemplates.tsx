@@ -56,7 +56,7 @@ export function SchoolProResultTemplates(){
    [["A4","Student Name"],["A5","Admission Number"],["E5","Class"],["A6","Term"],["E6","Session"]].forEach(([cell,value])=>sheet.getCell(cell).value=value);
    const headers=["Subject",...components.map(x=>x.label),"Total","Grade","Status"];
    headers.forEach((value,index)=>{const cell=sheet.getCell(9,index+1);cell.value=value;cell.font={bold:true};cell.border={bottom:{style:"thin"}};});
-   sheet.columns.forEach(column=>{column.width=18;});
+   sheet.columns.forEach((column:any)=>{column.width=18;});
    sheet.views=[{state:"frozen",ySplit:9}];
    const output=await workbook.xlsx.writeBuffer();saveFile(output,"SchoolPro-Editable-Result-Template.xlsx");
    setMessage("Editable SchoolPro Excel starter template downloaded. Add your school name, logo, colours, borders and other design elements in Excel, then upload it here.");

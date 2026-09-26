@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "@/context/AuthContext";
 import { enforceDeploymentSurface } from "@/lib/deploymentSurface";
+import { ToastProvider } from "@/components/ui/Toast";
 import "./index.css";
 
 class StartupErrorBoundary extends Component<{children:ReactNode},{error:Error|null}> {
@@ -16,4 +17,4 @@ enforceDeploymentSurface();
 document.documentElement.dataset.appearance=localStorage.getItem("ihlink-appearance")||"light";
 document.documentElement.dataset.density=localStorage.getItem("ihlink-density")||"comfortable";
 const root=document.getElementById("root");if(!root)throw new Error("IHLink SchoolPro root element was not found.");
-createRoot(root).render(<StrictMode><StartupErrorBoundary><BrowserRouter><AuthProvider><App/></AuthProvider></BrowserRouter></StartupErrorBoundary></StrictMode>);
+createRoot(root).render(<StrictMode><StartupErrorBoundary><BrowserRouter><AuthProvider><ToastProvider><App/></ToastProvider></AuthProvider></BrowserRouter></StartupErrorBoundary></StrictMode>);

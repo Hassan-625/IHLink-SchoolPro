@@ -71,11 +71,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const client = supabase;
     let active = true;
 
-    // Only restore a persisted Supabase session after explicit remember-device consent.
-    if (localStorage.getItem(REMEMBER_KEY) !== "1") {
-      void client.auth.signOut({ scope: "local" });
-    }
-
     const loadProfile = async (current: Session | null) => {
       setSession(current);
       if (!current?.user) {

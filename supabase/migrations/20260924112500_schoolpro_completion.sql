@@ -1,0 +1,6 @@
+-- Canonical production migration applied via Supabase management on 2026-09-24.
+-- Adds secure public result PIN lookup, student-account linkage, generic database-backed operational module records,
+-- and student self-service RLS for their own published results and attendance.
+-- Production migration names:
+-- schoolpro_secure_public_result_checker
+-- schoolpro_complete_internal_modules_and_student_accounts

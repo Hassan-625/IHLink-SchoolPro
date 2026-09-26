@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SchoolProEntitlementGate } from "@/components/SchoolProEntitlementGate";
@@ -49,7 +49,7 @@ import { SchoolProDocumentStudio } from "@/pages/schoolpro/SchoolProDocumentStud
 import { SchoolProDocumentVerification } from "@/pages/schoolpro/SchoolProDocumentVerification";
 
 const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResultTemplates").then(m=>({default:m.SchoolProResultTemplates})));
-const Guard=({children}:{children:React.ReactNode})=><ProtectedRoute product="schoolpro" requireServiceAccess>{children}</ProtectedRoute>;
+const Guard=({children}:{children:ReactNode})=><ProtectedRoute product="schoolpro" requireServiceAccess>{children}</ProtectedRoute>;
 const studentViews=["results","fees","attendance","timetable","assignments","announcements"] as const;
 
 export default function App(){

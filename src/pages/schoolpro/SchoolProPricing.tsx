@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageShell } from '@/components/PageShell';
 import { Card } from '@/components/ui/Card';
@@ -5,14 +6,17 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { naira } from '@/lib/designTokens';
 import { Check, ArrowRight } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
-const plans = [
+const fallbackPlans = [
   { name: 'Starter', price: 15000, perStudent: 0, desc: 'For small schools under 200 students', features: ['Student management', 'Attendance', 'Result processing', 'Fee collection', 'Parent portal', 'Email support'], popular: false },
   { name: 'Professional', price: 35000, perStudent: 50, desc: 'For growing schools up to 500 students', features: ['Everything in Starter', 'CBT module', 'SMS centre (1000/month)', 'Library management', 'Transportation', 'Report card branding', 'Priority support'], popular: true },
   { name: 'Enterprise', price: 75000, perStudent: 100, desc: 'For large schools and multi-campus', features: ['Everything in Professional', 'Multi-campus support', 'Hostel management', 'Payroll', 'Inventory', 'Custom domains', 'Dedicated account manager', '24/7 phone support'], popular: false },
 ];
 
 export function SchoolProPricing() {
+  const [plans,setPlans]=useState(fallbackPlans);
+  useEffect(()=>{if(!supabase)return;void supabase.from('schoolpro_plan_catalog').select('tier,display_name,term_price,per_student_price,features').eq('is_active',true).order('term_price').then(({data})=>{if(data?.length)setPlans(data.map((p:any)=>({name:p.display_name,price:Number(p.term_price),perStudent:Number(p.per_student_price),desc:`${p.display_name} SchoolPro subscription`,features:Object.entries(p.features||{}).filter(([,v])=>v).map(([k])=>k.replaceAll('_',' ')),popular:p.tier==='professional'})))})},[]);
   return (
     <PageShell product="schoolpro">
       <div className="px-6 lg:px-10 py-12 max-w-[1280px] mx-auto">

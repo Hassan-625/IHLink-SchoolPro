@@ -73,6 +73,7 @@ const productNavs: Record<ProductKey, NavItem[]> = {
     { label: 'Pricing', href: '/schoolpro/pricing' },
     { label: 'Book a Demo', href: '/schoolpro/book-demo' },
     { label: 'FAQ', href: '/schoolpro/faq' },
+    { label: 'Support', href: '/schoolpro/support' },
   ],
   consult: [
     { label: 'Home', href: platformUrl('consult') },

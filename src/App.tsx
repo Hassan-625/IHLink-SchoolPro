@@ -54,6 +54,7 @@ import { SchoolProAccessDenied } from "@/pages/schoolpro/SchoolProAccessDenied";
 import { SchoolProPermissions } from "@/pages/schoolpro/SchoolProPermissions";
 import { SchoolProInvoice } from "@/pages/schoolpro/SchoolProInvoice";
 import { SchoolProPayments } from "@/pages/schoolpro/SchoolProPayments";
+import { SchoolProSubscription } from "@/pages/schoolpro/SchoolProSubscription";
 import { SchoolProPermissionGate } from "@/components/SchoolProPermissionGate";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
@@ -108,6 +109,7 @@ export default function App(){
   <Route path="/schoolpro/teacher-dashboard" element={<Guard><SchoolProTeacherDashboard/></Guard>}/>
   <Route path="/schoolpro/parent-dashboard" element={<Guard><SchoolProParentDashboard/></Guard>}/>
   <Route path="/schoolpro/payments" element={<Guard><SchoolProPayments/></Guard>}/>
+  <Route path="/schoolpro/subscription" element={<Guard><SchoolProSubscription/></Guard>}/>
   <Route path="/schoolpro/student-dashboard" element={<Guard><SchoolProStudentDashboard/></Guard>}/>
   <Route path="/schoolpro/admissions" element={<Guard permission="admissions"><SchoolProAdmissions/></Guard>}/>
   <Route path="/schoolpro/admissions/workspace" element={<Guard permission="admissions"><SchoolProAdmissionsWorkspace/></Guard>}/>

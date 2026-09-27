@@ -51,6 +51,7 @@ import { SchoolProInvoiceStudio } from "@/pages/schoolpro/SchoolProInvoiceStudio
 import { SchoolProNotifications } from "@/pages/schoolpro/SchoolProNotifications";
 import { SchoolProProfile } from "@/pages/schoolpro/SchoolProProfile";
 import { SchoolProAccessDenied } from "@/pages/schoolpro/SchoolProAccessDenied";
+import { SchoolProPermissions } from "@/pages/schoolpro/SchoolProPermissions";
 import { SchoolProPermissionGate } from "@/components/SchoolProPermissionGate";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
@@ -107,6 +108,7 @@ export default function App(){
   <Route path="/schoolpro/admissions/workspace" element={<Guard permission="admissions"><SchoolProAdmissionsWorkspace/></Guard>}/>
   <Route path="/schoolpro/operations" element={<Guard permission="operations"><SchoolProOperations/></Guard>}/>
   <Route path="/schoolpro/roles-permissions" element={<Guard permission="roles"><SchoolProRoles/></Guard>}/>
+  <Route path="/schoolpro/user-permissions" element={<Guard permission="roles"><SchoolProPermissions/></Guard>}/>
   <Route path="/schoolpro/documents" element={<Guard permission="documents"><SchoolProDocumentStudio/></Guard>}/>
   <Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProEntitlementGate feature="advanced_reports"><SchoolProBroadsheet/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/settings" element={<Guard permission="branding"><SchoolProEntitlementGate feature="custom_branding"><SchoolProBrandingSettings/></SchoolProEntitlementGate></Guard>}/>

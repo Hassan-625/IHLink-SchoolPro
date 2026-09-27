@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { isValidElement, useMemo, useState, type ReactNode } from 'react';
 import { Search } from 'lucide-react';
 
 interface TableProps {
@@ -7,17 +7,32 @@ interface TableProps {
   className?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
+  searchValues?: string[];
 }
 
-export function Table({ headers, rows, className = '', searchable = true, searchPlaceholder = 'Search table…' }: TableProps) {
+function searchableText(value: ReactNode): string {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(searchableText).join(' ');
+  if (isValidElement(value)) {
+    const props = value.props as { children?: ReactNode; title?: string; 'aria-label'?: string; alt?: string };
+    return [props.title, props['aria-label'], props.alt, searchableText(props.children)].filter(Boolean).join(' ');
+  }
+  return '';
+}
+
+export function Table({ headers, rows, className = '', searchable = true, searchPlaceholder = 'Search table…', searchValues }: TableProps) {
   const [query,setQuery]=useState('');
-  const visibleRows=useMemo(()=>!searchable||!query.trim()?rows:rows.filter(row=>row.some(cell=>{const value=typeof cell==='string'||typeof cell==='number'?String(cell):'';return value.toLowerCase().includes(query.toLowerCase())})),[rows,query,searchable]);
+  const visibleRows=useMemo(()=>{
+    const needle=query.trim().toLocaleLowerCase();
+    if(!searchable||!needle)return rows;
+    return rows.filter((row,index)=>`${searchValues?.[index]||''} ${row.map(searchableText).join(' ')}`.toLocaleLowerCase().includes(needle));
+  },[rows,query,searchable,searchValues]);
   return (
     <div className={`w-full ${className}`}>
-      {searchable&&<div className="relative mb-3 max-w-md"><Search className="absolute left-3 top-3 h-4 w-4 text-muted"/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder} className="w-full rounded-xl border border-border py-2.5 pl-10 pr-3 text-sm"/></div>}
+      {searchable&&<div className="relative mb-3 max-w-md"><Search className="absolute left-3 top-3 h-4 w-4 text-muted"/><input type="search" aria-label={searchPlaceholder} value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder} className="w-full rounded-xl border border-border py-2.5 pl-10 pr-3 text-sm"/></div>}
       <div className="max-h-[70vh] overflow-auto">
       <table className="w-full">
-        <thead className="sticky-table-header bg-white">
+        <thead className="sticky top-0 z-10 bg-white">
           <tr className="border-b border-border">
             {headers.map((h, i) => (
               <th
@@ -47,6 +62,7 @@ export function Table({ headers, rows, className = '', searchable = true, search
               ))}
             </tr>
           ))}
+          {!visibleRows.length && <tr><td colSpan={headers.length} className="px-4 py-8 text-center text-sm text-muted">{query.trim() ? 'No matching records.' : 'No records yet.'}</td></tr>}
         </tbody>
       </table>
       </div>

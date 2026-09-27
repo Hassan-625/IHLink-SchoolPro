@@ -79,7 +79,7 @@ export function SchoolProHome() {
         </div>
       </section>
 
-      <ExperiencePhoto src="/images/digital-classroom.jpg" alt="A teacher helping pupils during a computer lesson" eyebrow="Built around the classroom" title="Technology that gives educators more time to teach" text="SchoolPro connects administrators, teachers, parents and students while keeping the experience familiar, friendly and easy to learn." accentClass="text-purple-700" />
+      <ExperiencePhoto src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=85" alt="A teacher helping pupils during a computer lesson" eyebrow="Built around the classroom" title="Technology that gives educators more time to teach" text="SchoolPro connects administrators, teachers, parents and students while keeping the experience familiar, friendly and easy to learn." accentClass="text-purple-700" />
 
       {/* Stats */}
       <section className="py-12 bg-schoolpro-soft">

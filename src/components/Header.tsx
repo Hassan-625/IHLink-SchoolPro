@@ -68,12 +68,14 @@ const productNavs: Record<ProductKey, NavItem[]> = {
   ],
   schoolpro: [
     { label: 'Home', href: platformUrl('schoolpro') },
+    { label: 'Dashboard', href: '/schoolpro/admin-dashboard' },
     { label: 'Features', href: '/schoolpro/features' },
     { label: 'Result Management', href: '/schoolpro/result-management' },
     { label: 'Pricing', href: '/schoolpro/pricing' },
     { label: 'Book a Demo', href: '/schoolpro/book-demo' },
     { label: 'FAQ', href: '/schoolpro/faq' },
-    { label: 'Support', href: '/schoolpro/support' },
+    { label: 'Payments', href: '/schoolpro/payments' },
+    { label: 'Get in Touch', href: '/schoolpro/get-in-touch' },
   ],
   consult: [
     { label: 'Home', href: platformUrl('consult') },

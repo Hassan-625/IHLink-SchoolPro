@@ -52,6 +52,7 @@ import { SchoolProNotifications } from "@/pages/schoolpro/SchoolProNotifications
 import { SchoolProProfile } from "@/pages/schoolpro/SchoolProProfile";
 import { SchoolProAccessDenied } from "@/pages/schoolpro/SchoolProAccessDenied";
 import { SchoolProPermissions } from "@/pages/schoolpro/SchoolProPermissions";
+import { SchoolProInvoice } from "@/pages/schoolpro/SchoolProInvoice";
 import { SchoolProPermissionGate } from "@/components/SchoolProPermissionGate";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
@@ -94,7 +95,8 @@ export default function App(){
   <Route path="/schoolpro/notifications" element={<Guard permission="notifications"><SchoolProNotifications/></Guard>}/>
   <Route path="/schoolpro/profile" element={<Guard><SchoolProProfile/></Guard>}/>
   <Route path="/schoolpro/access-denied" element={<SchoolProAccessDenied/>}/>
-  <Route path="/schoolpro/receipts/:receiptId" element={<Guard><SchoolProReceipt/></Guard>}/>
+  <Route path="/schoolpro/receipts/:receiptId" element={<Guard permission="finance"><SchoolProReceipt/></Guard>}/>
+  <Route path="/schoolpro/invoices/:invoiceId" element={<Guard permission="finance"><SchoolProInvoice/></Guard>}/>
   <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>
   <Route path="/schoolpro/subjects" element={<Guard permission="subjects"><SchoolProSubjects/></Guard>}/>

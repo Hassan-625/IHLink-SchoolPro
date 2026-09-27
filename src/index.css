@@ -143,3 +143,25 @@ html[data-appearance="dark"] input, html[data-appearance="dark"] select, html[da
 @media (prefers-color-scheme: dark) { html[data-appearance="system"], html[data-appearance="system"] body { background:#071A3D; color:#E5E7EB; color-scheme:dark; } html[data-appearance="system"] .bg-white{background-color:#0F274D !important;} html[data-appearance="system"] .bg-surface{background-color:#071A3D !important;} html[data-appearance="system"] .text-ink{color:#F8FAFC !important;} html[data-appearance="system"] .text-muted{color:#AFC1D8 !important;} html[data-appearance="system"] .border-border{border-color:#294568 !important;} }
 html[data-density="compact"] main .p-6 { padding:1rem !important; }
 html[data-density="compact"] main .p-8 { padding:1.25rem !important; }
+
+/* A printable document is isolated from dashboard chrome and screen theme. */
+@media print {
+  @page { margin: 12mm; }
+  html, body { color-scheme: light !important; background: white !important; }
+  body:has(.print-document) * { visibility: hidden !important; }
+  body:has(.print-document) .print-document, body:has(.print-document) .print-document * { visibility: visible !important; }
+  .print-document { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; box-shadow: none !important; background: white !important; color: #0f172a !important; }
+  .print-document .overflow-x-auto, .print-document .overflow-auto { overflow: visible !important; }
+  .print-document table { width: 100%; border-collapse: collapse; }
+  .print-document thead { display: table-header-group; }
+  .print-document tr { break-inside: avoid; }
+  html[data-appearance] .print-document, html[data-appearance] .print-document .bg-white { background: white !important; color: #0f172a !important; }
+  .print-document { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+
+@media print {
+  .result-print-page { break-after: page; page-break-after: always; break-inside: avoid; }
+  .result-print-page:last-child { break-after: auto; page-break-after: auto; }
+}
+
+@media print { html[data-appearance] .print-document .text-ink, html[data-appearance] .print-document .text-navy-900 { color: #0f172a !important; } html[data-appearance] .print-document .text-muted { color: #475569 !important; } }

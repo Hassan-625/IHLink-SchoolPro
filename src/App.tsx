@@ -47,12 +47,17 @@ import { SchoolProOperationalModule } from "@/pages/schoolpro/SchoolProOperation
 import { SchoolProBroadsheet } from "@/pages/schoolpro/SchoolProBroadsheet";
 import { SchoolProDocumentStudio } from "@/pages/schoolpro/SchoolProDocumentStudio";
 import { SchoolProDocumentVerification } from "@/pages/schoolpro/SchoolProDocumentVerification";
+import { SchoolProInvoiceStudio } from "@/pages/schoolpro/SchoolProInvoiceStudio";
+import { SchoolProNotifications } from "@/pages/schoolpro/SchoolProNotifications";
+import { SchoolProProfile } from "@/pages/schoolpro/SchoolProProfile";
+import { SchoolProAccessDenied } from "@/pages/schoolpro/SchoolProAccessDenied";
+import { SchoolProPermissionGate } from "@/components/SchoolProPermissionGate";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 
 const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResultTemplates").then(m=>({default:m.SchoolProResultTemplates})));
-const Guard=({children}:{children:ReactNode})=><ProtectedRoute product="schoolpro" requireServiceAccess>{children}</ProtectedRoute>;
+const Guard=({children,permission}:{children:ReactNode;permission?:string})=><ProtectedRoute product="schoolpro" requireServiceAccess>{permission?<SchoolProPermissionGate permission={permission}>{children}</SchoolProPermissionGate>:children}</ProtectedRoute>;
 const studentViews=["results","fees","attendance","timetable","assignments","announcements"] as const;
 
 export default function App(){
@@ -83,7 +88,11 @@ export default function App(){
   <Route path="/schoolpro/students" element={<Guard><SchoolProStudents/></Guard>}/>
   <Route path="/schoolpro/results" element={<Guard><SchoolProResults/></Guard>}/>
   <Route path="/schoolpro/result-templates" element={<Guard><Suspense fallback={<div className="p-6 text-sm">Loading result templates…</div>}><SchoolProResultTemplates/></Suspense></Guard>}/>
-  <Route path="/schoolpro/fees" element={<Guard><SchoolProFees/></Guard>}/>
+  <Route path="/schoolpro/fees" element={<Guard permission="finance"><SchoolProFees/></Guard>}/>
+  <Route path="/schoolpro/invoice-design" element={<Guard permission="finance"><SchoolProInvoiceStudio/></Guard>}/>
+  <Route path="/schoolpro/notifications" element={<Guard permission="notifications"><SchoolProNotifications/></Guard>}/>
+  <Route path="/schoolpro/profile" element={<Guard><SchoolProProfile/></Guard>}/>
+  <Route path="/schoolpro/access-denied" element={<SchoolProAccessDenied/>}/>
   <Route path="/schoolpro/receipts/:receiptId" element={<Guard><SchoolProReceipt/></Guard>}/>
   <Route path="/schoolpro/staff" element={<Guard><SchoolProStaff/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard><SchoolProClasses/></Guard>}/>

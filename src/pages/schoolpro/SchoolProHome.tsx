@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useEffect, useState } from 'react';
 import { ExperiencePhoto } from '@/components/ExperiencePhoto';
 import { ManagedContentSections } from '@/components/ManagedContentSections';
+import { IH_LINK_LOGO } from '@/assets/ihlinkLogo';
 import { useManagedHero } from '@/hooks/useManagedHero';
 import {
   GraduationCap, Users, DollarSign, ClipboardCheck, MessageSquare,
@@ -66,14 +67,14 @@ export function SchoolProHome() {
               </div>
             </div>
             <div className="col-span-12 lg:col-span-5">
-              <div className="grid grid-cols-2 gap-3">
+              <div><div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur"><img src={IH_LINK_LOGO} alt="IHLink" className="h-11 w-11 rounded-xl bg-white object-contain p-1"/><div><b className="block">SchoolPro by IHLink</b><span className="text-xs text-purple-100">Connected school management</span></div></div><div className="grid grid-cols-2 gap-3">
                 {stats.map((s, i) => (
                   <div key={i} className="p-4 rounded-xl bg-white/10 backdrop-blur">
                     <p className="text-xl font-extrabold">{s.label === 'Fees Collected' ? new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(s.value) : s.value.toLocaleString()}</p>
                     <p className="text-xs text-purple-100">{s.label}</p>
                   </div>
                 ))}
-              </div>
+              </div></div>
             </div>
           </div>
         </div>

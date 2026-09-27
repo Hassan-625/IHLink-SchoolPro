@@ -75,8 +75,9 @@ export default function App(){
   <Route path="/schoolpro/book-demo" element={<SchoolProBookDemo/>}/>
   <Route path="/schoolpro/register" element={<SchoolProRegister/>}/>
   <Route path="/schoolpro/faq" element={<SchoolProFaq/>}/>
-  <Route path="/schoolpro/support" element={<SchoolProSupport/>}/>
-  <Route path="/schoolpro/contact" element={<SchoolProSupport/>}/>
+  <Route path="/schoolpro/support" element={<Navigate to="/schoolpro/get-in-touch" replace/>}/>
+  <Route path="/schoolpro/contact" element={<Navigate to="/schoolpro/get-in-touch" replace/>}/>
+  <Route path="/schoolpro/get-in-touch" element={<SchoolProSupport/>}/>
   <Route path="/schoolpro/login" element={<SchoolProLogin role="school"/>}/>
   <Route path="/schoolpro/parent-login" element={<SchoolProLogin role="parent"/>}/>
   <Route path="/schoolpro/student-login" element={<SchoolProLogin role="student"/>}/>

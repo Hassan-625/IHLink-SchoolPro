@@ -105,7 +105,7 @@ export function DashboardLayout({
         </nav>
 
         <div className="p-3 border-t border-border">
-          <Link to="/account/profile" className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center' : ''}`}>
+          <Link to={product==='schoolpro'?'/schoolpro/profile':'/account/profile'} className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors ${collapsed ? 'justify-center' : ''}`}>
             <Settings className="w-4 h-4 shrink-0" />
             {!collapsed && <span>Settings</span>}
           </Link>
@@ -148,7 +148,7 @@ export function DashboardLayout({
                 </div>
               </div>}
             </div>
-            <Link aria-label="Notifications" to={location.pathname.startsWith('/admin') ? '/admin/notifications' : '/account/notifications'} className="p-2 rounded-lg text-muted hover:bg-gray-100 transition-colors relative">
+            <Link aria-label="Notifications" to={product==='schoolpro'?'/schoolpro/notifications':location.pathname.startsWith('/admin') ? '/admin/notifications' : '/account/notifications'} className="p-2 rounded-lg text-muted hover:bg-gray-100 transition-colors relative">
               <Bell className="w-4 h-4" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
             </Link>
@@ -162,7 +162,7 @@ export function DashboardLayout({
                 <ChevronDown className="w-3.5 h-3.5 text-muted" />
               </button>
               {profileOpen && <div className="absolute right-0 top-11 z-50 w-56 rounded-xl border border-border bg-white p-2 shadow-xl">
-                <Link to="/account/profile" onClick={() => setProfileOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50">My profile</Link>
+                <Link to={product==='schoolpro'?'/schoolpro/profile':'/account/profile'} onClick={() => setProfileOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50">My profile</Link>
                 {canSeeAdministration && <Link to="/admin/settings" onClick={() => setProfileOpen(false)} className="block rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-50">Administration settings</Link>}
                 <button onClick={handleSignOut} className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-rose-600 hover:bg-rose-50">Sign out</button>
               </div>}

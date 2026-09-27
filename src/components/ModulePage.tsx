@@ -4,6 +4,8 @@ import { DashboardLayout, type SidebarSection } from './Sidebar';
 import { Card } from './ui/Card';
 import { Button } from './ui/Button';
 import type { ProductKey } from '@/lib/designTokens';
+import { useSchoolProPermissions } from '@/hooks/useSchoolProPermissions';
+import { permissionForSchoolPath } from '@/lib/schoolPermissions';
 
 export interface Metric { label: string; value: string; change?: string; tone?: string }
 export interface Column { key: string; label: string }
@@ -24,9 +26,11 @@ export interface ModulePageProps {
 
 export function ModulePage({ product, sections, title, eyebrow, description, userName, userRole, metrics = [], columns = [], rows = [], primaryAction = 'Add New', children }: ModulePageProps) {
   const [tableSearch, setTableSearch] = useState('');
+  const schoolPermissions=useSchoolProPermissions();
+  const visibleSections=product==='schoolpro'&&!schoolPermissions.loading?sections.map(s=>({...s,items:s.items.filter(i=>schoolPermissions.can(permissionForSchoolPath(i.href)))})).filter(s=>s.items.length):sections;
   const filteredRows = useMemo(() => !tableSearch.trim() ? rows : rows.filter(row => Object.values(row).some(value => String(value ?? '').toLowerCase().includes(tableSearch.trim().toLowerCase()))), [rows, tableSearch]);
   return (
-    <DashboardLayout product={product} sections={sections} userName={userName} userRole={userRole} pageTitle={title}
+    <DashboardLayout product={product} sections={visibleSections} userName={userName} userRole={userRole} pageTitle={title}
       rightActions={<Button size="sm" leftIcon={<Plus className="w-4 h-4" />}>{primaryAction}</Button>}>
       <div className="space-y-6">
         <section className="rounded-2xl bg-gradient-to-r from-navy-900 via-royal-700 to-royal-500 p-7 text-white overflow-hidden relative">

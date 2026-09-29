@@ -1,3 +1,6 @@
+import {schoolSections,studentSections,parentSections} from '@/pages/schoolpro/schoolShared';
+import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
+import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, LogOut, Settings, Bell, Search } from 'lucide-react';
@@ -31,7 +34,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({
   product,
-  sections,
+  sections: providedSections,
   children,
   userName,
   userRole,
@@ -39,6 +42,10 @@ export function DashboardLayout({
   pageBreadcrumb,
   rightActions,
 }: DashboardLayoutProps) {
+  const permissions=useSchoolProPermissions();
+  const role=permissions.role.toLowerCase();
+  const canonical=role==='student'?studentSections:role==='parent'?parentSections:schoolSections;
+  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>item.href==='/schoolpro/profile'||(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href))))})).filter(section=>section.items.length)):providedSections;
   const theme = productThemes[product];
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -61,13 +68,13 @@ export function DashboardLayout({
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Logo product={product} size="sm" variant={collapsed ? 'icon' : 'full'} />
           {!collapsed && (
-            <button onClick={() => setCollapsed(true)} className="text-muted hover:text-ink p-1">
+            <button aria-label="Collapse sidebar" onClick={() => setCollapsed(true)} className="text-muted hover:text-ink p-1">
               <ChevronDown className="w-4 h-4 rotate-90" />
             </button>
           )}
         </div>
         {collapsed && (
-          <button onClick={() => setCollapsed(false)} className="mx-auto mt-2 p-1 text-muted hover:text-ink">
+          <button aria-label="Expand sidebar" onClick={() => setCollapsed(false)} className="mx-auto mt-2 p-1 text-muted hover:text-ink">
             <ChevronDown className="w-4 h-4 -rotate-90" />
           </button>
         )}
@@ -150,7 +157,7 @@ export function DashboardLayout({
             </div>
             <Link aria-label="Notifications" to={product==='schoolpro'?'/schoolpro/notifications':location.pathname.startsWith('/admin') ? '/admin/notifications' : '/account/notifications'} className="p-2 rounded-lg text-muted hover:bg-gray-100 transition-colors relative">
               <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full" />
+
             </Link>
             <div className="relative">
               <button aria-label="Open profile menu" onClick={() => { setProfileOpen((v) => !v); setSearchOpen(false); }} className="flex items-center gap-2.5 pl-3 border-l border-border">

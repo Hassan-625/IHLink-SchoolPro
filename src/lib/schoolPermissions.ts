@@ -1,1 +1,21 @@
-export function permissionForSchoolPath(href:string){const p=href.replace('/schoolpro/','');if(p.includes('invoice-design')||p==='fees')return'finance';if(p.includes('result')||p.includes('broadsheet'))return'results';if(p.includes('student'))return'students';if(p.includes('class'))return'classes';if(p.includes('subject'))return'subjects';if(p.includes('attendance'))return'attendance';if(p.includes('timetable'))return'timetable';if(p.includes('assignment'))return'assignments';if(p.includes('admission'))return'admissions';if(p.includes('cbt')||p.includes('question-bank'))return'cbt';if(p.includes('library'))return'library';if(p.includes('staff'))return'staff';if(p.includes('parent'))return'parents';if(p.includes('transport'))return'transport';if(p.includes('hostel'))return'hostel';if(p.includes('inventory'))return'inventory';if(p.includes('discipline'))return'discipline';if(p.includes('medical'))return'medical';if(p.includes('document'))return'documents';if(p.includes('announcement'))return'announcements';if(p.includes('roles'))return'roles';if(p.includes('settings'))return'branding';if(p.includes('notification'))return'notifications';if(p.includes('payroll'))return'payroll';if(p.includes('calendar'))return'calendar';if(p.includes('lesson'))return'lesson-notes';if(p.includes('leave'))return'leave';if(p.includes('promotion'))return'promotions';if(p.includes('operation'))return'operations';return'dashboard'}
+const modules:Record<string,string>={
+  'admin-dashboard':'dashboard','proprietor-dashboard':'dashboard','teacher-dashboard':'dashboard',
+  'student-dashboard':'dashboard','parent-dashboard':'dashboard','students':'students',
+  'results':'results','result-templates':'results','report-card':'results','broadsheet':'reports',
+  'class-results-print':'reports','reports':'reports','fees':'finance','payments':'finance',
+  'receipts':'finance','invoices':'finance','invoice-design':'finance','subscription':'finance',
+  'classes':'classes','subjects':'subjects','attendance':'attendance','timetable':'timetable',
+  'assignments':'assignments','admissions':'admissions','question-bank':'cbt','cbt':'cbt',
+  'library':'library','staff':'staff','parents':'parents','transport':'transport','hostel':'hostel',
+  'inventory':'inventory','discipline':'discipline','medical':'medical','documents':'documents',
+  'announcements':'announcements','roles-permissions':'roles','user-permissions':'roles',
+  'settings':'branding','notifications':'notifications','payroll':'payroll','calendar':'calendar',
+  'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations',
+};
+export function permissionForSchoolPath(href:string){
+ const page=href.split(/[?#]/)[0].replace(/^\/schoolpro\//,'').split('/')[0];
+ if(page.startsWith('student-')&&page!=='student-dashboard')return modules[page.slice(8)]||null;
+ return modules[page]||null;
+}
+export const studentReadPermissions=['dashboard','results','finance','attendance','timetable','assignments','announcements','library','cbt','notifications'];
+export const parentReadPermissions=['dashboard','results','finance','attendance','announcements','notifications'];

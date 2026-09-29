@@ -1,5 +1,7 @@
+import {useSchoolProContext} from '@/hooks/useSchoolProContext';
+import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { lazy, Suspense, type ReactNode } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { SchoolProEntitlementGate } from "@/components/SchoolProEntitlementGate";
 import { SchoolProHome } from "@/pages/schoolpro/SchoolProHome";
@@ -62,8 +64,15 @@ import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 
 const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResultTemplates").then(m=>({default:m.SchoolProResultTemplates})));
-const Guard=({children,permission}:{children:ReactNode;permission?:string})=><ProtectedRoute product="schoolpro" requireServiceAccess>{permission?<SchoolProPermissionGate permission={permission}>{children}</SchoolProPermissionGate>:children}</ProtectedRoute>;
-const studentViews=["results","fees","attendance","timetable","assignments","announcements"] as const;
+const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
+ const ctx=useSchoolProContext();const {pathname}=useLocation();
+ if(ctx.loading)return <p role="status" className="p-8">Checking school membership…</p>;
+ const module=permission||permissionForSchoolPath(pathname);
+ const portalOnly=/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(pathname);
+ const portal=portalOnly||/\/schoolpro\/(report-card|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
+ return <ProtectedRoute product="schoolpro" requireServiceAccess={!ctx.schoolId}>{module?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children}</ProtectedRoute>;
+};
+const studentViews=["results","fees","attendance","timetable","assignments","announcements","library"] as const;
 
 export default function App(){
  return <Routes>
@@ -137,7 +146,7 @@ export default function App(){
   <Route path="/auth/update-password" element={<UpdatePasswordPage/>}/>
   <Route path="/verify-email" element={<VerifyEmailPage/>}/>
   <Route path="/register" element={<Navigate to="/schoolpro/register" replace/>}/>
-  <Route path="/admin/access-denied" element={<Navigate to="/schoolpro" replace/>}/>
+  <Route path="/admin/access-denied" element={<Navigate to="/schoolpro/access-denied" replace/>}/>
   <Route path="*" element={<Navigate to="/schoolpro" replace/>}/>
  </Routes>;
 }

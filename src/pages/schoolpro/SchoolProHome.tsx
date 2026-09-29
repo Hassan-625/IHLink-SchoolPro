@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 
 const features = [
-  { icon: DollarSign, title: 'Revenue Collection', desc: 'Collect fees online and offline. Track outstanding balances automatically.', color: 'bg-purple-50 text-purple-600' },
+  { icon: DollarSign, title: 'Revenue Collection', desc: 'Share school bank details, review transfer receipts and track outstanding balances.', color: 'bg-purple-50 text-purple-600' },
   { icon: FileText, title: 'Result Processing', desc: 'Process, validate, and publish results in hours, not weeks.', color: 'bg-indigo-50 text-indigo-600' },
   { icon: ClipboardCheck, title: 'Administrative Automation', desc: 'Automate attendance, timetables, and daily school operations.', color: 'bg-amber-50 text-amber-600' },
   { icon: MessageSquare, title: 'Parent Communication', desc: 'Send SMS, in-app messages, and announcements to parents instantly.', color: 'bg-sky-50 text-sky-600' },
@@ -125,7 +125,7 @@ export function SchoolProHome() {
               { icon: Award, label: 'Proprietor', href: '/schoolpro/login', desc: 'School oversight & finances' },
               { icon: ClipboardCheck, label: 'Administrator', href: '/schoolpro/login', desc: 'Manage students & staff' },
               { icon: BookOpen, label: 'Teacher', href: '/schoolpro/teacher-login', desc: 'Enter scores & attendance' },
-              { icon: Users, label: 'Parent', href: '/schoolpro/parent-login', desc: 'View results & pay fees' },
+              { icon: Users, label: 'Parent', href: '/schoolpro/parent-login', desc: 'View results & submit fee receipts' },
               { icon: GraduationCap, label: 'Student', href: '/schoolpro/student-login', desc: 'Check results & assignments' },
             ].map((p, i) => (
               <Link key={i} to={p.href}>

@@ -15,7 +15,7 @@ interface SchoolProLoginProps {
 
 const roleConfig = {
   school: { title: 'School Login', desc: 'Access your school management dashboard', icon: Award, color: 'purple', dashboard: '/schoolpro/proprietor-dashboard' },
-  parent: { title: 'Parent Login', desc: 'View your child\'s results and pay fees', icon: Users, color: 'indigo', dashboard: '/schoolpro/parent-dashboard' },
+  parent: { title: 'Parent Login', desc: 'View your child\'s results and submit fee receipts', icon: Users, color: 'indigo', dashboard: '/schoolpro/parent-dashboard' },
   student: { title: 'Student Login', desc: 'Check your results and assignments', icon: GraduationCap, color: 'purple', dashboard: '/schoolpro/student-dashboard' },
   teacher: { title: 'Teacher Login', desc: 'Enter scores and manage your classes', icon: BookOpen, color: 'indigo', dashboard: '/schoolpro/teacher-dashboard' },
 };

@@ -4,10 +4,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Accordion } from '@/components/ui/Stepper';
-import { AnimatedCounter, StatCard } from '@/components/ui/Charts';
 import { useToast } from '@/components/ui/Toast';
-import { supabase } from '@/lib/supabase';
-import { useEffect, useState } from 'react';
 import { ExperiencePhoto } from '@/components/ExperiencePhoto';
 import { ManagedContentSections } from '@/components/ManagedContentSections';
 import { IH_LINK_LOGO } from '@/assets/ihlinkLogo';
@@ -38,17 +35,6 @@ const faqs = [
 export function SchoolProHome() {
   const hero = useManagedHero('schoolpro');
   const { showToast } = useToast();
-  const [stats, setStats] = useState([{label:'Schools',value:0},{label:'Students',value:0},{label:'Results Processed',value:0},{label:'Fees Collected',value:0}]);
-  useEffect(() => { if (!supabase) return; void (async()=>{
-    const [schools,students,results,fees]=await Promise.all([
-      supabase.from('schoolpro_schools').select('*',{count:'exact',head:true}).eq('status','active'),
-      supabase.from('schoolpro_students').select('*',{count:'exact',head:true}).eq('status','active'),
-      supabase.from('schoolpro_results').select('*',{count:'exact',head:true}),
-      supabase.from('schoolpro_fee_payments').select('amount')
-    ]);
-    const collected=(fees.data||[]).reduce((sum,row)=>sum+Number(row.amount||0),0);
-    setStats([{label:'Schools',value:schools.count||0},{label:'Students',value:students.count||0},{label:'Results Processed',value:results.count||0},{label:'Fees Collected',value:collected}]);
-  })(); }, []);
   return (
     <PageShell product="schoolpro">
       {/* Hero */}
@@ -67,34 +53,16 @@ export function SchoolProHome() {
               </div>
             </div>
             <div className="col-span-12 lg:col-span-5">
-              <div><div className="mb-4 flex items-center gap-3 rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur"><img src={IH_LINK_LOGO} alt="IHLink" className="h-11 w-11 rounded-xl bg-white object-contain p-1"/><div><b className="block">SchoolPro by IHLink</b><span className="text-xs text-purple-100">Connected school management</span></div></div><div className="grid grid-cols-2 gap-3">
-                {stats.map((s, i) => (
-                  <div key={i} className="p-4 rounded-xl bg-white/10 backdrop-blur">
-                    <p className="text-xl font-extrabold">{s.label === 'Fees Collected' ? new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(s.value) : s.value.toLocaleString()}</p>
-                    <p className="text-xs text-purple-100">{s.label}</p>
-                  </div>
-                ))}
-              </div></div>
+              <div className="rounded-2xl border border-white/15 bg-white/10 p-6 backdrop-blur">
+                <div className="mb-5 flex items-center gap-3"><img src={IH_LINK_LOGO} alt="IHLink" className="h-11 w-11 rounded-xl bg-white object-contain p-1"/><div><b className="block">SchoolPro by IHLink</b><span className="text-xs text-purple-100">Connected school management</span></div></div>
+                <p className="text-sm text-purple-50">One workspace for school operations, results and school-owned fee records.</p>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       <ExperiencePhoto src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=85" alt="A teacher helping pupils during a computer lesson" eyebrow="Built around the classroom" title="Technology that gives educators more time to teach" text="SchoolPro connects administrators, teachers, parents and students while keeping the experience familiar, friendly and easy to learn." accentClass="text-purple-700" />
-
-      {/* Stats */}
-      <section className="py-12 bg-schoolpro-soft">
-        <div className="px-6 lg:px-10 max-w-[1280px] mx-auto">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            {stats.map((s, i) => (
-              <Card key={i} padding="lg" className="text-center">
-                <p className="text-4xl font-extrabold gradient-text-purple">{s.label === 'Fees Collected' ? new Intl.NumberFormat('en-NG',{style:'currency',currency:'NGN',maximumFractionDigits:0}).format(s.value) : <AnimatedCounter value={s.value} />}</p>
-                <p className="text-sm text-muted mt-2">{s.label}</p>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* Features */}
       <section className="py-16 px-6 lg:px-10 max-w-[1280px] mx-auto">

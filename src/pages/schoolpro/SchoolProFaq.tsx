@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 
 const faqs = [
   { question: 'How long does setup take?', answer: 'Setup time depends on school size, selected modules and migration requirements. A rollout schedule is confirmed during onboarding.' },
-  { question: 'Can parents pay fees online?', answer: 'The parent portal supports school fee workflows. Available online payment methods depend on the production payment gateway configured for the school.' },
+  { question: 'How do parents pay school fees?', answer: 'Parents can view invoices and school bank details in the portal, then upload proof of transfer for the school to review. Payments are recorded after school verification.' },
   { question: 'Does SchoolPro support CBT?', answer: 'CBT is part of the SchoolPro module catalogue and becomes available when that production module is enabled for the school.' },
   { question: 'Can I customize report cards?', answer: 'Yes. Report cards are fully customizable with your school logo, grading scale, and comment templates.' },
   { question: 'Is there a mobile app for parents?', answer: 'Parents can use the responsive SchoolPro web portal. Native iOS and Android applications are not represented as released unless separately published.' },

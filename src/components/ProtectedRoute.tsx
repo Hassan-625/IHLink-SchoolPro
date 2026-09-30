@@ -36,7 +36,7 @@ export function ProtectedRoute({
     );
   if (profile?.status === "suspended")
     return <Navigate to="/admin/access-denied" replace />;
-  if (roles && (!profile || !roles.includes(profile.role)))
+  if (roles && profile?.role !== "super_admin" && (!profile || !roles.includes(profile.role)))
     return <Navigate to="/admin/access-denied" replace />;
   if (product && requireServiceAccess) {
     if (profile?.role === "customer") {

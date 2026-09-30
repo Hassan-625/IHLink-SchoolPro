@@ -6,7 +6,7 @@ returns boolean language sql stable security definer set search_path='' as $$
  select not exists(select 1 from public.schoolpro_invoices i where i.student_id=p_student and i.term=p_term and i.session=p_session and (i.result_hold=true or greatest(i.amount_due-i.amount_paid,0)>0));
 $$;
 revoke all on function public.schoolpro_can_release_result(uuid,text,text) from public,anon;
-grant execute on function public.schoolpro_can_release_result(uuid,text,text) to authenticated,service_role;
+grant execute on function public.schoolpro_can_release_result(uuid,text,text) to service_role;
 
 -- Public result PIN access now honours explicit result_hold as well as net outstanding balance.
 -- Candidate CBT submission now rejects unstarted, expired, duration-ended, or test-closed attempts

@@ -62,7 +62,7 @@ export function SchoolProHome() {
         </div>
       </section>
 
-      <ExperiencePhoto src="/images/ihlink-service-scene.webp" alt="IHLink SchoolPro branded school and exam concept" illustration eyebrow="Built around the classroom" title="Technology that gives educators more time to teach" text="SchoolPro connects administrators, teachers, parents and students while keeping the experience familiar, friendly and easy to learn." accentClass="text-purple-700" />
+      <ExperiencePhoto src="/images/service-scene-clean.webp" alt="IHLink SchoolPro branded school and exam concept" illustration eyebrow="Built around the classroom" title="Technology that gives educators more time to teach" text="SchoolPro connects administrators, teachers, parents and students while keeping the experience familiar, friendly and easy to learn." accentClass="text-purple-700" />
 
       {/* Features */}
       <section className="py-16 px-6 lg:px-10 max-w-[1280px] mx-auto">

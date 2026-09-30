@@ -165,3 +165,39 @@ html[data-density="compact"] main .p-8 { padding:1.25rem !important; }
 }
 
 @media print { html[data-appearance] .print-document .text-ink, html[data-appearance] .print-document .text-navy-900 { color: #0f172a !important; } html[data-appearance] .print-document .text-muted { color: #475569 !important; } }
+
+
+/* Functional sticky-table contract.
+   Horizontal table wrappers must also own vertical scrolling; otherwise CSS sticky
+   binds to a non-scrolling overflow-x ancestor and appears not to work. */
+@media screen {
+  :where(.overflow-x-auto, .overflow-auto, .overflow-y-auto):has(table) {
+    max-height: min(70vh, 48rem);
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+
+  table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    background-color: #F8FAFC;
+    box-shadow: inset 0 -1px 0 #CBD5E1, 0 1px 2px rgb(15 23 42 / 0.06);
+  }
+
+  html[data-appearance="dark"] table thead th {
+    background-color: #0F274D;
+    box-shadow: inset 0 -1px 0 #294568;
+  }
+}
+
+@media print {
+  :where(.overflow-x-auto, .overflow-auto, .overflow-y-auto):has(table) {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  table thead th {
+    position: static !important;
+  }
+}

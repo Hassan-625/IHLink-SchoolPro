@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useSchoolProEntitlements } from "@/hooks/useSchoolProEntitlements";
+import { useAuth } from "@/context/AuthContext";
 
 type EntitlementKey = "website" | "cbt" | "advanced_reports" | "custom_branding";
 
@@ -12,7 +13,10 @@ const labels: Record<EntitlementKey, string> = {
 };
 
 export function SchoolProEntitlementGate({ feature, children }: { feature: EntitlementKey; children: ReactNode }) {
+  const { profile } = useAuth();
   const { entitlements, loading } = useSchoolProEntitlements();
+
+  if (profile?.role === "super_admin") return <>{children}</>;
 
   if (loading) return <div className="min-h-[50vh] grid place-items-center text-sm text-muted">Checking SchoolPro subscription…</div>;
   if (entitlements?.active && entitlements?.[feature]) return <>{children}</>;

@@ -64,7 +64,7 @@ export function DashboardLayout({
   return (
     <div className="min-h-screen bg-surface flex">
       {/* Sidebar */}
-      <aside className={`${collapsed ? 'w-16' : 'w-64'} shrink-0 bg-white border-r border-border flex flex-col transition-all duration-200 sticky top-0 h-screen`}>
+      <aside className={`${collapsed ? 'w-16' : 'w-64'} shrink-0 min-w-0 overflow-hidden bg-white border-r border-border flex flex-col transition-all duration-200 sticky top-0 h-screen`}>
         <div className="h-16 flex items-center justify-between px-4 border-b border-border">
           <Logo product={product} size="sm" variant={collapsed ? 'icon' : 'full'} />
           {!collapsed && (
@@ -79,7 +79,7 @@ export function DashboardLayout({
           </button>
         )}
 
-        <nav className="flex-1 overflow-y-auto py-4 px-2">
+        <nav className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto py-4 px-2">
           {sections.map((section, si) => (
             <div key={si} className="mb-4">
               {section.title && !collapsed && (
@@ -90,7 +90,7 @@ export function DashboardLayout({
                   <Link
                     key={item.href}
                     to={item.href}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    className={`flex min-w-0 max-w-full items-center gap-3 overflow-hidden px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       isActive(item.href)
                         ? `${theme.badgeBg} ${theme.textClass}`
                         : 'text-ink hover:bg-gray-50'

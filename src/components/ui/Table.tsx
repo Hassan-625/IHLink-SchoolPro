@@ -28,8 +28,8 @@ export function Table({ headers, rows, className = '', searchable = true, search
     return rows.filter((row,index)=>`${searchValues?.[index]||''} ${row.map(searchableText).join(' ')}`.toLocaleLowerCase().includes(needle));
   },[rows,query,searchable,searchValues]);
   return (
-    <div className={`w-full ${className}`}>
-      {searchable&&<div className="relative mb-3 max-w-md"><Search className="absolute left-3 top-3 h-4 w-4 text-muted"/><input type="search" aria-label={searchPlaceholder} value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder} className="w-full rounded-xl border border-border py-2.5 pl-10 pr-3 text-sm"/></div>}
+    <div className={`w-full overflow-hidden rounded-2xl border border-border bg-white shadow-sm ${className}`}>
+      {searchable&&<div className="relative m-4 max-w-md"><Search className="absolute left-3 top-3 h-4 w-4 text-muted"/><input type="search" aria-label={searchPlaceholder} value={query} onChange={e=>setQuery(e.target.value)} placeholder={searchPlaceholder} className="w-full rounded-xl border border-border bg-white py-2.5 pl-10 pr-3 text-sm shadow-sm outline-none transition focus:border-royal-500 focus:ring-4 focus:ring-royal-500/10"/></div>}
       <div className="max-h-[70vh] overflow-auto">
       <table className="w-full">
         <thead className="sticky top-0 z-10 bg-white">
@@ -62,7 +62,7 @@ export function Table({ headers, rows, className = '', searchable = true, search
               ))}
             </tr>
           ))}
-          {!visibleRows.length && <tr><td colSpan={headers.length} className="px-4 py-8 text-center text-sm text-muted">{query.trim() ? 'No matching records.' : 'No records yet.'}</td></tr>}
+          {!visibleRows.length && <tr><td colSpan={headers.length} className="px-4 py-12 text-center text-sm font-medium text-muted">{query.trim() ? 'No matching records.' : 'No records yet.'}</td></tr>}
         </tbody>
       </table>
       </div>

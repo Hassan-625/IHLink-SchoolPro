@@ -14,7 +14,7 @@ export function useSchoolProContext():SchoolContext{
   const commit=(value:SchoolContext)=>{if(current)setState(value)};
   void(async()=>{
    if(profile?.role==='super_admin'){
-    const selected=localStorage.getItem('ihlink_schoolpro_admin_school');
+    const params=new URLSearchParams(window.location.search);const requested=params.get('school_id');if(requested&&/^[0-9a-f-]{36}$/i.test(requested))localStorage.setItem('ihlink_schoolpro_admin_school',requested);const selected=requested||localStorage.getItem('ihlink_schoolpro_admin_school');
     let query=db.from('schoolpro_schools').select('id,name').order('created_at',{ascending:false}).limit(1);
     if(selected)query=db.from('schoolpro_schools').select('id,name').eq('id',selected).limit(1);
     const target=await query.maybeSingle();

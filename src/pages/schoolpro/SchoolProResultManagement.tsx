@@ -5,6 +5,9 @@ import { Badge } from '@/components/ui/Badge';
 import { Accordion } from '@/components/ui/Stepper';
 import { Link } from 'react-router-dom';
 import { FileText, Upload, CheckCircle2, Lock, MessageSquare, ClipboardList, FileBarChart, ScrollText, Eye, ArrowRight } from 'lucide-react';
+import { ManagedContentSections } from '@/components/ManagedContentSections';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabase';
 
 const steps = [
   { icon: FileText, title: 'Score Entry', desc: 'Teachers enter CA and exam scores per subject and class.' },
@@ -30,6 +33,7 @@ const features = [
 ];
 
 export function SchoolProResultManagement() {
+  const [managed,setManaged]=useState<any[]>([]);useEffect(()=>{void (async()=>{if(!supabase)return;const r=await supabase.from('platform_feature_content').select('*').eq('platform_key','schoolpro').eq('module_key','results').eq('is_visible',true).order('sort_order');setManaged((r.data||[]).filter((x:any)=>x.is_enabled))})()},[]);
   return (
     <PageShell product="schoolpro">
       <section className="py-12 bg-gradient-to-br from-purple-50 to-indigo-50">
@@ -68,6 +72,8 @@ export function SchoolProResultManagement() {
         </div>
       </section>
 
+      {managed.length>0&&<section className="px-6 lg:px-10 pb-12 max-w-[1280px] mx-auto"><h2 className="text-xl font-bold text-ink mb-4">Managed Result Capabilities</h2><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{managed.map((x:any)=><Card key={x.id} padding="lg"><h3 className="text-sm font-bold text-ink">{x.title}</h3><p className="mt-1 text-xs text-muted">{x.description||x.help_text}</p>{x.cta_link&&x.cta_label&&<Link to={x.cta_link.startsWith('/admin/')?'/schoolpro/login':x.cta_link}><Button className="mt-3" size="sm" variant="secondary">{x.cta_link.startsWith('/admin/')?'Sign in to manage':x.cta_label}</Button></Link>}</Card>)}</div></section>}
+      <ManagedContentSections pageKey="schoolpro" />
       <section className="py-12 bg-schoolpro-soft">
         <div className="px-6 lg:px-10 max-w-[1280px] mx-auto text-center">
           <Card padding="lg" className="max-w-lg mx-auto bg-white">

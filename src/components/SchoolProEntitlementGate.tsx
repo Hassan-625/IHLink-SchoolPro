@@ -24,12 +24,12 @@ export function SchoolProEntitlementGate({ feature, children }: { feature: Entit
   return (
     <div className="min-h-[60vh] grid place-items-center bg-slate-50 px-6">
       <div className="w-full max-w-lg rounded-2xl border bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-slate-900">{labels[feature]} is not enabled</h1>
+        <h1 className="text-2xl font-bold text-slate-900">{labels[feature]} is not enabled for this school</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          This feature is not included in the school's current SchoolPro subscription. Your existing school data is unchanged.
+          Your account may have permission to use this module, but the school's current SchoolPro plan/feature entitlement does not enable it. Your existing school data is unchanged. A Proprietor/Administrator can review the subscription, while IHLink Super Admin can enable a school-specific feature override.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link to="/schoolpro/pricing" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">View plans</Link>
+          <Link to="/schoolpro/subscription" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Review school subscription</Link>
           <Link to="/schoolpro/admin-dashboard" className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700">Back to dashboard</Link>
         </div>
       </div>

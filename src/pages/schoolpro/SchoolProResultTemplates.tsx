@@ -10,11 +10,11 @@ import { useSchoolProContext } from "@/hooks/useSchoolProContext";
 import { schoolSections } from "./schoolShared";
 
 type School={id:string;name:string};
-type Student={id:string;first_name:string;last_name:string;admission_number:string;class_name:string};
+type Student={id:string;first_name:string;last_name:string;admission_number:string;class_name:string;photo_storage_path?:string|null};
 type Component={key:string;label:string;maxScore:number};
 type Scheme={id:string;name:string;components:Component[]};
 type CustomField={id:string;label:string;cell:string;source:string;value:string};
-type Template={id:string;name:string;storage_path:string;sheet_name:string;start_row:number;field_cells:Record<string,string>;columns:Record<string,string>;component_columns:Record<string,string>;custom_fields?:CustomField[];logo_storage_path?:string|null;logo_cell?:string;logo_width?:number;logo_height?:number};
+type Template={id:string;name:string;storage_path:string;sheet_name:string;start_row:number;field_cells:Record<string,string>;columns:Record<string,string>;component_columns:Record<string,any>;custom_fields?:CustomField[];logo_storage_path?:string|null;logo_cell?:string;logo_width?:number;logo_height?:number;photo_cell?:string;photo_width?:number;photo_height?:number;principal_signature_cell?:string;teacher_signature_cell?:string;signature_width?:number;signature_height?:number};
 type ResultRow={assessment_scores:Record<string,number>;total_score:number;status:string;subject:{name:string}|null};
 
 const initialFields:Record<string,string>={school_name:"A1",student_name:"B4",admission_number:"B5",class_name:"F5",term:"B6",session:"F6"};
@@ -38,7 +38,7 @@ export function SchoolProResultTemplates(){
 
  const loadSchools=useCallback(async()=>{if(!supabase||!user||ctx.loading)return;if(ctx.schoolId){setSchools([{id:ctx.schoolId,name:ctx.schoolName}]);setSchoolId(ctx.schoolId);}else{setSchools([]);setSchoolId("");}},[user,ctx.loading,ctx.schoolId,ctx.schoolName]);
  const load=useCallback(async()=>{if(!supabase||!schoolId)return;const [a,b,c]=await Promise.all([
-  supabase.from("schoolpro_students").select("id,first_name,last_name,admission_number,class_name").eq("school_id",schoolId).order("first_name"),
+  supabase.from("schoolpro_students").select("id,first_name,last_name,admission_number,class_name,photo_storage_path").eq("school_id",schoolId).order("first_name"),
   supabase.from("schoolpro_assessment_schemes").select("id,name,components").eq("school_id",schoolId).order("is_default",{ascending:false}),
   supabase.from("schoolpro_result_templates").select("*").eq("school_id",schoolId).maybeSingle()
  ]);const e=a.error||b.error||c.error;if(e)setError(e.message);setStudents((a.data||[]) as Student[]);const nextSchemes=(b.data||[]) as Scheme[];setSchemes(nextSchemes);const t=c.data as unknown as Template|null;setTemplate(t);
@@ -76,10 +76,11 @@ export function SchoolProResultTemplates(){
  async function uploadSignature(kind:"principal"|"teacher",file:File){if(!supabase||!schoolId||!user)return;if(!file.type.startsWith("image/"))return setError("Choose a JPG, PNG or WebP signature image.");if(file.size>3*1024*1024)return setError("Signature image must be 3 MB or smaller.");setBusy(true);setError(null);const ext=(file.name.split(".").pop()||"png").toLowerCase().replace(/[^a-z0-9]/g,"");const safeSession=session.replace(/[^a-zA-Z0-9_-]/g,"-"),safeTerm=term.replace(/[^a-zA-Z0-9_-]/g,"-"),path=schoolId+"/result-signatures/"+safeSession+"/"+safeTerm+"/"+kind+"."+ext;const up=await supabase.storage.from("school-result-templates").upload(path,file,{upsert:true,contentType:file.type});if(up.error){setBusy(false);return setError(up.error.message)}const field=kind==="principal"?"principal_signature_path":"form_teacher_signature_path";const saved=await supabase.from("schoolpro_result_term_settings").upsert({school_id:schoolId,session,term,[field]:path,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:"school_id,session,term"}).select("*").single();setBusy(false);if(saved.error)return setError(saved.error.message);setTermSettings(saved.data);setMessage((kind==="principal"?"Principal":"Form-teacher")+" signature saved for "+term+" "+session+".");}
  async function generate(){
   if(!supabase||!template||!selectedStudent)return;setBusy(true);setError(null);const student=students.find(s=>s.id===selectedStudent);
-  const [download,resultQuery,schoolQuery]=await Promise.all([
+  const [download,resultQuery,schoolQuery,termQuery]=await Promise.all([
    supabase.storage.from("school-result-templates").download(template.storage_path),
    supabase.from("schoolpro_results").select("assessment_scores,total_score,status,subject:schoolpro_subjects(name)").eq("student_id",selectedStudent).eq("term",term).eq("session",session).order("created_at"),
-   supabase.from("schoolpro_schools").select("name").eq("id",schoolId).maybeSingle()
+   supabase.from("schoolpro_schools").select("name").eq("id",schoolId).maybeSingle(),
+   supabase.from("schoolpro_result_term_settings").select("*").eq("school_id",schoolId).eq("term",term).eq("session",session).maybeSingle()
   ]);
   const e=download.error||resultQuery.error||schoolQuery.error;if(e||!download.data||!student){setError(e?.message||"Unable to generate result.");setBusy(false);return;}
   try{
@@ -88,7 +89,7 @@ export function SchoolProResultTemplates(){
    Object.entries(template.field_cells||{}).forEach(([key,cell])=>{if(cell)sheet.getCell(cell).value=values[key]||"";});
    (template.custom_fields||[]).forEach(field=>{if(!field.cell)return;sheet.getCell(field.cell).value=field.source==="literal"?field.value:(values[field.source]||field.value||"");});
    ((resultQuery.data||[]) as unknown as ResultRow[]).forEach((result,index)=>{const row=template.start_row+index;if(template.columns.subject)sheet.getCell(`${template.columns.subject}${row}`).value=result.subject?.name||"Subject";components.forEach(component=>{const col=template.component_columns[component.key];if(col)sheet.getCell(`${col}${row}`).value=Number(result.assessment_scores?.[component.key]||0);});if(template.columns.total)sheet.getCell(`${template.columns.total}${row}`).value=Number(result.total_score);if(template.columns.grade)sheet.getCell(`${template.columns.grade}${row}`).value=grade(Number(result.total_score));if(template.columns.status)sheet.getCell(`${template.columns.status}${row}`).value=result.status;});
-   if(template.logo_storage_path){const logo=await supabase.storage.from("school-result-templates").download(template.logo_storage_path);if(!logo.error&&logo.data){const ext=template.logo_storage_path.toLowerCase().endsWith(".png")?"png":"jpeg";const imageId=workbook.addImage({buffer:await logo.data.arrayBuffer() as never,extension:ext});const pos=cellPosition(template.logo_cell||"A1");sheet.addImage(imageId,{tl:pos,ext:{width:template.logo_width||120,height:template.logo_height||80}});}}
+   if(template.logo_storage_path){const logo=await supabase.storage.from("school-result-templates").download(template.logo_storage_path);if(!logo.error&&logo.data){const ext=template.logo_storage_path.toLowerCase().endsWith(".png")?"png":"jpeg";const imageId=workbook.addImage({buffer:await logo.data.arrayBuffer() as never,extension:ext});const pos=cellPosition(template.logo_cell||"A1");sheet.addImage(imageId,{tl:pos,ext:{width:template.logo_width||120,height:template.logo_height||80}});}}const addStoredImage=async(path:string|undefined|null,cell:string|undefined,width:number,height:number)=>{if(!path||!cell)return;const dl=await supabase.storage.from("school-result-templates").download(path);if(dl.error||!dl.data)return;const extension=path.toLowerCase().endsWith(".png")?"png":"jpeg";const id=workbook.addImage({buffer:await dl.data.arrayBuffer() as never,extension});sheet.addImage(id,{tl:cellPosition(cell),ext:{width,height}})};await addStoredImage(student.photo_storage_path,template.photo_cell||"J2",template.photo_width||90,template.photo_height||110);await addStoredImage(termQuery.data?.principal_signature_path,template.principal_signature_cell||"J40",template.signature_width||120,template.signature_height||45);await addStoredImage(termQuery.data?.form_teacher_signature_path,template.teacher_signature_cell||"B40",template.signature_width||120,template.signature_height||45);
    const output=await workbook.xlsx.writeBuffer();saveFile(output,`${student.admission_number}-${term.replaceAll(" ","-")}-result.xlsx`);setMessage("Customized Excel result generated and downloaded.");
   }catch(err){setError(err instanceof Error?err.message:"Invalid Excel template.");}
   setBusy(false);

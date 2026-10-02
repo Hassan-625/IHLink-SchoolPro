@@ -4,7 +4,7 @@ import {useAuth} from '@/context/AuthContext';
 export type SchoolContext={schoolId:string|null;schoolName:string;role:string;loading:boolean;error:string|null};
 const empty:SchoolContext={schoolId:null,schoolName:'SchoolPro',role:'User',loading:false,error:null};
 export function useSchoolProContext():SchoolContext{
- const {user,loading:authLoading}=useAuth();
+ const {user,profile,loading:authLoading}=useAuth();
  const [state,setState]=useState<SchoolContext>({...empty,loading:true});
  useEffect(()=>{
   let current=true;
@@ -13,6 +13,14 @@ export function useSchoolProContext():SchoolContext{
   const db=supabase;
   const commit=(value:SchoolContext)=>{if(current)setState(value)};
   void(async()=>{
+   if(profile?.role==='super_admin'){
+    const selected=localStorage.getItem('ihlink_schoolpro_admin_school');
+    let query=db.from('schoolpro_schools').select('id,name').order('created_at',{ascending:false}).limit(1);
+    if(selected)query=db.from('schoolpro_schools').select('id,name').eq('id',selected).limit(1);
+    const target=await query.maybeSingle();
+    if(target.error)throw target.error;
+    commit({schoolId:target.data?.id||null,schoolName:target.data?.name||'SchoolPro — select a school',role:'Super Administrator',loading:false,error:null});return;
+   }
    const owned=await db.from('schoolpro_schools').select('id,name').eq('owner_id',user.id).limit(1).maybeSingle();
    if(owned.error)throw owned.error;
    if(owned.data){commit({schoolId:owned.data.id,schoolName:owned.data.name,role:'Proprietor',loading:false,error:null});return}
@@ -28,6 +36,6 @@ export function useSchoolProContext():SchoolContext{
    commit({...empty,schoolId:guardian.data?.school_id||null,schoolName:school?.name||'SchoolPro',role:guardian.data?'parent':'User'});
   })().catch((e:{message?:string})=>commit({...empty,error:e.message||'School access could not be loaded.'}));
   return()=>{current=false};
- },[user?.id,authLoading]);
+ },[user?.id,profile?.role,authLoading]);
  return state;
 }

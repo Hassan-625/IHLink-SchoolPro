@@ -43,20 +43,20 @@ with check (private.has_school_access(school_id,array['proprietor','administrato
 create policy "tenant read transport" on public.schoolpro_transport_routes for select to authenticated
 using (private.has_school_access(school_id));
 create policy "tenant manage transport" on public.schoolpro_transport_routes for all to authenticated
-using (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]))
-with check (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]));
+using (private.has_school_access(school_id,array['proprietor','administrator','transport_manager']::public.school_member_role[]))
+with check (private.has_school_access(school_id,array['proprietor','administrator','transport_manager']::public.school_member_role[]));
 
 create policy "tenant read hostel" on public.schoolpro_hostel_rooms for select to authenticated
 using (private.has_school_access(school_id));
 create policy "tenant manage hostel" on public.schoolpro_hostel_rooms for all to authenticated
-using (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]))
-with check (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]));
+using (private.has_school_access(school_id,array['proprietor','administrator','hostel_manager']::public.school_member_role[]))
+with check (private.has_school_access(school_id,array['proprietor','administrator','hostel_manager']::public.school_member_role[]));
 
 create policy "tenant read inventory" on public.schoolpro_inventory_assets for select to authenticated
 using (private.has_school_access(school_id));
 create policy "tenant manage inventory" on public.schoolpro_inventory_assets for all to authenticated
-using (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]))
-with check (private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[]));
+using (private.has_school_access(school_id,array['proprietor','administrator','inventory_officer']::public.school_member_role[]))
+with check (private.has_school_access(school_id,array['proprietor','administrator','inventory_officer']::public.school_member_role[]));
 
 create policy "tenant read calendar" on public.schoolpro_calendar_events for select to authenticated
 using (private.has_school_access(school_id));

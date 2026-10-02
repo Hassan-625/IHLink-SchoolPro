@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { productThemes, type ProductKey } from '@/lib/designTokens';
 import { platformUrl } from '@/lib/platformUrls';
 import { useAuth } from '@/context/AuthContext';
+import { useManagedNavigation } from '@/hooks/useManagedNavigation';
 
 interface NavItem {
   label: string;
@@ -138,7 +139,8 @@ interface HeaderProps {
 
 export function Header({ product = 'corporate', showAnnouncement = true, announcementText }: HeaderProps) {
   const theme = productThemes[product];
-  const nav = productNavs[product];
+  const managedNav = useManagedNavigation(product, 'header');
+  const nav = managedNav.length ? managedNav.filter(x=>!x.parent_id).map(x=>({label:x.label,href:x.href,children:managedNav.filter(y=>y.parent_id===x.id).map(y=>({label:y.label,href:y.href}))})) : productNavs[product];
   const location = useLocation();
   const { user, profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);

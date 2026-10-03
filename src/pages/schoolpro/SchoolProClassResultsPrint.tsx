@@ -26,7 +26,7 @@ export function SchoolProClassResultsPrint(){
   const problem=cl.error||sc.error||st.error||sub.error||sch.error;
   if(problem||!cl.data){if(live){setError(problem?.message||'Class not found.');setLoading(false)}return}
   const group=(st.data||[]) as Student[];
-  const res=group.length?await supabase.from('schoolpro_results').select('id,student_id,subject_id,total_score,assessment_scores,assessment_scheme_id').eq('school_id',ctx.schoolId).in('student_id',group.map(s=>s.id)).eq('term',term).eq('session',session).eq('status','published'):null;
+  const authz=await supabase.rpc('schoolpro_broadsheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});if(authz.error){if(live){setError(authz.error.message);setLoading(false)}return}const chunks=await Promise.all(group.map(s=>supabase.rpc('schoolpro_printable_result',{p_student:s.id,p_term:term,p_session:session})));const failed=chunks.find(x=>x.error);if(failed?.error){if(live){setError(failed.error.message);setLoading(false)}return}const res={data:chunks.flatMap(x=>x.data||[]),error:null};
   if(!live)return;
   if(res?.error){setError(res.error.message);setLoading(false);return}
   setSchool(sc.data);setStudents(group);setResults(((res?.data||[]) as Result[]).map(r=>({...r,total_score:Number(r.total_score)})));

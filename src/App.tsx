@@ -63,6 +63,8 @@ import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
 
+import {SchoolProActivationGate} from "@/components/SchoolProActivationGate";
+
 const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResultTemplates").then(m=>({default:m.SchoolProResultTemplates})));
 const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
  const ctx=useSchoolProContext();const {pathname}=useLocation();
@@ -70,7 +72,9 @@ const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
  const module=permission||permissionForSchoolPath(pathname);
  const portalOnly=/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(pathname);
  const portal=portalOnly||/\/schoolpro\/(report-card|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
- return <ProtectedRoute product="schoolpro" requireServiceAccess={!ctx.schoolId}>{module?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children}</ProtectedRoute>;
+ const billingOrProfile=/^\/schoolpro\/(subscription|profile)(\/|$)/.test(pathname);
+ const permitted=module&&!billingOrProfile?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children;
+ return <ProtectedRoute product="schoolpro" requireServiceAccess={!ctx.schoolId}>{ctx.schoolId&&!billingOrProfile?<SchoolProActivationGate>{permitted}</SchoolProActivationGate>:permitted}</ProtectedRoute>;
 };
 const studentViews=["results","fees","attendance","timetable","assignments","announcements","library"] as const;
 

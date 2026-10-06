@@ -8,15 +8,12 @@ import { naira } from '@/lib/designTokens';
 import { Check, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-const fallbackPlans = [
-  { name: 'Starter', price: 360000, desc: 'SchoolPro annual subscription', features: [] as string[], popular: false },
-  { name: 'Professional', price: 600000, desc: 'SchoolPro annual subscription', features: [] as string[], popular: true },
-  { name: 'Enterprise', price: 1200000, desc: 'SchoolPro annual subscription', features: [] as string[], popular: false },
-];
+type Plan = { name:string; price:number; desc:string; features:string[]; popular:boolean };
 
 export function SchoolProPricing() {
-  const [plans,setPlans]=useState(fallbackPlans);
-  useEffect(()=>{if(!supabase)return;void supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price,features').eq('active',true).order('annual_price').then(({data})=>{if(data?.length)setPlans(data.map((p:any)=>({name:p.name,price:Number(p.annual_price||0),desc:`${p.name} SchoolPro annual subscription`,features:Array.isArray(p.features)?p.features:[],popular:p.code==='professional'})))})},[]);
+  const [plans,setPlans]=useState<Plan[]>([]);
+  const [loading,setLoading]=useState(true),[error,setError]=useState('');
+  useEffect(()=>{let active=true;if(!supabase){setError('Pricing is unavailable.');setLoading(false);return;}void supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price,features').eq('active',true).order('annual_price').then(({data,error:issue})=>{if(!active)return;if(issue)setError(issue.message);setPlans((data||[]).filter(p=>Number(p.annual_price)>0).map(p=>({name:p.name,price:Number(p.annual_price),desc:`${p.name} SchoolPro annual subscription`,features:Array.isArray(p.features)?p.features:[],popular:p.code==='professional'})));setLoading(false)});return()=>{active=false}},[]);
   return (
     <PageShell product="schoolpro">
       <div className="px-6 lg:px-10 py-12 max-w-[1280px] mx-auto">
@@ -27,14 +24,12 @@ export function SchoolProPricing() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {plans.map((plan, i) => (
+          {loading&&<p role="status">Loading current subscription prices…</p>}{error&&<p role="alert" className="text-rose-700">Pricing could not be loaded: {error}</p>}{!loading&&!error&&!plans.length&&<p>No active priced subscriptions are available.</p>}{plans.map((plan, i) => (
             <Card key={i} padding="lg" className={`relative ${plan.popular ? 'border-2 border-purple-400 shadow-float' : ''}`}>
               {plan.popular && <Badge className="absolute top-4 right-4 bg-purple-600 text-white border-purple-600">Most Popular</Badge>}
               <h3 className="text-xl font-bold text-ink">{plan.name}</h3>
               <p className="text-sm text-muted mb-4">{plan.desc}</p>
               <p className="text-4xl font-extrabold text-ink mb-1">{naira(plan.price)}<span className="text-sm font-normal text-muted">/year</span></p>
-              {plan.perStudent > 0 && <p className="text-xs text-muted mb-6">+ {naira(plan.perStudent)}/student</p>}
-              {!plan.perStudent && <p className="text-xs text-muted mb-6">No per-student fee</p>}
               <Link to="/schoolpro/register"><Button fullWidth themeClass={plan.popular ? 'bg-purple-600 hover:bg-purple-700' : undefined} variant={plan.popular ? undefined : 'secondary'}>Get Started</Button></Link>
               <div className="mt-6 space-y-3">
                 {plan.features.map((f, j) => (

@@ -15,20 +15,19 @@ export function SchoolProClassResultsPrint(){
  const [students,setStudents]=useState<Student[]>([]),[results,setResults]=useState<Result[]>([]),[subjects,setSubjects]=useState<Record<string,string>>({}),[schemes,setSchemes]=useState<Record<string,Scheme>>({}),[school,setSchool]=useState<{name:string;address:string|null}|null>(null),[error,setError]=useState(''),[loading,setLoading]=useState(true);
  useEffect(()=>{let live=true;(async()=>{
   if(!supabase||!ctx.schoolId||!classId||!term||!session){if(live){setError('Choose a class, term and session in the broadsheet first.');setLoading(false)}return}
-  setLoading(true);setError('');
+  const db=supabase;setLoading(true);setError('');
   const [cl,sc,st,sub,sch]=await Promise.all([
-   supabase.from('schoolpro_classes').select('id,name,arm').eq('id',classId).eq('school_id',ctx.schoolId).maybeSingle(),
-   supabase.from('schoolpro_schools').select('name,address').eq('id',ctx.schoolId).maybeSingle(),
-   supabase.from('schoolpro_students').select('id,first_name,last_name,admission_number,class_name').eq('school_id',ctx.schoolId).eq('class_id',classId).order('last_name'),
-   supabase.from('schoolpro_subjects').select('id,name').eq('school_id',ctx.schoolId),
-   supabase.from('schoolpro_assessment_schemes').select('id,components').eq('school_id',ctx.schoolId),
+   db.from('schoolpro_classes').select('id,name,arm').eq('id',classId).eq('school_id',ctx.schoolId).maybeSingle(),
+   db.from('schoolpro_schools').select('name,address').eq('id',ctx.schoolId).maybeSingle(),
+   db.from('schoolpro_students').select('id,first_name,last_name,admission_number,class_name').eq('school_id',ctx.schoolId).eq('class_id',classId).order('last_name'),
+   db.from('schoolpro_subjects').select('id,name').eq('school_id',ctx.schoolId),
+   db.from('schoolpro_assessment_schemes').select('id,components').eq('school_id',ctx.schoolId),
   ]);
   const problem=cl.error||sc.error||st.error||sub.error||sch.error;
   if(problem||!cl.data){if(live){setError(problem?.message||'Class not found.');setLoading(false)}return}
   const group=(st.data||[]) as Student[];
-  const authz=await supabase.rpc('schoolpro_broadsheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});if(authz.error){if(live){setError(authz.error.message);setLoading(false)}return}const chunks=await Promise.all(group.map(s=>supabase.rpc('schoolpro_printable_result',{p_student:s.id,p_term:term,p_session:session})));const failed=chunks.find(x=>x.error);if(failed?.error){if(live){setError(failed.error.message);setLoading(false)}return}const res={data:chunks.flatMap(x=>x.data||[]),error:null};
+  const authz=await db.rpc('schoolpro_broadsheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});if(authz.error){if(live){setError(authz.error.message);setLoading(false)}return}const chunks=await Promise.all(group.map(s=>db.rpc('schoolpro_printable_result',{p_student:s.id,p_term:term,p_session:session})));const failed=chunks.find(x=>x.error);if(failed?.error){if(live){setError(failed.error.message);setLoading(false)}return}const res={data:chunks.flatMap(x=>x.data||[]),error:null};
   if(!live)return;
-  if(res?.error){setError(res.error.message);setLoading(false);return}
   setSchool(sc.data);setStudents(group);setResults(((res?.data||[]) as Result[]).map(r=>({...r,total_score:Number(r.total_score)})));
   setSubjects(Object.fromEntries((sub.data||[]).map(s=>[s.id,s.name])));setSchemes(Object.fromEntries((sch.data||[]).map(s=>[s.id,s as Scheme])));setLoading(false);
  })();return()=>{live=false}},[ctx.schoolId,classId,term,session]);

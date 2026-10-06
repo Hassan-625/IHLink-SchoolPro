@@ -13,7 +13,8 @@ import { useManagedNavigation } from '@/hooks/useManagedNavigation';
 interface NavItem {
   label: string;
   href: string;
-  children?: { label: string; href: string; description?: string; children?: { label: string; href: string }[] }[];
+  description?: string;
+  children?: NavItem[];
 }
 
 const productNavs: Record<ProductKey, NavItem[]> = {
@@ -140,7 +141,7 @@ interface HeaderProps {
 export function Header({ product = 'corporate', showAnnouncement = true, announcementText }: HeaderProps) {
   const theme = productThemes[product];
   const managedNav = useManagedNavigation(product, 'header');
-  const nav = managedNav.length ? managedNav.filter(x=>!x.parent_id).map(x=>({label:x.label,href:x.href,children:managedNav.filter(y=>y.parent_id===x.id).map(y=>({label:y.label,href:y.href}))})) : productNavs[product];
+  const nav: NavItem[] = managedNav.length ? managedNav.filter(x=>!x.parent_id).map(x=>({label:x.label,href:x.href,children:managedNav.filter(y=>y.parent_id===x.id).map(y=>({label:y.label,href:y.href}))})) : productNavs[product];
   const location = useLocation();
   const { user, profile } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);

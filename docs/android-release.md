@@ -17,3 +17,9 @@ The unsigned APK/AAB cannot be installed or launched as a production release. Th
 ## Required real-device acceptance
 
 Test portrait widths 360/390/412, landscape, keyboard overlap, system back, safe-area insets, accessible text scaling, mobile drawer close/Escape, sign-in expiry, signup verification, role boundaries, data network/type separation, real balances and empty catalogue feedback. Verify receipt upload/download and SchoolPro reports/printing on a device: a successful build does not prove those native workflows. Confirm BillStack settlement/refund and data provisioning only with a real user-operated DataSub transaction. All other IHLink commercial payments remain bank transfer. School student fee payments retain school-owned receiving accounts.
+
+## Owner signing workflow
+
+Run the manual **Android signed release candidate** workflow after securely adding repository secrets ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS and ANDROID_KEY_PASSWORD. These are owner-managed release credentials: never paste them into chat, source files or an issue. Keep an offline backup of the signing identity. The workflow uses the supplied identity, verifies the APK/AAB signatures and records checksums; it does not publish to a store or automatically launch a release. It has not been run with an owner signing identity yet.
+
+Google is currently disabled in the live Supabase Auth settings (verified 2026-10-07). Configure the Google OAuth client ID and client secret securely in Supabase, including the Google callback https://lnqsroyiybutkfngbyge.supabase.co/auth/v1/callback and the exact app callbacks above. After confirming those settings, set repository variable NATIVE_OAUTH_ENABLED=true for the signed candidate workflow and verify Google sign-in on a physical device. Existing preview artifacts have native Google disabled; enabling a server setting alone does not change an already-built APK.

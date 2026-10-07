@@ -79,13 +79,13 @@ export function DashboardLayout({
           <Logo product={product} size="sm" variant={collapsed ? 'icon' : 'full'} />
           <button type="button" aria-label="Close workspace navigation" onClick={() => setMobileOpen(false)} className="md:hidden min-h-11 min-w-11 grid place-items-center rounded-lg"><X className="w-5 h-5" /></button>
           {!collapsed && (
-            <button aria-label="Collapse sidebar" onClick={() => setCollapsed(true)} aria-label="Collapse sidebar" className="hidden md:block text-muted hover:text-ink p-1">
+            <button aria-label="Collapse sidebar" onClick={() => setCollapsed(true)} className="hidden md:block text-muted hover:text-ink p-1">
               <ChevronDown className="w-4 h-4 rotate-90" />
             </button>
           )}
         </div>
         {collapsed && (
-          <button aria-label="Expand sidebar" onClick={() => setCollapsed(false)} aria-label="Expand sidebar" className="hidden md:block mx-auto mt-2 p-1 text-muted hover:text-ink">
+          <button aria-label="Expand sidebar" onClick={() => setCollapsed(false)} className="hidden md:block mx-auto mt-2 p-1 text-muted hover:text-ink">
             <ChevronDown className="w-4 h-4 -rotate-90" />
           </button>
         )}

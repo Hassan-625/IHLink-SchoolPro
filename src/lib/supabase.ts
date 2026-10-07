@@ -1,3 +1,4 @@
+import {isNativeApp,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import { createClient } from "@supabase/supabase-js";
 
 // These are public browser credentials (not the service-role secret). Environment
@@ -14,6 +15,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl!, supabasePublishableKey!, {
       auth: {
         persistSession: true,
+        flowType: isNativeApp()&&nativeOAuthEnabled?'pkce':'implicit',
         autoRefreshToken: true,
         detectSessionInUrl: true,
       },

@@ -163,7 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/verify-email?verified=1`,
+            emailRedirectTo: isNativeApp()&&nativeOAuthEnabled?nativeAuthRedirect:`${isNativeApp()?publicAppOrigin:window.location.origin}/verify-email?verified=1`,
             data: {
               first_name: firstName,
               middle_name: middleName,
@@ -209,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase)
           return "Password recovery is awaiting the Supabase connection.";
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${isNativeApp()?publicAppOrigin:window.location.origin}/auth/update-password`,
+          redirectTo: isNativeApp()&&nativeOAuthEnabled?nativeAuthRedirect+'?flow=recovery':`${isNativeApp()?publicAppOrigin:window.location.origin}/auth/update-password`,
         });
         return error?.message ?? null;
       },

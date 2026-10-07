@@ -4,17 +4,24 @@ app=os.environ['ANDROID_APP_ID']
 explore='Explore services' if app.endswith('datasub') else 'Explore SchoolPro'
 heading='All DataSub Services' if app.endswith('datasub') else 'SchoolPro'
 out=Path('android-delivery/device-checks');out.mkdir(parents=True,exist_ok=True)
-def adb(*args):return subprocess.check_output(['adb',*args],text=True)
+def adb(*args):return subprocess.check_output(['adb',*args],text=True,timeout=25)
 def screen():
- adb('shell','uiautomator','dump','/sdcard/window.xml')
- adb('pull','/sdcard/window.xml',str(out/'current.xml'))
- return ET.parse(out/'current.xml').getroot()
+ try:
+  adb('shell','rm','-f','/sdcard/window.xml')
+  adb('shell','uiautomator','dump','/sdcard/window.xml')
+  adb('pull','/sdcard/window.xml',str(out/'current.xml'))
+  return ET.parse(out/'current.xml').getroot()
+ except (subprocess.SubprocessError,ET.ParseError):
+  return None
 def find(label):
- for _ in range(30):
+ deadline=time.monotonic()+120
+ while time.monotonic()<deadline:
   root=screen()
-  for node in root.iter('node'):
+  for node in ([] if root is None else root.iter('node')):
    if label in (node.attrib.get('text','')+' '+node.attrib.get('content-desc','')):return node
   time.sleep(1)
+ (out/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=25))
+ (out/'failure-logcat.txt').write_text(adb('logcat','-d'))
  raise AssertionError('Expected app screen missing: '+label)
 def tap(node):
  x1,y1,x2,y2=map(int,re.findall(r'\d+',node.attrib['bounds']))

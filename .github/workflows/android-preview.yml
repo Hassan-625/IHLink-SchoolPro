@@ -1,0 +1,51 @@
+name: Android preview APK
+on:
+  push:
+    branches: [main]
+    paths: ['src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-android.mjs','.github/workflows/android-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Prepare native Android project
+        run: |
+          npx cap add android
+          npx cap sync android
+          node scripts/prepare-android.mjs
+      - name: Build installable preview and unsigned release candidates
+        run: |
+          chmod +x android/gradlew
+          cd android
+          ./gradlew --no-daemon assembleDebug assembleRelease bundleRelease
+      - name: Record checksums
+        run: |
+          mkdir -p android-delivery
+          cp android/app/build/outputs/apk/debug/app-debug.apk android-delivery/ihlink-preview.apk
+          cp android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/ihlink-release-unsigned.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab android-delivery/ihlink-release-unsigned.aab
+          sha256sum android-delivery/* > android-delivery/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-preview-${{ github.sha }}
+          path: android-delivery/
+          retention-days: 30
+          if-no-files-found: error

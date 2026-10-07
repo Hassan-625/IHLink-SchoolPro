@@ -63,6 +63,7 @@ jobs:
           disable-animations: true
           script: python scripts/android-smoke.py
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: android-preview-${{ github.sha }}
           path: android-delivery/

@@ -24,7 +24,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const config = roleConfig[role];
   const navigate = useNavigate();
   const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
-  const signIn=async()=>{ if(!supabase){setError('Authentication is not configured.');return;} setLoading(true);setError('');const {error:e}=await supabase.auth.signInWithPassword({email,password});setLoading(false);if(e){setError(e.message);return;}if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard); };
+  const signIn=async()=>{ if(!supabase){setError('Sign-in is temporarily unavailable. Please try again shortly.');return;} setLoading(true);setError('');const {error:e}=await supabase.auth.signInWithPassword({email,password});setLoading(false);if(e){setError('We could not sign you in. Check your email and password, verify your email, and try again.');return;}if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard); };
 
   return (
     <PageShell product="schoolpro" showAnnouncement={false} showHeader={false} showFooter={false}>

@@ -1,0 +1,17 @@
+{
+  "appId": "com.ihlink.schoolpro",
+  "appName": "IHLink SchoolPro",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "LIGHT"
+    }
+  }
+}

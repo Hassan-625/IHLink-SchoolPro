@@ -1,3 +1,4 @@
+import {AuthHandoffPage} from "@/pages/auth/AuthHandoffPage";
 import {useSchoolProContext} from '@/hooks/useSchoolProContext';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { lazy, Suspense, type ReactNode } from "react";
@@ -80,6 +81,7 @@ const studentViews=["results","fees","attendance","timetable","assignments","ann
 
 export default function App(){
  return <Routes>
+  <Route path="/auth/handoff" element={<AuthHandoffPage/>}/>
   <Route path="/" element={<Navigate to="/schoolpro" replace/>}/>
   <Route path="/schoolpro" element={<SchoolProHome/>}/>
   <Route path="/schoolpro/features" element={<SchoolProFeatures/>}/>

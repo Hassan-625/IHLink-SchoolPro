@@ -2,7 +2,7 @@ name: Android preview APK
 on:
   push:
     branches: [main]
-    paths: ['src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-android.mjs','.github/workflows/android-preview.yml']
+    paths: ['src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-android.mjs','scripts/android-smoke.py','.github/workflows/android-preview.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -12,7 +12,7 @@ concurrency:
 jobs:
   android:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,6 +43,25 @@ jobs:
           cp android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/ihlink-release-unsigned.apk
           cp android/app/build/outputs/bundle/release/app-release.aab android-delivery/ihlink-release-unsigned.aab
           sha256sum android-delivery/* > android-delivery/SHA256SUMS.txt
+      - name: Verify installable APK signature
+        run: |
+          signer="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort -V | tail -1)"
+          "$signer" verify --verbose --print-certs android-delivery/ihlink-preview.apk > android-delivery/APK-SIGNATURE.txt
+      - name: Enable emulator acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d
+        env:
+          ANDROID_APP_ID: com.ihlink.schoolpro
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          script: python scripts/android-smoke.py
       - uses: actions/upload-artifact@v4
         with:
           name: android-preview-${{ github.sha }}

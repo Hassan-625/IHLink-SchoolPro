@@ -1,3 +1,4 @@
+import {isNativeApp,nativeAuthRedirect,openNativeOAuth,publicAppOrigin,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import {
   createContext,
   useContext,
@@ -185,10 +186,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const next = sessionStorage.getItem("ih_auth_next");
         const callback = new URL("/schoolpro/login", window.location.origin);
         if (next && next.startsWith("/") && !next.startsWith("//")) callback.searchParams.set("next", next);
-        const { error } = await supabase.auth.signInWithOAuth({
+        if(isNativeApp()&&!nativeOAuthEnabled)return 'Google sign-in is not enabled for this app build. Use email and password.';
+        const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",
-          options: { redirectTo: callback.toString() },
+          options: { redirectTo: isNativeApp()?nativeAuthRedirect:callback.toString(), skipBrowserRedirect:isNativeApp() },
         });
+        if(!error&&isNativeApp()&&data.url){try{await openNativeOAuth(data.url);}catch{return 'Could not open secure Google sign-in. Use email and password.';}}
         return error?.message ?? null;
       },
       async signOut() {
@@ -206,7 +209,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!supabase)
           return "Password recovery is awaiting the Supabase connection.";
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth/update-password`,
+          redirectTo: `${isNativeApp()?publicAppOrigin:window.location.origin}/auth/update-password`,
         });
         return error?.message ?? null;
       },

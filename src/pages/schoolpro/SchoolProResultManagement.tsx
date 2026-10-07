@@ -33,7 +33,7 @@ const features = [
 ];
 
 export function SchoolProResultManagement() {
-  const [managed,setManaged]=useState<any[]>([]);useEffect(()=>{void (async()=>{if(!supabase)return;const r=await supabase.from('platform_feature_content').select('*').eq('platform_key','schoolpro').eq('module_key','results').eq('is_visible',true).order('sort_order');setManaged((r.data||[]).filter((x:any)=>x.is_enabled))})()},[]);
+  const [managed,setManaged]=useState<any[]>([]);useEffect(()=>{void (async()=>{if(!supabase)return;const r=await supabase.from('platform_feature_content').select('*').eq('platform_key','schoolpro').eq('audience','customer').eq('module_key','results').eq('is_visible',true).order('sort_order');setManaged((r.data||[]).filter((x:any)=>x.is_enabled))})()},[]);
   return (
     <PageShell product="schoolpro">
       <section className="py-12 bg-gradient-to-br from-purple-50 to-indigo-50">

@@ -1,3 +1,4 @@
+import {customerAuthError} from '@/lib/customerAuthError';
 import {isNativeApp,nativeAuthRedirect,openNativeOAuth,publicAppOrigin,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import {
   createContext,
@@ -149,16 +150,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: isSupabaseConfigured,
       async signIn(email, password) {
         if (!supabase)
-          return "Authentication is awaiting the Supabase connection.";
+          return "Sign-in is temporarily unavailable. Please try again shortly.";
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        return error?.message ?? null;
+        return error ? customerAuthError(error) : null;
       },
       async signUp({ email, password, firstName, middleName, lastName, phone, sex, newsletterOptIn, service }) {
         if (!supabase)
-          return { error: "Authentication is awaiting the Supabase connection.", needsVerification: false, existingAccount: false };
+          return { error: "Sign-in is temporarily unavailable. Please try again shortly.", needsVerification: false, existingAccount: false };
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
@@ -175,14 +176,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             },
           },
         });
-        if (error) return { error: error.message, needsVerification: false, existingAccount: false };
+        if (error) return { error: customerAuthError(error), needsVerification: false, existingAccount: false };
         const identities = data.user?.identities;
         const existingAccount = Array.isArray(identities) && identities.length === 0;
         return { error: null, needsVerification: !data.session && !existingAccount, existingAccount };
       },
       async signInWithGoogle() {
         if (!supabase)
-          return "Google sign-in is awaiting the Supabase connection.";
+          return "Google sign-in is unavailable. Use your email and password.";
         const next = sessionStorage.getItem("ih_auth_next");
         const callback = new URL("/schoolpro/login", window.location.origin);
         if (next && next.startsWith("/") && !next.startsWith("//")) callback.searchParams.set("next", next);
@@ -192,7 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: { redirectTo: isNativeApp()?nativeAuthRedirect:callback.toString(), skipBrowserRedirect:isNativeApp() },
         });
         if(!error&&isNativeApp()&&data.url){try{await openNativeOAuth(data.url);}catch{return 'Could not open secure Google sign-in. Use email and password.';}}
-        return error?.message ?? null;
+        return error ? customerAuthError(error) : null;
       },
       async signOut() {
         if (supabase) {
@@ -207,11 +208,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async resetPassword(email) {
         if (!supabase)
-          return "Password recovery is awaiting the Supabase connection.";
+          return "Password recovery is temporarily unavailable. Please try again shortly.";
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
           redirectTo: isNativeApp()&&nativeOAuthEnabled?nativeAuthRedirect+'?flow=recovery':`${isNativeApp()?publicAppOrigin:window.location.origin}/auth/update-password`,
         });
-        return error?.message ?? null;
+        return error ? customerAuthError(error) : null;
       },
     }),
     [adminAccess, serviceAccess, loading, profile, session],

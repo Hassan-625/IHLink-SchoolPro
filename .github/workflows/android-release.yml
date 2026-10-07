@@ -1,0 +1,90 @@
+name: Android signed release candidate
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: android-signed-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      VITE_NATIVE_OAUTH_ENABLED: ${{ vars.NATIVE_OAUTH_ENABLED || 'false' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Prepare native project
+        run: |
+          npx cap add android
+          npx cap sync android
+          node scripts/prepare-android.mjs
+      - name: Sign with owner-managed release identity
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          export ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/ihlink-release.jks"
+          trap 'rm -f "$ANDROID_KEYSTORE_PATH"' EXIT
+          python - <<'PY'
+          import base64, os
+          from pathlib import Path
+          required=['ANDROID_KEYSTORE_BASE64','ANDROID_KEYSTORE_PASSWORD','ANDROID_KEY_ALIAS','ANDROID_KEY_PASSWORD']
+          if any(not os.environ.get(name) for name in required):
+              raise SystemExit('Release signing is blocked: configure the four owner-managed Android signing secrets securely.')
+          key=Path(os.environ['ANDROID_KEYSTORE_PATH'])
+          key.write_bytes(base64.b64decode(os.environ['ANDROID_KEYSTORE_BASE64'],validate=True))
+          key.chmod(0o600)
+          gradle=Path('android/app/build.gradle')
+          with gradle.open('a') as f:
+              f.write("""
+          android {
+              signingConfigs {
+                  release {
+                      storeFile file(System.getenv('ANDROID_KEYSTORE_PATH'))
+                      storePassword System.getenv('ANDROID_KEYSTORE_PASSWORD')
+                      keyAlias System.getenv('ANDROID_KEY_ALIAS')
+                      keyPassword System.getenv('ANDROID_KEY_PASSWORD')
+                  }
+              }
+              buildTypes {
+                  release { signingConfig signingConfigs.release }
+              }
+          }
+          """)
+          PY
+          chmod +x android/gradlew
+          (cd android && ./gradlew --no-daemon assembleRelease bundleRelease)
+          mkdir -p android-delivery
+          cp android/app/build/outputs/apk/release/app-release.apk android-delivery/ihlink-release.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab android-delivery/ihlink-release.aab
+          signer="$(rg --files "$ANDROID_HOME/build-tools" -g apksigner | sort -V | tail -1)"
+          test -n "$signer"
+          "$signer" verify --verbose --print-certs android-delivery/ihlink-release.apk > android-delivery/APK-SIGNATURE.txt
+          jarsigner -verify android-delivery/ihlink-release.aab > android-delivery/AAB-SIGNATURE.txt
+          python - <<'PY'
+          from pathlib import Path
+          if 'jar verified.' not in Path('android-delivery/AAB-SIGNATURE.txt').read_text():
+              raise SystemExit('AAB signature verification did not succeed.')
+          PY
+          sha256sum android-delivery/ihlink-release.* > android-delivery/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-signed-release-${{ github.sha }}
+          path: android-delivery/
+          retention-days: 30
+          if-no-files-found: error

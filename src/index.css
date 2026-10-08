@@ -204,3 +204,50 @@ html[data-density="compact"] main .p-8 { padding:1.25rem !important; }
 
 html.native-app { padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); padding-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); padding-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px)); padding-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px)); }
 html.native-app #workspace-navigation { top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); height: calc(100dvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
+
+/* Native app surfaces share tokens; browser pages keep their existing layout. */
+html.native-app { --app-bg:#10151d; --app-card:#1c2531; --app-raised:#263242; --app-ink:#f5f8fc; --app-muted:#b5c4d6; --app-border:#334255; --app-accent:#79c9ff; background:var(--app-bg); color-scheme:dark; }
+html.native-app[data-appearance="light"] { --app-bg:#f1f5f9; --app-card:#fff; --app-raised:#e8eff7; --app-ink:#172033; --app-muted:#526277; --app-border:#cbd5e1; --app-accent:#075ba8; color-scheme:light; }
+html.native-app body, .native-shell { background:var(--app-bg); color:var(--app-ink); }
+.native-shell { min-height:100dvh; padding-bottom:calc(88px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
+.native-header { position:sticky; top:var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); z-index:40; min-height:60px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 16px; background:var(--app-bg); }
+.native-header a, .native-header button { min-height:44px; min-width:44px; display:flex; align-items:center; justify-content:center; }
+.native-nav { position:fixed; bottom:0; left:0; right:0; z-index:40; display:grid; background:var(--app-card); border-top:1px solid var(--app-border); padding:8px 4px max(8px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
+.native-nav a { display:flex; min-height:52px; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:11px; color:var(--app-muted); border-radius:16px; }
+.native-nav a[aria-current="page"] { color:var(--app-accent); background:var(--app-raised); font-weight:800; }
+.app-page { max-width:640px; margin:0 auto; padding:16px; display:grid; gap:24px; }
+.app-card { border:1px solid var(--app-border); border-radius:24px; background:var(--app-card); padding:20px; }
+.app-muted { color:var(--app-muted); }
+.app-action { min-height:48px; display:flex; align-items:center; justify-content:center; gap:8px; padding:12px 16px; border-radius:14px; background:#176ab9; color:white; font-weight:700; }
+.app-action-secondary { background:var(--app-raised); color:var(--app-ink); }
+.app-service { min-height:104px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:12px; border-radius:20px; background:var(--app-card); border:1px solid var(--app-border); padding:12px 6px; font-size:13px; font-weight:700; }
+.app-service svg { color:var(--app-accent); }
+.app-list-row { min-height:64px; display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0; border-bottom:1px solid var(--app-border); }
+.app-list-row:last-child { border-bottom:0; }
+.native-workspace { max-width:720px; margin:0 auto; padding:16px; }
+.native-workspace-title { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:20px; }
+.native-workspace-title h1 { font-size:24px; font-weight:800; }
+html.native-app .bg-white, html.native-app .bg-surface, html.native-app .bg-slate-50, html.native-app .bg-gray-50 { background:var(--app-card) !important; }
+html.native-app .text-ink, html.native-app .text-navy-900, html.native-app .text-slate-900, html.native-app .text-slate-800, html.native-app .text-gray-900 { color:var(--app-ink) !important; }
+html.native-app .text-muted, html.native-app .text-slate-600, html.native-app .text-gray-600 { color:var(--app-muted) !important; }
+html.native-app .border, html.native-app .border-border { border-color:var(--app-border); }
+html.native-app input, html.native-app select, html.native-app textarea { background:var(--app-raised) !important; color:var(--app-ink) !important; border-color:var(--app-border); min-height:48px; font-size:16px; }
+html.native-app input[type="checkbox"], html.native-app input[type="radio"] { min-height:20px; }
+html.native-app :is(.bg-emerald-50,.bg-blue-50,.bg-royal-50) { background:var(--app-raised) !important; }
+html.native-app :is(.text-emerald-600,.text-emerald-700,.text-blue-800,.text-royal-600) { color:var(--app-accent) !important; }
+html.native-app .bg-rose-50 { background:#481b29 !important; }
+html.native-app :is(.text-rose-700,.text-rose-800,.text-rose-900) { color:#ffa7b5 !important; }
+html.native-app .bg-amber-50 { background:#40301a !important; }
+html.native-app :is(.text-amber-700,.text-amber-800) { color:#ffda90 !important; }
+html.native-app [aria-pressed="true"] { border-color:var(--app-accent) !important; }
+html.native-app .purchase-plans { grid-template-columns:repeat(2,minmax(0,1fr)); }
+html.native-app .purchase-networks { grid-template-columns:repeat(auto-fit,minmax(76px,1fr)); }
+html.native-app .purchase-types { flex-wrap:nowrap; overflow-x:auto; padding-bottom:8px; }
+html.native-app .purchase-types button { flex-shrink:0; }
+html.native-app :focus-visible { outline:3px solid var(--app-accent); outline-offset:3px; }
+@media (prefers-reduced-motion:reduce) { html.native-app *,html.native-app *::before,html.native-app *::after { animation:none !important; transition:none !important; } }
+
+html.native-app[data-appearance="light"] .bg-rose-50 {background:#fff1f2 !important;}
+html.native-app[data-appearance="light"] :is(.text-rose-700,.text-rose-800,.text-rose-900) {color:#be123c !important;}
+html.native-app[data-appearance="light"] .bg-amber-50 {background:#fffbeb !important;}
+html.native-app[data-appearance="light"] :is(.text-amber-700,.text-amber-800) {color:#92400e !important;}

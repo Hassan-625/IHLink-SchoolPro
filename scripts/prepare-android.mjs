@@ -1,4 +1,4 @@
-import {readFileSync,writeFileSync,copyFileSync,existsSync,readdirSync} from 'node:fs';
+import {readFileSync,writeFileSync,copyFileSync,existsSync,readdirSync,mkdirSync,rmSync} from 'node:fs';
 const config=JSON.parse(readFileSync('capacitor.config.json','utf8'));
 if(!['com.ihlink.datasub','com.ihlink.schoolpro'].includes(config.appId))throw new Error('Unknown app identity');
 const manifest='android/app/src/main/AndroidManifest.xml';
@@ -12,6 +12,14 @@ const buildNumber=Number(process.env.GITHUB_RUN_NUMBER||1);
 if(!Number.isInteger(buildNumber)||buildNumber<1||buildNumber>2100000000)throw new Error('Invalid build number');
 source=source.replace(/versionCode\s+\d+/,`versionCode ${buildNumber}`).replace(/versionName\s+"[^"]+"/,`versionName "1.0.0-preview.${buildNumber}"`);
 writeFileSync(gradle,source);
-
-const brand='public/brand/ihlink-icon.png';
-if(existsSync(brand)){for(const dir of readdirSync('android/app/src/main/res').filter(x=>/^mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)$/.test(x))){for(const name of ['ic_launcher.png','ic_launcher_round.png','ic_launcher_foreground.png'])copyFileSync(brand,'android/app/src/main/res/'+dir+'/'+name);}}
+// Keep the original emblem. Legacy icons and adaptive layers have different bounds.
+const res='android/app/src/main/res',brand='public/brand/ihlink-original.jpg';
+if(!existsSync(brand))throw new Error('Brand artwork missing');
+mkdirSync(`${res}/drawable-nodpi`,{recursive:true});copyFileSync(brand,`${res}/drawable-nodpi/ihlink_emblem.jpg`);
+for(const dir of readdirSync(res).filter(x=>/^mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)$/.test(x)))for(const name of ['ic_launcher.png','ic_launcher_round.png','ic_launcher_foreground.png'])rmSync(`${res}/${dir}/${name}`,{force:true});
+mkdirSync(`${res}/mipmap-anydpi`,{recursive:true});mkdirSync(`${res}/mipmap-anydpi-v26`,{recursive:true});
+const legacy=`<?xml version="1.0" encoding="utf-8"?><layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item><shape android:shape="rectangle"><solid android:color="#FFFFFF"/></shape></item><item android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp"><bitmap android:src="@drawable/ihlink_emblem" android:gravity="fill" android:filter="true"/></item></layer-list>`;
+for(const name of ['ic_launcher','ic_launcher_round'])writeFileSync(`${res}/mipmap-anydpi/${name}.xml`,legacy);
+// 66dp centred inside Android's 108dp adaptive canvas keeps the mark in its safe zone.
+writeFileSync(`${res}/mipmap-anydpi/ic_launcher_foreground.xml`,`<?xml version="1.0" encoding="utf-8"?><layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item android:width="66dp" android:height="66dp" android:gravity="center"><bitmap android:src="@drawable/ihlink_emblem" android:gravity="fill" android:filter="true"/></item></layer-list>`);
+for(const name of ['ic_launcher','ic_launcher_round'])writeFileSync(`${res}/mipmap-anydpi-v26/${name}.xml`,`<?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@android:color/white"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>`);

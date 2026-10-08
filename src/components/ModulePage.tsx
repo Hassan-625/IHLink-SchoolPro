@@ -1,3 +1,4 @@
+import {isNativeApp} from '@/lib/nativeAuth';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download, Plus, Search } from 'lucide-react';
 import { DashboardLayout, type SidebarSection } from './Sidebar';
@@ -30,14 +31,14 @@ export function ModulePage({ product, sections, title, eyebrow, description, use
     <DashboardLayout product={product} sections={sections} userName={userName} userRole={userRole} pageTitle={title}
       rightActions={onPrimaryAction ? <Button size="sm" onClick={onPrimaryAction} leftIcon={<Plus className="w-4 h-4" />}>{primaryAction}</Button> : undefined}>
       <div className="space-y-6">
-        <section className="rounded-2xl bg-gradient-to-r from-navy-900 via-royal-700 to-royal-500 p-7 text-white overflow-hidden relative">
+        {!isNativeApp()&&<section className="rounded-2xl bg-gradient-to-r from-navy-900 via-royal-700 to-royal-500 p-7 text-white overflow-hidden relative">
           <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-white/10" />
           <div className="relative max-w-3xl">
             {eyebrow && <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70 mb-2">{eyebrow}</p>}
             <h2 className="text-2xl font-extrabold">{title}</h2>
             <p className="mt-2 text-sm text-white/80 leading-relaxed">{description}</p>
           </div>
-        </section>
+        </section>}
 
         {metrics.length > 0 && <section className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           {metrics.map((metric) => <Card key={metric.label} padding="sm">

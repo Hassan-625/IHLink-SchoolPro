@@ -1,0 +1,52 @@
+name: iOS simulator preparation
+on:
+  push:
+    branches: [main]
+    paths: ['src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-ios.py','.github/workflows/ios-preview.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-preview-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Select Xcode 26 or newer
+        run: |
+          chosen="$(find /Applications -maxdepth 1 -name 'Xcode_26*.app' | sort -V | tail -1)"
+          test -n "$chosen"
+          sudo xcode-select -s "$chosen/Contents/Developer"
+          xcodebuild -version
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - name: Prepare iOS app
+        run: |
+          npx cap add ios --packagemanager SPM
+          npx cap sync ios
+          python3 scripts/prepare-ios.py
+      - name: Compile unsigned simulator app
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath ios-derived CODE_SIGNING_ALLOWED=NO build
+      - name: Package simulator build and native project
+        run: |
+          mkdir ios-delivery
+          ditto -c -k --sequesterRsrc --keepParent ios-derived/Build/Products/Debug-iphonesimulator/App.app ios-delivery/ios-simulator-app.zip
+          ditto -c -k --sequesterRsrc --keepParent ios ios-delivery/ios-project.zip
+          cp ios-store-assets/* ios-delivery/
+          shasum -a 256 ios-delivery/* > ios-delivery/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: ios-preparation-${{ github.sha }}
+          path: ios-delivery/
+          retention-days: 30
+          if-no-files-found: error

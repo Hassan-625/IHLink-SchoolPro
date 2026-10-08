@@ -9,7 +9,7 @@ const welcomeKey='ihlink.schoolpro.mobile.welcome.v1';
 const processed=new Set<string>();
 export function NativeMobileShell({children}:{children:ReactNode}){
  const {user,loading}=useAuth();const navigate=useNavigate();const [welcome,setWelcome]=useState(()=>isNativeApp()&&localStorage.getItem(welcomeKey)!=='done'),[error,setError]=useState('');
- useEffect(()=>{if(!isNativeApp())return;document.documentElement.classList.add('native-app');let disposed=false;const listeners:Promise<{remove:()=>Promise<void>}>[]=[];
+ useEffect(()=>{if(!isNativeApp())return;document.documentElement.classList.add('native-app');if(!localStorage.getItem('ihlink-appearance')){localStorage.setItem('ihlink-appearance','dark');document.documentElement.dataset.appearance='dark';}let disposed=false;const listeners:Promise<{remove:()=>Promise<void>}>[]=[];
   async function callback(url:string){const code=nativeCallbackCode(url);if(!code||processed.has(code)||!supabase)return;processed.add(code);if(processed.size>16)processed.delete(processed.values().next().value!);try{const result=await supabase.auth.exchangeCodeForSession(code);if(result.error)throw result.error;if(disposed)return;localStorage.setItem(welcomeKey,'done');setWelcome(false);const next=sessionStorage.getItem('ih_auth_next');navigate(new URL(url).searchParams.get('flow')==='recovery'?'/auth/update-password':next&&next.startsWith('/schoolpro')?next:'/schoolpro',{replace:true});void Browser.close().catch(()=>{});}catch{if(!disposed)setError('App sign-in could not finish. Return to Sign in and try again.');}}
   listeners.push(NativeApp.addListener('appUrlOpen',event=>{void callback(event.url);}));
   void NativeApp.getLaunchUrl().then(result=>{if(result?.url&&!disposed)void callback(result.url);});

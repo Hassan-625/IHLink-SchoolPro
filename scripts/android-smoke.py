@@ -53,5 +53,9 @@ assert root is not None, 'App navigation snapshot missing'
 texts=[n.attrib.get('text','') for n in root.iter('node')]
 assert all(any(label==text for text in texts) for label in ['Home','Account']), 'Bottom navigation missing'
 assert not any('© 2026 IHLink' in text for text in texts), 'Website footer present in app'
+adb('shell','input','keyevent','KEYCODE_HOME')
+(out/'launcher.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+adb('shell','am','start','-W','-n',app+'/.MainActivity')
+find('Home')
 (out/'RESULT.txt').write_text('PASS: install, launch, welcome at 360/390/412, Explore and restart. API35 emulator; no real-device or signed-production certification.\n')
 print((out/'RESULT.txt').read_text())

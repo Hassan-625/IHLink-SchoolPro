@@ -1,3 +1,5 @@
+import {useSchoolProContext} from '@/hooks/useSchoolProContext';
+import {canManageSchoolBilling,schoolDashboard} from '@/lib/schoolAccess';
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useSchoolProEntitlements } from "@/hooks/useSchoolProEntitlements";
@@ -13,12 +15,14 @@ const labels: Record<EntitlementKey, string> = {
 };
 
 export function SchoolProEntitlementGate({ feature, children }: { feature: EntitlementKey; children: ReactNode }) {
+  const ctx=useSchoolProContext();
   const { profile } = useAuth();
-  const { entitlements, loading } = useSchoolProEntitlements();
+  const { entitlements, loading, error } = useSchoolProEntitlements();
 
   if (profile?.role === "super_admin") return <>{children}</>;
 
   if (loading) return <div className="min-h-[50vh] grid place-items-center text-sm text-muted">Checking SchoolPro subscription…</div>;
+  if(error)return <p role="alert" className="p-6">School access could not be checked. Please try again.</p>;
   if (entitlements?.active && entitlements?.[feature]) return <>{children}</>;
 
   return (
@@ -26,11 +30,11 @@ export function SchoolProEntitlementGate({ feature, children }: { feature: Entit
       <div className="w-full max-w-lg rounded-2xl border bg-white p-8 text-center shadow-sm">
         <h1 className="text-2xl font-bold text-slate-900">{labels[feature]} is not enabled for this school</h1>
         <p className="mt-3 text-sm leading-6 text-slate-600">
-          Your account may have permission to use this module, but the school's current SchoolPro plan/feature entitlement does not enable it. Your existing school data is unchanged. A Proprietor/Administrator can review the subscription, while IHLink Super Admin can enable a school-specific feature override.
+          {canManageSchoolBilling(ctx.role)?'This feature is unavailable on your school’s current plan. Review the subscription for available options.':'Please contact your school administrator about access to this feature.'}
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link to="/schoolpro/subscription" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Review school subscription</Link>
-          <Link to="/schoolpro/admin-dashboard" className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700">Back to dashboard</Link>
+          {canManageSchoolBilling(ctx.role)&&<Link to="/schoolpro/subscription" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white">Review school subscription</Link>}
+          <Link to={schoolDashboard(ctx.role)} className="rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700">Back to dashboard</Link>
         </div>
       </div>
     </div>

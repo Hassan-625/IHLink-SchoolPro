@@ -1,3 +1,5 @@
+import {Link} from 'react-router-dom';
+import {canManageSchoolBilling,schoolDashboard} from '@/lib/schoolAccess';
 import {BankTransferPayments} from '@/components/BankTransferPayments';
 import {useEffect,useRef,useState} from "react";
 import {ModulePage} from "@/components/ModulePage";
@@ -8,13 +10,20 @@ import {useAuth} from "@/context/AuthContext";
 import {useSchoolProContext} from "@/hooks/useSchoolProContext";
 const money=(n:number)=>new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(n);
 export function SchoolProSubscription(){
+ const ctx=useSchoolProContext();
+ if(ctx.loading)return <p role="status" className="p-6">Checking school access…</p>;
+ if(ctx.error)return <p role="alert" className="p-6">School access could not be checked. Please try again.</p>;
+ if(!canManageSchoolBilling(ctx.role))return <main className="mx-auto max-w-lg space-y-4 p-6"><h1 className="text-xl font-bold">School subscription</h1><p>Your school administrator manages this subscription. Please contact them for help.</p><Link to={schoolDashboard(ctx.role)} className="inline-block rounded-xl border px-4 py-3">Back to your dashboard</Link></main>;
+ return <SchoolBillingWorkspace/>;
+}
+function SchoolBillingWorkspace(){
  const {profile,user}=useAuth(),ctx=useSchoolProContext();
  const [intents,setIntents]=useState<any[]>([]);const [plans,setPlans]=useState<any[]>([]),[sub,setSub]=useState<any>(null),[msg,setMsg]=useState(""),[error,setError]=useState(""),[loading,setLoading]=useState(true),[busy,setBusy]=useState("");
  const schoolRef=useRef(ctx.schoolId);schoolRef.current=ctx.schoolId;
  useEffect(()=>{
   let current=true;setPlans([]);setIntents([]);setSub(null);setMsg("");setError("");setBusy("");setLoading(true);
   if(ctx.loading)return()=>{current=false;};
-  if(!supabase||!ctx.schoolId||!user){setError(ctx.error||(!supabase?"Supabase is not configured.":"Register or select your school to manage its subscription."));setLoading(false);return()=>{current=false;};}
+  if(!supabase||!ctx.schoolId||!user){setError(ctx.error||(!supabase?"School billing is temporarily unavailable.":"Register or select your school to manage its subscription."));setLoading(false);return()=>{current=false;};}
   const db=supabase,school=ctx.schoolId;
   void Promise.all([
    db.from("schoolpro_subscription_catalog").select("*").eq("active",true).order("annual_price"),
@@ -23,8 +32,8 @@ export function SchoolProSubscription(){
   ]).then(([p,s,i])=>{
    if(!current)return;
    setPlans(p.data||[]);setSub(s.data);setIntents(i.data||[]);
-   setError(p.error?.message||s.error?.message||i.error?.message||"");setLoading(false);
-  }).catch(e=>{if(current){setError(e?.message||"Subscription data could not be loaded.");setLoading(false);}});
+   setError(p.error||s.error||i.error?"Subscription details could not be loaded. Please try again.":"");setLoading(false);
+  }).catch(e=>{if(current){setError("Subscription details could not be loaded. Please try again.");setLoading(false);}});
   return()=>{current=false;};
  },[ctx.schoolId,ctx.loading,ctx.error,user?.id]);
  async function pay(id:string){
@@ -35,7 +44,7 @@ export function SchoolProSubscription(){
    if(requestError||!data)throw requestError||new Error("No subscription instruction was created.");
    if(schoolRef.current===school){setIntents(current=>[data,...current.filter(x=>x.id!==data.id)]);setMsg("Annual subscription instruction ready. Transfer the exact amount to either company bank below, then submit your receipt. Finance verification activates or renews the subscription.");}
 
-  }catch(e){if(schoolRef.current===school)setMsg(e instanceof Error?e.message:"Payment instructions could not be obtained.");}
+  }catch(e){if(schoolRef.current===school)setMsg("Payment instructions could not be prepared. Please try again or contact support.");}
   finally{if(schoolRef.current===school)setBusy("");}
  }
  const unavailable=Boolean(error);

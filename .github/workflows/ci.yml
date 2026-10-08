@@ -17,4 +17,5 @@ jobs:
       - run: npm run typecheck
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
+      - run: node scripts/school-document-design-test.mjs
       - run: npm run build

@@ -1,0 +1,26 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import ts from 'typescript';
+import {PDFDocument,StandardFonts,rgb,PDFName} from 'pdf-lib';
+import {randomUUID} from 'node:crypto';
+import {inflateSync} from 'node:zlib';
+const root=new URL('../',import.meta.url);
+function compile(path){return ts.transpileModule(readFileSync(new URL(path,root),'utf8').replace(/^import .*?;\n/gm,''),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.CommonJS}}).outputText;}
+const exports={};new Function('exports','PDFDocument',compile('supabase/functions/schoolpro-render-document/design.ts'))(exports,PDFDocument);
+const source=await PDFDocument.create();source.addPage([595.28,841.89]).drawText('School certificate background');const sourceBytes=await source.save();
+const image=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aZxkAAAAASUVORK5CYII=','base64'));
+const school='00000000-0000-4000-8000-000000000001';
+let issue,stored,uploads,finalized,authenticated=true,handler;
+const settings={orientation:'landscape',paperSize:'A4',logo_storage_path:school+'/logo.png',signature_1_storage_path:school+'/first.png',signature_2_storage_path:school+'/second.png',signatory_1_name:'First Signatory',signatory_1_title:'Principal',signatory_2_name:'Second Signatory',signatory_2_title:'Director'};
+const mappings=[{key:'school_logo',x:40,y:30,width:80,height:60},{key:'principal_signature',x:40,y:400,width:120,height:45},{key:'signature_2',x:330,y:400,width:120,height:45},{key:'signatory_1_name',x:40,y:460},{key:'signatory_1_title',x:40,y:480},{key:'signatory_2_name',x:330,y:460},{key:'signatory_2_title',x:330,y:480}];
+function reset(orientation='landscape'){uploads=0;finalized=0;stored=null;issue={id:randomUUID(),school_id:school,status:'draft',serial_number:'DOC-TEST',payload:{design_snapshot:{settings:{...settings,orientation},field_mappings:mappings,storage_path:school+'/source.pdf',source_format:'pdf',mime_type:'application/pdf'}},schoolpro_document_templates:{settings:{signatory_1_name:'Changed after draft'},field_mappings:[],storage_path:school+'/source.pdf',source_format:'pdf'}};}
+const sb={auth:{getUser:async()=>({data:{user:authenticated?{id:'test-owner'}:null}})},from(table){const q={select(){return q},eq(){return q},single:async()=>({data:table==='schoolpro_document_issues'?issue:{id:school,name:'Test School',code:'TEST',address:'School address'},error:null})};return q},storage:{from(){return{download:async path=>({data:new Blob([path.endsWith('.pdf')?sourceBytes:image]),error:null}),upload:async(path,blob)=>{uploads++;stored=new Uint8Array(await blob.arrayBuffer());return{error:null}},remove:async()=>({error:null}),createSignedUrl:async()=>({data:{signedUrl:'https://example.invalid/private-output'},error:null})}}},rpc:async()=>{finalized++;return{error:null}}};
+const Deno={env:{get:()=> 'test-placeholder'},serve:fn=>{handler=fn}};
+new Function('Deno','createClient','PDFDocument','StandardFonts','rgb','orientDocument','drawDesignImage','crypto',compile('supabase/functions/schoolpro-render-document/index.ts'))(Deno,()=>sb,PDFDocument,StandardFonts,rgb,exports.orientDocument,exports.drawDesignImage,{randomUUID});
+async function invoke(){return handler(new Request('https://example.invalid',{method:'POST',headers:{Authorization:'Bearer test-session'},body:JSON.stringify({issue_id:issue.id})}));}
+for(const orientation of ['landscape','portrait']){reset(orientation);const response=await invoke();assert.equal(response.status,200,await response.clone().text());assert.equal(uploads,1);assert.equal(finalized,1);const pdf=await PDFDocument.load(stored);const page=pdf.getPage(0);assert.equal(page.getWidth()>page.getHeight(),orientation==='landscape');const streams=page.node.Contents().asArray().map(ref=>{const stream=pdf.context.lookup(ref);try{return inflateSync(stream.contents).toString()}catch{return Buffer.from(stream.contents).toString()}}).join('');for(const text of ['First Signatory','Principal','Second Signatory','Director'])assert.ok(streams.includes(Buffer.from(text).toString('hex').toUpperCase()),text+' is printed from the saved design snapshot');assert.ok(!streams.includes(Buffer.from('Changed after draft').toString('hex').toUpperCase()));const resources=page.node.Resources();assert.equal(resources.lookup(PDFName.of('XObject')).keys().length,4,'background and three school images embedded');assert.equal(new TextDecoder().decode(stored).includes('https://'),false,'private signed URLs are not embedded');}
+reset();issue.status='issued';issue.output_storage_path=school+'/generated/existing.pdf';assert.equal((await invoke()).status,200);assert.equal(uploads,0,'issued document must not be overwritten');assert.equal(finalized,0);
+reset();issue.status='revoked';assert.equal((await invoke()).status,400);assert.equal(uploads,0);
+reset();issue.payload.design_snapshot.settings.logo_storage_path='other-school/logo.png';assert.equal((await invoke()).status,400);assert.equal(uploads,0,'cross-school assets rejected');
+reset();authenticated=false;assert.equal((await invoke()).status,400);assert.equal(uploads,0);
+console.log('PASS: portrait/landscape PDF pages, logo and two signatures, snapshot settings, immutable issued documents, revoked documents and school asset boundaries.');

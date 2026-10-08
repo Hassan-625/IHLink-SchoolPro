@@ -1,3 +1,6 @@
+import {NativeAppShell} from '@/components/NativeAppShell';
+import {NativeAppHome} from '@/components/NativeAppHome';
+import {isNativeApp} from '@/lib/nativeAuth';
 import {AuthHandoffPage} from "@/pages/auth/AuthHandoffPage";
 import {useSchoolProContext} from '@/hooks/useSchoolProContext';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
@@ -80,10 +83,10 @@ const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
 const studentViews=["results","fees","attendance","timetable","assignments","announcements","library"] as const;
 
 export default function App(){
- return <Routes>
+ return <NativeAppShell><Routes>
   <Route path="/auth/handoff" element={<AuthHandoffPage/>}/>
   <Route path="/" element={<Navigate to="/schoolpro" replace/>}/>
-  <Route path="/schoolpro" element={<SchoolProHome/>}/>
+  <Route path="/schoolpro" element={isNativeApp()?<NativeAppHome/>:<SchoolProHome/>}/>
   <Route path="/schoolpro/features" element={<SchoolProFeatures/>}/>
   <Route path="/schoolpro/result-management" element={<SchoolProResultManagement/>}/>
   <Route path="/schoolpro/pricing" element={<SchoolProPricing/>}/>
@@ -154,5 +157,5 @@ export default function App(){
   <Route path="/register" element={<Navigate to="/schoolpro/register" replace/>}/>
   <Route path="/admin/access-denied" element={<Navigate to="/schoolpro/access-denied" replace/>}/>
   <Route path="*" element={<Navigate to="/schoolpro" replace/>}/>
- </Routes>;
+ </Routes></NativeAppShell>;
 }

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageShell } from '@/components/PageShell';
 import { supabase } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
@@ -23,8 +23,25 @@ const roleConfig = {
 export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const config = roleConfig[role];
   const navigate = useNavigate();
-  const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
-  const signIn=async()=>{ if(!supabase){setError('Sign-in is temporarily unavailable. Please try again shortly.');return;} setLoading(true);setError('');const {error:e}=await supabase.auth.signInWithPassword({email,password});setLoading(false);if(e){setError('We could not sign you in. Check your email and password, verify your email, and try again.');return;}if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard); };
+  const [schoolCode,setSchoolCode]=useState(''); const [challenge,setChallenge]=useState(''); const [confirm,setConfirm]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
+  useEffect(()=>{setChallenge('');setEmail('');setPassword('');setConfirm('');setSchoolCode('');setError('');},[role]);
+  const signIn=async()=>{
+    if(!supabase){setError('Sign in is temporarily unavailable. Please try again.');return;}
+    if(challenge&&(password.length<10||password!==confirm)){setError('Use at least 10 characters and confirm the same password.');return;}
+    setLoading(true);setError('');
+    try{
+      if(role==='student'){
+        const {data,error}=await supabase.functions.invoke('schoolpro-student-login',{body:{schoolCode,admissionNumber:email,password,...(challenge?{challenge}:{})}});
+        if(error||data?.error){setError(data?.error||'Sign in could not be completed. Check your details or contact your school.');return;}
+        if(data?.requiresPasswordChange){setChallenge(data.challenge);setPassword('');return;}
+        if(!data?.session){setError('Sign in could not be completed. Please try again.');return;}
+        const {error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError){setError('Sign in could not be completed. Please try again.');return;}
+      }else{
+        const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error){setError('Your email or password was not recognised. Please try again.');return;}
+      }
+      if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard);
+    }catch{setError('Sign in could not be completed. Please try again.');}finally{setLoading(false);}
+  };
 
   return (
     <PageShell product="schoolpro" showAnnouncement={false} showHeader={false} showFooter={false}>
@@ -48,28 +65,28 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         <div className="col-span-12 lg:col-span-7 flex items-center justify-center p-10 bg-white">
           <div className="w-full max-w-sm">
             <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">{config.title}</Badge>
-            <h1 className="text-2xl font-extrabold text-ink mb-2">Welcome Back</h1>
-            <p className="text-sm text-muted mb-6">Sign in to your {role} account.</p>
+            <h1 className="text-2xl font-extrabold text-ink mb-2">{challenge?'Choose your password':'Welcome Back'}</h1>
+            <p className="text-sm text-muted mb-6">{challenge?'Set your own password before opening your school records.':role==='student'?'Use your school code and admission number. Your surname is the first-time password.':`Sign in to your ${role} account.`}</p>
 
             <div className="space-y-4">
-              <Input label="Email" value={email} onChange={(e)=>setEmail(e.target.value)} type="email" placeholder="you@example.com" leftIcon={<Mail className="w-4 h-4" />} themeClass="focus:ring-purple-500/20 focus:border-purple-500" />
+              {role==='student'&&<Input label="School code" value={schoolCode} disabled={Boolean(challenge)} onChange={e=>setSchoolCode(e.target.value)} placeholder="Code supplied by your school"/>}<Input label={role==='student'?'Admission number':'Email'} disabled={Boolean(challenge)} value={email} onChange={(e)=>setEmail(e.target.value)} type={role==='student'?'text':'email'} placeholder={role==='student'?'School admission number':'you@example.com'} leftIcon={<Mail className="w-4 h-4" />} themeClass="focus:ring-purple-500/20 focus:border-purple-500" />
               <div>
-                <label className="block text-sm font-semibold text-ink mb-1.5">Password</label>
+                <label className="block text-sm font-semibold text-ink mb-1.5">{challenge?'New password':'Password'}</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
                   <input value={password} onChange={(e)=>setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
 
                 </div>
               </div>
-              <div className="flex items-center justify-between">
+              {challenge&&<><Input label="Confirm new password" type="password" value={confirm} onChange={e=>setConfirm(e.target.value)}/><button type="button" className="min-h-11 text-sm underline" onClick={()=>{setChallenge('');setPassword('');setConfirm('');setError('');}}>Restart activation</button></>}<div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} className="w-4 h-4 rounded border-border text-purple-500" /> <span className="text-ink">Remember me</span></label>
-                <Link to="/reset-password" className="text-sm font-semibold text-purple-600 hover:underline">Forgot password?</Link>
+                {role!=='student'&&<Link to="/reset-password" className="text-sm font-semibold text-purple-600 hover:underline">Forgot password?</Link>}{role==='student'&&<span className="text-xs text-muted">Need a reset? Contact your school.</span>}
               </div>
-              {error&&<p className="text-sm text-red-600">{error}</p>}<Button fullWidth size="lg" disabled={loading||!email||!password} themeClass="bg-purple-600 hover:bg-purple-700" rightIcon={<ArrowRight className="w-4 h-4" />} onClick={signIn}>{loading?'Signing in…':'Sign In'}</Button>
+              {error&&<p className="text-sm text-red-600">{error}</p>}<Button fullWidth size="lg" disabled={loading||!email||!password||(role==='student'&&!schoolCode)} themeClass="bg-purple-600 hover:bg-purple-700" rightIcon={<ArrowRight className="w-4 h-4" />} onClick={signIn}>{loading?'Please wait…':challenge?'Activate account':'Sign In'}</Button>
             </div>
 
             <div className="mt-6 text-center text-sm text-muted">
-              Don't have an account? <Link to="/schoolpro/register" className="font-semibold text-purple-600 hover:underline">Register your school</Link>
+              {role==='school'?<>Proprietor or director? <Link to="/schoolpro/register" className="font-semibold text-purple-600 hover:underline">Register your school</Link></>:<p>{role==='student'?'Your school creates your student record.':'Ask your school proprietor or director for an email invitation.'}</p>}
             </div>
 
             <div className="mt-8 pt-6 border-t border-border flex items-center justify-center gap-4 text-xs text-muted">

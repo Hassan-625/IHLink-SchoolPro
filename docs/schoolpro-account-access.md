@@ -1,0 +1,15 @@
+# SchoolPro account access — 8 October 2026
+
+Only proprietors/directors submit a new school onboarding request. Invited staff, linked parents and linked students cannot create a separate school directly or submit authenticated onboarding requests. Anonymous requests remain reviewed requests, not active schools.
+
+School leaders invite staff using email and a school role. New accounts receive an activation email at /auth/update-password; existing accounts join the selected school without resetting their passwords. Re-inviting cannot silently change an existing school role or the owner. Administrators can invite through delegated school access.
+
+Parents are invited by email while selecting a student and relationship. Existing parent accounts link immediately; new accounts receive an activation email. Each link checks that student and school match, including direct database writes. A parent can be linked to multiple children. Access remains limited by existing school permissions, RLS and activation rules.
+
+Students use school code plus admission number. For an unlinked active student, the surname is a temporary first-activation credential. This produces an opaque, hashed, 10-minute single-use challenge without a session. A password of at least 10 characters different from the surname must be chosen before creating/linking the account and returning a session. Subsequent sign-in uses the chosen password; existing linked accounts retain their existing passwords. The synthetic internal email is hidden on the profile. Account and client-address attempt limits are persisted server-side. Student recovery through school leaders needs further work; do not use email recovery for generated student identities.
+
+The native home uses the existing permission-filtered school, teacher, parent and student menus as a compact card grid. Teachers get authorized classes, attendance, scores, assignments, lesson notes and other available modules; students/parents get their portal pages. Existing module and subscription gates still apply. The website keeps its full layout.
+
+Verified: isolated PostgreSQL owner/teacher registration restrictions, service-only login RPC access, expiry, replay and private challenge-table access, foreign-school guardian rejection; frontend typecheck and production build. Security advisor review: new login tables intentionally have RLS and no client policies; existing project warnings remain. No new real invitations were sent, no real student account was activated, and no live school result was modified for these checks. Ordinary-role email delivery, complete results/attendance recording, physical-device use and production signing/store review remain acceptance gates.
+
+Applied migration: schoolpro_invitation_only_workspace_and_student_activation. Source SQL is docs/sql/schoolpro-invitation-access.sql. Functions: invite-school-staff v12 (JWT), schoolpro-student-login v1 (custom first-time and password authentication; no JWT because it is a sign-in endpoint).

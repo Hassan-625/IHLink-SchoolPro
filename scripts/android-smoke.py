@@ -27,6 +27,7 @@ def tap(node):
  x1,y1,x2,y2=map(int,re.findall(r'\d+',node.attrib['bounds']))
  adb('shell','input','tap',str((x1+x2)//2),str((y1+y2)//2))
 adb('install','-r','android-delivery/ihlink-preview.apk')
+adb('logcat','-c')
 adb('shell','am','start','-W','-n',app+'/.MainActivity')
 for width in [360,390,412]:
  adb('shell','wm','size',str(width)+'x800');adb('shell','wm','density','160')
@@ -37,9 +38,20 @@ find(heading)
 (out/'explore.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 adb('shell','am','force-stop',app)
 adb('shell','am','start','-W','-n',app+'/.MainActivity')
-find('Data, airtime and bills, made simple.' if app.endswith('datasub') else 'Run Your School Smarter')
-assert not any(explore in n.attrib.get('text','') for n in screen().iter('node'))
+find('Your DataSub account' if app.endswith('datasub') else 'Run Your School Smarter')
+assert not any('Welcome to your school community' in n.attrib.get('text','') for n in screen().iter('node'))
 (out/'restart.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
-assert 'FATAL EXCEPTION' not in adb('logcat','-d','-s','AndroidRuntime:E')
+runtime=adb('logcat','-d','-s','AndroidRuntime:E')
+(out/'android-runtime.txt').write_text(runtime)
+for block in re.split(r'(?=^.*FATAL EXCEPTION)',runtime,flags=re.MULTILINE):
+ if 'FATAL EXCEPTION' not in block:continue
+ process=re.search(r'Process:\s*([^,\s]+)',block)
+ assert process is not None, 'Unidentified process crash'
+ assert process.group(1)!=app and not process.group(1).startswith(app+':'), 'Application process crashed'
+root=screen()
+assert root is not None, 'App navigation snapshot missing'
+texts=[n.attrib.get('text','') for n in root.iter('node')]
+assert all(any(label==text for text in texts) for label in ['Home','Account']), 'Bottom navigation missing'
+assert not any('© 2026 IHLink' in text for text in texts), 'Website footer present in app'
 (out/'RESULT.txt').write_text('PASS: install, launch, welcome at 360/390/412, Explore and restart. API35 emulator; no real-device or signed-production certification.\n')
 print((out/'RESULT.txt').read_text())

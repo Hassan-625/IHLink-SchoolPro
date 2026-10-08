@@ -10,9 +10,9 @@ export function schoolDashboard(role:string){
   default:return '/schoolpro';
  }
 }
-export function schoolDashboardAllowed(path:string,role:string){
+export function schoolDashboardAllowed(path:string,role:string,globalRole?:string){
  const normalized=schoolRole(role);
- if(normalized==='super_administrator')return true;
+ if(globalRole==='super_admin'||normalized==='super_administrator')return true;
  const management=['proprietor','administrator','bursar','accountant'];
  switch(path){
   case '/schoolpro/proprietor-dashboard':return normalized==='proprietor';

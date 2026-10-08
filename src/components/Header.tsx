@@ -1,3 +1,4 @@
+import {isNativeApp} from '@/lib/nativeAuth';
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ChevronDown, Search, Bell, Menu, X, Phone, Mail, MapPin, ArrowRight } from 'lucide-react';
@@ -152,6 +153,7 @@ export function Header({ product = 'corporate', showAnnouncement = true, announc
     return location.pathname === href || (href !== '/' && location.pathname.startsWith(href));
   };
 
+  if(isNativeApp())return null;
   return (
     <>
       {showAnnouncement && (

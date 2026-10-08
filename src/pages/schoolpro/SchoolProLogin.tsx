@@ -1,12 +1,14 @@
+import {useAuth} from '@/context/AuthContext';
+import {schoolSignInDestination} from '@/lib/schoolSignIn';
 import { Link, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { PageShell } from '@/components/PageShell';
-import { supabase } from '@/lib/supabase';
+import { supabase,googleSignInAvailable } from '@/lib/supabase';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
-import {isNativeApp} from '@/lib/nativeAuth';
+import {isNativeApp,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import { Logo } from '@/components/Logo';
 import { Lock, Mail, ArrowRight, GraduationCap, Users, BookOpen, Award } from 'lucide-react';
 
@@ -23,10 +25,16 @@ const roleConfig = {
 
 export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const config = roleConfig[role]; const native=isNativeApp();
+  const {user,profile,loading:authLoading,signInWithGoogle}=useAuth();
+  const [googleAvailable,setGoogleAvailable]=useState(false);
   const navigate = useNavigate();
   const [schoolCode,setSchoolCode]=useState(''); const [challenge,setChallenge]=useState(''); const [confirm,setConfirm]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
   useEffect(()=>{setChallenge('');setEmail('');setPassword('');setConfirm('');setSchoolCode('');setError('');},[role]);
+  useEffect(()=>{const controller=new AbortController();let active=true;setGoogleAvailable(false);if(role!=='student'&&(!native||nativeOAuthEnabled))void googleSignInAvailable(controller.signal).then(enabled=>{if(active)setGoogleAvailable(enabled)});return()=>{active=false;controller.abort()}},[role,native]);
+  useEffect(()=>{if(!user||authLoading)return;const returned=new URLSearchParams(window.location.search).get('oauth')==='1'||sessionStorage.getItem('ih_school_google_pending')==='1';if(!returned)return;let active=true;setLoading(true);void schoolSignInDestination(user.id,profile?.role==='super_admin').then(destination=>{if(!active)return;sessionStorage.removeItem('ih_school_google_pending');sessionStorage.removeItem('ih_auth_next');if(destination)navigate(destination,{replace:true});else setError('This Google account is not linked to a school workspace. Use the email invited by your school, or register your school as its proprietor.');}).catch(()=>{if(active)setError('Your school access could not be checked. Please try again.')}).finally(()=>{if(active)setLoading(false)});return()=>{active=false}},[user?.id,authLoading,profile?.role,navigate]);
+  async function googleSignIn(){setLoading(true);setError('');sessionStorage.setItem('ih_school_google_pending','1');sessionStorage.setItem('ih_auth_next','/schoolpro/login?oauth=1');try{const message=await signInWithGoogle();if(message){sessionStorage.removeItem('ih_school_google_pending');sessionStorage.removeItem('ih_auth_next');setError(message);}}catch{sessionStorage.removeItem('ih_school_google_pending');sessionStorage.removeItem('ih_auth_next');setError('Google sign-in could not start. Please try again.');}finally{setLoading(false)}}
   const signIn=async()=>{
+    sessionStorage.removeItem('ih_school_google_pending');sessionStorage.removeItem('ih_auth_next');
     if(!supabase){setError('Sign in is temporarily unavailable. Please try again.');return;}
     if(challenge&&(password.length<10||password!==confirm)){setError('Use at least 10 characters and confirm the same password.');return;}
     setLoading(true);setError('');let destination=config.dashboard;
@@ -39,14 +47,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         const {error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError){setError('Sign in could not be completed. Please try again.');return;}
       }else{
         const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error||!data.user){setError('Your email or password was not recognised. Please try again.');return;}
-        const uid=data.user.id;
-        const [owner,member,student,parent]=await Promise.all([
-          supabase.from('schoolpro_schools').select('id').eq('owner_id',uid).limit(1).maybeSingle(),
-          supabase.from('schoolpro_members').select('role').eq('user_id',uid).limit(1).maybeSingle(),
-          supabase.from('schoolpro_students').select('id').eq('user_id',uid).limit(1).maybeSingle(),
-          supabase.from('schoolpro_guardian_links').select('id').eq('guardian_user_id',uid).eq('status','active').limit(1).maybeSingle()]);
-        const actualRole=owner.data?'proprietor':member.data?.role|| (student.data?'student':parent.data?'parent':'');
-        destination=actualRole==='proprietor'?'/schoolpro/proprietor-dashboard':['teacher','class_teacher'].includes(actualRole)?'/schoolpro/teacher-dashboard':actualRole==='student'?'/schoolpro/student-dashboard':actualRole==='parent'?'/schoolpro/parent-dashboard':actualRole?'/schoolpro/admin-dashboard':'/schoolpro';
+        destination=await schoolSignInDestination(data.user.id,profile?.id===data.user.id&&profile.role==='super_admin')||'/schoolpro';
       }
       if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(destination);
     }catch{setError('Sign in could not be completed. Please try again.');}finally{setLoading(false);}
@@ -77,6 +78,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
             <h1 className="text-2xl font-extrabold text-ink mb-2">{challenge?'Choose your password':'Welcome Back'}</h1>
             <p className="text-sm text-muted mb-6">{challenge?'Set your own password before opening your school records.':role==='student'?'Use your school code and admission number. Your surname is the first-time password.':`Sign in to your ${role} account.`}</p>
 
+            {googleAvailable&&!challenge&&<div className="mb-5"><Button fullWidth variant="secondary" disabled={loading} onClick={()=>void googleSignIn()}>Continue with Google</Button><p className="mt-2 text-xs text-muted">Use the Google account with the email registered or invited by your school.</p><p className="mt-4 text-center text-xs text-muted">or sign in with email</p></div>}
             <div className="space-y-4">
               {role==='student'&&<Input label="School code" value={schoolCode} disabled={Boolean(challenge)} onChange={e=>setSchoolCode(e.target.value)} placeholder="Code supplied by your school"/>}<Input label={role==='student'?'Admission number':'Email'} disabled={Boolean(challenge)} value={email} onChange={(e)=>setEmail(e.target.value)} type={role==='student'?'text':'email'} placeholder={role==='student'?'School admission number':'you@example.com'} leftIcon={<Mail className="w-4 h-4" />} themeClass="focus:ring-purple-500/20 focus:border-purple-500" />
               <div>

@@ -192,9 +192,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signInWithGoogle() {
         if (!supabase)
           return "Google sign-in is unavailable. Use your email and password.";
-        const next = sessionStorage.getItem("ih_auth_next");
         const callback = new URL("/schoolpro/login", window.location.origin);
-        if (next && next.startsWith("/") && !next.startsWith("//")) callback.searchParams.set("next", next);
+        // Return to the school login; its verified membership check chooses the dashboard.
         if(isNativeApp()&&!nativeOAuthEnabled)return 'Google sign-in is not enabled for this app build. Use email and password.';
         const { data, error } = await supabase.auth.signInWithOAuth({
           provider: "google",

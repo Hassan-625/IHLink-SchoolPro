@@ -127,10 +127,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeoutMs = profile.role === "super_admin" || profile.role === "platform_admin" || profile.role === "support" || profile.role === "finance"
       ? 15 * 60 * 1000
       : 30 * 60 * 1000;
-    let timer = window.setTimeout(() => void client.auth.signOut({ scope: "local" }), timeoutMs);
+    const expire=()=>{if(androidVault&&profile.role==='customer')void NativeVault.status().then(status=>{if(status.enabled)window.dispatchEvent(new Event('ihlink:lock-app'));else void client.auth.signOut({scope:'local'});});else void client.auth.signOut({scope:'local'});};
+    const activityKey='ihlink.native.activity.'+session.user.id;
+    const isAdministrator=profile.role!=='customer';
+    const remembered=Number(sessionStorage.getItem(activityKey)||0);
+    const delay=androidVault&&isAdministrator&&remembered?Math.max(0,timeoutMs-(Date.now()-remembered)):timeoutMs;
+    if(androidVault&&!remembered)sessionStorage.setItem(activityKey,String(Date.now()));
+    let timer = window.setTimeout(expire,delay);
     const reset = () => {
       window.clearTimeout(timer);
-      timer = window.setTimeout(() => void client.auth.signOut({ scope: "local" }), timeoutMs);
+      if(androidVault)sessionStorage.setItem(activityKey,String(Date.now()));
+      timer = window.setTimeout(expire,timeoutMs);
     };
     const events = ["pointerdown", "keydown", "scroll", "touchstart"];
     events.forEach((event) => window.addEventListener(event, reset, { passive: true }));

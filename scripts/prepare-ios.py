@@ -10,7 +10,7 @@ p['CFBundleURLTypes']=[{'CFBundleURLName':config['appId']+'.auth','CFBundleURLSc
 p['ITSAppUsesNonExemptEncryption']=False
 with info.open('wb') as f:plistlib.dump(p,f)
 icons=Path('ios/App/App/Assets.xcassets/AppIcon.appiconset');icons.mkdir(parents=True,exist_ok=True)
-subprocess.run(['sips','-z','1024','1024','public/brand/ihlink-original.jpg','--out',str(icons/'AppIcon-1024.png')],check=True)
+subprocess.run(['sips','-s','format','png','-z','1024','1024','public/brand/ihlink-original.jpg','--out',str(icons/'AppIcon-1024.png')],check=True)
 (icons/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon-1024.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
 project=Path('ios/App/App.xcodeproj/project.pbxproj');s=project.read_text()
 import re

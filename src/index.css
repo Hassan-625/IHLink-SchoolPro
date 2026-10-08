@@ -272,3 +272,8 @@ html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); 
  .purchase-types { flex-wrap:wrap !important; overflow-x:visible !important; }
  .native-workspace { overflow-wrap:anywhere; }
 }
+
+/* Tables scroll within cards without widening the mobile page. */
+.native-workspace :is(.overflow-auto,.overflow-x-auto,.school-table-scroll):has(table) { max-width:100%; min-width:0; overflow-x:auto; overscroll-behavior-x:contain; }
+.native-workspace :is(.overflow-auto,.overflow-x-auto,.school-table-scroll) > table { min-width:640px !important; width:100%; }
+@media print { .native-workspace :is(.overflow-auto,.overflow-x-auto,.school-table-scroll) { overflow:visible; max-height:none; } .native-workspace table { min-width:0 !important; } }

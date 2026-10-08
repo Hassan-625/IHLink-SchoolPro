@@ -82,8 +82,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
               <div>
                 <label className="block text-sm font-semibold text-ink mb-1.5">{challenge?'New password':'Password'}</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted" />
-                  <input value={password} onChange={(e)=>setPassword(e.target.value)} type="password" placeholder="••••••••" className="w-full pl-10 pr-10 py-2.5 text-sm rounded-lg border border-border focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500" />
+                  <Input aria-label={challenge?'New password':'Password'} value={password} onChange={e=>setPassword(e.target.value)} type="password" autoComplete={challenge?'new-password':'current-password'} leftIcon={<Lock size={16}/>} />
 
                 </div>
               </div>

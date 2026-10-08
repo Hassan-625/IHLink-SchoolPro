@@ -1,4 +1,7 @@
-import {Link} from 'react-router-dom';
+import {NativeAppSecurity} from '@/components/NativeAppSecurity';
+import {Link,useNavigate} from 'react-router-dom';
+import {Browser} from '@capacitor/browser';
+import {isNativeApp} from '@/lib/nativeAuth';
 import {useEffect,useState} from 'react';
 import {ModulePage} from '@/components/ModulePage';
 import {Card} from '@/components/ui/Card';
@@ -8,7 +11,7 @@ import {useSchoolProContext} from '@/hooks/useSchoolProContext';
 import {supabase} from '@/lib/supabase';
 import {schoolSections} from './schoolShared';
 export function SchoolProProfile(){
- const {user,profile}=useAuth(),ctx=useSchoolProContext();
+ const {user,profile,signOut}=useAuth(),ctx=useSchoolProContext(),navigate=useNavigate();
  const [first,setFirst]=useState(''),[last,setLast]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
  const [appearance,setAppearance]=useState(()=>localStorage.getItem('ihlink-appearance')||'light');
  useEffect(()=>{setFirst(profile?.first_name||'');setLast(profile?.last_name||'');setMsg('');},[user?.id,profile?.first_name,profile?.last_name]);
@@ -18,7 +21,9 @@ export function SchoolProProfile(){
  return <ModulePage product="schoolpro" sections={schoolSections} title="My account" description="Manage your profile and preferences." userName={ctx.schoolName} userRole={ctx.role}>
   <Card><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-semibold">First name<input autoComplete="given-name" className="mt-1 w-full rounded-lg border p-2.5 font-normal" value={first} onChange={e=>setFirst(e.target.value)}/></label><label className="text-sm font-semibold">Last name<input autoComplete="family-name" className="mt-1 w-full rounded-lg border p-2.5 font-normal" value={last} onChange={e=>setLast(e.target.value)}/></label><label className="text-sm font-semibold">{user?.email?.endsWith('@students.ihlink.invalid')?'Sign-in method':'Email'}<input disabled className="mt-1 w-full rounded-lg border bg-slate-50 p-2.5 font-normal" value={user?.email?.endsWith('@students.ihlink.invalid')?'School code and admission number':user?.email||''}/></label><label className="text-sm font-semibold">School role<input disabled className="mt-1 w-full rounded-lg border bg-slate-50 p-2.5 font-normal" value={ctx.role}/></label></div><Button disabled={busy} className="mt-5" onClick={()=>void save()}>Save profile</Button></Card>
   <Card><h2 className="font-bold">Password</h2><p className="mt-2 text-sm text-muted">Choose a new password for your account.</p><Link to="/auth/update-password" className="mt-4 inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold">Change password</Link></Card>
+  <NativeAppSecurity/>
   <Card><h2 className="font-bold">Appearance</h2><div className="mt-4 flex gap-3">{['light','dark'].map(value=><button type="button" key={value} aria-pressed={appearance===value} className="min-h-12 rounded-xl border px-5 font-semibold capitalize" onClick={()=>theme(value)}>{value}</button>)}</div></Card>
+  <Card><h2 className="font-bold">Account options</h2><div className="mt-4 flex flex-wrap gap-3">{['Privacy','Terms'].map(label=><a key={label} className="inline-flex min-h-11 items-center rounded-xl border px-4" href={`https://ihlink-corporate.onrender.com/${label.toLowerCase()}`} onClick={e=>{if(isNativeApp()){e.preventDefault();void Browser.open({url:e.currentTarget.href});}}}>{label}</a>)}<Button variant="danger" onClick={()=>void signOut().then(()=>navigate('/schoolpro/login'))}>Sign out</Button></div></Card>
   <Card><h2 className="font-bold">Account deletion</h2><p className="mt-2 text-sm text-muted">Request deletion of your IHLink account. School records that must be retained will be handled separately.</p><Button disabled={busy} variant="danger" className="mt-4" onClick={()=>void requestDeletion()}>Request account deletion</Button></Card>{msg&&<p role="status" className="text-sm">{msg}</p>}
  </ModulePage>;
 }

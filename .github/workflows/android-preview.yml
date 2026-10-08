@@ -2,7 +2,7 @@ name: Android preview APK
 on:
   push:
     branches: [main]
-    paths: ['src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-android.mjs','scripts/android-smoke.py','.github/workflows/android-preview.yml']
+    paths: ['native/**','src/**','public/**','package.json','package-lock.json','capacitor.config.json','scripts/prepare-android.mjs','scripts/android-smoke.py','.github/workflows/android-preview.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -61,7 +61,9 @@ jobs:
           arch: x86_64
           target: google_apis
           disable-animations: true
-          script: python scripts/android-smoke.py
+          script: |
+            android/gradlew -p android connectedDebugAndroidTest --no-daemon
+            python scripts/android-smoke.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

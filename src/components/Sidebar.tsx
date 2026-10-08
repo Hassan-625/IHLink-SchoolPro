@@ -1,4 +1,3 @@
-import {Browser} from '@capacitor/browser';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
@@ -73,7 +72,7 @@ export function DashboardLayout({
 
   const isActive = (href: string) => location.pathname === href;
 
-  if(isNativeApp())return <main className="native-workspace"><div className="native-workspace-title"><h1>{pageTitle}</h1>{rightActions}</div><section className="mb-5 space-y-3" aria-label="School tools"><h2 className="text-sm font-bold">Your school tools</h2><nav aria-label="School options" className="grid grid-cols-2 gap-3">{visibleSections.flatMap(section=>section.items).slice(0,toolsExpanded?undefined:6).map(item=><Link key={item.href} className="app-service min-w-0 break-words" to={item.href}><span className="rounded-2xl bg-blue-500/10 p-3">{item.icon}</span>{item.label}</Link>)}</nav>{visibleSections.flatMap(section=>section.items).length>6&&<button type="button" aria-expanded={toolsExpanded} className="app-action app-action-secondary w-full" onClick={()=>setToolsExpanded(value=>!value)}>{toolsExpanded?'Show fewer tools':'View all school tools'}</button>}<div className="flex flex-wrap gap-3 text-sm"><a className="min-h-11 py-3" href="https://ihlink-corporate.onrender.com/privacy" onClick={e=>{e.preventDefault();void Browser.open({url:e.currentTarget.href});}}>Privacy</a><a className="min-h-11 py-3" href="https://ihlink-corporate.onrender.com/terms" onClick={e=>{e.preventDefault();void Browser.open({url:e.currentTarget.href});}}>Terms</a><button type="button" className="min-h-11 text-rose-700" onClick={()=>void handleSignOut()}>Sign out</button></div></section>{children}</main>;
+  if(isNativeApp())return <main className="native-workspace"><div className="native-workspace-title"><h1>{pageTitle}</h1>{rightActions}</div><section className="mb-5 space-y-3" aria-label="School tools"><h2 className="text-sm font-bold">Your school tools</h2><nav aria-label="School options" className="grid grid-cols-2 gap-3">{visibleSections.flatMap(section=>section.items).slice(0,toolsExpanded?undefined:6).map(item=><Link key={item.href} className="app-service min-w-0 break-words" to={item.href}><span className="rounded-2xl bg-blue-500/10 p-3">{item.icon}</span>{item.label}</Link>)}</nav>{visibleSections.flatMap(section=>section.items).length>6&&<button type="button" aria-expanded={toolsExpanded} className="app-action app-action-secondary w-full" onClick={()=>setToolsExpanded(value=>!value)}>{toolsExpanded?'Show fewer tools':'View all school tools'}</button>}</section>{children}</main>;
 
   return (
     <div className="min-h-screen bg-surface flex min-w-0">

@@ -10,10 +10,10 @@ import {useAuth} from "@/context/AuthContext";
 import {useSchoolProContext} from "@/hooks/useSchoolProContext";
 const money=(n:number)=>new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(n);
 export function SchoolProSubscription(){
- const ctx=useSchoolProContext();
+ const ctx=useSchoolProContext(),{profile}=useAuth();
  if(ctx.loading)return <p role="status" className="p-6">Checking school access…</p>;
  if(ctx.error)return <p role="alert" className="p-6">School access could not be checked. Please try again.</p>;
- if(!canManageSchoolBilling(ctx.role))return <main className="mx-auto max-w-lg space-y-4 p-6"><h1 className="text-xl font-bold">School subscription</h1><p>Your school administrator manages this subscription. Please contact them for help.</p><Link to={schoolDashboard(ctx.role)} className="inline-block rounded-xl border px-4 py-3">Back to your dashboard</Link></main>;
+ if(profile?.role!=='super_admin'&&!canManageSchoolBilling(ctx.role))return <main className="mx-auto max-w-lg space-y-4 p-6"><h1 className="text-xl font-bold">School subscription</h1><p>Your school administrator manages this subscription. Please contact them for help.</p><Link to={schoolDashboard(ctx.role)} className="inline-block rounded-xl border px-4 py-3">Back to your dashboard</Link></main>;
  return <SchoolBillingWorkspace/>;
 }
 function SchoolBillingWorkspace(){
@@ -49,10 +49,11 @@ function SchoolBillingWorkspace(){
   finally{if(schoolRef.current===school)setBusy("");}
  }
  const unavailable=Boolean(error);
+ const isDemo=sub?.status==='active' && Number(sub?.amount)===0;
  return <ModulePage product="schoolpro" sections={[]} title="SchoolPro Subscription" description="IHLink service subscription only. Student fees and school charges use the school's own bank accounts." userName={profile?.first_name||"School Administrator"} userRole="School Management" primaryAction="Bank transfer subscription" metrics={[
-  {label:"Current plan",value:loading?"…":unavailable?"Unavailable":sub?.tier||"None"},
+  {label:"Current plan",value:loading?"…":unavailable?"Unavailable":isDemo?`Demo · ${sub.tier}`:sub?.tier||"None"},
   {label:"Status",value:loading?"…":unavailable?"Unavailable":sub?.status||"Inactive"},
-  {label:"Renewal",value:loading?"…":unavailable?"Unavailable":sub?.renews_at?new Date(sub.renews_at).toLocaleDateString("en-NG"):"—"}
+  {label:isDemo?"Demo ends":"Renewal",value:loading?"…":unavailable?"Unavailable":sub?.renews_at?new Date(sub.renews_at).toLocaleDateString("en-NG"):"—"}
  ]}>
   {error&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">{error}</div>}
   {msg&&<div role="status" className="rounded-xl border p-3 text-sm">{msg}</div>}

@@ -1,4 +1,5 @@
-import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+import { forwardRef, useState, type InputHTMLAttributes, type TextareaHTMLAttributes, type SelectHTMLAttributes, type ReactNode } from 'react';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -11,6 +12,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, leftIcon, rightIcon, themeClass, className = '', id, ...props }, ref) => {
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const isPassword = props.type === 'password';
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
     return (
       <div className="w-full">
@@ -28,10 +31,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             ref={ref}
             id={inputId}
-            className={`w-full px-3.5 py-2.5 text-sm rounded-xl border border-border bg-white shadow-sm text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-4 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${leftIcon ? 'pl-10' : ''} ${rightIcon ? 'pr-10' : ''} ${error ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500' : ''} ${className}`}
+            className={`w-full px-3.5 py-2.5 text-sm rounded-xl border border-border bg-white shadow-sm text-ink placeholder:text-gray-400 transition-all focus:outline-none focus:ring-4 ${themeClass || 'focus:ring-royal-500/20 focus:border-royal-500'} ${leftIcon ? 'pl-10' : ''} ${rightIcon || isPassword ? 'pr-12' : ''} ${error ? 'border-rose-400 focus:ring-rose-500/20 focus:border-rose-500' : ''} ${className}`}
             {...props}
+            type={isPassword && passwordVisible ? 'text' : props.type}
           />
-          {rightIcon && (
+          {isPassword && <button type="button" aria-label={passwordVisible ? "Hide password" : "Show password"} aria-pressed={passwordVisible} onClick={() => setPasswordVisible(value => !value)} className="absolute right-1 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center text-muted">{passwordVisible ? <EyeOff size={18}/> : <Eye size={18}/>}</button>}
+          {!isPassword && rightIcon && (
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
               {rightIcon}
             </span>

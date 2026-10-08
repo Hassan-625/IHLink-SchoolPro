@@ -1,3 +1,4 @@
+import {androidVault,NativeVault,vaultReady} from '@/lib/nativeVault';
 import {customerAuthError} from '@/lib/customerAuthError';
 import {isNativeApp,nativeAuthRedirect,openNativeOAuth,publicAppOrigin,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import {
@@ -198,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signOut() {
         if (supabase) {
           await supabase.auth.signOut({ scope: "local" });
+          if(androidVault){await NativeVault.reset();vaultReady();}
           setSession(null);
           setProfile(null);
           setAdminAccess([]);

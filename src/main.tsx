@@ -1,3 +1,4 @@
+import {NativeSessionGate} from '@/components/NativeSessionGate';
 import {NativeMobileShell} from '@/components/NativeMobileShell';
 import{AccountClosureControl}from'@/components/AccountClosureControl';
 import { Component, StrictMode, type ErrorInfo, type ReactNode } from "react";
@@ -19,4 +20,4 @@ enforceDeploymentSurface();
 document.documentElement.dataset.appearance=localStorage.getItem("ihlink-appearance")||"light";
 document.documentElement.dataset.density=localStorage.getItem("ihlink-density")||"comfortable";
 const root=document.getElementById("root");if(!root)throw new Error("IHLink SchoolPro root element was not found.");
-createRoot(root).render(<StrictMode><StartupErrorBoundary><BrowserRouter><AuthProvider><ToastProvider><NativeMobileShell><App/><AccountClosureControl/></NativeMobileShell></ToastProvider></AuthProvider></BrowserRouter></StartupErrorBoundary></StrictMode>);
+createRoot(root).render(<StrictMode><StartupErrorBoundary><BrowserRouter><NativeSessionGate><AuthProvider><ToastProvider><NativeMobileShell><App/><AccountClosureControl/></NativeMobileShell></ToastProvider></AuthProvider></NativeSessionGate></BrowserRouter></StartupErrorBoundary></StrictMode>);

@@ -1,3 +1,4 @@
+import {printSchoolDocument} from '@/lib/nativePrint';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -33,7 +34,7 @@ export function SchoolProClassResultsPrint(){
  })();return()=>{live=false}},[ctx.schoolId,classId,term,session]);
  const printable=students.filter(s=>results.some(r=>r.student_id===s.id));
  return <main className="min-h-screen bg-slate-100 p-4 text-slate-900 print:bg-white print:p-0">
-  <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between print:hidden"><h1 className="text-xl font-bold">Class results · {term} {session}</h1><Button disabled={loading||!!error||!printable.length} onClick={()=>window.print()}>Print class / Save PDF</Button></div>
+  <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between print:hidden"><h1 className="text-xl font-bold">Class results · {term} {session}</h1><Button disabled={loading||!!error||!printable.length} onClick={()=>void printSchoolDocument()}>Print class / Save PDF</Button></div>
   {loading&&<p className="text-center">Loading published results…</p>}{error&&<p className="text-center text-red-700">{error}</p>}{!loading&&!error&&!printable.length&&<p className="text-center">No published results for this class and period.</p>}
   <div className="print-document mx-auto max-w-4xl bg-white">{printable.map(student=>{const rows=results.filter(r=>r.student_id===student.id),average=rows.reduce((sum,r)=>sum+r.total_score,0)/rows.length;return <article key={student.id} className="result-print-page mb-5 bg-white p-8 text-slate-900 shadow print:mb-0 print:shadow-none">
    <header className="border-b-2 border-purple-700 pb-4 text-center"><h2 className="text-2xl font-extrabold">{school?.name||ctx.schoolName}</h2><p>{school?.address}</p><p className="mt-2 font-semibold">{term} report · {session} session</p></header>

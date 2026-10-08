@@ -53,10 +53,22 @@ assert root is not None, 'App navigation snapshot missing'
 texts=[n.attrib.get('text','') for n in root.iter('node')]
 assert all(any(label==text for text in texts) for label in ['Home','Account']), 'Bottom navigation missing'
 assert not any('© 2026 IHLink' in text for text in texts), 'Website footer present in app'
+if app.endswith('schoolpro'):
+ tap(find('Student sign in'))
+ find('Admission number');find('School code')
+ login_root=screen()
+ assert login_root is not None
+ assert not any('Secure access with encryption' in n.attrib.get('text','') for n in login_root.iter('node')), 'Website marketing panel present in native sign-in'
+ (out/'student-sign-in.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+ adb('shell','wm','size','360x800')
+ find('Admission number')
+ (out/'student-sign-in-360.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+ adb('shell','input','keyevent','4')
+ find('Run Your School Smarter')
 adb('shell','am','start','-W','-a','android.settings.APPLICATION_DETAILS_SETTINGS','-d','package:'+app)
 find('IHLink DataSub' if app.endswith('datasub') else 'IHLink SchoolPro')
 (out/'app-icon.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 adb('shell','am','start','-W','-n',app+'/.MainActivity')
 find('Home')
-(out/'RESULT.txt').write_text('PASS: install, launch, welcome at 360/390/412, Explore and restart. API35 emulator; no real-device or signed-production certification.\n')
+(out/'RESULT.txt').write_text('PASS: install, launch, welcome at 360/390/412, Explore and restart. API35 emulator; SchoolPro student sign-in layout checked without credentials; no real-device, authenticated-workflow or signed-production certification.\n')
 print((out/'RESULT.txt').read_text())

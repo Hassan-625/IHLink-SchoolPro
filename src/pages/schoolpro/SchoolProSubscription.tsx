@@ -49,15 +49,16 @@ function SchoolBillingWorkspace(){
   finally{if(schoolRef.current===school)setBusy("");}
  }
  const unavailable=Boolean(error);
+ const inGrace=sub?.status==='active'&&Number(sub?.amount)>0&&sub?.billing_cycle==='annual'&&new Date(sub.renews_at).getTime()<=Date.now()&&Date.now()<new Date(sub.renews_at).getTime()+14*86400000;
  const isDemo=sub?.status==='active' && Number(sub?.amount)===0;
  return <ModulePage product="schoolpro" sections={[]} title="SchoolPro Subscription" description="IHLink service subscription only. Student fees and school charges use the school's own bank accounts." userName={profile?.first_name||"School Administrator"} userRole="School Management" primaryAction="Bank transfer subscription" metrics={[
   {label:"Current plan",value:loading?"…":unavailable?"Unavailable":isDemo?`Demo · ${sub.tier}`:sub?.tier||"None"},
-  {label:"Status",value:loading?"…":unavailable?"Unavailable":sub?.status||"Inactive"},
+  {label:"Status",value:loading?"…":unavailable?"Unavailable":inGrace?"Renewal grace period":sub?.status||"Inactive"},
   {label:isDemo?"Demo ends":"Renewal",value:loading?"…":unavailable?"Unavailable":sub?.renews_at?new Date(sub.renews_at).toLocaleDateString("en-NG"):"—"}
  ]}>
   {error&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">{error}</div>}
   {msg&&<div role="status" className="rounded-xl border p-3 text-sm">{msg}</div>}
-  <Card><p className="font-bold">Annual subscription</p><p className="mt-1 text-sm text-muted">Plans and prices come from the published IHLink catalogue. An existing pending transfer must be reconciled before changing its plan or payer.</p></Card>
+  <Card><p className="font-bold">Annual subscription</p><p className="mt-1 text-sm text-muted">Paid yearly plans include 14 days after expiry to renew before access is paused. Complete any pending payment before choosing another plan.</p></Card>
   <div className="grid gap-4 md:grid-cols-3">{plans.map(p=>{
    const price=Number(p.annual_price||0),valid=Number.isFinite(price)&&price>0;
    return <Card key={p.id}><h3 className="font-bold">{p.name}</h3><p className="mt-2 text-2xl font-bold">{valid?money(price)+" / year":"Not priced"}</p><ul className="mt-3 space-y-2 text-sm"><li>Core school management</li>{Object.entries({website:'School website',cbt:'CBT and online tests',advanced_reports:'Advanced reports',custom_branding:'Custom branding'}).map(([feature,label])=><li key={feature} className={p.planFeatures[feature]===true?'text-emerald-700':'text-muted'}>{p.planFeatures[feature]===true?'Included: ':'Not included: '}{label}</li>)}</ul><Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button></Card>;

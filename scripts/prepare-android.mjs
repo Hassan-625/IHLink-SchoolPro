@@ -13,9 +13,9 @@ if(!Number.isInteger(buildNumber)||buildNumber<1||buildNumber>2100000000)throw n
 source=source.replace(/versionCode\s+\d+/,`versionCode ${buildNumber}`).replace(/versionName\s+"[^"]+"/,`versionName "1.0.0-preview.${buildNumber}"`);
 writeFileSync(gradle,source);
 // Keep the original emblem. Legacy icons and adaptive layers have different bounds.
-const res='android/app/src/main/res',brand='public/brand/ihlink-original.jpg';
+const res='android/app/src/main/res',brand='public/brand/schoolpro-icon.png';
 if(!existsSync(brand))throw new Error('Brand artwork missing');
-mkdirSync(`${res}/drawable-nodpi`,{recursive:true});copyFileSync(brand,`${res}/drawable-nodpi/ihlink_emblem.jpg`);
+mkdirSync(`${res}/drawable-nodpi`,{recursive:true});copyFileSync(brand,`${res}/drawable-nodpi/ihlink_emblem.png`);
 for(const dir of readdirSync(res).filter(x=>/^mipmap-(mdpi|hdpi|xhdpi|xxhdpi|xxxhdpi)$/.test(x)))for(const name of ['ic_launcher.png','ic_launcher_round.png','ic_launcher_foreground.png'])rmSync(`${res}/${dir}/${name}`,{force:true});
 mkdirSync(`${res}/mipmap-anydpi`,{recursive:true});mkdirSync(`${res}/mipmap-anydpi-v26`,{recursive:true});
 const legacy=`<?xml version="1.0" encoding="utf-8"?><layer-list xmlns:android="http://schemas.android.com/apk/res/android"><item><shape android:shape="rectangle"><solid android:color="#FFFFFF"/></shape></item><item android:left="2dp" android:top="2dp" android:right="2dp" android:bottom="2dp"><bitmap android:src="@drawable/ihlink_emblem" android:gravity="fill" android:filter="true"/></item></layer-list>`;

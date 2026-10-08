@@ -10,7 +10,7 @@ p['CFBundleURLTypes']=[{'CFBundleURLName':config['appId']+'.auth','CFBundleURLSc
 p['ITSAppUsesNonExemptEncryption']=False
 with info.open('wb') as f:plistlib.dump(p,f)
 icons=Path('ios/App/App/Assets.xcassets/AppIcon.appiconset');icons.mkdir(parents=True,exist_ok=True)
-subprocess.run(['sips','-s','format','png','-z','1024','1024','public/brand/ihlink-original.jpg','--out',str(icons/'AppIcon-1024.png')],check=True)
+subprocess.run(['sips','-s','format','png','-z','1024','1024','public/brand/schoolpro-icon.png','--out',str(icons/'AppIcon-1024.png')],check=True)
 (icons/'Contents.json').write_text(json.dumps({'images':[{'filename':'AppIcon-1024.png','idiom':'universal','platform':'ios','size':'1024x1024'}],'info':{'author':'xcode','version':1}},indent=2)+'\n')
 project=Path('ios/App/App.xcodeproj/project.pbxproj');s=project.read_text()
 import re
@@ -20,4 +20,4 @@ project.write_text(s)
 
 store=Path("ios-store-assets");store.mkdir(exist_ok=True)
 for size,label in [(512,"google-play-icon.png"),(1024,"app-store-icon.png")]:
- subprocess.run(["sips","-s","format","png","-z",str(size),str(size),"public/brand/ihlink-original.jpg","--out",str(store/label)],check=True)
+ subprocess.run(["sips","-s","format","png","-z",str(size),str(size),"public/brand/schoolpro-icon.png","--out",str(store/label)],check=True)

@@ -1,3 +1,4 @@
+from android_crashes import verify_crashes
 import os,re,subprocess,time,xml.etree.ElementTree as ET
 from pathlib import Path
 app=os.environ['ANDROID_APP_ID']
@@ -29,6 +30,7 @@ def tap(node):
 adb('install','-r','android-delivery/ihlink-preview.apk')
 adb('logcat','-c')
 adb('shell','am','start','-W','-n',app+'/.MainActivity')
+app_pids=set(adb('shell','pidof',app).split())
 for width in [360,390,412]:
  adb('shell','wm','size',str(width)+'x800');adb('shell','wm','density','160')
  find(explore)
@@ -39,15 +41,13 @@ find(heading)
 adb('shell','am','force-stop',app)
 adb('shell','am','start','-W','-n',app+'/.MainActivity')
 find('Your DataSub account' if app.endswith('datasub') else 'Run Your School Smarter')
+app_pids.update(adb('shell','pidof',app).split())
 assert not any('Welcome to your school community' in n.attrib.get('text','') for n in screen().iter('node'))
 (out/'restart.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 runtime=adb('logcat','-d','-s','AndroidRuntime:E')
 (out/'android-runtime.txt').write_text(runtime)
-for block in re.split(r'(?=^.*FATAL EXCEPTION)',runtime,flags=re.MULTILINE):
- if 'FATAL EXCEPTION' not in block:continue
- process=re.search(r'Process:\s*([^,\s]+)',block)
- assert process is not None, 'Unidentified process crash'
- assert process.group(1)!=app and not process.group(1).startswith(app+':'), 'Application process crashed'
+verify_crashes(runtime,app,app_pids)
+assert app in adb('shell','dumpsys','activity','activities'), 'App activity missing after restart'
 root=screen()
 assert root is not None, 'App navigation snapshot missing'
 texts=[n.attrib.get('text','') for n in root.iter('node')]

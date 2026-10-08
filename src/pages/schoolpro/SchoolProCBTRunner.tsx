@@ -1,3 +1,4 @@
+import {customerMessage} from '@/lib/customerMessage';
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
@@ -18,7 +19,7 @@ export function SchoolProCBTRunner() {
     void (async () => {
       setLoading(true);
       const result = await supabase.rpc("start_schoolpro_cbt", { p_test: testId });
-      if (result.error) setMessage(result.error.message);
+      if (result.error) setMessage(customerMessage(result.error.message));
       else {
         setData(result.data);
         setAnswers((result.data as any)?.answers || {});
@@ -53,7 +54,7 @@ export function SchoolProCBTRunner() {
       p_question: questionId,
       p_answer: value,
     });
-    if (result.error) setMessage("Answer save failed: " + result.error.message);
+    if (result.error) setMessage(customerMessage("Answer save failed: " + result.error.message));
   }
 
   async function submit(auto = false) {
@@ -61,7 +62,7 @@ export function SchoolProCBTRunner() {
     setSubmitting(true);
     const result = await supabase.rpc("submit_schoolpro_cbt", { p_attempt: data.attempt_id });
     if (result.error) {
-      setMessage(result.error.message);
+      setMessage(customerMessage(result.error.message));
       setSubmitting(false);
       return;
     }

@@ -1,3 +1,4 @@
+import {customerMessage} from '@/lib/customerMessage';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageShell } from '@/components/PageShell';
@@ -13,7 +14,7 @@ type Plan = { name:string; price:number; desc:string; features:string[]; popular
 export function SchoolProPricing() {
   const [plans,setPlans]=useState<Plan[]>([]);
   const [loading,setLoading]=useState(true),[error,setError]=useState('');
-  useEffect(()=>{let active=true;if(!supabase){setError('Pricing is unavailable.');setLoading(false);return;}void supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price,features').eq('active',true).order('annual_price').then(({data,error:issue})=>{if(!active)return;if(issue)setError(issue.message);setPlans((data||[]).filter(p=>Number(p.annual_price)>0).map(p=>({name:p.name,price:Number(p.annual_price),desc:`${p.name} SchoolPro annual subscription`,features:Array.isArray(p.features)?p.features:[],popular:p.code==='professional'})));setLoading(false)});return()=>{active=false}},[]);
+  useEffect(()=>{let active=true;if(!supabase){setError('Pricing is unavailable.');setLoading(false);return;}void supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price,features').eq('active',true).order('annual_price').then(({data,error:issue})=>{if(!active)return;if(issue)setError(customerMessage(issue.message));setPlans((data||[]).filter(p=>Number(p.annual_price)>0).map(p=>({name:p.name,price:Number(p.annual_price),desc:`${p.name} SchoolPro annual subscription`,features:Array.isArray(p.features)?p.features:[],popular:p.code==='professional'})));setLoading(false)});return()=>{active=false}},[]);
   return (
     <PageShell product="schoolpro">
       <div className="px-6 lg:px-10 py-12 max-w-[1280px] mx-auto">

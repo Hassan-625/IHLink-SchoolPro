@@ -1,3 +1,4 @@
+import {customerMessage} from '@/lib/customerMessage';
 import {printSchoolDocument} from '@/lib/nativePrint';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -25,9 +26,9 @@ export function SchoolProClassResultsPrint(){
    db.from('schoolpro_assessment_schemes').select('id,components').eq('school_id',ctx.schoolId),
   ]);
   const problem=cl.error||sc.error||st.error||sub.error||sch.error;
-  if(problem||!cl.data){if(live){setError(problem?.message||'Class not found.');setLoading(false)}return}
+  if(problem||!cl.data){if(live){setError(customerMessage(problem?.message||'Class not found.'));setLoading(false)}return}
   const group=(st.data||[]) as Student[];
-  const authz=await db.rpc('schoolpro_broadsheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});if(authz.error){if(live){setError(authz.error.message);setLoading(false)}return}const chunks=await Promise.all(group.map(s=>db.rpc('schoolpro_printable_result',{p_student:s.id,p_term:term,p_session:session})));const failed=chunks.find(x=>x.error);if(failed?.error){if(live){setError(failed.error.message);setLoading(false)}return}const res={data:chunks.flatMap(x=>x.data||[]),error:null};
+  const authz=await db.rpc('schoolpro_broadsheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});if(authz.error){if(live){setError(customerMessage(authz.error.message));setLoading(false)}return}const chunks=await Promise.all(group.map(s=>db.rpc('schoolpro_printable_result',{p_student:s.id,p_term:term,p_session:session})));const failed=chunks.find(x=>x.error);if(failed?.error){if(live){setError(customerMessage(failed.error.message));setLoading(false)}return}const res={data:chunks.flatMap(x=>x.data||[]),error:null};
   if(!live)return;
   setSchool(sc.data);setStudents(group);setResults(((res?.data||[]) as Result[]).map(r=>({...r,total_score:Number(r.total_score)})));
   setSubjects(Object.fromEntries((sub.data||[]).map(s=>[s.id,s.name])));setSchemes(Object.fromEntries((sch.data||[]).map(s=>[s.id,s as Scheme])));setLoading(false);
@@ -35,7 +36,7 @@ export function SchoolProClassResultsPrint(){
  const printable=students.filter(s=>results.some(r=>r.student_id===s.id));
  return <main className="min-h-screen bg-slate-100 p-4 text-slate-900 print:bg-white print:p-0">
   <div className="mx-auto mb-4 flex max-w-4xl items-center justify-between print:hidden"><h1 className="text-xl font-bold">Class results · {term} {session}</h1><Button disabled={loading||!!error||!printable.length} onClick={()=>void printSchoolDocument()}>Print class / Save PDF</Button></div>
-  {loading&&<p className="text-center">Loading published results…</p>}{error&&<p className="text-center text-red-700">{error}</p>}{!loading&&!error&&!printable.length&&<p className="text-center">No published results for this class and period.</p>}
+  {loading&&<p className="text-center">Loading published results…</p>}{error&&<p className="text-center text-red-700">{customerMessage(error)}</p>}{!loading&&!error&&!printable.length&&<p className="text-center">No published results for this class and period.</p>}
   <div className="print-document mx-auto max-w-4xl bg-white">{printable.map(student=>{const rows=results.filter(r=>r.student_id===student.id),average=rows.reduce((sum,r)=>sum+r.total_score,0)/rows.length;return <article key={student.id} className="result-print-page mb-5 bg-white p-8 text-slate-900 shadow print:mb-0 print:shadow-none">
    <header className="border-b-2 border-purple-700 pb-4 text-center"><h2 className="text-2xl font-extrabold">{school?.name||ctx.schoolName}</h2><p>{school?.address}</p><p className="mt-2 font-semibold">{term} report · {session} session</p></header>
    <div className="my-5 grid grid-cols-2 gap-2 text-sm"><p><b>Student:</b> {student.first_name} {student.last_name}</p><p><b>Admission no.:</b> {student.admission_number}</p><p><b>Class:</b> {student.class_name}</p><p><b>Subjects:</b> {rows.length}</p></div>

@@ -29,7 +29,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const signIn=async()=>{
     if(!supabase){setError('Sign in is temporarily unavailable. Please try again.');return;}
     if(challenge&&(password.length<10||password!==confirm)){setError('Use at least 10 characters and confirm the same password.');return;}
-    setLoading(true);setError('');
+    setLoading(true);setError('');let destination=config.dashboard;
     try{
       if(role==='student'){
         const {data,error}=await supabase.functions.invoke('schoolpro-student-login',{body:{schoolCode,admissionNumber:email,password,...(challenge?{challenge}:{})}});
@@ -38,9 +38,17 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         if(!data?.session){setError('Sign in could not be completed. Please try again.');return;}
         const {error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError){setError('Sign in could not be completed. Please try again.');return;}
       }else{
-        const {error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error){setError('Your email or password was not recognised. Please try again.');return;}
+        const {data,error}=await supabase.auth.signInWithPassword({email:email.trim(),password});if(error||!data.user){setError('Your email or password was not recognised. Please try again.');return;}
+        const uid=data.user.id;
+        const [owner,member,student,parent]=await Promise.all([
+          supabase.from('schoolpro_schools').select('id').eq('owner_id',uid).limit(1).maybeSingle(),
+          supabase.from('schoolpro_members').select('role').eq('user_id',uid).limit(1).maybeSingle(),
+          supabase.from('schoolpro_students').select('id').eq('user_id',uid).limit(1).maybeSingle(),
+          supabase.from('schoolpro_guardian_links').select('id').eq('guardian_user_id',uid).eq('status','active').limit(1).maybeSingle()]);
+        const actualRole=owner.data?'proprietor':member.data?.role|| (student.data?'student':parent.data?'parent':'');
+        destination=actualRole==='proprietor'?'/schoolpro/proprietor-dashboard':['teacher','class_teacher'].includes(actualRole)?'/schoolpro/teacher-dashboard':actualRole==='student'?'/schoolpro/student-dashboard':actualRole==='parent'?'/schoolpro/parent-dashboard':actualRole?'/schoolpro/admin-dashboard':'/schoolpro';
       }
-      if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(config.dashboard);
+      if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(destination);
     }catch{setError('Sign in could not be completed. Please try again.');}finally{setLoading(false);}
   };
 

@@ -1,3 +1,4 @@
+import {isNativeApp} from '@/lib/nativeAuth';
 import { WhatsAppIcon } from './WhatsAppIcon';
 import { PlatformLink as Link } from './PlatformLink';
 import { Logo } from './Logo';
@@ -184,6 +185,7 @@ export function Footer({ product = 'corporate' }: FooterProps) {
   const theme = productThemes[product];
   const links = footerLinks[product];
 
+  if(isNativeApp())return null;
   return (
     <footer className={`${theme.footerBg} ${theme.footerText} mt-20`}>
       <div className="max-w-[1440px] mx-auto px-6 lg:px-10 py-12">

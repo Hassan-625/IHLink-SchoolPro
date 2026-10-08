@@ -87,7 +87,7 @@ export default function App(){
   <Route path="/auth/handoff" element={<AuthHandoffPage/>}/>
   <Route path="/" element={<Navigate to="/schoolpro" replace/>}/>
   <Route path="/schoolpro" element={isNativeApp()?<NativeAppHome/>:<SchoolProHome/>}/>
-  <Route path="/schoolpro/features" element={<SchoolProFeatures/>}/>
+  <Route path="/schoolpro/features" element={isNativeApp()?<Navigate to="/schoolpro" replace/>:<SchoolProFeatures/>}/>
   <Route path="/schoolpro/result-management" element={<SchoolProResultManagement/>}/>
   <Route path="/schoolpro/pricing" element={<SchoolProPricing/>}/>
   <Route path="/schoolpro/book-demo" element={<SchoolProBookDemo/>}/>

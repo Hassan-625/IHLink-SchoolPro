@@ -259,3 +259,16 @@ html.native-app::after { bottom:0; height:var(--safe-area-inset-bottom, env(safe
 html.native-app .native-help-hero { background:var(--app-card); }
 html.native-app .native-help-hero .text-purple-700 { color:var(--app-accent); }
 html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); }
+
+/* Small screens use vertical cards; navigation stays behind an open keyboard. */
+.native-shell.keyboard-open .native-nav { visibility:hidden; pointer-events:none; }
+.native-shell.keyboard-open { padding-bottom:0; }
+@media (max-width:640px) {
+ .native-workspace,.app-page { width:100%; min-width:0; }
+ .native-workspace :is(input,select,textarea,fieldset),.app-page :is(input,select,textarea) { min-width:0; max-width:100%; }
+ .native-workspace .grid > *,.app-page .grid > * { min-width:0; }
+ .native-workspace :is(.grid-cols-3,.grid-cols-4,.grid-cols-5,.grid-cols-6) { grid-template-columns:repeat(2,minmax(0,1fr)); }
+ .native-workspace [class*="min-w-"] { min-width:0; }
+ .purchase-types { flex-wrap:wrap !important; overflow-x:visible !important; }
+ .native-workspace { overflow-wrap:anywhere; }
+}

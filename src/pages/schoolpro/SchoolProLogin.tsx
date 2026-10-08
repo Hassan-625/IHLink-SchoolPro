@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Input } from '@/components/ui/Input';
+import {isNativeApp} from '@/lib/nativeAuth';
 import { Logo } from '@/components/Logo';
 import { Lock, Mail, ArrowRight, GraduationCap, Users, BookOpen, Award } from 'lucide-react';
 
@@ -21,7 +22,7 @@ const roleConfig = {
 };
 
 export function SchoolProLogin({ role }: SchoolProLoginProps) {
-  const config = roleConfig[role];
+  const config = roleConfig[role]; const native=isNativeApp();
   const navigate = useNavigate();
   const [schoolCode,setSchoolCode]=useState(''); const [challenge,setChallenge]=useState(''); const [confirm,setConfirm]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
   useEffect(()=>{setChallenge('');setEmail('');setPassword('');setConfirm('');setSchoolCode('');setError('');},[role]);
@@ -45,9 +46,9 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
 
   return (
     <PageShell product="schoolpro" showAnnouncement={false} showHeader={false} showFooter={false}>
-      <div className="min-h-screen grid grid-cols-12">
+      <div className={native?"app-page":"min-h-screen grid grid-cols-12"}>
         {/* Left panel */}
-        <div className="col-span-12 lg:col-span-5 bg-gradient-to-br from-purple-700 via-indigo-600 to-purple-500 text-white p-10 flex flex-col justify-center">
+        {!native&&<div className="col-span-12 lg:col-span-5 bg-gradient-to-br from-purple-700 via-indigo-600 to-purple-500 text-white p-10 flex flex-col justify-center">
           <Logo product="schoolpro" size="lg" variant="full" />
           <div className="mt-12">
             <config.icon className="w-12 h-12 mb-4 text-purple-200" />
@@ -59,10 +60,10 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
               <div key={i} className="flex items-center gap-2 text-sm text-purple-100"><div className="w-1.5 h-1.5 rounded-full bg-purple-300" /> {f}</div>
             ))}
           </div>
-        </div>
+        </div>}
 
         {/* Right panel */}
-        <div className="col-span-12 lg:col-span-7 flex items-center justify-center p-10 bg-white">
+        <div className={native?"app-card":"col-span-12 lg:col-span-7 flex items-center justify-center p-10 bg-white"}>
           <div className="w-full max-w-sm">
             <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">{config.title}</Badge>
             <h1 className="text-2xl font-extrabold text-ink mb-2">{challenge?'Choose your password':'Welcome Back'}</h1>

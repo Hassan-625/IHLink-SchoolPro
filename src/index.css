@@ -214,7 +214,7 @@ html.native-app body, .native-shell { background:var(--app-bg); color:var(--app-
 .native-header a, .native-header button { min-height:44px; min-width:44px; display:flex; align-items:center; justify-content:center; }
 .native-nav { position:fixed; bottom:0; left:0; right:0; z-index:40; display:grid; background:var(--app-card); border-top:1px solid var(--app-border); padding:8px 4px max(8px, var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
 .native-nav a { display:flex; min-height:52px; flex-direction:column; align-items:center; justify-content:center; gap:5px; font-size:11px; color:var(--app-muted); border-radius:16px; }
-.native-nav a[aria-current="page"] { color:var(--app-accent); background:var(--app-raised); font-weight:800; }
+.native-nav a[aria-current="page"], .native-nav a.app-tab-active { color:var(--app-accent); background:var(--app-raised); font-weight:800; }
 .app-page { max-width:640px; margin:0 auto; padding:16px; display:grid; gap:24px; }
 .app-card { border:1px solid var(--app-border); border-radius:24px; background:var(--app-card); padding:20px; }
 .app-muted { color:var(--app-muted); }

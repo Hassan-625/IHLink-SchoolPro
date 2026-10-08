@@ -1,3 +1,4 @@
+import {schoolDashboard,schoolDashboardAllowed} from '@/lib/schoolAccess';
 import {NativeAppShell} from '@/components/NativeAppShell';
 import {NativeAppHome} from '@/components/NativeAppHome';
 import {isNativeApp} from '@/lib/nativeAuth';
@@ -73,6 +74,7 @@ const SchoolProResultTemplates=lazy(()=>import("@/pages/schoolpro/SchoolProResul
 const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
  const ctx=useSchoolProContext();const {pathname}=useLocation();
  if(ctx.loading)return <p role="status" className="p-8">Checking school membership…</p>;
+ if(ctx.schoolId&&!schoolDashboardAllowed(pathname,ctx.role))return <Navigate to={schoolDashboard(ctx.role)} replace/>;
  const module=permission||permissionForSchoolPath(pathname);
  const portalOnly=/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(pathname);
  const portal=portalOnly||/\/schoolpro\/(report-card|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);

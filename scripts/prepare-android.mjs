@@ -72,3 +72,5 @@ writeFileSync(stylesPath,styles);
 
 copyFileSync("native/android/NativePrintPlugin.java",`${systemRoot}/NativePrintPlugin.java`);
 writeFileSync(activityPath,readFileSync(activityPath,"utf8").replace("registerPlugin(NativeSystemThemePlugin.class);","registerPlugin(NativeSystemThemePlugin.class);registerPlugin(NativePrintPlugin.class);"));
+
+copyFileSync("native/android/NativePrintDialogTest.java",`${vaultTestRoot}/NativePrintDialogTest.java`);

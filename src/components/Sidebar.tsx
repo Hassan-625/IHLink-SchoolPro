@@ -1,6 +1,6 @@
 import {Browser} from '@capacitor/browser';
 import {isNativeApp} from '@/lib/nativeAuth';
-import {schoolSections,studentSections,parentSections} from '@/pages/schoolpro/schoolShared';
+import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -46,7 +46,7 @@ export function DashboardLayout({
 }: DashboardLayoutProps) {
   const permissions=useSchoolProPermissions();
   const role=permissions.role.toLowerCase();
-  const canonical=role==='student'?studentSections:role==='parent'?parentSections:schoolSections;
+  const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
   const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>item.href==='/schoolpro/profile'||(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href))))})).filter(section=>section.items.length)):providedSections;
   const theme = productThemes[product];
   const location = useLocation();

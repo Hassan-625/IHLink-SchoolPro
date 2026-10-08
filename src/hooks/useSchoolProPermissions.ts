@@ -2,9 +2,13 @@ import {useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabase';
 import {useAuth} from '@/context/AuthContext';
 import {useSchoolProContext} from './useSchoolProContext';
+import {useSchoolProEntitlements} from './useSchoolProEntitlements';
+import {permissionPlanFeature} from '@/lib/schoolPermissions';
 import {studentReadPermissions,parentReadPermissions} from '@/lib/schoolPermissions';
 export function useSchoolProPermissions(){
- const {user}=useAuth();const ctx=useSchoolProContext();
+ const {user,profile}=useAuth();const ctx=useSchoolProContext();
+ const plan=useSchoolProEntitlements();
+ const allowedByPlan=(permission:string)=>{const feature=permissionPlanFeature(permission);return !feature||profile?.role==='super_admin'||(!plan.loading&&!plan.error&&plan.entitlements?.active===true&&plan.entitlements?.[feature]===true);};
  const [state,setState]=useState<{key:string;permissions:string[];loading:boolean;error:string|null}>({key:'',permissions:[],loading:true,error:null});
  const key=String(user?.id||'')+':'+String(ctx.schoolId||'');
  useEffect(()=>{let active=true;setState({key,permissions:[],loading:true,error:null});
@@ -17,6 +21,6 @@ export function useSchoolProPermissions(){
  const role=ctx.role.toLowerCase();
  const portalPermissions=ctx.schoolId?(role==='student'?studentReadPermissions:role==='parent'?parentReadPermissions:[]):[];
  return {permissions,portalPermissions,loading:ctx.loading||state.key!==key||state.loading,role:ctx.role,error:state.error,
-  can:(p:string|null)=>Boolean(p&&permissions.includes(p)),
-  canPortal:(p:string|null)=>Boolean(p&&portalPermissions.includes(p))};
+  can:(p:string|null)=>Boolean(p&&permissions.includes(p)&&allowedByPlan(p)),
+  canPortal:(p:string|null)=>Boolean(p&&portalPermissions.includes(p)&&allowedByPlan(p))};
 }

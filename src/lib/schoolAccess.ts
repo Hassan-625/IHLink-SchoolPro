@@ -4,7 +4,7 @@ export function schoolDashboard(role:string){
  switch(schoolRole(role)){
   case 'student':return '/schoolpro/student-dashboard';
   case 'parent':return '/schoolpro/parent-dashboard';
-  case 'teacher':return '/schoolpro/teacher-dashboard';
+  case 'class_teacher':case 'teacher':return '/schoolpro/teacher-dashboard';
   case 'proprietor':return '/schoolpro/proprietor-dashboard';
   case 'administrator':case 'bursar':case 'accountant':case 'super_administrator':return '/schoolpro/admin-dashboard';
   default:return '/schoolpro';
@@ -17,7 +17,7 @@ export function schoolDashboardAllowed(path:string,role:string,globalRole?:strin
  switch(path){
   case '/schoolpro/proprietor-dashboard':return normalized==='proprietor';
   case '/schoolpro/admin-dashboard':return management.includes(normalized);
-  case '/schoolpro/teacher-dashboard':return normalized==='teacher'||management.includes(normalized);
+  case '/schoolpro/teacher-dashboard':return ['teacher','class_teacher'].includes(normalized)||management.includes(normalized);
   case '/schoolpro/student-dashboard':return normalized==='student';
   case '/schoolpro/parent-dashboard':return normalized==='parent';
   default:return true;

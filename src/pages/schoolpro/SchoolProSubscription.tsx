@@ -27,12 +27,13 @@ function SchoolBillingWorkspace(){
   const db=supabase,school=ctx.schoolId;
   void Promise.all([
    db.from("schoolpro_subscription_catalog").select("*").eq("active",true).order("annual_price"),
+   db.from("schoolpro_plan_catalog").select("tier,features"),
    db.from("schoolpro_subscriptions").select("*").eq("school_id",school).maybeSingle(),
    db.from("schoolpro_subscription_intents").select("*").eq("school_id",school).eq("payer_user_id",user!.id).eq("payment_method","bank_transfer").order("created_at",{ascending:false})
-  ]).then(([p,s,i])=>{
+  ]).then(([p,matrix,s,i])=>{
    if(!current)return;
-   setPlans(p.data||[]);setSub(s.data);setIntents(i.data||[]);
-   setError(p.error||s.error||i.error?"Subscription details could not be loaded. Please try again.":"");setLoading(false);
+   setPlans((p.data||[]).map(plan=>({...plan,planFeatures:matrix.data?.find(row=>row.tier===plan.code)?.features||{}})));setSub(s.data);setIntents(i.data||[]);
+   setError(p.error||matrix.error||s.error||i.error?"Subscription details could not be loaded. Please try again.":"");setLoading(false);
   }).catch(e=>{if(current){setError("Subscription details could not be loaded. Please try again.");setLoading(false);}});
   return()=>{current=false;};
  },[ctx.schoolId,ctx.loading,ctx.error,user?.id]);
@@ -58,7 +59,7 @@ function SchoolBillingWorkspace(){
   <Card><p className="font-bold">Annual subscription</p><p className="mt-1 text-sm text-muted">Plans and prices come from the published IHLink catalogue. An existing pending transfer must be reconciled before changing its plan or payer.</p></Card>
   <div className="grid gap-4 md:grid-cols-3">{plans.map(p=>{
    const price=Number(p.annual_price||0),valid=Number.isFinite(price)&&price>0;
-   return <Card key={p.id}><h3 className="font-bold">{p.name}</h3><p className="mt-2 text-2xl font-bold">{valid?money(price)+" / year":"Not priced"}</p><Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button></Card>;
+   return <Card key={p.id}><h3 className="font-bold">{p.name}</h3><p className="mt-2 text-2xl font-bold">{valid?money(price)+" / year":"Not priced"}</p><ul className="mt-3 space-y-2 text-sm"><li>Core school management</li>{Object.entries({website:'School website',cbt:'CBT and online tests',advanced_reports:'Advanced reports',custom_branding:'Custom branding'}).map(([feature,label])=><li key={feature} className={p.planFeatures[feature]===true?'text-emerald-700':'text-muted'}>{p.planFeatures[feature]===true?'Included: ':'Not included: '}{label}</li>)}</ul><Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button></Card>;
   })}{!loading&&!error&&!plans.length&&<Card><p className="text-sm text-muted">No SchoolPro subscription plan has been published by IHLink yet.</p></Card>}</div>
  <BankTransferPayments key={ctx.schoolId||"no-school"} platform="schoolpro_subscription" instructions={intents}/></ModulePage>;
 }

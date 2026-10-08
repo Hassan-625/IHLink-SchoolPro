@@ -36,9 +36,14 @@ for width in [360,390,412]:
  find(explore)
  (out/('welcome-'+str(width)+'.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 root=screen()
-status=[n for n in root.iter('node') if n.attrib.get('resource-id')=='com.android.systemui:id/status_bar']
-assert status, 'Phone status bar missing'
-bar_bottom=int(re.findall(r'\d+',status[0].attrib['bounds'])[-1])
+windows=adb('shell','dumpsys','window')
+(out/'system-window-insets.txt').write_text(windows)
+status_lines=[line for line in windows.splitlines() if 'statusBars' in line and re.search(r'(?:mVisible|visible)=true',line)]
+assert status_lines, 'Phone status bar is not visible in system window insets'
+frames=[re.search(r'(?:mFrame|frame)=\[0,0\]\[\d+,(\d+)\]',line) for line in status_lines]
+heights=[int(f.group(1)) for f in frames if f]
+assert heights, 'Phone status bar bounds unavailable'
+bar_bottom=max(heights)
 app_labels=[n for n in root.iter('node') if 'IHLink ' in n.attrib.get('text','')]
 assert app_labels and all(int(re.findall(r'\d+',n.attrib['bounds'])[1])>=bar_bottom for n in app_labels), 'App header overlaps phone status bar'
 (out/'system-bar-check.txt').write_text('PASS: visible phone status bar and app heading below its bounds.\n')

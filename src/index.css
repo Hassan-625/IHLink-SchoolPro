@@ -251,3 +251,11 @@ html.native-app[data-appearance="light"] .bg-rose-50 {background:#fff1f2 !import
 html.native-app[data-appearance="light"] :is(.text-rose-700,.text-rose-800,.text-rose-900) {color:#be123c !important;}
 html.native-app[data-appearance="light"] .bg-amber-50 {background:#fffbeb !important;}
 html.native-app[data-appearance="light"] :is(.text-amber-700,.text-amber-800) {color:#92400e !important;}
+
+/* Keep system-bar backgrounds clear of scrolling content and modal scrims. */
+html.native-app::before, html.native-app::after { content:""; position:fixed; left:0; right:0; background:var(--app-bg); z-index:2147483647; pointer-events:none; }
+html.native-app::before { top:0; height:var(--safe-area-inset-top, env(safe-area-inset-top, 0px)); }
+html.native-app::after { bottom:0; height:var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); }
+html.native-app .native-help-hero { background:var(--app-card); }
+html.native-app .native-help-hero .text-purple-700 { color:var(--app-accent); }
+html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); }

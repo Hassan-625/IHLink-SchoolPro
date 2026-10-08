@@ -37,7 +37,7 @@ const popularArticles = [
 export function SchoolProSupport() {
   return (
     <PageShell product="schoolpro">
-      <section className="py-12 bg-gradient-to-br from-purple-50 to-indigo-50">
+      <section className="native-help-hero py-12 bg-gradient-to-br from-purple-50 to-indigo-50">
         <div className="px-6 lg:px-10 max-w-[1280px] mx-auto text-center">
           <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">
             Support Centre

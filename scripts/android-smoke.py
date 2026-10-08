@@ -35,6 +35,13 @@ for width in [360,390,412]:
  adb('shell','wm','size',str(width)+'x800');adb('shell','wm','density','160')
  find(explore)
  (out/('welcome-'+str(width)+'.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+root=screen()
+status=[n for n in root.iter('node') if n.attrib.get('resource-id')=='com.android.systemui:id/status_bar']
+assert status, 'Phone status bar missing'
+bar_bottom=int(re.findall(r'\d+',status[0].attrib['bounds'])[-1])
+app_labels=[n for n in root.iter('node') if 'IHLink ' in n.attrib.get('text','')]
+assert app_labels and all(int(re.findall(r'\d+',n.attrib['bounds'])[1])>=bar_bottom for n in app_labels), 'App header overlaps phone status bar'
+(out/'system-bar-check.txt').write_text('PASS: visible phone status bar and app heading below its bounds.\n')
 tap(find(explore))
 find(heading)
 (out/'explore.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))

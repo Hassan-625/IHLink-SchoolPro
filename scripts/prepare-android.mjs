@@ -23,3 +23,34 @@ for(const name of ['ic_launcher','ic_launcher_round'])writeFileSync(`${res}/mipm
 // Relative insets retain a 66/108 safe-zone ratio at every launcher render size.
 writeFileSync(`${res}/mipmap-anydpi/ic_launcher_foreground.xml`,`<?xml version="1.0" encoding="utf-8"?><inset xmlns:android="http://schemas.android.com/apk/res/android" android:insetLeft="19.444444%" android:insetTop="19.444444%" android:insetRight="19.444444%" android:insetBottom="19.444444%"><bitmap android:src="@drawable/ihlink_emblem" android:gravity="fill" android:filter="true"/></inset>`);
 for(const name of ['ic_launcher','ic_launcher_round'])writeFileSync(`${res}/mipmap-anydpi-v26/${name}.xml`,`<?xml version="1.0" encoding="utf-8"?><adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android"><background android:drawable="@android:color/white"/><foreground android:drawable="@mipmap/ic_launcher_foreground"/></adaptive-icon>`);
+
+// Match the native inset background to the selected app appearance on old and new WebViews.
+const systemRoot=`android/app/src/main/java/${config.appId.replaceAll('.', '/')}`;
+mkdirSync(systemRoot,{recursive:true});
+writeFileSync(`${systemRoot}/NativeSystemThemePlugin.java`,`package ${config.appId};
+import android.graphics.Color;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.annotation.CapacitorPlugin;
+@CapacitorPlugin(name="NativeSystemTheme")
+public class NativeSystemThemePlugin extends Plugin {
+ @PluginMethod public void apply(PluginCall call) {
+  boolean light=Boolean.TRUE.equals(call.getBoolean("light", false));
+  getActivity().runOnUiThread(()->{getActivity().getWindow().getDecorView().setBackgroundColor(Color.parseColor(light ? "#f1f5f9" : "#10151d"));call.resolve();});
+ }
+}
+`);
+const activityPath=`${systemRoot}/MainActivity.java`;
+let activity=readFileSync(activityPath,'utf8');
+if(activity.includes('registerPlugin(NativeVaultPlugin.class);')) activity=activity.replace('registerPlugin(NativeVaultPlugin.class);','registerPlugin(NativeVaultPlugin.class);registerPlugin(NativeSystemThemePlugin.class);');
+else activity=`package ${config.appId};
+import android.os.Bundle;
+import com.getcapacitor.BridgeActivity;
+public class MainActivity extends BridgeActivity { @Override public void onCreate(Bundle state){registerPlugin(NativeSystemThemePlugin.class);super.onCreate(state);} }
+`;
+writeFileSync(activityPath,activity);
+const stylesPath=`${res}/values/styles.xml`;
+let styles=readFileSync(stylesPath,'utf8');
+styles=styles.replace(/(<style name="AppTheme.NoActionBar"[^>]*>)/,'$1\n        <item name="android:windowBackground">#10151d</item>');
+writeFileSync(stylesPath,styles);

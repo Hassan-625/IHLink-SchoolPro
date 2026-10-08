@@ -2,16 +2,17 @@ import {useEffect,useState,type ReactNode} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {App as NativeApp} from '@capacitor/app';
 import {Browser} from '@capacitor/browser';
-import {SystemBars,SystemBarsStyle} from '@capacitor/core';
+import {Capacitor,registerPlugin,SystemBars,SystemBarsStyle} from '@capacitor/core';
 import {useAuth} from '@/context/AuthContext';
 import {supabase} from '@/lib/supabase';
 import {isNativeApp,nativeCallbackCode} from '@/lib/nativeAuth';
 const welcomeKey='ihlink.schoolpro.mobile.welcome.v1';
 const processed=new Set<string>();
+const nativeSystemTheme=registerPlugin<{apply:(options:{light:boolean})=>Promise<void>}>('NativeSystemTheme');
 export function NativeMobileShell({children}:{children:ReactNode}){
  const {user,loading}=useAuth();const navigate=useNavigate();const [welcome,setWelcome]=useState(()=>isNativeApp()&&localStorage.getItem(welcomeKey)!=='done'),[error,setError]=useState('');
  useEffect(()=>{if(!isNativeApp())return;document.documentElement.classList.add('native-app');if(!localStorage.getItem('ihlink-appearance')){localStorage.setItem('ihlink-appearance','dark');document.documentElement.dataset.appearance='dark';}let disposed=false;const listeners:Promise<{remove:()=>Promise<void>}>[]=[];
-  const appearance=()=>{void SystemBars.setStyle({style:document.documentElement.dataset.appearance==='light'?SystemBarsStyle.Light:SystemBarsStyle.Dark}).catch(()=>{});};
+  const appearance=()=>{const light=document.documentElement.dataset.appearance==='light';void SystemBars.setStyle({style:light?SystemBarsStyle.Light:SystemBarsStyle.Dark}).then(()=>Capacitor.getPlatform()==='android'?nativeSystemTheme.apply({light}):undefined).catch(()=>{});};
   appearance();void SystemBars.show().catch(()=>{});const observer=new MutationObserver(appearance);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-appearance']});
   listeners.push(NativeApp.addListener('appStateChange',event=>{if(event.isActive){appearance();void SystemBars.show().catch(()=>{});}}));
   async function callback(url:string){const code=nativeCallbackCode(url);if(!code||processed.has(code)||!supabase)return;processed.add(code);if(processed.size>16)processed.delete(processed.values().next().value!);try{const result=await supabase.auth.exchangeCodeForSession(code);if(result.error)throw result.error;if(disposed)return;localStorage.setItem(welcomeKey,'done');setWelcome(false);const next=sessionStorage.getItem('ih_auth_next');navigate(new URL(url).searchParams.get('flow')==='recovery'?'/auth/update-password':next&&next.startsWith('/schoolpro')?next:'/schoolpro',{replace:true});void Browser.close().catch(()=>{});}catch{if(!disposed)setError('App sign-in could not finish. Return to Sign in and try again.');}}

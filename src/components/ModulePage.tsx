@@ -1,3 +1,5 @@
+import {printSchoolDocument} from '@/lib/nativePrint';
+import {schoolFileName} from '@/lib/schoolDownloads';
 import {isNativeApp} from '@/lib/nativeAuth';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Download, Plus, Search } from 'lucide-react';
@@ -53,16 +55,16 @@ export function ModulePage({ product, sections, title, eyebrow, description, use
 
         <AutoTableTools>{children}</AutoTableTools>
 
-        {columns.length > 0 && <Card padding="none" className="overflow-hidden">
-          <div className="p-5 border-b border-border flex items-center justify-between gap-4">
-            <div><h3 className="font-bold text-ink">Records</h3><p className="text-xs text-muted mt-1">Manage and review the latest information.</p></div>
-            <div className="flex gap-2">
-              <div className="relative"><Search className="w-4 h-4 text-muted absolute left-3 top-2.5" /><input className="pl-9 pr-3 py-2 text-sm border border-border rounded-lg outline-none focus:ring-2 focus:ring-royal-200" placeholder="Search records" value={tableSearch} onChange={e => setTableSearch(e.target.value)} /></div>
+        {columns.length > 0 && <Card padding="none" className="print-document overflow-hidden">
+          <div className="p-4 border-b border-border flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+            <div className="min-w-0 sm:flex-1"><h3 className="font-bold text-ink">Records</h3><p className="text-xs text-muted mt-1">Manage and review the latest information.</p></div>
+            <div className="flex min-w-0 flex-wrap gap-2">
+              <div className="relative min-w-0 flex-1"><Search className="w-4 h-4 text-muted absolute left-3 top-2.5" /><input className="w-full min-w-0 pl-9 pr-3 py-2 text-sm border border-border rounded-lg outline-none focus:ring-2 focus:ring-royal-200" placeholder="Search records" value={tableSearch} onChange={e => setTableSearch(e.target.value)} /></div>
 
-              <Button variant="secondary" size="sm" onClick={()=>window.print()} leftIcon={<Download className="w-4 h-4" />}>Print / Save PDF</Button>
+              <Button className="shrink-0" variant="secondary" size="sm" onClick={()=>void printSchoolDocument({name:schoolFileName([userName,title,"Records"],"pdf"),orientation:"landscape"})} leftIcon={<Download className="w-4 h-4" />}>Print / Save PDF</Button>
             </div>
           </div>
-          <div className="overflow-x-auto"><table className="w-full text-left">
+          <div className="school-table-scroll overflow-x-auto"><table className="w-full text-left">
             <thead className="sticky top-0 z-10 bg-gray-50 shadow-sm"><tr>{columns.map(c => <th key={c.key} className="px-5 py-3 text-2xs uppercase tracking-wide text-muted">{c.label}</th>)}</tr></thead>
             <tbody className="divide-y divide-border">{filteredRows.map((row, i) => <tr key={i} className="hover:bg-gray-50/70">{columns.map(c => <td key={c.key} className="px-5 py-4 text-sm text-ink">{row[c.key]}</td>)}</tr>)}</tbody>
           </table></div>

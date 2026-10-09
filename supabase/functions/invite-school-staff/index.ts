@@ -22,7 +22,7 @@ Deno.serve(async(req:Request)=>{
   const {schoolId,email,role,relationship='guardian'}=body;
   const normalized=String(email||'').trim().toLowerCase();
   const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
-  const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
+  const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
   if(se||me||pe)throw new Error('lookup');
   if(!school||profile?.status!=='active'||(profile.role!=='super_admin'&&school.owner_id!==user.id&&!['proprietor','administrator'].includes(member?.role||'')))return respond({error:'Only school leaders can add accounts to this school.'},403);
   if(body.action==='list'){
@@ -34,7 +34,7 @@ Deno.serve(async(req:Request)=>{
    const code=crypto.randomUUID()+crypto.randomUUID();
    const {data,error}=await admin.from('schoolpro_access_invitations').update({token_hash:await hash(code),expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('id',String(body.invitationId||'')).eq('school_id',schoolId).is('accepted_at',null).select('email,role').maybeSingle();
    if(error)throw error;if(!data)return respond({error:'This invitation is no longer waiting for acceptance. Refresh the staff list.'},400);
-   return respond({ok:true,joiningCode:code,email:data.email,role:data.role});
+   return respond({ok:true,schoolCode:school.code,joiningCode:code,email:data.email,role:data.role});
   }
   if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
@@ -55,11 +55,11 @@ Deno.serve(async(req:Request)=>{
      const {error:challengeError}=await admin.from('schoolpro_account_challenges').delete().eq('user_id',existing.id);if(challengeError)throw challengeError;
      const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
      const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:existing.id,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
-     return respond({ok:true,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
+     return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }
    }
    const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
-   return respond({ok:true,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
+   return respond({ok:true,schoolCode:school.code,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
   }
   // A random inaccessible Auth password and ban prevent surname sessions or OAuth bypass.
   const {data:created,error:ce}=await admin.auth.admin.createUser({email:normalized,password:crypto.randomUUID()+crypto.randomUUID(),email_confirm:true,ban_duration:'876000h',app_metadata:{schoolpro_initial_login:true},user_metadata:{requested_service:'schoolpro',first_name:firstName,middle_name:middleName,last_name:surname}});
@@ -71,6 +71,6 @@ Deno.serve(async(req:Request)=>{
    const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(inviteError)throw inviteError;
    const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:uid,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
   }catch(error){await admin.auth.admin.deleteUser(uid);throw error;}
-  return respond({ok:true,created:true,email:normalized,role,initialPassword:'surname',expiresInDays:7});
+  return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',expiresInDays:7});
  }catch{return respond({error:'School access could not be created. Please check the details or contact support.'},400);}
 });

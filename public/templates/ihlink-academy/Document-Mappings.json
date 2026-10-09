@@ -1,0 +1,305 @@
+{
+  "certificate": [
+    {
+      "key": "school_name",
+      "page": 1,
+      "x": 421,
+      "y": 60,
+      "fontSize": 22,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "bold": true,
+      "align": "center"
+    },
+    {
+      "key": "school_address",
+      "page": 1,
+      "x": 421,
+      "y": 94,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "student_name",
+      "page": 1,
+      "x": 421,
+      "y": 230,
+      "fontSize": 28,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "bold": true,
+      "align": "center"
+    },
+    {
+      "key": "class_name",
+      "page": 1,
+      "x": 350,
+      "y": 312,
+      "fontSize": 14,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "session",
+      "page": 1,
+      "x": 600,
+      "y": 312,
+      "fontSize": 14,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "issue_date",
+      "page": 1,
+      "x": 180,
+      "y": 396,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "serial_number",
+      "page": 1,
+      "x": 590,
+      "y": 396,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "principal_signature",
+      "page": 1,
+      "x": 120,
+      "y": 450,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 140,
+      "height": 40
+    },
+    {
+      "key": "signature_2",
+      "page": 1,
+      "x": 580,
+      "y": 450,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 140,
+      "height": 40
+    },
+    {
+      "key": "signatory_1_name",
+      "page": 1,
+      "x": 190,
+      "y": 505,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_2_name",
+      "page": 1,
+      "x": 650,
+      "y": 505,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_1_title",
+      "page": 1,
+      "x": 190,
+      "y": 524,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_2_title",
+      "page": 1,
+      "x": 650,
+      "y": 524,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "school_logo",
+      "page": 1,
+      "x": 60,
+      "y": 48,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 64,
+      "height": 64
+    }
+  ],
+  "custom": [
+    {
+      "key": "school_name",
+      "page": 1,
+      "x": 120,
+      "y": 49,
+      "fontSize": 20,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "bold": true
+    },
+    {
+      "key": "school_address",
+      "page": 1,
+      "x": 120,
+      "y": 80,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "issue_date",
+      "page": 1,
+      "x": 420,
+      "y": 145,
+      "fontSize": 11,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "serial_number",
+      "page": 1,
+      "x": 130,
+      "y": 145,
+      "fontSize": 11,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "student_name",
+      "page": 1,
+      "x": 175,
+      "y": 235,
+      "fontSize": 14,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "bold": true
+    },
+    {
+      "key": "admission_number",
+      "page": 1,
+      "x": 175,
+      "y": 264,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "class_name",
+      "page": 1,
+      "x": 175,
+      "y": 293,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "session",
+      "page": 1,
+      "x": 175,
+      "y": 322,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "term",
+      "page": 1,
+      "x": 175,
+      "y": 351,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73"
+    },
+    {
+      "key": "principal_signature",
+      "page": 1,
+      "x": 80,
+      "y": 605,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 120,
+      "height": 40
+    },
+    {
+      "key": "signature_2",
+      "page": 1,
+      "x": 390,
+      "y": 605,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 120,
+      "height": 40
+    },
+    {
+      "key": "signatory_1_name",
+      "page": 1,
+      "x": 140,
+      "y": 664,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_1_title",
+      "page": 1,
+      "x": 140,
+      "y": 685,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_2_name",
+      "page": 1,
+      "x": 450,
+      "y": 664,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "signatory_2_title",
+      "page": 1,
+      "x": 450,
+      "y": 685,
+      "fontSize": 10,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "align": "center"
+    },
+    {
+      "key": "school_logo",
+      "page": 1,
+      "x": 48,
+      "y": 44,
+      "fontSize": 12,
+      "fontFamily": "Helvetica",
+      "color": "#123A73",
+      "width": 58,
+      "height": 58
+    }
+  ]
+}

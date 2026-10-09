@@ -1,0 +1,534 @@
+[
+  {
+    "key": "Nursery",
+    "name": "Nursery",
+    "config": {
+      "name": "IHLink Academy \u2014 Nursery \u2014 A4 portrait",
+      "field_cells": {
+        "school_name": "A100",
+        "student_name": "C6",
+        "admission_number": "C7",
+        "class_name": "L7",
+        "term": "A102",
+        "session": "A103",
+        "term_ending": "C9",
+        "next_term_begins": "L9",
+        "class_population": "A104",
+        "class_position": "A105",
+        "class_days": "C29",
+        "times_present": "H29",
+        "times_absent": "L29",
+        "times_on_leave": "P29",
+        "form_master_remark": "C42",
+        "principal_remark": "C44",
+        "principal_name": "I48",
+        "verification_url": "A50"
+      },
+      "columns": {
+        "subject": "A",
+        "total": "H",
+        "first_term": "I",
+        "second_term": "J",
+        "subject_average": "K",
+        "grade": "L",
+        "subject_position": "M",
+        "subject_class_average": "N",
+        "subject_remark": "O",
+        "status": ""
+      },
+      "custom_fields": [
+        {
+          "id": "school_address",
+          "label": "School address",
+          "cell": "A101",
+          "source": "literal",
+          "value": "School address and contact details",
+          "enabled": true
+        },
+        {
+          "id": "gender",
+          "label": "Gender",
+          "cell": "B10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "age",
+          "label": "Age",
+          "cell": "E10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "house",
+          "label": "House",
+          "cell": "I10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "report_number",
+          "label": "Report number",
+          "cell": "O10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "teacher_name",
+          "label": "Teacher name",
+          "cell": "A48",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "promotion",
+          "label": "Progression",
+          "cell": "I28",
+          "source": "literal",
+          "value": "Not yet decided",
+          "enabled": true
+        }
+      ],
+      "logo_cell": "A2:B5",
+      "photo_cell": "N2:P5",
+      "principal_signature_cell": "I46:N47",
+      "teacher_signature_cell": "A46:G47",
+      "qr_cell": "O46",
+      "qr_size": 45,
+      "sheet_name": "Result",
+      "start_row": 14,
+      "component_columns": {
+        "affective": {
+          "start_row": 33,
+          "label_column": "A",
+          "value_column": "G"
+        },
+        "psychomotor": {
+          "start_row": 33,
+          "label_column": "I",
+          "value_column": "O"
+        },
+        "assignment_1": "C",
+        "assignment_2": "D",
+        "test_1": "E",
+        "test_2": "F",
+        "exam": "G",
+        "__a4": {
+          "last_subject_row": 25,
+          "domain_limit": 8
+        }
+      },
+      "logo_width": 62,
+      "logo_height": 62,
+      "photo_width": 90,
+      "photo_height": 100,
+      "signature_width": 120,
+      "signature_height": 36
+    },
+    "file": "IHLink-Academy-Nursery-Result.xlsx"
+  },
+  {
+    "key": "Primary",
+    "name": "Primary",
+    "config": {
+      "name": "IHLink Academy \u2014 Primary \u2014 A4 portrait",
+      "field_cells": {
+        "school_name": "A100",
+        "student_name": "C6",
+        "admission_number": "C7",
+        "class_name": "L7",
+        "term": "A102",
+        "session": "A103",
+        "term_ending": "C9",
+        "next_term_begins": "L9",
+        "class_population": "A104",
+        "class_position": "A105",
+        "class_days": "C30",
+        "times_present": "H30",
+        "times_absent": "L30",
+        "times_on_leave": "P30",
+        "form_master_remark": "C43",
+        "principal_remark": "C45",
+        "principal_name": "I49",
+        "verification_url": "A51"
+      },
+      "columns": {
+        "subject": "A",
+        "total": "H",
+        "first_term": "I",
+        "second_term": "J",
+        "subject_average": "K",
+        "grade": "L",
+        "subject_position": "M",
+        "subject_class_average": "N",
+        "subject_remark": "O",
+        "status": ""
+      },
+      "custom_fields": [
+        {
+          "id": "school_address",
+          "label": "School address",
+          "cell": "A101",
+          "source": "literal",
+          "value": "School address and contact details",
+          "enabled": true
+        },
+        {
+          "id": "gender",
+          "label": "Gender",
+          "cell": "B10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "age",
+          "label": "Age",
+          "cell": "E10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "house",
+          "label": "House",
+          "cell": "I10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "report_number",
+          "label": "Report number",
+          "cell": "O10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "teacher_name",
+          "label": "Teacher name",
+          "cell": "A49",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "promotion",
+          "label": "Progression",
+          "cell": "I29",
+          "source": "literal",
+          "value": "Not yet decided",
+          "enabled": true
+        }
+      ],
+      "logo_cell": "A2:B5",
+      "photo_cell": "N2:P5",
+      "principal_signature_cell": "I47:N48",
+      "teacher_signature_cell": "A47:G48",
+      "qr_cell": "O47",
+      "qr_size": 45,
+      "sheet_name": "Result",
+      "start_row": 14,
+      "component_columns": {
+        "affective": {
+          "start_row": 34,
+          "label_column": "A",
+          "value_column": "G"
+        },
+        "psychomotor": {
+          "start_row": 34,
+          "label_column": "I",
+          "value_column": "O"
+        },
+        "assignment_1": "C",
+        "assignment_2": "D",
+        "test_1": "E",
+        "test_2": "F",
+        "exam": "G",
+        "__a4": {
+          "last_subject_row": 26,
+          "domain_limit": 8
+        }
+      },
+      "logo_width": 62,
+      "logo_height": 62,
+      "photo_width": 90,
+      "photo_height": 100,
+      "signature_width": 120,
+      "signature_height": 36
+    },
+    "file": "IHLink-Academy-Primary-Result.xlsx"
+  },
+  {
+    "key": "Junior-Secondary",
+    "name": "Junior Secondary",
+    "config": {
+      "name": "IHLink Academy \u2014 Junior Secondary \u2014 A4 portrait",
+      "field_cells": {
+        "school_name": "A100",
+        "student_name": "C6",
+        "admission_number": "C7",
+        "class_name": "L7",
+        "term": "A102",
+        "session": "A103",
+        "term_ending": "C9",
+        "next_term_begins": "L9",
+        "class_population": "A104",
+        "class_position": "A105",
+        "class_days": "C31",
+        "times_present": "H31",
+        "times_absent": "L31",
+        "times_on_leave": "P31",
+        "form_master_remark": "C44",
+        "principal_remark": "C46",
+        "principal_name": "I50",
+        "verification_url": "A52"
+      },
+      "columns": {
+        "subject": "A",
+        "total": "H",
+        "first_term": "I",
+        "second_term": "J",
+        "subject_average": "K",
+        "grade": "L",
+        "subject_position": "M",
+        "subject_class_average": "N",
+        "subject_remark": "O",
+        "status": ""
+      },
+      "custom_fields": [
+        {
+          "id": "school_address",
+          "label": "School address",
+          "cell": "A101",
+          "source": "literal",
+          "value": "School address and contact details",
+          "enabled": true
+        },
+        {
+          "id": "gender",
+          "label": "Gender",
+          "cell": "B10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "age",
+          "label": "Age",
+          "cell": "E10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "house",
+          "label": "House",
+          "cell": "I10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "report_number",
+          "label": "Report number",
+          "cell": "O10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "teacher_name",
+          "label": "Teacher name",
+          "cell": "A50",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "promotion",
+          "label": "Progression",
+          "cell": "I30",
+          "source": "literal",
+          "value": "Not yet decided",
+          "enabled": true
+        }
+      ],
+      "logo_cell": "A2:B5",
+      "photo_cell": "N2:P5",
+      "principal_signature_cell": "I48:N49",
+      "teacher_signature_cell": "A48:G49",
+      "qr_cell": "O48",
+      "qr_size": 45,
+      "sheet_name": "Result",
+      "start_row": 14,
+      "component_columns": {
+        "affective": {
+          "start_row": 35,
+          "label_column": "A",
+          "value_column": "G"
+        },
+        "psychomotor": {
+          "start_row": 35,
+          "label_column": "I",
+          "value_column": "O"
+        },
+        "assignment_1": "C",
+        "assignment_2": "D",
+        "test_1": "E",
+        "test_2": "F",
+        "exam": "G",
+        "__a4": {
+          "last_subject_row": 27,
+          "domain_limit": 8
+        }
+      },
+      "logo_width": 62,
+      "logo_height": 62,
+      "photo_width": 90,
+      "photo_height": 100,
+      "signature_width": 120,
+      "signature_height": 36
+    },
+    "file": "IHLink-Academy-Junior-Secondary-Result.xlsx"
+  },
+  {
+    "key": "Senior-Secondary",
+    "name": "Senior Secondary",
+    "config": {
+      "name": "IHLink Academy \u2014 Senior Secondary \u2014 A4 portrait",
+      "field_cells": {
+        "school_name": "A100",
+        "student_name": "C6",
+        "admission_number": "C7",
+        "class_name": "L7",
+        "term": "A102",
+        "session": "A103",
+        "term_ending": "C9",
+        "next_term_begins": "L9",
+        "class_population": "A104",
+        "class_position": "A105",
+        "class_days": "C26",
+        "times_present": "H26",
+        "times_absent": "L26",
+        "times_on_leave": "P26",
+        "form_master_remark": "C39",
+        "principal_remark": "C41",
+        "principal_name": "I45",
+        "verification_url": "A47"
+      },
+      "columns": {
+        "subject": "A",
+        "total": "H",
+        "first_term": "I",
+        "second_term": "J",
+        "subject_average": "K",
+        "grade": "L",
+        "subject_position": "M",
+        "subject_class_average": "N",
+        "subject_remark": "O",
+        "status": ""
+      },
+      "custom_fields": [
+        {
+          "id": "school_address",
+          "label": "School address",
+          "cell": "A101",
+          "source": "literal",
+          "value": "School address and contact details",
+          "enabled": true
+        },
+        {
+          "id": "gender",
+          "label": "Gender",
+          "cell": "B10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "age",
+          "label": "Age",
+          "cell": "E10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "house",
+          "label": "House",
+          "cell": "I10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "report_number",
+          "label": "Report number",
+          "cell": "O10",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "teacher_name",
+          "label": "Teacher name",
+          "cell": "A45",
+          "source": "literal",
+          "value": "",
+          "enabled": true
+        },
+        {
+          "id": "promotion",
+          "label": "Progression",
+          "cell": "I25",
+          "source": "literal",
+          "value": "Not yet decided",
+          "enabled": true
+        }
+      ],
+      "logo_cell": "A2:B5",
+      "photo_cell": "N2:P5",
+      "principal_signature_cell": "I43:N44",
+      "teacher_signature_cell": "A43:G44",
+      "qr_cell": "O43",
+      "qr_size": 45,
+      "sheet_name": "Result",
+      "start_row": 14,
+      "component_columns": {
+        "affective": {
+          "start_row": 30,
+          "label_column": "A",
+          "value_column": "G"
+        },
+        "psychomotor": {
+          "start_row": 30,
+          "label_column": "I",
+          "value_column": "O"
+        },
+        "assignment_1": "C",
+        "assignment_2": "D",
+        "test_1": "E",
+        "test_2": "F",
+        "exam": "G",
+        "__a4": {
+          "last_subject_row": 22,
+          "domain_limit": 8
+        }
+      },
+      "logo_width": 62,
+      "logo_height": 62,
+      "photo_width": 90,
+      "photo_height": 100,
+      "signature_width": 120,
+      "signature_height": 36
+    },
+    "file": "IHLink-Academy-Senior-Secondary-Result.xlsx"
+  }
+]

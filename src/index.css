@@ -375,3 +375,5 @@ html.native-app .app-unlock { min-height:calc(100dvh - var(--safe-area-inset-top
 .school-table-scroll :is(th,td) {overflow-wrap:normal;word-break:normal;white-space:nowrap;}
 .native-workspace :is(h1,h2,h3,h4,button,label) {overflow-wrap:normal;word-break:normal;}
 @media print {.school-table-scroll {overflow:visible}.school-table-scroll table {min-width:0}.school-table-scroll :is(th,td) {white-space:normal}}
+
+.brand-school-tools span { min-width:0; white-space:normal; overflow-wrap:normal; word-break:normal; font-size:9px; }

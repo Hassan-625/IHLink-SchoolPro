@@ -70,6 +70,15 @@ begin
  denied:=false;begin insert into public.schoolpro_discipline_records(school_id,student_id,incident,status,created_by) values(fixture.school_id,fixture.other_student,'Unassigned student','open',fixture.teacher_id);exception when insufficient_privilege then denied:=true;end;if not denied then raise exception 'Unassigned student concern allowed';end if;
  execute 'reset role';
  if not exists(select 1 from public.schoolpro_notifications where schoolpro_notifications.school_id=fixture.school_id and user_id=fixture.owner_id and kind='discipline')then raise exception 'Proprietor was not notified';end if;
+ -- Notice targeting must follow class permissions, including teachers without a parent link.
+ perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+ execute 'set local role authenticated';
+ n:=public.schoolpro_send_school_notice(school_id,'Fixture notice','Assigned-class notice',array[class_id],null,'families');
+ if n<>1 then raise exception 'Assigned teacher notice recipient count failed';end if;
+ denied:=false;begin perform public.schoolpro_send_school_notice(school_id,'Unassigned','Not allowed',array[other_class],null,'families');exception when others then denied:=true;end;if not denied then raise exception 'Teacher notified unassigned class';end if;
+ denied:=false;begin perform public.schoolpro_send_school_notice(school_id,'Staff','Not allowed',null,null,'staff');exception when others then denied:=true;end;if not denied then raise exception 'Teacher notified all staff';end if;
+ execute 'reset role';
+ if not exists(select 1 from public.schoolpro_notifications where schoolpro_notifications.school_id=fixture.school_id and user_id=fixture.learner_id and title='Fixture notice')then raise exception 'Student app notice missing';end if;
  -- School code never admits an uninvited account.
  if public.schoolpro_join_school_code(other_parent,'FIX-'||school_id) is not null then raise exception 'School code granted uninvited access';end if;
  insert into public.schoolpro_access_invitations(school_id,email,role,token_hash,created_by) values(fixture.school_id,'fixture-'||fixture.other_parent||'@example.invalid','teacher',md5(fixture.other_parent::text)||md5(fixture.other_parent::text),fixture.owner_id);

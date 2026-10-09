@@ -39,6 +39,11 @@ public class NativeVaultSecurityTest {
     Result read=new Result("getItem",data("key","fixture-session"));vault.getItem(read);assertEquals("isolated-fake-session-never-real-credentials",read.await().result.getString("value"));
     Result changeWrong=new Result("configure",data("pin","654321","currentPin","000000"));vault.configure(changeWrong);assertNotNull(changeWrong.await().failure);
     Result change=new Result("configure",data("pin","654321","currentPin","123456"));vault.configure(change);assertNull(change.await().failure);
+    Result removeSession=new Result("removeItem",data("key","fixture-session"));vault.removeItem(removeSession);assertNull(removeSession.await().failure);
+    Result preserved=new Result("status",data());vault.status(preserved);assertTrue("Signing out must preserve configured passcode",preserved.await().result.getBool("enabled"));
+    Result returnLock=new Result("lock",data());vault.lock(returnLock);returnLock.await();
+    Result returnUnlock=new Result("unlock",data("pin","654321"));vault.unlock(returnUnlock);assertNull("Returning device passcode must still work",returnUnlock.await().failure);
+    Result signedOutRead=new Result("getItem",data("key","fixture-session"));vault.getItem(signedOutRead);assertNull(signedOutRead.await().result.getString("value"));
     Result lockAgain=new Result("lock",data());vault.lock(lockAgain);lockAgain.await();
     for(int i=0;i<5;i++){Result incorrect=new Result("unlock",data("pin","123456"));vault.unlock(incorrect);assertNotNull(incorrect.await().failure);}
     Result status=new Result("status",data());vault.status(status);assertFalse(status.await().result.getBool("enabled"));Result wiped=new Result("getItem",data("key","fixture-session"));vault.getItem(wiped);assertNull(wiped.await().result.getString("value"));

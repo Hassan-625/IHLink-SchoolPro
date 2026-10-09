@@ -58,6 +58,9 @@ for width in [360,390,412]:
   item=find(label);x1,y1,x2,y2=map(int,re.findall(r'\d+',item.attrib['bounds']))
   assert 0<=y1<y2<=800 and y2-y1>=44, 'Welcome action is not fully visible: '+label
  (out/('welcome-'+str(width)+'.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+ for slide in range(3):
+  (out/('welcome-'+str(width)+'-slide-'+str(slide+1)+'.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
+  tap(find('Next welcome slide'));time.sleep(.5)
 root=screen()
 windows=adb('shell','dumpsys','window')
 (out/'system-window-insets.txt').write_text(windows)

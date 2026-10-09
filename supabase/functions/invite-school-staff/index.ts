@@ -22,11 +22,21 @@ Deno.serve(async(req:Request)=>{
   const {schoolId,email,role,relationship='guardian'}=body;
   const normalized=String(email||'').trim().toLowerCase();
   const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
-  if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['administrator','teacher','accountant','parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
   if(se||me||pe)throw new Error('lookup');
   if(!school||profile?.status!=='active'||(profile.role!=='super_admin'&&school.owner_id!==user.id&&!['proprietor','administrator'].includes(member?.role||'')))return respond({error:'Only school leaders can add accounts to this school.'},403);
+  if(body.action==='list'){
+   const {data,error}=await admin.from('schoolpro_access_invitations').select('id,email,role,expires_at,accepted_at').eq('school_id',schoolId).neq('role','parent').is('accepted_at',null).order('expires_at',{ascending:false}).limit(200);
+   if(error)throw error;return respond({ok:true,invitations:data});
+  }
   const {data:allowed,error:rateError}=await admin.rpc('schoolpro_take_login_attempt',{p_key:await hash('school-add:'+user.id),p_limit:60});if(rateError)throw rateError;if(!allowed)return respond({error:'Please wait 15 minutes before adding more accounts.'},429);
+  if(body.action==='regenerate'){
+   const code=crypto.randomUUID()+crypto.randomUUID();
+   const {data,error}=await admin.from('schoolpro_access_invitations').update({token_hash:await hash(code),expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('id',String(body.invitationId||'')).eq('school_id',schoolId).is('accepted_at',null).select('email,role').maybeSingle();
+   if(error)throw error;if(!data)return respond({error:'This invitation is no longer waiting for acceptance. Refresh the staff list.'},400);
+   return respond({ok:true,joiningCode:code,email:data.email,role:data.role});
+  }
+  if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
   if(role==='parent'){
    if(!studentIds.length||studentIds.length>50||!['mother','father','guardian','sponsor'].includes(relationship))return respond({error:'Choose at least one enrolled child and a relationship.'},400);

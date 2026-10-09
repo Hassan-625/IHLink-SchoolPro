@@ -52,7 +52,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         if(data?.requiresPasswordChange){setChallenge(data.challenge);setPassword('');setConfirm('');return;}
         if(!data?.session){setError('Sign in could not be completed. Please try again.');return;}
         const {data:sessionData,error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError||!sessionData.user){setError('Sign in could not be completed. Please try again.');return;}
-        if(joiningCode.trim()){const result=await supabase.functions.invoke('invite-school-staff',{body:{action:'accept',code:joiningCode.trim()}});if(result.error||result.data?.error){setError(result.data?.error||'This joining code could not be accepted. Check with your school.');return;}}
+        if(joiningCode.trim()){const result=await supabase.functions.invoke('invite-school-staff',{headers:{Authorization:`Bearer ${sessionData.session?.access_token}`},body:{action:'accept',code:joiningCode.trim()}});if(result.error||result.data?.error){let feedback=result.data?.error;if(!feedback&&result.error?.context instanceof Response){const response=await result.error.context.clone().json().catch(()=>null);feedback=response?.error;}setError(feedback||'This joining code could not be accepted. Ask your school for a fresh code.');return;}}
         destination=await schoolSignInDestination(sessionData.user.id,profile?.id===sessionData.user.id&&profile.role==='super_admin')||'/schoolpro';
       }
       if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(destination);

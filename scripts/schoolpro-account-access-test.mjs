@@ -9,13 +9,13 @@ async function harness(path){
  let handler;const tables=fixture();const accounts=new Map();let invites=0,creates=0,rateAllowed=true,caller='owner';
  class Query{
   constructor(table){this.table=table;this.filters=[];this.action='read';}
-  select(){return this;}eq(k,v){this.filters.push(r=>r[k]===v);return this;}is(k,v){return this.eq(k,v);}limit(n){this.n=n;return this;}in(k,v){this.filters.push(r=>v.includes(r[k]));return this;}gt(k,v){this.filters.push(r=>r[k]>v);return this;}delete(){this.action="delete";return this;}
+  select(columns){if(columns)this.columns=columns.split(',');return this;}neq(k,v){this.filters.push(r=>r[k]!==v);return this;}order(){return this;}eq(k,v){this.filters.push(r=>r[k]===v);return this;}is(k,v){return this.eq(k,v);}limit(n){this.n=n;return this;}in(k,v){this.filters.push(r=>v.includes(r[k]));return this;}gt(k,v){this.filters.push(r=>r[k]>v);return this;}delete(){this.action="delete";return this;}
   insert(v){this.action='insert';this.value=v;return this;}upsert(v){this.action='upsert';this.value=v;return this;}update(v){this.action='update';this.value=v;return this;}
   async run(single=false){let rows=(tables[this.table]||[]).filter(r=>this.filters.every(f=>f(r)));
-   if(this.action==='insert'||this.action==='upsert'){tables[this.table].push({...this.value});rows=[this.value];}
+   if(this.action==='insert'||this.action==='upsert'){const value={id:webcrypto.randomUUID(),accepted_at:null,expires_at:new Date(Date.now()+7*86400000).toISOString(),...this.value};tables[this.table].push(value);rows=[value];}
    if(this.action==='delete')tables[this.table]=tables[this.table].filter(r=>!rows.includes(r));
    if(this.action==='update')rows.forEach(r=>Object.assign(r,this.value));
-   if(this.n)rows=rows.slice(0,this.n);return {data:single?rows[0]||null:rows.map(r=>({...r})),error:null};
+   if(this.n)rows=rows.slice(0,this.n);return {data:single?rows[0]||null:rows.map(r=>this.columns?Object.fromEntries(this.columns.filter(k=>k in r).map(k=>[k,r[k]])):{...r}),error:null};
   }maybeSingle(){return this.run(true);}then(a,b){return this.run().then(a,b);}
  }
  const admin={from:t=>new Query(t),rpc:async(name,args)=>{
@@ -71,3 +71,16 @@ response=await initial.post({...initialInput,challenge:staffChallenge,password:'
 assert.equal((await initial.post(initialInput)).status,401);assert.equal((await initial.post({...initialInput,password:'Unique-new-password!'})).status,200);assert.equal((await initial.post({...initialInput,challenge:staffChallenge,password:'Unique-new-password!'})).status,401);
 initial.setRateAllowed(false);assert.equal((await initial.post(initialInput)).status,429);
 console.log('PASS: student and adult first-login sessions require new passwords; outsider/child isolation, existing-account acceptance, role preservation, no email delivery, random inaccessible initial Auth password, activation replay and rate limits.');
+
+const managed=await harness('supabase/functions/invite-school-staff/index.ts');
+managed.tables.profiles.push({id:'staff',email:'staff@example.test',status:'active'});
+response=await managed.post({schoolId:school,email:'staff@example.test',role:'bursar',...names});assert.equal(response.data.requiresAcceptance,true);const oldCode=response.data.joiningCode;
+response=await managed.post({action:'list',schoolId:school});assert.equal(response.status,200);assert.equal(response.data.invitations.length,1);assert.equal(response.data.invitations[0].token_hash,undefined,'Invitation secrets must never appear in list responses');
+const id=response.data.invitations[0].id;
+managed.setCaller('staff');assert.equal((await managed.post({action:'list',schoolId:school})).status,403);assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,403);
+managed.setCaller('owner');assert.equal((await managed.post({action:'regenerate',schoolId:'foreign-school',invitationId:id})).status,403);
+response=await managed.post({action:'regenerate',schoolId:school,invitationId:id});assert.equal(response.status,200);const freshCode=response.data.joiningCode;assert.notEqual(freshCode,oldCode);
+managed.setCaller('staff');assert.equal((await managed.post({action:'accept',code:oldCode})).status,400);assert.equal((await managed.post({action:'accept',code:freshCode})).status,200);assert.equal(managed.tables.schoolpro_members[0].role,'bursar');
+managed.setCaller('owner');assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,400);assert.equal((await managed.post({action:'list',schoolId:school})).data.invitations.length,0);
+managed.setRateAllowed(false);assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,429);
+console.log('PASS: pending staff persist, leaders-only listing, school-bound regeneration, old-code rejection, bursar acceptance and accepted invitations cannot regenerate');

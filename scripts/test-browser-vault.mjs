@@ -23,6 +23,7 @@ await assert.rejects(()=>vault.getItem({key:sessionKey}));
 await assert.rejects(()=>vault.unlock({pin:'111111'}));assert.equal((await vault.status()).locked,true);
 await vault.unlock({pin:'123456'});assert.equal((await vault.getItem({key:sessionKey})).value,'private-test-session');
 await assert.rejects(()=>vault.biometric({enable:true}));assert.equal((await vault.status()).biometricEnabled,false,'Unsupported biometric enrollment cannot enable unlock');
+await vault.removeItem({key:sessionKey});assert.equal((await vault.status()).enabled,true,'Removing the auth session preserves device passcode');await vault.lock();await vault.unlock({pin:'123456'});assert.equal((await vault.getItem({key:sessionKey})).value,null);
 await vault.lock();for(let i=0;i<5;i++)await assert.rejects(()=>vault.unlock({pin:'111111'}));
 assert.equal((await vault.status()).enabled,false);assert.equal((await vault.getItem({key:sessionKey})).value,null);
 console.log('PASS: encrypted browser sessions, passcode unlock, rejected biometrics and five-attempt device reset');

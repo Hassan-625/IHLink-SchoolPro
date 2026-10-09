@@ -8,6 +8,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 const require=createRequire(import.meta.url);
 const school=readFileSync(new URL('../src/lib/nativeEntry.ts',import.meta.url),'utf8').includes('/schoolpro');
 const product=school?'schoolpro':'datasub';
+const choices=new Map();const localStorage={getItem:key=>choices.get(key)??null,setItem:(key,value)=>choices.set(key,value)};
 let user=null,loading=false,path='/'+product,native=true,states=[],cursor=0;
 const node=(tag,props,children)=>React.createElement(tag,props,children);
 function load(file){
@@ -31,9 +32,9 @@ function load(file){
   if(name.endsWith('/Button'))return {Button:({children})=>node('button',{},children)};
   return require(name);
  };
- vm.runInNewContext(output,{exports,require:custom,console});return exports;
+ vm.runInNewContext(output,{exports,require:custom,console,localStorage});return exports;
 }
-function render(file,name,values=[],children='AUTH FORM'){states=values;cursor=0;return renderToStaticMarkup(React.createElement(load(file)[name],{},children));}
+function render(file,name,values=[],children='AUTH FORM',props={}){states=values;cursor=0;return renderToStaticMarkup(React.createElement(load(file)[name],props,children));}
 let html=render('components/NativeAppShell.tsx','NativeAppShell');
 assert(html.includes('Welcome to '+product));assert(!html.includes('App navigation'));
 path=school?'/schoolpro/student-login':'/signin';
@@ -70,3 +71,13 @@ controls.find(e=>e.props?.['aria-label']==='Digit 3').props.onClick();assert.equ
 controls.find(e=>e.props?.['aria-label']==='Delete last digit').props.onClick();assert.equal(entered,'1');
 controls.find(e=>e.props?.['aria-label']==='Use fingerprint').props.onClick();assert.equal(fingerprint,true);
 console.log('PASS: branded welcome slides and passcode keypad input, deletion and fingerprint action');
+
+user={id:"returning-account"};
+const enrollment={enabled:true,biometricAvailable:true,biometricEnabled:false};
+html=render('components/NativeAppSecurity.tsx','NativeAppSecurity',[enrollment,'','','','',false],'',{setupOnly:true});
+assert(!html.includes('Current app passcode'));assert(!html.includes('Change app passcode'));assert(html.includes('Enable fingerprint'));assert(html.includes('Continue with passcode'));
+html=render('components/NativeAppSecurity.tsx','NativeAppSecurity',[enrollment,'','','','',false]);assert(html.includes('Current app passcode'));assert(html.includes('Change app passcode'));
+if(!school){html=render(promptFile,promptName,[false,{...vault,enabled:false},false]);assert(!html.includes('Set your wallet transaction PIN'),'Wallet PIN must wait until device security setup finishes');html=render(promptFile,promptName,[false,{...enrollment,biometricEnabled:true},false]);assert(html.includes('Set your wallet transaction PIN'));}
+choices.set('ihlink.'+product+'.fingerprint-choice','skipped');html=render(promptFile,promptName,school?[enrollment,false]:[true,enrollment,false]);assert(!html.includes('role="dialog"'),'Optional fingerprint choice must survive subsequent sign-ins');
+const auth=readFileSync(new URL('../src/context/AuthContext.tsx',import.meta.url),'utf8');assert(!auth.slice(auth.indexOf('async signOut()')).includes('NativeVault.reset()'),'Ordinary sign-out must preserve device security');
+console.log('PASS: setup uses fingerprint step instead of change-passcode form, wallet PIN follows device setup, and fingerprint skip persists');

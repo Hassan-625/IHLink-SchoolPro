@@ -206,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signOut() {
         if (supabase) {
           await supabase.auth.signOut({ scope: "local" });
-          if(androidVault){await NativeVault.reset();vaultReady();}
+          if(androidVault)vaultReady();
           setSession(null);
           setProfile(null);
           setAdminAccess([]);

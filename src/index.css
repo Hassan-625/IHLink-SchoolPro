@@ -350,3 +350,12 @@ html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); 
 @media(max-height:650px){ .mobile-brand-preview { width:min(195px,70%); padding:8px; } .preview-feature-title { margin-top:6px; font-size:12px; } .brand-school-tools span { padding:5px 2px; } .preview-feature-body { padding:5px; } }
 
 html.native-app .app-unlock { min-height:calc(100dvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }
+
+/* Keep every feature preview beside its photo, rather than covering it. */
+.welcome-art { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.05fr); gap:10px; align-items:center; }
+.welcome-art > img { width:100%; height:auto; max-height:100%; object-fit:contain; border-radius:20px; }
+.welcome-art > .mobile-brand-preview { position:static; width:100%; min-width:0; padding:10px; box-shadow:none; }
+.welcome-art .brand-preview-name { font-size:10px; flex-wrap:wrap; }
+.welcome-art .preview-feature-title { font-size:12px; }
+.welcome-art .preview-feature-actions { font-size:10px; }
+@media(max-height:650px){ .welcome-art { gap:6px; } .welcome-art>.mobile-brand-preview { padding:7px; } .welcome-art .preview-feature-title { margin-top:4px; font-size:11px; } .welcome-art .brand-network-row { margin:4px 0; } .welcome-art .preview-feature-actions { margin:4px 0; font-size:9px; } }

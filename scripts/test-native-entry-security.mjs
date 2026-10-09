@@ -22,6 +22,7 @@ function load(file){
   if(name==='@/hooks/useSchoolProContext')return {useSchoolProContext:()=>({role:'proprietor',loading:false})};
   if(name==='@/hooks/useSchoolProPermissions')return {useSchoolProPermissions:()=>({can:()=>true})};
   if(name==='@/components/Logo')return {Logo:()=>node('img',{alt:'IHLink'})};
+  if(name==='./MobileBrandPreview')return load('components/MobileBrandPreview.tsx');
   if(name==='./NativeSignedOutHome')return {NativeSignedOutHome:()=>node('div',{},'Welcome to '+product)};
   if(name==='@/lib/supabase')return {supabase:{}};
   if(name==='@/lib/nativeVault')return {securitySupported:true,NativeVault:{}};
@@ -53,3 +54,19 @@ const entry=load('lib/nativeEntry.ts').signedOutNativeAccess;
 assert.equal(entry(school?'/schoolpro/parents':'/datasub/transfer'),'signin');
 assert.equal(entry('/auth/update-password'),'public');assert.equal(entry('/register'),'public');
 console.log('PASS: signed-out navigation, private deep links, loading, browser layout, admin passcode prompts and completion');
+
+user=null;
+for(let index=0;index<3;index++){
+ const welcome=render('components/NativeSignedOutHome.tsx','NativeSignedOutHome',[index]);
+ assert(welcome.includes('welcome-screen'));assert(welcome.includes('IHLink '+(school?'SchoolPro':'DataSub')));
+ assert(welcome.includes('/mobile/'));assert(!welcome.includes('App navigation'));
+ if(!school){assert(welcome.includes('/brands/mtn.png'));assert(welcome.includes('/brands/airtel.png'));}
+}
+let entered='',fingerprint=false;states=[];cursor=0;
+const keypad=load('components/AppUnlockScreen.tsx').AppUnlockScreen({pin:'12',busy:false,error:'',biometric:true,onPin:value=>entered=value,onUnlock:value=>fingerprint=value===true,onReset:()=>{}});
+function buttons(element){if(!element||typeof element!=='object')return [];return [element,...[element.props?.children].flat(8).flatMap(buttons)];}
+const controls=buttons(keypad);
+controls.find(e=>e.props?.['aria-label']==='Digit 3').props.onClick();assert.equal(entered,'123');
+controls.find(e=>e.props?.['aria-label']==='Delete last digit').props.onClick();assert.equal(entered,'1');
+controls.find(e=>e.props?.['aria-label']==='Use fingerprint').props.onClick();assert.equal(fingerprint,true);
+console.log('PASS: branded welcome slides and passcode keypad input, deletion and fingerprint action');

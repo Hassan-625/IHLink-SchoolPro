@@ -28,6 +28,7 @@ export function NativeAppShell({children}:{children:ReactNode}){
  if(!isNativeApp())return <>{children}</>;
  if(loading)return <main className="app-page"><p role="status">Opening your account…</p></main>;
  const entry=signedOutNativeAccess(location.pathname);
+ if(!user&&entry==='welcome')return <NativeSignedOutHome/>;
  if(!user&&entry==='signin')return <Navigate to="/schoolpro/login" replace/>;
  const home='/schoolpro'; const atHome=location.pathname===home||location.pathname==='/';
  const role=school.role.toLowerCase();const results=role==='student'?'/schoolpro/student-results':role==='parent'?'/schoolpro/parent-dashboard':permissions.can('results')?'/schoolpro/results':'/schoolpro/result-checker';

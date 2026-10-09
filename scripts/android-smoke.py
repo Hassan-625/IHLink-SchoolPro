@@ -54,6 +54,9 @@ app_pids=set(adb('shell','pidof',app).split())
 for width in [360,390,412]:
  adb('shell','wm','size',str(width)+'x800');adb('shell','wm','density','160')
  find(welcome)
+ for label in ['Sign in','Create account' if app.endswith('datasub') else 'Register your school']:
+  item=find(label);x1,y1,x2,y2=map(int,re.findall(r'\d+',item.attrib['bounds']))
+  assert 0<=y1<y2<=800 and y2-y1>=44, 'Welcome action is not fully visible: '+label
  (out/('welcome-'+str(width)+'.png')).write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p']))
 root=screen()
 windows=adb('shell','dumpsys','window')
@@ -78,7 +81,10 @@ def assert_signed_out():
  assert not any(text in ['Home','Services','Wallet','Activity','Account','Results'] for text in texts), 'Private navigation shown before sign-in'
  assert not any('© 2026 IHLink' in text for text in texts), 'Website footer shown before sign-in'
 assert_signed_out()
-tap(find('Sign in' if app.endswith('datasub') else 'Student sign in'))
+tap(find('Sign in'))
+if app.endswith('schoolpro'):
+ tap(find('School owner'))
+ tap(find('Student'))
 find('Email address' if app.endswith('datasub') else 'Admission number')
 if app.endswith('schoolpro'):find('School code')
 assert_signed_out()

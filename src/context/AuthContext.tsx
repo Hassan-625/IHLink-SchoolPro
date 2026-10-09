@@ -166,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return error ? customerAuthError(error) : null;
       },
       async signUp({ email, password, firstName, middleName, lastName, phone, sex, newsletterOptIn, service }) {
+        if (![firstName, middleName, lastName].every(name => name.trim())) return { error: "Enter your first name, middle name and surname.", needsVerification: false, existingAccount: false };
         if (!supabase)
           return { error: "Sign-in is temporarily unavailable. Please try again shortly.", needsVerification: false, existingAccount: false };
         const { data, error } = await supabase.auth.signUp({

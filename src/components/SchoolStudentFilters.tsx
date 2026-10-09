@@ -1,0 +1,13 @@
+import {useEffect,useMemo,useState} from 'react';
+import {supabase} from '@/lib/supabase';
+import {schoolSection,type SchoolClass} from '@/lib/schoolClassFilters';
+export type FilterStudent={id:string;class_id?:string|null;class_name?:string|null;class_level?:string|null};
+export function SchoolStudentFilters({schoolId,students,onChange}:{schoolId:string|null;students:FilterStudent[];onChange:(ids:string[])=>void}){
+ const [classes,setClasses]=useState<SchoolClass[]>([]),[section,setSection]=useState(''),[classId,setClassId]=useState('');
+ useEffect(()=>{let active=true;setClasses([]);setSection('');setClassId('');if(schoolId&&supabase)void supabase.from('schoolpro_classes').select('id,name,arm,level').eq('school_id',schoolId).order('name').then(r=>{if(active)setClasses(r.data||[])});return()=>{active=false}},[schoolId]);
+ const options=useMemo(()=>{const map=new Map<string,{id:string;name:string;section:string}>();for(const s of students){const c=classes.find(c=>c.id===s.class_id),id=c?.id||s.class_name||'';if(id)map.set(id,{id,name:c?[c.name,c.arm].filter(Boolean).join(' '):s.class_name||'',section:schoolSection(c?.level||s.class_level,c?.name||s.class_name||'')})}return [...map.values()]},[classes,students]);
+ const visible=useMemo(()=>students.filter(s=>{const c=classes.find(c=>c.id===s.class_id);return (!section||schoolSection(c?.level||s.class_level,c?.name||s.class_name||'')===section)&&(!classId||(c?.id||s.class_name)===classId)}).map(s=>s.id),[students,classes,section,classId]);
+ function apply(nextSection:string,nextClass:string){setSection(nextSection);setClassId(nextClass);onChange(students.filter(s=>{const c=classes.find(c=>c.id===s.class_id);return (!nextSection||schoolSection(c?.level||s.class_level,c?.name||s.class_name||'')===nextSection)&&(!nextClass||(c?.id||s.class_name)===nextClass)}).map(s=>s.id));}
+ useEffect(()=>{onChange(visible)},[visible,onChange]);
+ return <div className="grid min-w-0 grid-cols-2 gap-2"><label className="min-w-0 text-xs font-semibold">Section<select aria-label="School section" className="mt-1 w-full min-w-0 rounded-lg border p-2.5 text-sm" value={section} onChange={e=>apply(e.target.value,'')}><option value="">All sections</option>{[...new Set(options.map(c=>c.section))].sort().map(x=><option key={x}>{x}</option>)}</select></label><label className="min-w-0 text-xs font-semibold">Class<select aria-label="School class" className="mt-1 w-full min-w-0 rounded-lg border p-2.5 text-sm" value={classId} onChange={e=>apply(section,e.target.value)}><option value="">All classes</option>{options.filter(c=>!section||c.section===section).map(c=><option key={c.id} value={c.id}>{c.name}</option>)}</select></label></div>
+}

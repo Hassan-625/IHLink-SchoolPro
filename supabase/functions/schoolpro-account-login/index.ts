@@ -33,6 +33,8 @@ Deno.serve(async(req)=>{
   }else if(body.challenge)return reply({error:'Your activation expired or was already completed. Sign in again.'},401);
   const {data,error}=await client.auth.signInWithPassword({email,password});
   if(error||!data.session)return reply({error:'Your sign-in details were not recognised. Please check with your school.'},401);
-  return reply({session:{access_token:data.session.access_token,refresh_token:data.session.refresh_token}});
+  let schoolId:string|null=null;
+  if(body.schoolCode){const joined=await admin.rpc('schoolpro_join_school_code',{p_user:data.user.id,p_school_code:String(body.schoolCode).trim()});if(joined.error)throw joined.error;if(!joined.data){await client.auth.signOut();return reply({error:'This account is not invited or enrolled in that school. Please check the school code with your school.'},403);}schoolId=joined.data;}
+  return reply({schoolId,userId:data.user.id,session:{access_token:data.session.access_token,refresh_token:data.session.refresh_token}});
  }catch{return reply({error:'Sign in could not be completed. Please try again or contact your school.'},400);}
 });

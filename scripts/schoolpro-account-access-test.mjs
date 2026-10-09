@@ -19,6 +19,7 @@ async function harness(path){
   }maybeSingle(){return this.run(true);}then(a,b){return this.run().then(a,b);}
  }
  const admin={from:t=>new Query(t),rpc:async(name,args)=>{
+  if(name==='schoolpro_join_school_code'){const schoolRow=tables.schoolpro_schools.find(x=>x.code===args.p_school_code);const linked=schoolRow&&(schoolRow.owner_id===args.p_user||tables.schoolpro_members.some(m=>m.school_id===schoolRow.id&&m.user_id===args.p_user));return {data:linked?schoolRow.id:null,error:null};}
   if(name==='schoolpro_take_login_attempt')return {data:rateAllowed,error:null};
   if(name==='schoolpro_set_initial_credential'){tables.schoolpro_initial_credentials.push({user_id:args.p_user,school_id:args.p_school,surname:args.p_surname.toLowerCase(),consumed_at:null,expires_at:new Date(Date.now()+86400000).toISOString()});return {error:null};}
   if(name==='schoolpro_initial_challenge'){const row=tables.schoolpro_initial_credentials.find(x=>x.user_id===args.p_user&&x.surname===args.p_surname.trim().toLowerCase()&&x.consumed_at===null);if(row)tables.schoolpro_account_challenges.push({user_id:args.p_user,token_hash:args.p_hash});return {data:!!row,error:null};}
@@ -29,7 +30,7 @@ async function harness(path){
   if(found)tables.schoolpro_student_activation_challenges=tables.schoolpro_student_activation_challenges.filter(r=>r.student_id!==found.student_id);
   return {data:found?.student_id||null,error:null};
  },auth:{admin:{createUser:async(input)=>{creates++;const id=creates===1?'created':`created-${creates}`;accounts.set(id,{...input,id});tables.profiles.push({id,email:input.email,status:'active'});return {data:{user:{id}},error:null};},updateUserById:async(id,input)=>{Object.assign(accounts.get(id),input);return {data:{user:accounts.get(id)},error:null};},getUserById:async(id)=>({data:{user:accounts.get(id)},error:null}),deleteUser:async(id)=>{accounts.delete(id);return {error:null};},inviteUserByEmail:async(email)=>{invites++;return {data:{user:{id:'invited'}},error:null};}}}};
- const client={auth:{getUser:async()=>({data:{user:{id:caller}},error:null}),signInWithPassword:async({email,password})=>({data:{session:[...accounts.values()].some(a=>a.email===email&&a.password===password&&(!a.ban_duration||a.ban_duration==='none'))?{access_token:'fixture-access',refresh_token:'fixture-refresh'}:null},error:null})}};
+ const client={auth:{signOut:async()=>({error:null}),getUser:async()=>({data:{user:{id:caller}},error:null}),signInWithPassword:async({email,password})=>({data:{user:[...accounts.values()].find(a=>a.email===email&&a.password===password),session:[...accounts.values()].some(a=>a.email===email&&a.password===password&&(!a.ban_duration||a.ban_duration==='none'))?{access_token:'fixture-access',refresh_token:'fixture-refresh'}:null},error:null})}};
  const source=fs.readFileSync(path,'utf8').replace(/^import .*;\s*$/gm,'');
  const script=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
  vm.runInNewContext(script,{crypto:webcrypto,TextEncoder,Response,createClient:(_url,key)=>key==='service'?admin:client,Deno:{env:{get:k=>k==='SUPABASE_SERVICE_ROLE_KEY'?'service':'anon'},serve:fn=>{handler=fn;}}});
@@ -69,6 +70,7 @@ assert.equal((await initial.post({...initialInput,challenge:staffChallenge,passw
 assert.equal((await initial.post({...initialInput,challenge:'wrong',password:'Unique-new-password!'})).status,400);
 response=await initial.post({...initialInput,challenge:staffChallenge,password:'Unique-new-password!'});assert.equal(response.status,200);assert.equal(response.data.session.access_token,'fixture-access');assert.equal(initial.accounts.get('initial').ban_duration,'none');assert.equal(initial.accounts.get('initial').app_metadata.schoolpro_initial_login,false);
 assert.equal((await initial.post(initialInput)).status,401);assert.equal((await initial.post({...initialInput,password:'Unique-new-password!'})).status,200);assert.equal((await initial.post({...initialInput,challenge:staffChallenge,password:'Unique-new-password!'})).status,401);
+initial.tables.schoolpro_members.push({school_id:school,user_id:'initial',role:'teacher'});response=await initial.post({...initialInput,password:'Unique-new-password!',schoolCode:'SCHOOL-A'});assert.equal(response.status,200);assert.equal(response.data.schoolId,school);assert.equal((await initial.post({...initialInput,password:'Unique-new-password!',schoolCode:'OTHER'})).status,403);
 initial.setRateAllowed(false);assert.equal((await initial.post(initialInput)).status,429);
 console.log('PASS: student and adult first-login sessions require new passwords; outsider/child isolation, existing-account acceptance, role preservation, no email delivery, random inaccessible initial Auth password, activation replay and rate limits.');
 

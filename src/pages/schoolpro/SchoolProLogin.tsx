@@ -28,6 +28,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
   const {user,profile,loading:authLoading,signInWithGoogle}=useAuth();
   const [googleAvailable,setGoogleAvailable]=useState(false);
   const navigate = useNavigate();
+  const [showJoiningCode,setShowJoiningCode]=useState(false);
   const [joiningCode,setJoiningCode]=useState(''); const [schoolCode,setSchoolCode]=useState(''); const [challenge,setChallenge]=useState(''); const [confirm,setConfirm]=useState(''); const [email,setEmail]=useState(''); const [password,setPassword]=useState(''); const [error,setError]=useState(''); const [loading,setLoading]=useState(false); const [remember,setRemember]=useState(()=>localStorage.getItem('ih_remember_device')==='1');
   useEffect(()=>{setChallenge('');setEmail('');setPassword('');setConfirm('');setSchoolCode('');setError('');},[role]);
   useEffect(()=>{const controller=new AbortController();let active=true;setGoogleAvailable(false);if(role!=='student'&&(!native||nativeOAuthEnabled))void googleSignInAvailable(controller.signal).then(enabled=>{if(active)setGoogleAvailable(enabled)});return()=>{active=false;controller.abort()}},[role,native]);
@@ -81,7 +82,8 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
           <div className="w-full max-w-sm">
             <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">{config.title}</Badge>
             <h1 className="text-2xl font-extrabold text-ink mb-2">{challenge?'Choose your password':'Welcome Back'}</h1>
-            <p className="text-sm text-muted mb-6">{challenge?'Set your own password before opening your school records.':role==='student'?'Use your school code and admission number. Your surname is the first-time password.':`Sign in with your email. New staff and parents use their surname first, then choose a new password.`}</p>
+            {native&&!challenge&&<label className="mb-4 block text-sm font-semibold">Sign in as<select className="mt-2 w-full rounded-xl border p-3" value={role} onChange={event=>navigate(event.target.value==='school'?'/schoolpro/login':`/schoolpro/${event.target.value}-login`)}><option value="school">School owner</option><option value="teacher">Staff</option><option value="parent">Parent</option><option value="student">Student</option></select></label>}
+            <p className="text-sm text-muted mb-6">{native&&!challenge?(role==='student'?'Use the details from your school.':'Sign in to your school account.'):challenge?'Set your own password before opening your school records.':role==='student'?'Use your school code and admission number. Your surname is the first-time password.':`Sign in with your email. New staff and parents use their surname first, then choose a new password.`}</p>
 
             {googleAvailable&&!challenge&&<div className="mb-5"><Button fullWidth variant="secondary" disabled={loading} onClick={()=>void googleSignIn()}>Continue with Google</Button><p className="mt-2 text-xs text-muted">Use the Google account with the email registered or invited by your school.</p><p className="mt-4 text-center text-xs text-muted">or sign in with email</p></div>}
             <div className="space-y-4">
@@ -93,7 +95,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
 
                 </div>
               </div>
-              {role!=='student'&&!challenge&&<Input label="School joining code (existing accounts only)" value={joiningCode} onChange={e=>setJoiningCode(e.target.value)} placeholder="Leave blank unless your school supplied a code"/>}{challenge&&<><Input label="Confirm new password" type="password" value={confirm} onChange={e=>setConfirm(e.target.value)}/><button type="button" className="min-h-11 text-sm underline" onClick={()=>{setChallenge('');setPassword('');setConfirm('');setError('');}}>Restart activation</button></>}<div className="flex items-center justify-between">
+              {role!=='student'&&!challenge&&(!native||showJoiningCode)&&<Input label="School joining code (existing accounts only)" value={joiningCode} onChange={e=>setJoiningCode(e.target.value)} placeholder="Leave blank unless your school supplied a code"/>}{native&&role!=='student'&&!challenge&&<button type="button" className="min-h-11 text-sm underline" onClick={()=>setShowJoiningCode(value=>!value)}>{showJoiningCode?'Hide joining code':'Have a school joining code?'}</button>}{challenge&&<><Input label="Confirm new password" type="password" value={confirm} onChange={e=>setConfirm(e.target.value)}/><button type="button" className="min-h-11 text-sm underline" onClick={()=>{setChallenge('');setPassword('');setConfirm('');setError('');}}>Restart activation</button></>}<div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={remember} onChange={e=>setRemember(e.target.checked)} className="w-4 h-4 rounded border-border text-purple-500" /> <span className="text-ink">Remember me</span></label>
                 {role!=='student'&&<Link to="/reset-password" className="text-sm font-semibold text-purple-600 hover:underline">Forgot password?</Link>}{role==='student'&&<span className="text-xs text-muted">Need a reset? Contact your school.</span>}
               </div>
@@ -101,14 +103,14 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
             </div>
 
             <div className="mt-6 text-center text-sm text-muted">
-              {role==='school'?<>Proprietor or director? <Link to="/schoolpro/register" className="font-semibold text-purple-600 hover:underline">Register your school</Link></>:<p>{role==='student'?'Your school creates your student record.':'Ask your school proprietor or director for an email invitation.'}</p>}
+              {role==='school'?<>Proprietor or director? <Link to="/schoolpro/register" className="font-semibold text-purple-600 hover:underline">Register your school</Link></>:<p>{role==='student'?'Your school creates your student record.':'Ask your school for your account details.'}</p>}
             </div>
 
-            <div className="mt-8 pt-6 border-t border-border flex items-center justify-center gap-4 text-xs text-muted">
+            {!native&&<div className="mt-8 pt-6 border-t border-border flex items-center justify-center gap-4 text-xs text-muted">
               <Link to="/schoolpro" className="hover:text-ink">SchoolPro Home</Link>
               <Link to="/schoolpro/support" className="hover:text-ink">Support</Link>
               <Link to="/" className="hover:text-ink">IHLink Co. Ltd.</Link>
-            </div>
+            </div>}
           </div>
         </div>
       </div>

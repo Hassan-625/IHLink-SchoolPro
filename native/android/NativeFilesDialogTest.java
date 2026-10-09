@@ -29,19 +29,27 @@ public class NativeFilesDialogTest {
    AtomicReference<NativeFilesPlugin> holder=new AtomicReference<>();scenario.onActivity(activity->holder.set((NativeFilesPlugin)activity.getBridge().getPlugin("NativeFiles").getInstance()));assertNotNull(holder.get());
    JSObject data=new JSObject();data.put("name","IHLink Academy - Primary Testing - Result.txt");data.put("mimeType","text/plain");data.put("data","VEVTVCBPTkxZ");
    Result result=new Result("save",data);scenario.onActivity(activity->holder.get().save(result));
-   boolean dialog=false;long deadline=System.currentTimeMillis()+15000;
+   boolean dialog=false;long deadline=System.currentTimeMillis()+30000;
    while(System.currentTimeMillis()<deadline){AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();if(root!=null&&String.valueOf(root.getPackageName()).contains("documentsui")){dialog=true;break;}Thread.sleep(200);}
    assertTrue("Android file save dialog did not open",dialog);
-   // The first Back may dismiss the keyboard or leave a folder, rather than cancel.
-   long cancelDeadline=System.currentTimeMillis()+10000;
+   // A cold emulator can take seconds to finish the picker transition.
+   // Do not keep sending Back into the app while its cancellation callback is pending.
+   long cancelDeadline=System.currentTimeMillis()+30000;
    while(result.done.getCount()!=0 && System.currentTimeMillis()<cancelDeadline){
-    instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
-    Thread.sleep(600);
+    AccessibilityNodeInfo active=instrumentation.getUiAutomation().getRootInActiveWindow();
+    if(active!=null&&String.valueOf(active.getPackageName()).contains("documentsui"))
+     instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
+    result.done.await(4,TimeUnit.SECONDS);
    }
-   AccessibilityNodeInfo after=instrumentation.getUiAutomation().getRootInActiveWindow();
-   assertNotNull("No foreground screen after cancellation",after);
-   assertFalse("File chooser stayed open after Back",String.valueOf(after.getPackageName()).contains("documentsui"));
    assertNull(result.await().failure);assertFalse(result.result.getBoolean("saved"));
+   AccessibilityNodeInfo after=null;long foregroundDeadline=System.currentTimeMillis()+10000;
+   while(System.currentTimeMillis()<foregroundDeadline){
+    after=instrumentation.getUiAutomation().getRootInActiveWindow();
+    if(after!=null&&"com.ihlink.schoolpro".equals(String.valueOf(after.getPackageName())))break;
+    Thread.sleep(200);
+   }
+   assertNotNull("No foreground screen after cancellation",after);
+   assertEquals("App did not regain focus after file-save cancellation","com.ihlink.schoolpro",String.valueOf(after.getPackageName()));
    JSObject bad=new JSObject();bad.put("name","../outside.txt");bad.put("data","VEVTVCBPTkxZ");Result rejected=new Result("save",bad);holder.get().save(rejected);assertNotNull(rejected.await().failure);
   }
  }

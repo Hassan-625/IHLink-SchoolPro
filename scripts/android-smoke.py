@@ -14,12 +14,12 @@ def screen():
   return ET.parse(out/'current.xml').getroot()
  except (subprocess.SubprocessError,ET.ParseError):
   return None
-def find(label):
+def find(label,clickable=False):
  deadline=time.monotonic()+120
  while time.monotonic()<deadline:
   root=screen()
   for node in ([] if root is None else root.iter('node')):
-   if label in (node.attrib.get('text','')+' '+node.attrib.get('content-desc','')):return node
+   if label in (node.attrib.get('text','')+' '+node.attrib.get('content-desc','')) and (not clickable or node.attrib.get('clickable')=='true'):return node
   time.sleep(1)
  (out/'failure.png').write_bytes(subprocess.check_output(['adb','exec-out','screencap','-p'],timeout=25))
  (out/'failure-logcat.txt').write_text(adb('logcat','-d'))
@@ -83,7 +83,7 @@ def assert_signed_out():
 assert_signed_out()
 tap(find('Sign in'))
 if app.endswith('schoolpro'):
- tap(find('School owner'))
+ tap(find('Sign in as',clickable=True))
  tap(find('Student'))
 find('Email address' if app.endswith('datasub') else 'Admission number')
 if app.endswith('schoolpro'):find('School code')

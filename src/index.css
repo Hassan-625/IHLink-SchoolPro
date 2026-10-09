@@ -348,3 +348,5 @@ html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); 
 .welcome-screen.datasub { background:linear-gradient(145deg,#10575d,#102c34 70%,#161e24); }
 .welcome-screen.schoolpro { background:linear-gradient(145deg,#37332b,#171c22 70%); }
 @media(max-height:650px){ .mobile-brand-preview { width:min(195px,70%); padding:8px; } .preview-feature-title { margin-top:6px; font-size:12px; } .brand-school-tools span { padding:5px 2px; } .preview-feature-body { padding:5px; } }
+
+html.native-app .app-unlock { min-height:calc(100dvh - var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) - var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px))); }

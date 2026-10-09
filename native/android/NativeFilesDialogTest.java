@@ -6,30 +6,43 @@ import android.app.Instrumentation;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import com.getcapacitor.JSObject;
+import com.getcapacitor.PluginCall;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import android.accessibilityservice.AccessibilityService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import static org.junit.Assert.*;
 import java.util.concurrent.atomic.AtomicReference;
 @RunWith(AndroidJUnit4.class)
 public class NativeFilesDialogTest {
+ static class Result extends PluginCall {
+  final CountDownLatch done=new CountDownLatch(1);volatile JSObject result;volatile String failure;
+  Result(String method,JSObject data){super(null,"NativeFiles","files-fixture-"+method,method,data);}
+  @Override public void resolve(JSObject value){result=value;done.countDown();}
+  @Override public void reject(String message,String code,Exception ex,JSObject data){failure=message;done.countDown();}
+  Result await() throws Exception {assertTrue("File-save cancellation callback timed out",done.await(30,TimeUnit.SECONDS));return this;}
+ }
  @Test public void namedDownloadOpensSaveDialogAndCancellationReturnsToApp() throws Exception {
   Instrumentation instrumentation=InstrumentationRegistry.getInstrumentation();
   try(ActivityScenario<MainActivity> scenario=ActivityScenario.launch(MainActivity.class)){
    AtomicReference<NativeFilesPlugin> holder=new AtomicReference<>();scenario.onActivity(activity->holder.set((NativeFilesPlugin)activity.getBridge().getPlugin("NativeFiles").getInstance()));assertNotNull(holder.get());
    JSObject data=new JSObject();data.put("name","IHLink Academy - Primary Testing - Result.txt");data.put("mimeType","text/plain");data.put("data","VEVTVCBPTkxZ");
-   NativeVaultSecurityTest.Result result=new NativeVaultSecurityTest.Result("save",data);scenario.onActivity(activity->holder.get().save(result));
+   Result result=new Result("save",data);scenario.onActivity(activity->holder.get().save(result));
    boolean dialog=false;long deadline=System.currentTimeMillis()+15000;
    while(System.currentTimeMillis()<deadline){AccessibilityNodeInfo root=instrumentation.getUiAutomation().getRootInActiveWindow();if(root!=null&&String.valueOf(root.getPackageName()).contains("documentsui")){dialog=true;break;}Thread.sleep(200);}
    assertTrue("Android file save dialog did not open",dialog);
    // The first Back may dismiss the keyboard or leave a folder, rather than cancel.
    long cancelDeadline=System.currentTimeMillis()+10000;
    while(result.done.getCount()!=0 && System.currentTimeMillis()<cancelDeadline){
-    instrumentation.getUiAutomation().injectInputEvent(new KeyEvent(KeyEvent.ACTION_DOWN,KeyEvent.KEYCODE_BACK),true);
-    instrumentation.getUiAutomation().injectInputEvent(new KeyEvent(KeyEvent.ACTION_UP,KeyEvent.KEYCODE_BACK),true);
+    instrumentation.getUiAutomation().performGlobalAction(AccessibilityService.GLOBAL_ACTION_BACK);
     Thread.sleep(600);
    }
+   AccessibilityNodeInfo after=instrumentation.getUiAutomation().getRootInActiveWindow();
+   assertNotNull("No foreground screen after cancellation",after);
+   assertFalse("File chooser stayed open after Back",String.valueOf(after.getPackageName()).contains("documentsui"));
    assertNull(result.await().failure);assertFalse(result.result.getBoolean("saved"));
-   JSObject bad=new JSObject();bad.put("name","../outside.txt");bad.put("data","VEVTVCBPTkxZ");NativeVaultSecurityTest.Result rejected=new NativeVaultSecurityTest.Result("save",bad);holder.get().save(rejected);assertNotNull(rejected.await().failure);
+   JSObject bad=new JSObject();bad.put("name","../outside.txt");bad.put("data","VEVTVCBPTkxZ");Result rejected=new Result("save",bad);holder.get().save(rejected);assertNotNull(rejected.await().failure);
   }
  }
 }

@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import vm from 'node:vm';
+import ts from 'typescript';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+const require=createRequire(import.meta.url);
+const school=readFileSync(new URL('../src/lib/nativeEntry.ts',import.meta.url),'utf8').includes('/schoolpro');
+const product=school?'schoolpro':'datasub';
+let user=null,loading=false,path='/'+product,native=true,states=[],cursor=0;
+const node=(tag,props,children)=>React.createElement(tag,props,children);
+function load(file){
+ const output=ts.transpileModule(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,target:ts.ScriptTarget.ES2022}}).outputText;
+ const exports={};
+ const custom=name=>{
+  if(name==='react')return {...React,useEffect:()=>{},useState:initial=>[cursor<states.length?states[cursor++]:typeof initial==='function'?initial():initial,()=>{}]};
+  if(name==='react-router-dom')return {useLocation:()=>({pathname:path}),useNavigate:()=>()=>{},Navigate:({to})=>node('div',{'data-redirect':to}),Link:({to,children,className,...props})=>node('a',{href:to,className:typeof className==='string'?className:undefined,...props},children),NavLink:({to,children})=>node('a',{href:to},children)};
+  if(name==='@/context/AuthContext')return {useAuth:()=>({user,loading,profile:{id:user?.id,role:'super_admin'}})};
+  if(name==='@/lib/nativeAuth')return {isNativeApp:()=>native};
+  if(name==='@/lib/nativeEntry')return load('lib/nativeEntry.ts');
+  if(name==='@/hooks/useSchoolProContext')return {useSchoolProContext:()=>({role:'proprietor',loading:false})};
+  if(name==='@/hooks/useSchoolProPermissions')return {useSchoolProPermissions:()=>({can:()=>true})};
+  if(name==='@/components/Logo')return {Logo:()=>node('img',{alt:'IHLink'})};
+  if(name==='./NativeSignedOutHome')return {NativeSignedOutHome:()=>node('div',{},'Welcome to '+product)};
+  if(name==='@/lib/supabase')return {supabase:{}};
+  if(name==='@/lib/nativeVault')return {securitySupported:true,NativeVault:{}};
+  if(name.endsWith('NativeAppSecurity'))return {NativeAppSecurity:()=>node('div',{},'Set app passcode')};
+  if(name.endsWith('/Modal'))return {Modal:({open,children})=>open?node('section',{role:'dialog'},children):null};
+  if(name.endsWith('/Button'))return {Button:({children})=>node('button',{},children)};
+  return require(name);
+ };
+ vm.runInNewContext(output,{exports,require:custom,console});return exports;
+}
+function render(file,name,values=[],children='AUTH FORM'){states=values;cursor=0;return renderToStaticMarkup(React.createElement(load(file)[name],{},children));}
+let html=render('components/NativeAppShell.tsx','NativeAppShell');
+assert(html.includes('Welcome to '+product));assert(!html.includes('App navigation'));
+path=school?'/schoolpro/student-login':'/signin';
+html=render('components/NativeAppShell.tsx','NativeAppShell');assert(html.includes('AUTH FORM'));assert(!html.includes('App navigation'));
+path=school?'/schoolpro/results':'/datasub/wallet';
+html=render('components/NativeAppShell.tsx','NativeAppShell');assert(html.includes('data-redirect'));assert(!html.includes('AUTH FORM'));
+user={id:'staff-account'};html=render('components/NativeAppShell.tsx','NativeAppShell');assert(html.includes('App navigation'));assert(html.includes('AUTH FORM'));
+user=null;loading=true;html=render('components/NativeAppShell.tsx','NativeAppShell');assert(html.includes('Opening your account'));assert(!html.includes('AUTH FORM'));
+loading=false;native=false;html=render('components/NativeAppShell.tsx','NativeAppShell');assert.equal(html,'AUTH FORM');native=true;
+user={id:'administrator-account'};
+const promptFile=school?'components/AppSecuritySetup.tsx':'components/DataSubSecuritySetup.tsx';
+const promptName=school?'AppSecuritySetup':'DataSubSecuritySetup';
+const vault={enabled:false,biometricAvailable:false,biometricEnabled:false};
+html=render(promptFile,promptName,school?[vault,false]:[null,vault,false]);assert(html.includes('role="dialog"'),'Administrators and pending wallet checks must not suppress passcode setup');
+html=render(promptFile,promptName,school?[{...vault,enabled:true},false]:[true,{...vault,enabled:true},false]);assert(!html.includes('role="dialog"'),'Completed security setup closes the prompt');
+user=null;html=render(promptFile,promptName,school?[vault,false]:[false,vault,false]);assert(!html.includes('role="dialog"'),'Never prompt before sign-in');
+const entry=load('lib/nativeEntry.ts').signedOutNativeAccess;
+assert.equal(entry(school?'/schoolpro/parents':'/datasub/transfer'),'signin');
+assert.equal(entry('/auth/update-password'),'public');assert.equal(entry('/register'),'public');
+console.log('PASS: signed-out navigation, private deep links, loading, browser layout, admin passcode prompts and completion');

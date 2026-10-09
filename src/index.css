@@ -281,3 +281,5 @@ html.native-app .native-help-hero .bg-purple-50 { background:var(--app-raised); 
 .school-table-scroll { min-width:0; max-width:100%; overflow-x:auto; }
 
 @media print { .school-table-scroll { overflow:visible !important; max-height:none !important; } }
+
+.native-shell.signed-out { padding-bottom:var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)); }

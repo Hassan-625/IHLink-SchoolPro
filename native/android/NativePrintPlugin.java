@@ -28,7 +28,8 @@ public class NativePrintPlugin extends Plugin {
       String paper=call.getString("paperSize","A4");
       PrintAttributes.MediaSize media="A5".equals(paper)?PrintAttributes.MediaSize.ISO_A5:"Letter".equals(paper)?PrintAttributes.MediaSize.NA_LETTER:PrintAttributes.MediaSize.ISO_A4;
       media="landscape".equals(call.getString("orientation"))?media.asLandscape():media.asPortrait();
-      manager.print("SchoolPro Document",view.createPrintDocumentAdapter("SchoolPro Document"),new PrintAttributes.Builder().setMediaSize(media).build());call.resolve();
+      String name=call.getString("name","SchoolPro Document").replaceAll("[\\\\/:*?\"<>|]","-");
+      manager.print(name,view.createPrintDocumentAdapter(name),new PrintAttributes.Builder().setMediaSize(media).build());call.resolve();
      }catch(Exception error){call.reject("The print dialog could not be opened");}
      // Print adapter owns rendering after dispatch; release our busy guard.
      printView=null;

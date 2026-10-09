@@ -1,7 +1,7 @@
 import {Capacitor,registerPlugin} from '@capacitor/core';
-const NativePrint=registerPlugin<{print(options:{html:string;paperSize?:string;orientation?:string}):Promise<void>}>('NativePrint');
-export async function printSchoolDocument(options:{paperSize?:string;orientation?:string}={}){
- if(Capacitor.getPlatform()!=='android'){window.print();return;}
+const NativePrint=registerPlugin<{print(options:{html:string;paperSize?:string;orientation?:string;name?:string}):Promise<void>}>('NativePrint');
+export async function printSchoolDocument(options:{paperSize?:string;orientation?:string;name?:string}={}){
+ if(Capacitor.getPlatform()!=='android'){const previous=document.title;if(options.name)document.title=options.name;try{window.print();}finally{document.title=previous;}return;}
  const sections=Array.from(document.querySelectorAll('.print-document'));
  if(!sections.length){window.alert('Open a printable document first.');return;}
  // A separate print WebView cannot serve Capacitor's local asset URLs.

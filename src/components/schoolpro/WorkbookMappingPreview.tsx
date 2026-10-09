@@ -1,3 +1,4 @@
+import {workbookCellText} from '@/lib/workbookText';
 import {useEffect,useState,type CSSProperties} from 'react';
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import {supabase} from '@/lib/supabase';
@@ -16,7 +17,7 @@ export function WorkbookMappingPreview({file,path,sheetName,onSelect}:{file:File
     const merge=merges.get(cell.address),font=cell.font||{},alignment=cell.alignment||{},border=cell.border||{};
     const style:CSSProperties={background:colour((cell.fill as any)?.fgColor),color:colour(font.color),fontFamily:font.name,fontSize:Math.max(9,Number(font.size)||11),fontWeight:font.bold?700:400,fontStyle:font.italic?'italic':'normal',textAlign:alignment.horizontal==='center'?'center':alignment.horizontal==='right'?'right':'left',verticalAlign:alignment.vertical==='top'?'top':'middle',whiteSpace:alignment.wrapText?'pre-wrap':'normal'};
     for(const side of ['Top','Right','Bottom','Left'] as const){const edge=(border as any)[side.toLowerCase()];if(edge?.style)(style as any)['border'+side]=`${edge.style==='thick'?3:edge.style==='medium'?2:1}px solid ${colour(edge.color)||'#111827'}`;}
-    line.push({address:cell.address,text:cell.formula?(cell.result==null?'':String(cell.result)):String(cell.text||''),formula:Boolean(cell.formula),span:merge?.span||1,rows:merge?.rows||1,style});
+    line.push({address:cell.address,text:workbookCellText(cell),formula:Boolean(cell.formula),span:merge?.span||1,rows:merge?.rows||1,style});
    }preview.push(line);}
    if(current){setRows(preview);setWidths(Array.from({length:count},(_,i)=>Number(sheet.getColumn(i+1).width)||12));}
   }catch{if(current)setNotice('The workbook preview could not be opened. Please try again.');}

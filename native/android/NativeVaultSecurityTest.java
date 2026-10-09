@@ -1,5 +1,6 @@
 package com.ihlink.schoolpro;
 import androidx.test.core.app.ActivityScenario;
+import androidx.lifecycle.Lifecycle;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import com.getcapacitor.*;
 import org.junit.Test;
@@ -28,6 +29,10 @@ public class NativeVaultSecurityTest {
     Result write=new Result("setItem",data("key","fixture-session","value","isolated-fake-session-never-real-credentials"));vault.setItem(write);assertNull(write.await().failure);
     Result configure=new Result("configure",data("pin","123456"));vault.configure(configure);assertNull(configure.await().failure);
     AtomicReference<String> stored=new AtomicReference<>();scenario.onActivity(activity->stored.set(activity.getSharedPreferences("ihlink_native_vault",0).getString("payload","")));assertFalse(stored.get().contains("isolated-fake-session"));assertFalse(stored.get().contains("123456"));
+    scenario.moveToState(Lifecycle.State.CREATED);
+    Result background=new Result("status",data());vault.status(background);assertTrue("Backgrounding must lock protected app access",background.await().result.getBool("locked"));
+    scenario.moveToState(Lifecycle.State.RESUMED);
+    Result resume=new Result("unlock",data("pin","123456"));vault.unlock(resume);assertNull(resume.await().failure);
     Result lock=new Result("lock",data());vault.lock(lock);lock.await();Result lockedRead=new Result("getItem",data("key","fixture-session"));vault.getItem(lockedRead);assertNotNull(lockedRead.await().failure);
     Result wrong=new Result("unlock",data("pin","999999"));vault.unlock(wrong);assertNotNull(wrong.await().failure);
     Result unlock=new Result("unlock",data("pin","123456"));vault.unlock(unlock);assertNull(unlock.await().failure);

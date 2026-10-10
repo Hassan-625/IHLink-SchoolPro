@@ -377,3 +377,18 @@ html.native-app .app-unlock { min-height:calc(100dvh - var(--safe-area-inset-top
 @media print {.school-table-scroll {overflow:visible}.school-table-scroll table {min-width:0}.school-table-scroll :is(th,td) {white-space:normal}}
 
 .brand-school-tools span { min-width:0; white-space:normal; overflow-wrap:normal; word-break:normal; font-size:9px; }
+
+/* Coloured service tiles retain contrast in both app themes. */
+.app-service-icon,.school-tool-icon{display:inline-flex;align-items:center;justify-content:center;border-radius:16px;padding:12px;border:1px solid currentColor;background:color-mix(in srgb,currentColor 12%,transparent)}
+.app-service-color-0,.school-tool-tone-0{color:#38bdf8!important}
+.app-service-color-1,.school-tool-tone-1{color:#fbbf24!important}
+.app-service-color-2,.school-tool-tone-2{color:#34d399!important}
+.app-service-color-3,.school-tool-tone-3{color:#fb7185!important}
+.app-service-color-4,.school-tool-tone-4{color:#c4b5fd!important}
+.app-service-icon svg,.school-tool-icon svg{color:inherit!important}
+html.native-app[data-appearance="light"] .app-service-color-0,html.native-app[data-appearance="light"] .school-tool-tone-0{color:#0369a1!important}
+html.native-app[data-appearance="light"] .app-service-color-1,html.native-app[data-appearance="light"] .school-tool-tone-1{color:#92400e!important}
+html.native-app[data-appearance="light"] .app-service-color-2,html.native-app[data-appearance="light"] .school-tool-tone-2{color:#047857!important}
+html.native-app[data-appearance="light"] .app-service-color-3,html.native-app[data-appearance="light"] .school-tool-tone-3{color:#be123c!important}
+html.native-app[data-appearance="light"] .app-service-color-4,html.native-app[data-appearance="light"] .school-tool-tone-4{color:#6d28d9!important}
+.app-service:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}

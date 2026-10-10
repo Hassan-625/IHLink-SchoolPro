@@ -2,7 +2,7 @@ begin;
 -- Every fixture below is rolled back; no live school or learner records are changed.
 do $$
 <<fixture>>
-declare owner_id uuid:=gen_random_uuid(); teacher_id uuid:=gen_random_uuid(); parent_id uuid:=gen_random_uuid(); learner_id uuid:=gen_random_uuid(); other_parent uuid:=gen_random_uuid(); school_id uuid:=gen_random_uuid(); class_id uuid:=gen_random_uuid(); other_class uuid:=gen_random_uuid(); student_id uuid:=gen_random_uuid(); other_student uuid:=gen_random_uuid(); member_id uuid:=gen_random_uuid(); subject_id uuid:=gen_random_uuid(); result_id uuid:=gen_random_uuid(); blocked boolean; denied boolean; n integer;
+declare owner_id uuid:=gen_random_uuid(); teacher_id uuid:=gen_random_uuid(); parent_id uuid:=gen_random_uuid(); learner_id uuid:=gen_random_uuid(); other_parent uuid:=gen_random_uuid(); school_id uuid:=gen_random_uuid(); class_id uuid:=gen_random_uuid(); other_class uuid:=gen_random_uuid(); student_id uuid:=gen_random_uuid(); other_student uuid:=gen_random_uuid(); member_id uuid:=gen_random_uuid(); subject_id uuid:=gen_random_uuid(); result_id uuid:=gen_random_uuid(); lesson_id uuid:=gen_random_uuid(); blocked boolean; denied boolean; n integer;
 begin
  insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
  select v.id,'authenticated','authenticated','fixture-'||v.id||'@example.invalid','{}','{"first_name":"Test","middle_name":"Fixture","last_name":"User"}',now(),now() from (values(owner_id),(teacher_id),(parent_id),(learner_id),(other_parent))v(id);
@@ -88,6 +88,45 @@ begin
  execute 'set local role authenticated';
  denied:=false;begin perform public.schoolpro_join_school_code(other_parent,'FIX-'||school_id);exception when insufficient_privilege then denied:=true;end;if not denied then raise exception 'Client invoked service-only school join';end if;
  execute 'reset role';
+
+ -- Lesson review is a school decision, never a teacher self-approval.
+ perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+ execute 'set local role authenticated';
+ insert into public.schoolpro_lesson_notes(id,school_id,class_id,subject_id,title,content,lesson_date,term,session,plan)
+ values(lesson_id,fixture.school_id,fixture.class_id,fixture.subject_id,'Fractions','Guided examples',current_date,'First Term','2026/2027','{"objectives":"Identify halves"}');
+ denied:=false;
+ begin
+ insert into public.schoolpro_lesson_notes(school_id,class_id,subject_id,title)values(fixture.school_id,fixture.other_class,fixture.subject_id,'Unassigned');
+ exception when others then denied:=true;end;
+ if not denied then raise exception 'Teacher saved an unassigned class lesson';end if;
+ denied:=false;
+ begin update public.schoolpro_lesson_notes set status='approved' where id=lesson_id;
+ exception when others then denied:=true;end;
+ if not denied then raise exception 'Teacher approved own lesson';end if;
+ update public.schoolpro_lesson_notes set status='submitted' where id=lesson_id;
+ denied:=false;
+ begin update public.schoolpro_lesson_notes set content='Changed after submission' where id=lesson_id;
+ exception when others then denied:=true;end;
+ if not denied then raise exception 'Submitted lesson remained editable';end if;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ execute 'set local role authenticated';
+ update public.schoolpro_lesson_notes set status='changes_requested',review_comment='Add an example' where id=lesson_id;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+ execute 'set local role authenticated';
+ update public.schoolpro_lesson_notes set content='Guided examples and practice',status='submitted' where id=lesson_id;
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ execute 'set local role authenticated';
+ update public.schoolpro_lesson_notes set status='approved' where id=lesson_id;
+ if not exists(select 1 from public.schoolpro_lesson_notes where id=lesson_id and status='approved' and reviewed_by=owner_id)then raise exception 'Owner lesson approval missing';end if;
+ denied:=false;
+ begin delete from public.schoolpro_lesson_notes where id=lesson_id;
+ exception when others then denied:=true;end;
+ if not denied then raise exception 'Approved lesson could be deleted';end if;
+ execute 'reset role';
+
  perform set_config('request.jwt.claim.sub','',true);
  if private.schoolpro_can_read_student(student_id)then raise exception 'Anonymous student data leaked';end if;
 end $$;

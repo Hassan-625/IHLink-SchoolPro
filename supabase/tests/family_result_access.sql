@@ -128,7 +128,7 @@ begin
  execute 'reset role';
 
 
- insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed) values(fixture.school_id,fixture.member_id,'leave',true);
+ insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed,updated_by) values(fixture.school_id,fixture.member_id,'leave',true,fixture.owner_id);
  -- Operational leave review and borrower stock are verified without retaining fixtures.
  perform set_config('request.jwt.claim.sub',teacher_id::text,true);
  execute 'set local role authenticated';

@@ -10,3 +10,10 @@ export function schoolSection(level:string|undefined|null,name=''){
 
 export const SCHOOL_SECTIONS=['Nursery','Primary','Junior Secondary','Senior Secondary'];
 export function studentClass<T extends {class_id?:string|null;class_name?:string|null}>(student:T,classes:SchoolClass[]){return classes.find(c=>c.id===student.class_id)||classes.find(c=>[c.name,c.arm].filter(Boolean).join(' ').trim().toLowerCase()===(student.class_name||'').trim().toLowerCase());}
+
+export function filterSchoolStudents<T extends {id:string;class_id?:string|null;class_name?:string|null;class_level?:string|null}>(students:T[],classes:SchoolClass[],selection:{section:string;className:string;armId:string;requireClass?:boolean}){
+ const {section,className,armId,requireClass=false}=selection;
+ const needsArm=classes.some(c=>schoolSection(c.level,c.name)===section&&c.name===className&&c.arm);
+ if(requireClass&&(!section||!className||(needsArm&&!armId)))return [];
+ return students.filter(s=>{const c=studentClass(s,classes);return (!section||schoolSection(c?.level||s.class_level,c?.name||s.class_name||'')===section)&&(!className||(c?.name||s.class_name)===className)&&(!armId||(c?.id||s.class_name)===armId)});
+}

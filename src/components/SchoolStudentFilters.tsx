@@ -1,6 +1,6 @@
 import {useEffect,useMemo,useState} from 'react';
 import {supabase} from '@/lib/supabase';
-import {schoolSection,studentClass,SCHOOL_SECTIONS,type SchoolClass} from '@/lib/schoolClassFilters';
+import {schoolSection,studentClass,filterSchoolStudents,SCHOOL_SECTIONS,type SchoolClass} from '@/lib/schoolClassFilters';
 export type FilterStudent={id:string;class_id?:string|null;class_name?:string|null;class_level?:string|null};
 export function SchoolStudentFilters({schoolId,students,onChange,requireClass=false}:{schoolId:string|null;students:FilterStudent[];onChange:(ids:string[])=>void;requireClass?:boolean}){
  const [classes,setClasses]=useState<SchoolClass[]>([]),[section,setSection]=useState(''),[classId,setClassId]=useState(''),[arm,setArm]=useState('');
@@ -9,11 +9,7 @@ export function SchoolStudentFilters({schoolId,students,onChange,requireClass=fa
  const groups=useMemo(()=>[...new Set(options.filter(c=>!section||c.section===section).map(c=>classes.find(x=>x.id===c.id)?.name||c.name))],[options,classes,section]);
  const arms=useMemo(()=>options.filter(c=>c.section===section&&(classes.find(x=>x.id===c.id)?.name||c.name)===classId).map(c=>({id:c.id,arm:classes.find(x=>x.id===c.id)?.arm||''})),[options,classes,section,classId]);
  const hasArms=arms.some(c=>c.arm);
- const visible=useMemo(()=>students.filter(s=>{
-  const c=studentClass(s,classes),group=c?.name||s.class_name||'';
-  if(requireClass&&(!section||!classId||(hasArms&&!arm)))return false;
-  return (!section||schoolSection(c?.level||s.class_level,c?.name||s.class_name||'')===section)&&(!classId||group===classId)&&(!arm||(c?.id||s.class_name)===arm);
- }).map(s=>s.id),[students,classes,section,classId,arm,requireClass,hasArms]);
+ const visible=useMemo(()=>filterSchoolStudents(students,classes,{section,className:classId,armId:arm,requireClass}).map(s=>s.id),[students,classes,section,classId,arm,requireClass]);
  useEffect(()=>{onChange(visible)},[visible,onChange]);
  return <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-3">
   <label className="min-w-0 text-xs font-semibold">Section<select aria-label="School section" className="mt-1 w-full min-w-0 rounded-lg border p-2.5 text-sm" value={section} onChange={e=>{setSection(e.target.value);setClassId('');setArm('');onChange([])}}><option value="">{requireClass?'Select section':'All sections'}</option>{[...new Set([...SCHOOL_SECTIONS,...options.map(c=>c.section)])].map(x=><option key={x}>{x}</option>)}</select></label>

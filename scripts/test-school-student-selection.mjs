@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import ts from 'typescript';
+const code=ts.transpileModule(fs.readFileSync(new URL('../src/lib/schoolClassFilters.ts',import.meta.url),'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {filterSchoolStudents}=await import(`data:text/javascript;base64,${Buffer.from(code).toString('base64')}`);
+const classes=[{id:'p1a',name:'Primary 1',level:'primary',arm:'A'},{id:'p1b',name:'Primary 1',level:'primary',arm:'B'},{id:'ss1',name:'SS1',level:'senior_secondary'}];
+const students=[{id:'alice',class_id:'p1a'},{id:'ben',class_id:'p1b'},{id:'cara',class_id:'ss1'}];
+const ids=(selection)=>filterSchoolStudents(students,classes,selection).map(s=>s.id);
+assert.deepEqual(ids({section:'',className:'',armId:'',requireClass:true}),[]);
+assert.deepEqual(ids({section:'Primary',className:'',armId:'',requireClass:true}),[]);
+assert.deepEqual(ids({section:'Primary',className:'Primary 1',armId:'',requireClass:true}),[]);
+assert.deepEqual(ids({section:'Primary',className:'Primary 1',armId:'p1a',requireClass:true}),['alice']);
+assert.deepEqual(ids({section:'Primary',className:'Primary 1',armId:'p1b',requireClass:true}),['ben']);
+assert.deepEqual(ids({section:'Senior Secondary',className:'SS1',armId:'',requireClass:true}),['cara']);
+assert.deepEqual(ids({section:'Primary',className:'SS1',armId:'',requireClass:true}),[]);
+assert.deepEqual(ids({section:'',className:'',armId:''}),['alice','ben','cara']);
+assert.deepEqual(ids({section:'Primary',className:'Primary 1',armId:''}),['alice','ben']);
+console.log('Student selection: 9 checks passed (section, class, arm and all-record browsing).');

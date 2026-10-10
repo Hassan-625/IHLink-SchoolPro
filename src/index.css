@@ -392,3 +392,12 @@ html.native-app[data-appearance="light"] .app-service-color-2,html.native-app[da
 html.native-app[data-appearance="light"] .app-service-color-3,html.native-app[data-appearance="light"] .school-tool-tone-3{color:#be123c!important}
 html.native-app[data-appearance="light"] .app-service-color-4,html.native-app[data-appearance="light"] .school-tool-tone-4{color:#6d28d9!important}
 .app-service:focus-visible{outline:3px solid #fbbf24;outline-offset:3px}
+
+
+
+/* Printable payroll paper stays readable independently of the dashboard theme. */
+html[data-appearance] .payroll-paper,
+html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+}

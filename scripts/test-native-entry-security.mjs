@@ -8,6 +8,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 const require=createRequire(import.meta.url);
 const school=readFileSync(new URL('../src/lib/nativeEntry.ts',import.meta.url),'utf8').includes('/schoolpro');
 const product=school?'schoolpro':'datasub';
+const sessionChoices=new Map();const sessionStorage={getItem:key=>sessionChoices.get(key)??null,setItem:(key,value)=>sessionChoices.set(key,value)};
 const choices=new Map();const localStorage={getItem:key=>choices.get(key)??null,setItem:(key,value)=>choices.set(key,value)};
 let user=null,loading=false,path='/'+product,native=true,states=[],cursor=0;
 const node=(tag,props,children)=>React.createElement(tag,props,children);
@@ -19,6 +20,7 @@ function load(file){
   if(name==='react-router-dom')return {useLocation:()=>({pathname:path}),useNavigate:()=>()=>{},Navigate:({to})=>node('div',{'data-redirect':to}),Link:({to,children,className,...props})=>node('a',{href:to,className:typeof className==='string'?className:undefined,...props},children),NavLink:({to,children})=>node('a',{href:to},children)};
   if(name==='@/context/AuthContext')return {useAuth:()=>({user,loading,profile:{id:user?.id,role:'super_admin'}})};
   if(name==='@/lib/nativeAuth')return {isNativeApp:()=>native};
+  if(name==='@/lib/securitySetupReminder')return load('lib/securitySetupReminder.ts');
   if(name==='@/lib/nativeEntry')return load('lib/nativeEntry.ts');
   if(name==='@/hooks/useSchoolProContext')return {useSchoolProContext:()=>({role:'proprietor',loading:false})};
   if(name==='@/hooks/useSchoolProPermissions')return {useSchoolProPermissions:()=>({can:()=>true})};
@@ -32,7 +34,7 @@ function load(file){
   if(name.endsWith('/Button'))return {Button:({children})=>node('button',{},children)};
   return require(name);
  };
- vm.runInNewContext(output,{exports,require:custom,console,localStorage});return exports;
+ vm.runInNewContext(output,{exports,require:custom,console,localStorage,sessionStorage});return exports;
 }
 function render(file,name,values=[],children='AUTH FORM',props={}){states=values;cursor=0;return renderToStaticMarkup(React.createElement(load(file)[name],props,children));}
 let html=render('components/NativeAppShell.tsx','NativeAppShell');
@@ -81,3 +83,12 @@ if(!school){html=render(promptFile,promptName,[false,{...vault,enabled:false},fa
 choices.set('ihlink.'+product+'.fingerprint-choice','skipped');html=render(promptFile,promptName,school?[enrollment,false]:[true,enrollment,false]);assert(!html.includes('role="dialog"'),'Optional fingerprint choice must survive subsequent sign-ins');
 const auth=readFileSync(new URL('../src/context/AuthContext.tsx',import.meta.url),'utf8');assert(!auth.slice(auth.indexOf('async signOut()')).includes('NativeVault.reset()'),'Ordinary sign-out must preserve device security');
 console.log('PASS: setup uses fingerprint step instead of change-passcode form, wallet PIN follows device setup, and fingerprint skip persists');
+
+user={id:'reminder-test'};states=school?[vault,false]:[false,vault,false];cursor=0;
+const reminder=load(promptFile)[promptName]();reminder.props.onClose();
+const reminderState=load('lib/securitySetupReminder.ts');
+const reminderKey='ihlink.'+product+'.setup-reminder.reminder-test';
+assert(reminderState.setupReminderDeferred(reminderKey),'Set up later persists across page remounts');
+assert(!reminderState.setupReminderDeferred('ihlink.'+product+'.setup-reminder.another-user'),'Deferral belongs to one user');
+sessionChoices.set(reminderKey,String(Date.now()-1000));assert(!reminderState.setupReminderDeferred(reminderKey),'Expired reminders become available again');
+console.log('PASS: security setup dismissal survives route remounts and remains user scoped');

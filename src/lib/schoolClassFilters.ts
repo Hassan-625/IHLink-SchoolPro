@@ -7,3 +7,6 @@ export function schoolSection(level:string|undefined|null,name=''){
  if(value==='primary'||/primary|basic/i.test(name))return 'Primary';
  return value?value.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase()):'Other classes';
 }
+
+export const SCHOOL_SECTIONS=['Nursery','Primary','Junior Secondary','Senior Secondary'];
+export function studentClass<T extends {class_id?:string|null;class_name?:string|null}>(student:T,classes:SchoolClass[]){return classes.find(c=>c.id===student.class_id)||classes.find(c=>[c.name,c.arm].filter(Boolean).join(' ').trim().toLowerCase()===(student.class_name||'').trim().toLowerCase());}

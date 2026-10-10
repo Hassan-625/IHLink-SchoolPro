@@ -21,7 +21,7 @@ jobs:
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
       - run: node scripts/school-document-design-test.mjs
-      - run: node scripts/school-google-signin-test.mjs
+      - run: node scripts/school-email-signin-test.mjs
       - run: node scripts/test-template-preview.mjs
       - name: Check mobile frames, carousel and customer layouts
         run: |

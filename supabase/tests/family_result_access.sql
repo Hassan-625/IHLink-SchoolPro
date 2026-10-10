@@ -127,6 +127,21 @@ begin
  if not denied then raise exception 'Approved lesson could be deleted';end if;
  execute 'reset role';
 
+
+ insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed,updated_by) values(fixture.school_id,fixture.member_id,'leave',true,fixture.owner_id);
+ -- Operational leave review and borrower stock are verified without retaining fixtures.
+ perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+ execute 'set local role authenticated';
+ insert into public.schoolpro_leave_requests(school_id,member_id,leave_type,start_date,end_date,reason,status)
+ values(fixture.school_id,fixture.member_id,'Personal',current_date,current_date+1,'Fixture','pending');
+ execute 'reset role';
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ execute 'set local role authenticated';
+ perform public.review_schoolpro_leave((select id from public.schoolpro_leave_requests where schoolpro_leave_requests.school_id=fixture.school_id and schoolpro_leave_requests.member_id=fixture.member_id),'approved');
+ if not exists(select 1 from public.schoolpro_leave_requests where schoolpro_leave_requests.school_id=fixture.school_id and reviewed_by=fixture.owner_id and status='approved')then raise exception 'Leave approval missing';end if;
+ denied:=false;begin update public.schoolpro_leave_requests set status='pending' where schoolpro_leave_requests.school_id=fixture.school_id;exception when others then denied:=true;end;
+ if not denied then raise exception 'Reviewed leave remained editable';end if;
+ execute 'reset role';
  perform set_config('request.jwt.claim.sub','',true);
  if private.schoolpro_can_read_student(student_id)then raise exception 'Anonymous student data leaked';end if;
 end $$;

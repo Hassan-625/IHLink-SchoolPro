@@ -24,7 +24,4 @@ export const supabase = isSupabaseConfigured
     })
   : null;
 
-export async function googleSignInAvailable(signal?:AbortSignal):Promise<boolean>{
- if(!isSupabaseConfigured)return false;
- try{const response=await fetch(`${supabaseUrl}/auth/v1/settings`,{headers:{apikey:supabasePublishableKey},signal});if(!response.ok)return false;const settings=await response.json();return settings.external?.google===true;}catch{return false;}
-}
+

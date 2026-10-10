@@ -31,7 +31,7 @@ export function SupportTicketForm({
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const field =
-    "w-full rounded-xl border border-border bg-white px-3 py-2.5 text-sm outline-none focus:border-royal-500";
+    "w-full rounded-xl border border-border bg-white dark:bg-slate-900 dark:text-white px-3 py-2.5 text-sm outline-none focus:border-royal-500";
 
   async function submit(event: FormEvent) {
     event.preventDefault();
@@ -46,9 +46,9 @@ export function SupportTicketForm({
     try{
       const {data,error}=await supabase.from("support_tickets").insert({...form,subject:form.subject.trim(),message:form.message.trim(),product,user_id:user.id}).select("ticket_number").single();
       if(error||!data?.ticket_number)throw error||new Error("No ticket number was returned. Check your support history before retrying.");
-      setNotice(`Ticket ${data.ticket_number} was created successfully.`);
+      setNotice(`Message sent. Your support reference is ${data.ticket_number}.`);
       setForm({subject:"",category:"general",priority:"normal",message:""});
-    }catch(error){setNotice((error as any)?.message||"The request could not be saved. Please retry.");}
+    }catch(error){setNotice("Your message could not be saved. Please try again or contact us on WhatsApp.");}
     finally{setBusy(false);}
   }
   if(!user)return <div className="space-y-3"><p className="text-sm text-muted">Sign in to create a tracked IHLink support ticket.</p><Button type="button" onClick={()=>navigate('/signin?next='+encodeURIComponent(window.location.pathname))}>Sign in to contact support</Button></div>;
@@ -120,9 +120,9 @@ export function SupportTicketForm({
       </label>
       <Button type="submit" fullWidth disabled={busy} themeClass={accentClass}>
         {busy
-          ? "Creating ticket…"
+          ? "Sending message…"
           : user
-            ? "Create Support Ticket"
+            ? "Send message"
             : "Sign In to Create Ticket"}
       </Button>
     </form>

@@ -49,4 +49,3 @@ begin
 end $$;
 revoke all on function public.assign_schoolpro_transport(uuid,uuid,text),public.schoolpro_allocate_hostel(uuid,uuid,uuid,text),public.schoolpro_vacate_hostel(uuid) from public,anon;
 grant execute on function public.assign_schoolpro_transport(uuid,uuid,text),public.schoolpro_allocate_hostel(uuid,uuid,uuid,text),public.schoolpro_vacate_hostel(uuid) to authenticated;
-

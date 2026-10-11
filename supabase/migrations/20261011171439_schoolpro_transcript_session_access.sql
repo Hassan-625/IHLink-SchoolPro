@@ -1,0 +1,1 @@
+do $$declare d text;begin select pg_get_functiondef('private.schoolpro_student_transcripts(uuid)'::regprocedure) into d;d:=replace(d,'if auth.uid() is null or s.id is null then','if auth.uid() is null or not private.is_active_account() or s.id is null or not private.schoolpro_operationally_active(s.school_id) then');execute d;end $$;

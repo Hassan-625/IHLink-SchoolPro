@@ -1,0 +1,12 @@
+import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {supabase} from '@/lib/supabase';
+import {Button} from './ui/Button';
+export function SchoolTranscripts({studentId,canIssue=false}:{studentId:string;canIssue?:boolean}){
+ const [rows,setRows]=useState<any[]>([]),[message,setMessage]=useState(''),[busy,setBusy]=useState(false);
+ async function load(){if(!supabase)return;const r=await supabase.rpc('schoolpro_student_transcripts',{p_student:studentId});if(r.error){setRows([]);setMessage('Transcripts could not be loaded. Please try again.');}else{setRows(r.data||[]);setMessage('');}}
+ useEffect(()=>{setRows([]);void load()},[studentId]);
+ async function issue(){if(!supabase||busy)return;setBusy(true);const r=await supabase.rpc('schoolpro_issue_transcript',{p_student:studentId});setBusy(false);if(r.error)setMessage('A transcript could not be issued. Check that this learner has published results and that you have permission.');else await load();}
+ async function revoke(id:string){if(!supabase||!confirm('Withdraw this issued transcript? Its history will be retained.'))return;setBusy(true);const r=await supabase.rpc('schoolpro_revoke_transcript',{p_issue:id});setBusy(false);if(r.error)setMessage('The transcript could not be withdrawn.');else await load();}
+ return <section className="space-y-3" aria-label="Academic transcripts"><h3 className="font-bold">Academic transcripts</h3>{canIssue&&<><p className="text-sm text-muted">Issue a dated copy of all published academic results. After correcting results, issue a new copy and withdraw the previous copy when appropriate.</p><Button disabled={busy} onClick={()=>void issue()}>{busy?'Saving…':'Issue transcript'}</Button></>}{message&&<p role="status">{message}</p>}{!rows.length&&!message&&<p className="text-sm text-muted">No transcript has been issued yet.</p>}{rows.map(r=><div className="rounded-xl border p-3" key={r.id}><p className="break-all text-sm font-semibold">{r.serial_number}</p><p className="text-xs text-muted">Issued {new Date(r.issued_at).toLocaleDateString()} · {r.revoked?'Withdrawn':r.allowed?'Available':'Access paused — contact your school'}</p><div className="mt-2 flex flex-wrap gap-2">{r.allowed&&<Link to={`/schoolpro/transcript?student=${encodeURIComponent(studentId)}&issue=${encodeURIComponent(r.id)}`}><Button size="sm">View / print transcript</Button></Link>}{canIssue&&!r.revoked&&<Button disabled={busy} size="sm" variant="secondary" onClick={()=>void revoke(r.id)}>Withdraw</Button>}</div></div>)}</section>;
+}

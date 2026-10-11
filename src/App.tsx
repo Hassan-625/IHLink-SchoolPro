@@ -22,6 +22,8 @@ import { SchoolProLogin } from "@/pages/schoolpro/SchoolProLogin";
 import { SchoolProResultChecker } from "@/pages/schoolpro/SchoolProResultChecker";
 import { SchoolProProprietorDashboard } from "@/pages/schoolpro/SchoolProProprietorDashboard";
 import { SchoolProAdminDashboard } from "@/pages/schoolpro/SchoolProAdminDashboard";
+import {SchoolProFormerStudents} from "@/pages/schoolpro/SchoolProFormerStudents";
+import {SchoolProTranscript} from "@/pages/schoolpro/SchoolProTranscript";
 import { SchoolProStudents } from "@/pages/schoolpro/SchoolProStudents";
 import { SchoolProResults } from "@/pages/schoolpro/SchoolProResults";
 import { SchoolProFees } from "@/pages/schoolpro/SchoolProFees";
@@ -78,7 +80,7 @@ const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
  if(ctx.schoolId&&!schoolDashboardAllowed(pathname,ctx.role,profile?.role))return <Navigate to={schoolDashboard(ctx.role)} replace/>;
  const module=permission||permissionForSchoolPath(pathname);
  const portalOnly=/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(pathname);
- const portal=portalOnly||/\/schoolpro\/(report-card|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
+ const portal=portalOnly||/\/schoolpro\/(report-card|transcript|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
  const billingOrProfile=/^\/schoolpro\/(subscription|profile)(\/|$)/.test(pathname);
  const permitted=module&&!billingOrProfile?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children;
  return <ProtectedRoute product="schoolpro" requireServiceAccess={!ctx.schoolId}>{ctx.schoolId&&!billingOrProfile?<SchoolProActivationGate>{permitted}</SchoolProActivationGate>:permitted}</ProtectedRoute>;
@@ -113,6 +115,8 @@ export default function App(){
 
   <Route path="/schoolpro/proprietor-dashboard" element={<Guard><SchoolProProprietorDashboard/></Guard>}/>
   <Route path="/schoolpro/admin-dashboard" element={<Guard><SchoolProAdminDashboard/></Guard>}/>
+  <Route path="/schoolpro/former-students" element={<Guard permission="results"><SchoolProFormerStudents/></Guard>}/>
+  <Route path="/schoolpro/transcript" element={<Guard permission="results"><SchoolProTranscript/></Guard>}/>
   <Route path="/schoolpro/students" element={<Guard permission="students"><SchoolProStudents/></Guard>}/>
   <Route path="/schoolpro/results" element={<Guard permission="results"><SchoolProResults/></Guard>}/>
   <Route path="/schoolpro/result-templates" element={<Guard><Suspense fallback={<div className="p-6 text-sm">Loading result templates…</div>}><SchoolProResultTemplates/></Suspense></Guard>}/>

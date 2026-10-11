@@ -1,7 +1,7 @@
 const modules:Record<string,string>={
   'admin-dashboard':'dashboard','proprietor-dashboard':'dashboard','teacher-dashboard':'dashboard',
   'student-dashboard':'dashboard','parent-dashboard':'dashboard','students':'students',
-  'results':'results','result-templates':'results','report-card':'results','broadsheet':'reports',
+  'former-students':'results','transcript':'results','results':'results','result-templates':'results','report-card':'results','broadsheet':'reports',
   'class-results-print':'reports','reports':'reports','fees':'finance','payments':'finance',
   'receipts':'finance','invoices':'finance','invoice-design':'finance','subscription':'finance',
   'classes':'classes','subjects':'subjects','attendance':'attendance','timetable':'timetable',

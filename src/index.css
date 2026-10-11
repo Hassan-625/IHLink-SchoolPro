@@ -411,6 +411,7 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   .result-print-wrapper { break-after: page; page-break-after: always; }
   .result-print-wrapper:last-child { break-after: auto; page-break-after: auto; }
   .school-report { break-inside: avoid; }
+  .school-broadsheet table th, .school-broadsheet table td { color: #0f172a !important; background: white !important; }
   .school-report table tbody td { color: #0f172a !important; background: white !important; }
   .school-report table thead th { color: white !important; background: #7e22ce !important; }
 }

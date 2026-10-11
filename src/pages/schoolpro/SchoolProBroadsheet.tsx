@@ -1,3 +1,4 @@
+import {fetchSchoolRows} from '@/lib/schoolDataPaging';
 import {useEffect,useState} from 'react';
 import {Link,useNavigate} from 'react-router-dom';
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
@@ -23,7 +24,7 @@ export function SchoolProBroadsheet(){
   setBusy(true);setMsg('');let count=0;
   try{let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
    if(scope!=='school'){const ids=scope==='selected'?selected:rows.map(r=>r.student_id);if(!ids.length)throw Error('Generate this class broadsheet and select students first.');query=query.in('student_id',ids);}
-   const drafts=await query;if(drafts.error)throw Error('Saved scores could not be loaded.');
+   const drafts=await fetchSchoolRows(query.order("id"));if(drafts.error)throw Error('Saved scores could not be loaded.');
    for(const draft of drafts.data||[]){const reviewed=await supabase.rpc('review_schoolpro_result',{p_result:draft.id,p_status:'approved',p_notes:null});if(reviewed.error)throw Error('Some scores could not be approved. Completed approvals are saved; retry the remaining scores.');count++;}
    setMsg(count?`${count} score records approved. You can now publish this selection.`:'No draft scores to approve for this selection. Previously approved or published scores are unchanged.');
   }catch(e){setMsg(`${count} score records approved. ${e instanceof Error?e.message:'Please try again.'}`);}finally{setBusy(false)}

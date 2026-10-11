@@ -7,13 +7,20 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  book.creator='IHLink SchoolPro';
  const summary=book.addWorksheet('Class Results');
  summary.addRow([schoolName,term,session]);
- summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects']);
+ const subjectLabels=[...new Set(reports.flatMap(report=>report.results.map(r=>subjectNames.get(r.subject_id)||'Subject')))];
+ const classAverages=new Map<string,number[]>();const classTotals=new Map<string,number[]>();
+ for(const report of reports){const average=report.results.reduce((sum,r)=>sum+Number(r.total_score),0)/report.results.length;classTotals.set(report.student.class_name,[...(classTotals.get(report.student.class_name)||[]),report.results.reduce((sum,r)=>sum+Number(r.total_score),0)]);classAverages.set(report.student.class_name,[...(classAverages.get(report.student.class_name)||[]),average]);}
+ summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects',...subjectLabels,'Class position','Class average (%)']);
  for(const [index,report] of reports.entries()){
   const s=report.student;
   const totals=report.results.map(r=>Number(r.total_score));
   if(!totals.length||totals.some(n=>!Number.isFinite(n)||n<0||n>100))throw new Error('Invalid result scores');
   const total=totals.reduce((sum,n)=>sum+n,0),average=total/totals.length;
-  summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length]);
+  const marks=new Map(report.results.map(r=>[subjectNames.get(r.subject_id)||'Subject',Number(r.total_score)]));
+  const classmates=classAverages.get(s.class_name)||[];
+  const position=1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
+  const classAverage=classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
+  summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length,...subjectLabels.map(label=>marks.get(label)??''),position,classAverage]);
   const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\/?*\[\]:]/g,'-').slice(0,31);
   const sheet=book.addWorksheet(title);
   sheet.addRow([schoolName]);sheet.addRow([[s.first_name,s.last_name].join(' '),s.admission_number,s.class_name]);sheet.addRow([term,session]);
@@ -24,7 +31,7 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   sheet.addRow(['Average (%)',average]);
   sheet.columns.forEach((c:Column)=>{c.width=20});sheet.getColumn(1).width=28;sheet.getRow(4).font={bold:true};
   sheet.eachRow((row:Row)=>{row.alignment={vertical:'top',wrapText:true}});
-  sheet.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:1,printArea:`A1:${sheet.getColumn(sheet.columnCount).letter}${sheet.rowCount}`};
+  sheet.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:1,printArea:`A1:${sheet.getColumn(sheet.columnCount).letter}${sheet.rowCount}`};
  }
  summary.columns.forEach((c:Column)=>{c.width=24});summary.getRow(2).font={bold:true};summary.getColumn(5).numFmt='0.00';summary.views=[{state:'frozen',ySplit:2}];
  summary.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'1:2'};

@@ -1,0 +1,1538 @@
+{
+  "school_id": "d342eb87-8d6a-477a-a380-7fab83f586b7",
+  "owner_id": "7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d",
+  "session": "2025/2026",
+  "fixture": "ihlink-academy-v1",
+  "classes": [
+    {
+      "g": 1,
+      "name": "Nursery 1",
+      "arm": "A",
+      "level": "nursery",
+      "code": "N1-A"
+    },
+    {
+      "g": 2,
+      "name": "Nursery 1",
+      "arm": "B",
+      "level": "nursery",
+      "code": "N1-B"
+    },
+    {
+      "g": 3,
+      "name": "Nursery 2",
+      "arm": "A",
+      "level": "nursery",
+      "code": "N2-A"
+    },
+    {
+      "g": 4,
+      "name": "Nursery 2",
+      "arm": "B",
+      "level": "nursery",
+      "code": "N2-B"
+    },
+    {
+      "g": 5,
+      "name": "Nursery 3",
+      "arm": "A",
+      "level": "nursery",
+      "code": "N3-A"
+    },
+    {
+      "g": 6,
+      "name": "Nursery 3",
+      "arm": "B",
+      "level": "nursery",
+      "code": "N3-B"
+    },
+    {
+      "g": 7,
+      "name": "Basic 1",
+      "arm": "A",
+      "level": "primary",
+      "code": "B1-A"
+    },
+    {
+      "g": 8,
+      "name": "Basic 1",
+      "arm": "B",
+      "level": "primary",
+      "code": "B1-B"
+    },
+    {
+      "g": 9,
+      "name": "Basic 2",
+      "arm": "A",
+      "level": "primary",
+      "code": "B2-A"
+    },
+    {
+      "g": 10,
+      "name": "Basic 2",
+      "arm": "B",
+      "level": "primary",
+      "code": "B2-B"
+    },
+    {
+      "g": 11,
+      "name": "Basic 3",
+      "arm": "A",
+      "level": "primary",
+      "code": "B3-A"
+    },
+    {
+      "g": 12,
+      "name": "Basic 3",
+      "arm": "B",
+      "level": "primary",
+      "code": "B3-B"
+    },
+    {
+      "g": 13,
+      "name": "Basic 4",
+      "arm": "A",
+      "level": "primary",
+      "code": "B4-A"
+    },
+    {
+      "g": 14,
+      "name": "Basic 4",
+      "arm": "B",
+      "level": "primary",
+      "code": "B4-B"
+    },
+    {
+      "g": 15,
+      "name": "Basic 5",
+      "arm": "A",
+      "level": "primary",
+      "code": "B5-A"
+    },
+    {
+      "g": 16,
+      "name": "Basic 5",
+      "arm": "B",
+      "level": "primary",
+      "code": "B5-B"
+    },
+    {
+      "g": 17,
+      "name": "JSS 1",
+      "arm": "A",
+      "level": "junior_secondary",
+      "code": "J1-A"
+    },
+    {
+      "g": 18,
+      "name": "JSS 1",
+      "arm": "B",
+      "level": "junior_secondary",
+      "code": "J1-B"
+    },
+    {
+      "g": 19,
+      "name": "JSS 2",
+      "arm": "A",
+      "level": "junior_secondary",
+      "code": "J2-A"
+    },
+    {
+      "g": 20,
+      "name": "JSS 2",
+      "arm": "B",
+      "level": "junior_secondary",
+      "code": "J2-B"
+    },
+    {
+      "g": 21,
+      "name": "JSS 3",
+      "arm": "A",
+      "level": "junior_secondary",
+      "code": "J3-A"
+    },
+    {
+      "g": 22,
+      "name": "JSS 3",
+      "arm": "B",
+      "level": "junior_secondary",
+      "code": "J3-B"
+    },
+    {
+      "g": 23,
+      "name": "SS 1",
+      "arm": "A",
+      "level": "senior_secondary",
+      "code": "S1-A"
+    },
+    {
+      "g": 24,
+      "name": "SS 1",
+      "arm": "B",
+      "level": "senior_secondary",
+      "code": "S1-B"
+    },
+    {
+      "g": 25,
+      "name": "SS 2",
+      "arm": "A",
+      "level": "senior_secondary",
+      "code": "S2-A"
+    },
+    {
+      "g": 26,
+      "name": "SS 2",
+      "arm": "B",
+      "level": "senior_secondary",
+      "code": "S2-B"
+    },
+    {
+      "g": 27,
+      "name": "SS 3",
+      "arm": "A",
+      "level": "senior_secondary",
+      "code": "S3-A"
+    },
+    {
+      "g": 28,
+      "name": "SS 3",
+      "arm": "B",
+      "level": "senior_secondary",
+      "code": "S3-B"
+    }
+  ],
+  "staff": [
+    {
+      "n": 1,
+      "kind": "staff",
+      "first": "Amina",
+      "last": "Yusuf",
+      "role": "administrator",
+      "email": "ihacademy.staff.01@example.com"
+    },
+    {
+      "n": 2,
+      "kind": "staff",
+      "first": "Chinedu",
+      "last": "Okafor",
+      "role": "vice_principal",
+      "email": "ihacademy.staff.02@example.com"
+    },
+    {
+      "n": 3,
+      "kind": "staff",
+      "first": "Grace",
+      "last": "Adebayo",
+      "role": "head_teacher",
+      "email": "ihacademy.staff.03@example.com"
+    },
+    {
+      "n": 4,
+      "kind": "staff",
+      "first": "Bello",
+      "last": "Musa",
+      "role": "bursar",
+      "email": "ihacademy.staff.04@example.com"
+    },
+    {
+      "n": 5,
+      "kind": "staff",
+      "first": "Fatima",
+      "last": "Ibrahim",
+      "role": "registrar",
+      "email": "ihacademy.staff.05@example.com"
+    },
+    {
+      "n": 6,
+      "kind": "staff",
+      "first": "Emeka",
+      "last": "Nwosu",
+      "role": "exam_officer",
+      "email": "ihacademy.staff.06@example.com"
+    },
+    {
+      "n": 7,
+      "kind": "staff",
+      "first": "Zainab",
+      "last": "Abubakar",
+      "role": "class_teacher",
+      "email": "ihacademy.staff.07@example.com"
+    },
+    {
+      "n": 8,
+      "kind": "staff",
+      "first": "David",
+      "last": "Adeyemi",
+      "role": "class_teacher",
+      "email": "ihacademy.staff.08@example.com"
+    },
+    {
+      "n": 9,
+      "kind": "staff",
+      "first": "Maryam",
+      "last": "Suleiman",
+      "role": "class_teacher",
+      "email": "ihacademy.staff.09@example.com"
+    },
+    {
+      "n": 10,
+      "kind": "staff",
+      "first": "Esther",
+      "last": "Udo",
+      "role": "class_teacher",
+      "email": "ihacademy.staff.10@example.com"
+    },
+    {
+      "n": 11,
+      "kind": "staff",
+      "first": "Samuel",
+      "last": "Bassey",
+      "role": "teacher",
+      "email": "ihacademy.staff.11@example.com"
+    },
+    {
+      "n": 12,
+      "kind": "staff",
+      "first": "Hauwa",
+      "last": "Sani",
+      "role": "teacher",
+      "email": "ihacademy.staff.12@example.com"
+    },
+    {
+      "n": 13,
+      "kind": "staff",
+      "first": "Daniel",
+      "last": "Eze",
+      "role": "teacher",
+      "email": "ihacademy.staff.13@example.com"
+    },
+    {
+      "n": 14,
+      "kind": "staff",
+      "first": "Ruth",
+      "last": "Ojo",
+      "role": "teacher",
+      "email": "ihacademy.staff.14@example.com"
+    },
+    {
+      "n": 15,
+      "kind": "staff",
+      "first": "Usman",
+      "last": "Garba",
+      "role": "teacher",
+      "email": "ihacademy.staff.15@example.com"
+    },
+    {
+      "n": 16,
+      "kind": "staff",
+      "first": "Ngozi",
+      "last": "Obi",
+      "role": "librarian",
+      "email": "ihacademy.staff.16@example.com"
+    },
+    {
+      "n": 17,
+      "kind": "staff",
+      "first": "Sarah",
+      "last": "Bala",
+      "role": "nurse",
+      "email": "ihacademy.staff.17@example.com"
+    },
+    {
+      "n": 18,
+      "kind": "staff",
+      "first": "Ifeoma",
+      "last": "Nnamdi",
+      "role": "counsellor",
+      "email": "ihacademy.staff.18@example.com"
+    },
+    {
+      "n": 19,
+      "kind": "staff",
+      "first": "Kabiru",
+      "last": "Adamu",
+      "role": "transport_manager",
+      "email": "ihacademy.staff.19@example.com"
+    },
+    {
+      "n": 20,
+      "kind": "staff",
+      "first": "Victoria",
+      "last": "Lawal",
+      "role": "it_admin",
+      "email": "ihacademy.staff.20@example.com"
+    }
+  ],
+  "parents": [
+    {
+      "n": 1,
+      "kind": "parent",
+      "first": "Amina",
+      "last": "Yusuf",
+      "role": "parent",
+      "email": "ihacademy.parent.001@example.com"
+    },
+    {
+      "n": 2,
+      "kind": "parent",
+      "first": "Chinedu",
+      "last": "Okafor",
+      "role": "parent",
+      "email": "ihacademy.parent.002@example.com"
+    },
+    {
+      "n": 3,
+      "kind": "parent",
+      "first": "Grace",
+      "last": "Adebayo",
+      "role": "parent",
+      "email": "ihacademy.parent.003@example.com"
+    },
+    {
+      "n": 4,
+      "kind": "parent",
+      "first": "Bello",
+      "last": "Musa",
+      "role": "parent",
+      "email": "ihacademy.parent.004@example.com"
+    },
+    {
+      "n": 5,
+      "kind": "parent",
+      "first": "Fatima",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.005@example.com"
+    },
+    {
+      "n": 6,
+      "kind": "parent",
+      "first": "Emeka",
+      "last": "Nwosu",
+      "role": "parent",
+      "email": "ihacademy.parent.006@example.com"
+    },
+    {
+      "n": 7,
+      "kind": "parent",
+      "first": "Zainab",
+      "last": "Abubakar",
+      "role": "parent",
+      "email": "ihacademy.parent.007@example.com"
+    },
+    {
+      "n": 8,
+      "kind": "parent",
+      "first": "David",
+      "last": "Adeyemi",
+      "role": "parent",
+      "email": "ihacademy.parent.008@example.com"
+    },
+    {
+      "n": 9,
+      "kind": "parent",
+      "first": "Maryam",
+      "last": "Suleiman",
+      "role": "parent",
+      "email": "ihacademy.parent.009@example.com"
+    },
+    {
+      "n": 10,
+      "kind": "parent",
+      "first": "Esther",
+      "last": "Udo",
+      "role": "parent",
+      "email": "ihacademy.parent.010@example.com"
+    },
+    {
+      "n": 11,
+      "kind": "parent",
+      "first": "Samuel",
+      "last": "Bassey",
+      "role": "parent",
+      "email": "ihacademy.parent.011@example.com"
+    },
+    {
+      "n": 12,
+      "kind": "parent",
+      "first": "Hauwa",
+      "last": "Sani",
+      "role": "parent",
+      "email": "ihacademy.parent.012@example.com"
+    },
+    {
+      "n": 13,
+      "kind": "parent",
+      "first": "Daniel",
+      "last": "Eze",
+      "role": "parent",
+      "email": "ihacademy.parent.013@example.com"
+    },
+    {
+      "n": 14,
+      "kind": "parent",
+      "first": "Ruth",
+      "last": "Ojo",
+      "role": "parent",
+      "email": "ihacademy.parent.014@example.com"
+    },
+    {
+      "n": 15,
+      "kind": "parent",
+      "first": "Usman",
+      "last": "Garba",
+      "role": "parent",
+      "email": "ihacademy.parent.015@example.com"
+    },
+    {
+      "n": 16,
+      "kind": "parent",
+      "first": "Ngozi",
+      "last": "Obi",
+      "role": "parent",
+      "email": "ihacademy.parent.016@example.com"
+    },
+    {
+      "n": 17,
+      "kind": "parent",
+      "first": "Sarah",
+      "last": "Bala",
+      "role": "parent",
+      "email": "ihacademy.parent.017@example.com"
+    },
+    {
+      "n": 18,
+      "kind": "parent",
+      "first": "Ifeoma",
+      "last": "Nnamdi",
+      "role": "parent",
+      "email": "ihacademy.parent.018@example.com"
+    },
+    {
+      "n": 19,
+      "kind": "parent",
+      "first": "Kabiru",
+      "last": "Adamu",
+      "role": "parent",
+      "email": "ihacademy.parent.019@example.com"
+    },
+    {
+      "n": 20,
+      "kind": "parent",
+      "first": "Victoria",
+      "last": "Lawal",
+      "role": "parent",
+      "email": "ihacademy.parent.020@example.com"
+    },
+    {
+      "n": 21,
+      "kind": "parent",
+      "first": "Mariam",
+      "last": "Afolabi",
+      "role": "parent",
+      "email": "ihacademy.parent.021@example.com"
+    },
+    {
+      "n": 22,
+      "kind": "parent",
+      "first": "Joshua",
+      "last": "Danjuma",
+      "role": "parent",
+      "email": "ihacademy.parent.022@example.com"
+    },
+    {
+      "n": 23,
+      "kind": "parent",
+      "first": "Blessing",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.023@example.com"
+    },
+    {
+      "n": 24,
+      "kind": "parent",
+      "first": "Sadiq",
+      "last": "Okeke",
+      "role": "parent",
+      "email": "ihacademy.parent.024@example.com"
+    },
+    {
+      "n": 25,
+      "kind": "parent",
+      "first": "Halima",
+      "last": "Aliyu",
+      "role": "parent",
+      "email": "ihacademy.parent.025@example.com"
+    },
+    {
+      "n": 26,
+      "kind": "parent",
+      "first": "Paul",
+      "last": "Olayemi",
+      "role": "parent",
+      "email": "ihacademy.parent.026@example.com"
+    },
+    {
+      "n": 27,
+      "kind": "parent",
+      "first": "Peace",
+      "last": "Ekanem",
+      "role": "parent",
+      "email": "ihacademy.parent.027@example.com"
+    },
+    {
+      "n": 28,
+      "kind": "parent",
+      "first": "Ibrahim",
+      "last": "Tijani",
+      "role": "parent",
+      "email": "ihacademy.parent.028@example.com"
+    },
+    {
+      "n": 29,
+      "kind": "parent",
+      "first": "Deborah",
+      "last": "Hassan",
+      "role": "parent",
+      "email": "ihacademy.parent.029@example.com"
+    },
+    {
+      "n": 30,
+      "kind": "parent",
+      "first": "Abdul",
+      "last": "Bello",
+      "role": "parent",
+      "email": "ihacademy.parent.030@example.com"
+    },
+    {
+      "n": 31,
+      "kind": "parent",
+      "first": "Amina",
+      "last": "Abdullahi",
+      "role": "parent",
+      "email": "ihacademy.parent.031@example.com"
+    },
+    {
+      "n": 32,
+      "kind": "parent",
+      "first": "Chinedu",
+      "last": "Olumide",
+      "role": "parent",
+      "email": "ihacademy.parent.032@example.com"
+    },
+    {
+      "n": 33,
+      "kind": "parent",
+      "first": "Grace",
+      "last": "Yakubu",
+      "role": "parent",
+      "email": "ihacademy.parent.033@example.com"
+    },
+    {
+      "n": 34,
+      "kind": "parent",
+      "first": "Bello",
+      "last": "Ishaku",
+      "role": "parent",
+      "email": "ihacademy.parent.034@example.com"
+    },
+    {
+      "n": 35,
+      "kind": "parent",
+      "first": "Fatima",
+      "last": "Adeniyi",
+      "role": "parent",
+      "email": "ihacademy.parent.035@example.com"
+    },
+    {
+      "n": 36,
+      "kind": "parent",
+      "first": "Emeka",
+      "last": "Onyeka",
+      "role": "parent",
+      "email": "ihacademy.parent.036@example.com"
+    },
+    {
+      "n": 37,
+      "kind": "parent",
+      "first": "Zainab",
+      "last": "Abass",
+      "role": "parent",
+      "email": "ihacademy.parent.037@example.com"
+    },
+    {
+      "n": 38,
+      "kind": "parent",
+      "first": "David",
+      "last": "Akpan",
+      "role": "parent",
+      "email": "ihacademy.parent.038@example.com"
+    },
+    {
+      "n": 39,
+      "kind": "parent",
+      "first": "Maryam",
+      "last": "Abiola",
+      "role": "parent",
+      "email": "ihacademy.parent.039@example.com"
+    },
+    {
+      "n": 40,
+      "kind": "parent",
+      "first": "Esther",
+      "last": "Yusuf",
+      "role": "parent",
+      "email": "ihacademy.parent.040@example.com"
+    },
+    {
+      "n": 41,
+      "kind": "parent",
+      "first": "Samuel",
+      "last": "Okafor",
+      "role": "parent",
+      "email": "ihacademy.parent.041@example.com"
+    },
+    {
+      "n": 42,
+      "kind": "parent",
+      "first": "Hauwa",
+      "last": "Adebayo",
+      "role": "parent",
+      "email": "ihacademy.parent.042@example.com"
+    },
+    {
+      "n": 43,
+      "kind": "parent",
+      "first": "Daniel",
+      "last": "Musa",
+      "role": "parent",
+      "email": "ihacademy.parent.043@example.com"
+    },
+    {
+      "n": 44,
+      "kind": "parent",
+      "first": "Ruth",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.044@example.com"
+    },
+    {
+      "n": 45,
+      "kind": "parent",
+      "first": "Usman",
+      "last": "Nwosu",
+      "role": "parent",
+      "email": "ihacademy.parent.045@example.com"
+    },
+    {
+      "n": 46,
+      "kind": "parent",
+      "first": "Ngozi",
+      "last": "Abubakar",
+      "role": "parent",
+      "email": "ihacademy.parent.046@example.com"
+    },
+    {
+      "n": 47,
+      "kind": "parent",
+      "first": "Sarah",
+      "last": "Adeyemi",
+      "role": "parent",
+      "email": "ihacademy.parent.047@example.com"
+    },
+    {
+      "n": 48,
+      "kind": "parent",
+      "first": "Ifeoma",
+      "last": "Suleiman",
+      "role": "parent",
+      "email": "ihacademy.parent.048@example.com"
+    },
+    {
+      "n": 49,
+      "kind": "parent",
+      "first": "Kabiru",
+      "last": "Udo",
+      "role": "parent",
+      "email": "ihacademy.parent.049@example.com"
+    },
+    {
+      "n": 50,
+      "kind": "parent",
+      "first": "Victoria",
+      "last": "Bassey",
+      "role": "parent",
+      "email": "ihacademy.parent.050@example.com"
+    },
+    {
+      "n": 51,
+      "kind": "parent",
+      "first": "Mariam",
+      "last": "Sani",
+      "role": "parent",
+      "email": "ihacademy.parent.051@example.com"
+    },
+    {
+      "n": 52,
+      "kind": "parent",
+      "first": "Joshua",
+      "last": "Eze",
+      "role": "parent",
+      "email": "ihacademy.parent.052@example.com"
+    },
+    {
+      "n": 53,
+      "kind": "parent",
+      "first": "Blessing",
+      "last": "Ojo",
+      "role": "parent",
+      "email": "ihacademy.parent.053@example.com"
+    },
+    {
+      "n": 54,
+      "kind": "parent",
+      "first": "Sadiq",
+      "last": "Garba",
+      "role": "parent",
+      "email": "ihacademy.parent.054@example.com"
+    },
+    {
+      "n": 55,
+      "kind": "parent",
+      "first": "Halima",
+      "last": "Obi",
+      "role": "parent",
+      "email": "ihacademy.parent.055@example.com"
+    },
+    {
+      "n": 56,
+      "kind": "parent",
+      "first": "Paul",
+      "last": "Bala",
+      "role": "parent",
+      "email": "ihacademy.parent.056@example.com"
+    },
+    {
+      "n": 57,
+      "kind": "parent",
+      "first": "Peace",
+      "last": "Nnamdi",
+      "role": "parent",
+      "email": "ihacademy.parent.057@example.com"
+    },
+    {
+      "n": 58,
+      "kind": "parent",
+      "first": "Ibrahim",
+      "last": "Adamu",
+      "role": "parent",
+      "email": "ihacademy.parent.058@example.com"
+    },
+    {
+      "n": 59,
+      "kind": "parent",
+      "first": "Deborah",
+      "last": "Lawal",
+      "role": "parent",
+      "email": "ihacademy.parent.059@example.com"
+    },
+    {
+      "n": 60,
+      "kind": "parent",
+      "first": "Abdul",
+      "last": "Afolabi",
+      "role": "parent",
+      "email": "ihacademy.parent.060@example.com"
+    },
+    {
+      "n": 61,
+      "kind": "parent",
+      "first": "Amina",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.061@example.com"
+    },
+    {
+      "n": 62,
+      "kind": "parent",
+      "first": "Chinedu",
+      "last": "Okeke",
+      "role": "parent",
+      "email": "ihacademy.parent.062@example.com"
+    },
+    {
+      "n": 63,
+      "kind": "parent",
+      "first": "Grace",
+      "last": "Aliyu",
+      "role": "parent",
+      "email": "ihacademy.parent.063@example.com"
+    },
+    {
+      "n": 64,
+      "kind": "parent",
+      "first": "Bello",
+      "last": "Olayemi",
+      "role": "parent",
+      "email": "ihacademy.parent.064@example.com"
+    },
+    {
+      "n": 65,
+      "kind": "parent",
+      "first": "Fatima",
+      "last": "Ekanem",
+      "role": "parent",
+      "email": "ihacademy.parent.065@example.com"
+    },
+    {
+      "n": 66,
+      "kind": "parent",
+      "first": "Emeka",
+      "last": "Tijani",
+      "role": "parent",
+      "email": "ihacademy.parent.066@example.com"
+    },
+    {
+      "n": 67,
+      "kind": "parent",
+      "first": "Zainab",
+      "last": "Hassan",
+      "role": "parent",
+      "email": "ihacademy.parent.067@example.com"
+    },
+    {
+      "n": 68,
+      "kind": "parent",
+      "first": "David",
+      "last": "Bello",
+      "role": "parent",
+      "email": "ihacademy.parent.068@example.com"
+    },
+    {
+      "n": 69,
+      "kind": "parent",
+      "first": "Maryam",
+      "last": "Nwachukwu",
+      "role": "parent",
+      "email": "ihacademy.parent.069@example.com"
+    },
+    {
+      "n": 70,
+      "kind": "parent",
+      "first": "Esther",
+      "last": "Abdullahi",
+      "role": "parent",
+      "email": "ihacademy.parent.070@example.com"
+    },
+    {
+      "n": 71,
+      "kind": "parent",
+      "first": "Samuel",
+      "last": "Olumide",
+      "role": "parent",
+      "email": "ihacademy.parent.071@example.com"
+    },
+    {
+      "n": 72,
+      "kind": "parent",
+      "first": "Hauwa",
+      "last": "Yakubu",
+      "role": "parent",
+      "email": "ihacademy.parent.072@example.com"
+    },
+    {
+      "n": 73,
+      "kind": "parent",
+      "first": "Daniel",
+      "last": "Ishaku",
+      "role": "parent",
+      "email": "ihacademy.parent.073@example.com"
+    },
+    {
+      "n": 74,
+      "kind": "parent",
+      "first": "Ruth",
+      "last": "Adeniyi",
+      "role": "parent",
+      "email": "ihacademy.parent.074@example.com"
+    },
+    {
+      "n": 75,
+      "kind": "parent",
+      "first": "Usman",
+      "last": "Onyeka",
+      "role": "parent",
+      "email": "ihacademy.parent.075@example.com"
+    },
+    {
+      "n": 76,
+      "kind": "parent",
+      "first": "Ngozi",
+      "last": "Abass",
+      "role": "parent",
+      "email": "ihacademy.parent.076@example.com"
+    },
+    {
+      "n": 77,
+      "kind": "parent",
+      "first": "Sarah",
+      "last": "Akpan",
+      "role": "parent",
+      "email": "ihacademy.parent.077@example.com"
+    },
+    {
+      "n": 78,
+      "kind": "parent",
+      "first": "Ifeoma",
+      "last": "Abiola",
+      "role": "parent",
+      "email": "ihacademy.parent.078@example.com"
+    },
+    {
+      "n": 79,
+      "kind": "parent",
+      "first": "Kabiru",
+      "last": "Yusuf",
+      "role": "parent",
+      "email": "ihacademy.parent.079@example.com"
+    },
+    {
+      "n": 80,
+      "kind": "parent",
+      "first": "Victoria",
+      "last": "Okafor",
+      "role": "parent",
+      "email": "ihacademy.parent.080@example.com"
+    },
+    {
+      "n": 81,
+      "kind": "parent",
+      "first": "Mariam",
+      "last": "Adebayo",
+      "role": "parent",
+      "email": "ihacademy.parent.081@example.com"
+    },
+    {
+      "n": 82,
+      "kind": "parent",
+      "first": "Joshua",
+      "last": "Musa",
+      "role": "parent",
+      "email": "ihacademy.parent.082@example.com"
+    },
+    {
+      "n": 83,
+      "kind": "parent",
+      "first": "Blessing",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.083@example.com"
+    },
+    {
+      "n": 84,
+      "kind": "parent",
+      "first": "Sadiq",
+      "last": "Nwosu",
+      "role": "parent",
+      "email": "ihacademy.parent.084@example.com"
+    },
+    {
+      "n": 85,
+      "kind": "parent",
+      "first": "Halima",
+      "last": "Abubakar",
+      "role": "parent",
+      "email": "ihacademy.parent.085@example.com"
+    },
+    {
+      "n": 86,
+      "kind": "parent",
+      "first": "Paul",
+      "last": "Adeyemi",
+      "role": "parent",
+      "email": "ihacademy.parent.086@example.com"
+    },
+    {
+      "n": 87,
+      "kind": "parent",
+      "first": "Peace",
+      "last": "Suleiman",
+      "role": "parent",
+      "email": "ihacademy.parent.087@example.com"
+    },
+    {
+      "n": 88,
+      "kind": "parent",
+      "first": "Ibrahim",
+      "last": "Udo",
+      "role": "parent",
+      "email": "ihacademy.parent.088@example.com"
+    },
+    {
+      "n": 89,
+      "kind": "parent",
+      "first": "Deborah",
+      "last": "Bassey",
+      "role": "parent",
+      "email": "ihacademy.parent.089@example.com"
+    },
+    {
+      "n": 90,
+      "kind": "parent",
+      "first": "Abdul",
+      "last": "Sani",
+      "role": "parent",
+      "email": "ihacademy.parent.090@example.com"
+    },
+    {
+      "n": 91,
+      "kind": "parent",
+      "first": "Amina",
+      "last": "Ojo",
+      "role": "parent",
+      "email": "ihacademy.parent.091@example.com"
+    },
+    {
+      "n": 92,
+      "kind": "parent",
+      "first": "Chinedu",
+      "last": "Garba",
+      "role": "parent",
+      "email": "ihacademy.parent.092@example.com"
+    },
+    {
+      "n": 93,
+      "kind": "parent",
+      "first": "Grace",
+      "last": "Obi",
+      "role": "parent",
+      "email": "ihacademy.parent.093@example.com"
+    },
+    {
+      "n": 94,
+      "kind": "parent",
+      "first": "Bello",
+      "last": "Bala",
+      "role": "parent",
+      "email": "ihacademy.parent.094@example.com"
+    },
+    {
+      "n": 95,
+      "kind": "parent",
+      "first": "Fatima",
+      "last": "Nnamdi",
+      "role": "parent",
+      "email": "ihacademy.parent.095@example.com"
+    },
+    {
+      "n": 96,
+      "kind": "parent",
+      "first": "Emeka",
+      "last": "Adamu",
+      "role": "parent",
+      "email": "ihacademy.parent.096@example.com"
+    },
+    {
+      "n": 97,
+      "kind": "parent",
+      "first": "Zainab",
+      "last": "Lawal",
+      "role": "parent",
+      "email": "ihacademy.parent.097@example.com"
+    },
+    {
+      "n": 98,
+      "kind": "parent",
+      "first": "David",
+      "last": "Afolabi",
+      "role": "parent",
+      "email": "ihacademy.parent.098@example.com"
+    },
+    {
+      "n": 99,
+      "kind": "parent",
+      "first": "Maryam",
+      "last": "Danjuma",
+      "role": "parent",
+      "email": "ihacademy.parent.099@example.com"
+    },
+    {
+      "n": 100,
+      "kind": "parent",
+      "first": "Esther",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.100@example.com"
+    },
+    {
+      "n": 101,
+      "kind": "parent",
+      "first": "Samuel",
+      "last": "Okeke",
+      "role": "parent",
+      "email": "ihacademy.parent.101@example.com"
+    },
+    {
+      "n": 102,
+      "kind": "parent",
+      "first": "Hauwa",
+      "last": "Aliyu",
+      "role": "parent",
+      "email": "ihacademy.parent.102@example.com"
+    },
+    {
+      "n": 103,
+      "kind": "parent",
+      "first": "Daniel",
+      "last": "Olayemi",
+      "role": "parent",
+      "email": "ihacademy.parent.103@example.com"
+    },
+    {
+      "n": 104,
+      "kind": "parent",
+      "first": "Ruth",
+      "last": "Ekanem",
+      "role": "parent",
+      "email": "ihacademy.parent.104@example.com"
+    },
+    {
+      "n": 105,
+      "kind": "parent",
+      "first": "Usman",
+      "last": "Tijani",
+      "role": "parent",
+      "email": "ihacademy.parent.105@example.com"
+    },
+    {
+      "n": 106,
+      "kind": "parent",
+      "first": "Ngozi",
+      "last": "Hassan",
+      "role": "parent",
+      "email": "ihacademy.parent.106@example.com"
+    },
+    {
+      "n": 107,
+      "kind": "parent",
+      "first": "Sarah",
+      "last": "Bello",
+      "role": "parent",
+      "email": "ihacademy.parent.107@example.com"
+    },
+    {
+      "n": 108,
+      "kind": "parent",
+      "first": "Ifeoma",
+      "last": "Nwachukwu",
+      "role": "parent",
+      "email": "ihacademy.parent.108@example.com"
+    },
+    {
+      "n": 109,
+      "kind": "parent",
+      "first": "Kabiru",
+      "last": "Abdullahi",
+      "role": "parent",
+      "email": "ihacademy.parent.109@example.com"
+    },
+    {
+      "n": 110,
+      "kind": "parent",
+      "first": "Victoria",
+      "last": "Olumide",
+      "role": "parent",
+      "email": "ihacademy.parent.110@example.com"
+    },
+    {
+      "n": 111,
+      "kind": "parent",
+      "first": "Mariam",
+      "last": "Yakubu",
+      "role": "parent",
+      "email": "ihacademy.parent.111@example.com"
+    },
+    {
+      "n": 112,
+      "kind": "parent",
+      "first": "Joshua",
+      "last": "Ishaku",
+      "role": "parent",
+      "email": "ihacademy.parent.112@example.com"
+    },
+    {
+      "n": 113,
+      "kind": "parent",
+      "first": "Blessing",
+      "last": "Adeniyi",
+      "role": "parent",
+      "email": "ihacademy.parent.113@example.com"
+    },
+    {
+      "n": 114,
+      "kind": "parent",
+      "first": "Sadiq",
+      "last": "Onyeka",
+      "role": "parent",
+      "email": "ihacademy.parent.114@example.com"
+    },
+    {
+      "n": 115,
+      "kind": "parent",
+      "first": "Halima",
+      "last": "Abass",
+      "role": "parent",
+      "email": "ihacademy.parent.115@example.com"
+    },
+    {
+      "n": 116,
+      "kind": "parent",
+      "first": "Paul",
+      "last": "Akpan",
+      "role": "parent",
+      "email": "ihacademy.parent.116@example.com"
+    },
+    {
+      "n": 117,
+      "kind": "parent",
+      "first": "Peace",
+      "last": "Abiola",
+      "role": "parent",
+      "email": "ihacademy.parent.117@example.com"
+    },
+    {
+      "n": 118,
+      "kind": "parent",
+      "first": "Ibrahim",
+      "last": "Yusuf",
+      "role": "parent",
+      "email": "ihacademy.parent.118@example.com"
+    },
+    {
+      "n": 119,
+      "kind": "parent",
+      "first": "Deborah",
+      "last": "Okafor",
+      "role": "parent",
+      "email": "ihacademy.parent.119@example.com"
+    },
+    {
+      "n": 120,
+      "kind": "parent",
+      "first": "Abdul",
+      "last": "Adebayo",
+      "role": "parent",
+      "email": "ihacademy.parent.120@example.com"
+    },
+    {
+      "n": 121,
+      "kind": "parent",
+      "first": "Amina",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.121@example.com"
+    },
+    {
+      "n": 122,
+      "kind": "parent",
+      "first": "Chinedu",
+      "last": "Nwosu",
+      "role": "parent",
+      "email": "ihacademy.parent.122@example.com"
+    },
+    {
+      "n": 123,
+      "kind": "parent",
+      "first": "Grace",
+      "last": "Abubakar",
+      "role": "parent",
+      "email": "ihacademy.parent.123@example.com"
+    },
+    {
+      "n": 124,
+      "kind": "parent",
+      "first": "Bello",
+      "last": "Adeyemi",
+      "role": "parent",
+      "email": "ihacademy.parent.124@example.com"
+    },
+    {
+      "n": 125,
+      "kind": "parent",
+      "first": "Fatima",
+      "last": "Suleiman",
+      "role": "parent",
+      "email": "ihacademy.parent.125@example.com"
+    },
+    {
+      "n": 126,
+      "kind": "parent",
+      "first": "Emeka",
+      "last": "Udo",
+      "role": "parent",
+      "email": "ihacademy.parent.126@example.com"
+    },
+    {
+      "n": 127,
+      "kind": "parent",
+      "first": "Zainab",
+      "last": "Bassey",
+      "role": "parent",
+      "email": "ihacademy.parent.127@example.com"
+    },
+    {
+      "n": 128,
+      "kind": "parent",
+      "first": "David",
+      "last": "Sani",
+      "role": "parent",
+      "email": "ihacademy.parent.128@example.com"
+    },
+    {
+      "n": 129,
+      "kind": "parent",
+      "first": "Maryam",
+      "last": "Eze",
+      "role": "parent",
+      "email": "ihacademy.parent.129@example.com"
+    },
+    {
+      "n": 130,
+      "kind": "parent",
+      "first": "Esther",
+      "last": "Ojo",
+      "role": "parent",
+      "email": "ihacademy.parent.130@example.com"
+    },
+    {
+      "n": 131,
+      "kind": "parent",
+      "first": "Samuel",
+      "last": "Garba",
+      "role": "parent",
+      "email": "ihacademy.parent.131@example.com"
+    },
+    {
+      "n": 132,
+      "kind": "parent",
+      "first": "Hauwa",
+      "last": "Obi",
+      "role": "parent",
+      "email": "ihacademy.parent.132@example.com"
+    },
+    {
+      "n": 133,
+      "kind": "parent",
+      "first": "Daniel",
+      "last": "Bala",
+      "role": "parent",
+      "email": "ihacademy.parent.133@example.com"
+    },
+    {
+      "n": 134,
+      "kind": "parent",
+      "first": "Ruth",
+      "last": "Nnamdi",
+      "role": "parent",
+      "email": "ihacademy.parent.134@example.com"
+    },
+    {
+      "n": 135,
+      "kind": "parent",
+      "first": "Usman",
+      "last": "Adamu",
+      "role": "parent",
+      "email": "ihacademy.parent.135@example.com"
+    },
+    {
+      "n": 136,
+      "kind": "parent",
+      "first": "Ngozi",
+      "last": "Lawal",
+      "role": "parent",
+      "email": "ihacademy.parent.136@example.com"
+    },
+    {
+      "n": 137,
+      "kind": "parent",
+      "first": "Sarah",
+      "last": "Afolabi",
+      "role": "parent",
+      "email": "ihacademy.parent.137@example.com"
+    },
+    {
+      "n": 138,
+      "kind": "parent",
+      "first": "Ifeoma",
+      "last": "Danjuma",
+      "role": "parent",
+      "email": "ihacademy.parent.138@example.com"
+    },
+    {
+      "n": 139,
+      "kind": "parent",
+      "first": "Kabiru",
+      "last": "Ibrahim",
+      "role": "parent",
+      "email": "ihacademy.parent.139@example.com"
+    },
+    {
+      "n": 140,
+      "kind": "parent",
+      "first": "Victoria",
+      "last": "Okeke",
+      "role": "parent",
+      "email": "ihacademy.parent.140@example.com"
+    }
+  ],
+  "subjects": {
+    "nursery": [
+      "Literacy",
+      "Numeracy",
+      "Phonics",
+      "Handwriting",
+      "Rhymes and Songs",
+      "Basic Science",
+      "Social Habits",
+      "Health Habits",
+      "Creative Arts",
+      "Physical Development"
+    ],
+    "primary": [
+      "English Studies",
+      "Mathematics",
+      "Basic Science",
+      "Social Studies",
+      "Civic Education",
+      "Computer Studies",
+      "Quantitative Reasoning",
+      "Verbal Reasoning",
+      "Cultural and Creative Arts",
+      "Physical and Health Education"
+    ],
+    "junior_secondary": [
+      "English Studies",
+      "Mathematics",
+      "Basic Science",
+      "Basic Technology",
+      "Social Studies",
+      "Civic Education",
+      "Computer Studies",
+      "Business Studies",
+      "Cultural and Creative Arts",
+      "Physical and Health Education"
+    ],
+    "senior_secondary": [
+      "English Language",
+      "Mathematics",
+      "Biology",
+      "Chemistry",
+      "Physics",
+      "Economics",
+      "Geography",
+      "Government",
+      "Computer Studies",
+      "Agricultural Science"
+    ]
+  }
+}

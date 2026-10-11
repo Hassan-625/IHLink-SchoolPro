@@ -1,0 +1,1790 @@
+[
+  {
+    "student": {
+      "id": "742296a4-7679-d0dd-bf82-dd20cd713a94",
+      "first_name": "Amina",
+      "last_name": "Adebayo",
+      "admission_number": "IH-TST-2026-B1-A-001",
+      "class_name": "Basic 1 A",
+      "school_id": "d342eb87-8d6a-477a-a380-7fab83f586b7"
+    },
+    "results": [
+      {
+        "id": "96ed2ccb-896f-95eb-e1df-05606346e381",
+        "subject_id": "50539c24-0d15-144a-95eb-182789cf1702",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 52,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 84,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "0ddd6063-d425-e8d2-3b90-766bd72b891e",
+        "subject_id": "54b01683-5fb8-0105-5528-cf0ecf78b367",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 55,
+          "test_1": 9,
+          "test_2": 9,
+          "assignment_1": 9,
+          "assignment_2": 9
+        },
+        "total_score": 91,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "afc642dc-ae3f-7315-364b-e811b2638a9f",
+        "subject_id": "2ddd88a9-ee7c-fa20-d67d-7b50094088d5",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 20,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 32,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "3667bca2-83b2-c8c7-2adf-28f332973f22",
+        "subject_id": "efb440f4-2035-69fe-4540-30a0281844f0",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 27,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 39,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "eb647e54-9554-1850-e184-5e36f8851295",
+        "subject_id": "1c1a0cfb-5e7a-e50c-84ca-c15bfe8be948",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 30,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 46,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "fe4fb75c-73a6-3deb-c748-aaa2ca226591",
+        "subject_id": "bb98b577-a77e-62d3-bd05-1d0407c6f8c2",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 33,
+          "test_1": 5,
+          "test_2": 5,
+          "assignment_1": 5,
+          "assignment_2": 5
+        },
+        "total_score": 53,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "ee936ed7-9508-2be4-70d4-1231d5850e96",
+        "subject_id": "9ea34821-fb58-195a-490a-cdabc7cd2453",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 36,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 60,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "04023338-7fc2-b574-8c5f-8271e4785a74",
+        "subject_id": "99dc301c-2ad9-6aa6-24d6-9c6852a47ac3",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 43,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 67,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "cd75d2a1-4e74-0d6a-33d0-ca0312e886e1",
+        "subject_id": "8606eda6-d743-b181-9315-6b306914352a",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 46,
+          "test_1": 7,
+          "test_2": 7,
+          "assignment_1": 7,
+          "assignment_2": 7
+        },
+        "total_score": 74,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "43e788ab-5127-8353-4f54-666a59fba9e5",
+        "subject_id": "bff9581f-5909-a7d4-f1b8-c7acf4092623",
+        "assessment_scheme_id": "7a887f1a-a75a-4207-a293-25959ac8813b",
+        "assessment_scores": {
+          "exam": 49,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 81,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      }
+    ],
+    "details": {
+      "rank": {
+        "total_score": 627,
+        "average_score": 62.7,
+        "class_position": 14,
+        "class_population": 40
+      },
+      "gender": "male",
+      "domains": [
+        {
+          "name": "Punctuality",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Attendance",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Honesty",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Cooperation",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Neatness",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Politeness",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Self-control",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Responsibility",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Handwriting",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Reading",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Verbal communication",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Drawing",
+          "type": "psychomotor",
+          "rating": "A"
+        },
+        {
+          "name": "Practical work",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Sports",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Music",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Creativity",
+          "type": "psychomotor",
+          "rating": "A"
+        }
+      ],
+      "settings": {
+        "term": "Third Term",
+        "session": "2025/2026",
+        "class_days": 60,
+        "term_start_date": "2026-04-20",
+        "term_end_date": "2026-07-10",
+        "next_term_begins": "2026-09-14",
+        "principal_name": "Grace Adebayo",
+        "form_master_remark_template": "Keep practising and participate confidently.",
+        "principal_remark_template": "Continue working steadily towards your learning goals."
+      },
+      "attendance": {
+        "leave": 3,
+        "absent": 6,
+        "present": 48,
+        "recorded": 60
+      },
+      "grade_scale": [],
+      "rating_scale": [
+        {
+          "rating": 5,
+          "description": "Excellent"
+        },
+        {
+          "rating": 4,
+          "description": "Very good"
+        },
+        {
+          "rating": 3,
+          "description": "Good"
+        },
+        {
+          "rating": 2,
+          "description": "Fair"
+        },
+        {
+          "rating": 1,
+          "description": "Needs improvement"
+        }
+      ],
+      "date_of_birth": "2018-08-21",
+      "subject_names": {
+        "1c1a0cfb-5e7a-e50c-84ca-c15bfe8be948": "Civic Education",
+        "2ddd88a9-ee7c-fa20-d67d-7b50094088d5": "Basic Science",
+        "50539c24-0d15-144a-95eb-182789cf1702": "English Studies",
+        "54b01683-5fb8-0105-5528-cf0ecf78b367": "Mathematics",
+        "8606eda6-d743-b181-9315-6b306914352a": "Cultural and Creative Arts",
+        "99dc301c-2ad9-6aa6-24d6-9c6852a47ac3": "Verbal Reasoning",
+        "9ea34821-fb58-195a-490a-cdabc7cd2453": "Quantitative Reasoning",
+        "bb98b577-a77e-62d3-bd05-1d0407c6f8c2": "Computer Studies",
+        "bff9581f-5909-a7d4-f1b8-c7acf4092623": "Physical and Health Education",
+        "efb440f4-2035-69fe-4540-30a0281844f0": "Social Studies"
+      },
+      "logo_storage_path": null,
+      "photo_storage_path": null
+    },
+    "statistics": {
+      "1c1a0cfb-5e7a-e50c-84ca-c15bfe8be948": {
+        "first_term": 36,
+        "third_term": 46,
+        "second_term": 41,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 41,
+        "current_class_average": 62.5,
+        "subject_class_average": 60.8
+      },
+      "2ddd88a9-ee7c-fa20-d67d-7b50094088d5": {
+        "first_term": 88,
+        "third_term": 32,
+        "second_term": 93,
+        "current_position": 34,
+        "subject_position": 7,
+        "cumulative_average": 71,
+        "current_class_average": 58.4,
+        "subject_class_average": 61.1
+      },
+      "50539c24-0d15-144a-95eb-182789cf1702": {
+        "first_term": 74,
+        "third_term": 84,
+        "second_term": 79,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 79,
+        "current_class_average": 67.5,
+        "subject_class_average": 62.5
+      },
+      "54b01683-5fb8-0105-5528-cf0ecf78b367": {
+        "first_term": 81,
+        "third_term": 91,
+        "second_term": 86,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 86,
+        "current_class_average": 62.95,
+        "subject_class_average": 61.8
+      },
+      "8606eda6-d743-b181-9315-6b306914352a": {
+        "first_term": 64,
+        "third_term": 74,
+        "second_term": 69,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 69,
+        "current_class_average": 57.5,
+        "subject_class_average": 60.2
+      },
+      "99dc301c-2ad9-6aa6-24d6-9c6852a47ac3": {
+        "first_term": 57,
+        "third_term": 67,
+        "second_term": 62,
+        "current_position": 15,
+        "subject_position": 22,
+        "cumulative_average": 62,
+        "current_class_average": 62.05,
+        "subject_class_average": 64.75
+      },
+      "9ea34821-fb58-195a-490a-cdabc7cd2453": {
+        "first_term": 50,
+        "third_term": 60,
+        "second_term": 55,
+        "current_position": 22,
+        "subject_position": 22,
+        "cumulative_average": 55,
+        "current_class_average": 66.6,
+        "subject_class_average": 64.9
+      },
+      "bb98b577-a77e-62d3-bd05-1d0407c6f8c2": {
+        "first_term": 43,
+        "third_term": 53,
+        "second_term": 48,
+        "current_position": 22,
+        "subject_position": 28,
+        "cumulative_average": 48,
+        "current_class_average": 59.6,
+        "subject_class_average": 61.2
+      },
+      "bff9581f-5909-a7d4-f1b8-c7acf4092623": {
+        "first_term": 71,
+        "third_term": 81,
+        "second_term": 76,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 76,
+        "current_class_average": 64.5,
+        "subject_class_average": 63.35
+      },
+      "efb440f4-2035-69fe-4540-30a0281844f0": {
+        "first_term": 95,
+        "third_term": 39,
+        "second_term": 34,
+        "current_position": 34,
+        "subject_position": 20,
+        "cumulative_average": 56,
+        "current_class_average": 65.4,
+        "subject_class_average": 64.25
+      }
+    },
+    "scheme": [
+      {
+        "key": "assignment_1",
+        "label": "1st CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "assignment_2",
+        "label": "2nd CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "test_1",
+        "label": "1st CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "test_2",
+        "label": "2nd CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "exam",
+        "label": "Examination",
+        "maxScore": 60
+      }
+    ]
+  },
+  {
+    "student": {
+      "id": "d9827165-4907-2913-a06c-b85f80963687",
+      "first_name": "Amina",
+      "last_name": "Ishaku",
+      "admission_number": "IH-TST-2026-S1-A-001",
+      "class_name": "SS 1 A",
+      "school_id": "d342eb87-8d6a-477a-a380-7fab83f586b7"
+    },
+    "results": [
+      {
+        "id": "5de761b4-9b0f-2ec0-c0e6-bcd2da40207a",
+        "subject_id": "044c6ff9-fdb3-e0c0-7a8d-ca2ae9b21ca9",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 42,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 66,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "d70b6579-305d-f660-6805-61bdec854b5e",
+        "subject_id": "93c56dc9-bdbf-b22e-7bcc-e47d9b9a5572",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 45,
+          "test_1": 7,
+          "test_2": 7,
+          "assignment_1": 7,
+          "assignment_2": 7
+        },
+        "total_score": 73,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "824884d7-4270-88ad-8684-cfcabc883438",
+        "subject_id": "c07dd2cc-b7ce-75e5-b84c-7b4926d5bbc0",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 48,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 80,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "f0ad9150-3439-624c-eb9d-2fb6a114ec4b",
+        "subject_id": "759589db-4a05-9db0-5a8a-d8319b5bb01f",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 55,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 87,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "f5e9425f-5e1c-1052-5506-c80d4cf6315a",
+        "subject_id": "e0b63d77-1b42-a96d-e02d-d09919b45bc2",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 58,
+          "test_1": 9,
+          "test_2": 9,
+          "assignment_1": 9,
+          "assignment_2": 9
+        },
+        "total_score": 94,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "c7bc40bf-7088-93f9-3642-e9b2b2ceac9b",
+        "subject_id": "2b9f3ea5-f8e0-894d-168e-2a008ff160eb",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 23,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 35,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "bce7b6d9-fd49-cf1b-55b4-c3904447cbb6",
+        "subject_id": "484af2c5-e7a7-c097-4170-c4acebbdc61f",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 26,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 42,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "258afa64-ae7a-6063-729e-8391780d87ae",
+        "subject_id": "a4ae0579-7089-8043-6f91-11b51f1813f7",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 33,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 49,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "3c8c0d25-a09e-43fd-3794-734e7dfa6987",
+        "subject_id": "b232ef7a-7c65-de93-d6eb-ded6533cbe05",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 36,
+          "test_1": 5,
+          "test_2": 5,
+          "assignment_1": 5,
+          "assignment_2": 5
+        },
+        "total_score": 56,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "e025bfb9-a6fb-a36f-585d-3232dd476fb4",
+        "subject_id": "f57ca1aa-75e0-f61d-4f00-f81a92c88f3f",
+        "assessment_scheme_id": "b2fc31c0-da9e-4149-b6f4-1bf2df35c58f",
+        "assessment_scores": {
+          "exam": 39,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 63,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      }
+    ],
+    "details": {
+      "rank": {
+        "total_score": 645,
+        "average_score": 64.5,
+        "class_position": 8,
+        "class_population": 40
+      },
+      "gender": "male",
+      "domains": [
+        {
+          "name": "Punctuality",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Attendance",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Honesty",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Cooperation",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Neatness",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Politeness",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Self-control",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Responsibility",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Handwriting",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Reading",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Verbal communication",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Drawing",
+          "type": "psychomotor",
+          "rating": "A"
+        },
+        {
+          "name": "Practical work",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Sports",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Music",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Creativity",
+          "type": "psychomotor",
+          "rating": "A"
+        }
+      ],
+      "settings": {
+        "term": "Third Term",
+        "session": "2025/2026",
+        "class_days": 60,
+        "term_start_date": "2026-04-20",
+        "term_end_date": "2026-07-10",
+        "next_term_begins": "2026-09-14",
+        "principal_name": "Grace Adebayo",
+        "form_master_remark_template": "Keep practising and participate confidently.",
+        "principal_remark_template": "Continue working steadily towards your learning goals."
+      },
+      "attendance": {
+        "leave": 3,
+        "absent": 6,
+        "present": 48,
+        "recorded": 60
+      },
+      "grade_scale": [],
+      "rating_scale": [
+        {
+          "rating": 5,
+          "description": "Excellent"
+        },
+        {
+          "rating": 4,
+          "description": "Very good"
+        },
+        {
+          "rating": 3,
+          "description": "Good"
+        },
+        {
+          "rating": 2,
+          "description": "Fair"
+        },
+        {
+          "rating": 1,
+          "description": "Needs improvement"
+        }
+      ],
+      "date_of_birth": "2011-08-23",
+      "subject_names": {
+        "044c6ff9-fdb3-e0c0-7a8d-ca2ae9b21ca9": "English Language",
+        "2b9f3ea5-f8e0-894d-168e-2a008ff160eb": "Economics",
+        "484af2c5-e7a7-c097-4170-c4acebbdc61f": "Geography",
+        "759589db-4a05-9db0-5a8a-d8319b5bb01f": "Chemistry",
+        "93c56dc9-bdbf-b22e-7bcc-e47d9b9a5572": "Mathematics",
+        "a4ae0579-7089-8043-6f91-11b51f1813f7": "Government",
+        "b232ef7a-7c65-de93-d6eb-ded6533cbe05": "Computer Studies",
+        "c07dd2cc-b7ce-75e5-b84c-7b4926d5bbc0": "Biology",
+        "e0b63d77-1b42-a96d-e02d-d09919b45bc2": "Physics",
+        "f57ca1aa-75e0-f61d-4f00-f81a92c88f3f": "Agricultural Science"
+      },
+      "logo_storage_path": null,
+      "photo_storage_path": null
+    },
+    "statistics": {
+      "044c6ff9-fdb3-e0c0-7a8d-ca2ae9b21ca9": {
+        "first_term": 56,
+        "third_term": 66,
+        "second_term": 61,
+        "current_position": 15,
+        "subject_position": 22,
+        "cumulative_average": 61,
+        "current_class_average": 61.05,
+        "subject_class_average": 63.75
+      },
+      "2b9f3ea5-f8e0-894d-168e-2a008ff160eb": {
+        "first_term": 91,
+        "third_term": 35,
+        "second_term": 30,
+        "current_position": 34,
+        "subject_position": 20,
+        "cumulative_average": 52,
+        "current_class_average": 61.4,
+        "subject_class_average": 60.25
+      },
+      "484af2c5-e7a7-c097-4170-c4acebbdc61f": {
+        "first_term": 32,
+        "third_term": 42,
+        "second_term": 37,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 37,
+        "current_class_average": 58.5,
+        "subject_class_average": 60.1
+      },
+      "759589db-4a05-9db0-5a8a-d8319b5bb01f": {
+        "first_term": 77,
+        "third_term": 87,
+        "second_term": 82,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 82,
+        "current_class_average": 58.95,
+        "subject_class_average": 61.65
+      },
+      "93c56dc9-bdbf-b22e-7bcc-e47d9b9a5572": {
+        "first_term": 63,
+        "third_term": 73,
+        "second_term": 68,
+        "current_position": 15,
+        "subject_position": 15,
+        "cumulative_average": 68,
+        "current_class_average": 68.05,
+        "subject_class_average": 63.05
+      },
+      "a4ae0579-7089-8043-6f91-11b51f1813f7": {
+        "first_term": 39,
+        "third_term": 49,
+        "second_term": 44,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 44,
+        "current_class_average": 65.5,
+        "subject_class_average": 63.8
+      },
+      "b232ef7a-7c65-de93-d6eb-ded6533cbe05": {
+        "first_term": 46,
+        "third_term": 56,
+        "second_term": 51,
+        "current_position": 22,
+        "subject_position": 28,
+        "cumulative_average": 51,
+        "current_class_average": 62.6,
+        "subject_class_average": 64.2
+      },
+      "c07dd2cc-b7ce-75e5-b84c-7b4926d5bbc0": {
+        "first_term": 70,
+        "third_term": 80,
+        "second_term": 75,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 75,
+        "current_class_average": 63.5,
+        "subject_class_average": 62.35
+      },
+      "e0b63d77-1b42-a96d-e02d-d09919b45bc2": {
+        "first_term": 84,
+        "third_term": 94,
+        "second_term": 89,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 89,
+        "current_class_average": 65.95,
+        "subject_class_average": 64.8
+      },
+      "f57ca1aa-75e0-f61d-4f00-f81a92c88f3f": {
+        "first_term": 53,
+        "third_term": 63,
+        "second_term": 58,
+        "current_position": 15,
+        "subject_position": 22,
+        "cumulative_average": 58,
+        "current_class_average": 58.05,
+        "subject_class_average": 60.75
+      }
+    },
+    "scheme": [
+      {
+        "key": "assignment_1",
+        "label": "1st CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "assignment_2",
+        "label": "2nd CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "test_1",
+        "label": "1st CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "test_2",
+        "label": "2nd CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "exam",
+        "label": "Examination",
+        "maxScore": 60
+      }
+    ]
+  },
+  {
+    "student": {
+      "id": "cd0bc865-2f24-b990-cf28-8a59cf816017",
+      "first_name": "Amina",
+      "last_name": "Olumide",
+      "admission_number": "IH-TST-2026-J1-A-001",
+      "class_name": "JSS 1 A",
+      "school_id": "d342eb87-8d6a-477a-a380-7fab83f586b7"
+    },
+    "results": [
+      {
+        "id": "47555051-3369-3360-91a8-72178448451b",
+        "subject_id": "d8d8e63e-bfa4-5e4e-f438-625ab50a54da",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 32,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 48,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "af8dc445-fca9-2c3f-b4a6-7480c9fa8c9d",
+        "subject_id": "d84d7f26-2ff7-049a-ae7f-76a548c91adb",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 35,
+          "test_1": 5,
+          "test_2": 5,
+          "assignment_1": 5,
+          "assignment_2": 5
+        },
+        "total_score": 55,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "afc55274-8c85-ca63-149a-195fe35742d7",
+        "subject_id": "ecc07cae-69fd-5865-736b-332f955167e9",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 38,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 62,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "c4494b42-307d-52a0-eda2-f220913ef3b5",
+        "subject_id": "55d9ccad-8754-3a8b-7425-ccff223ea6d9",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 45,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 69,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "0990a6b4-bc37-1eb4-411a-8446f0789b3a",
+        "subject_id": "d094923c-a21f-9bbf-b3d1-5b9056b9afee",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 48,
+          "test_1": 7,
+          "test_2": 7,
+          "assignment_1": 7,
+          "assignment_2": 7
+        },
+        "total_score": 76,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "3e8a66d8-e039-5d1f-91e9-eba956cb6664",
+        "subject_id": "3120507a-60b6-4b78-28a0-2413474358a1",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 51,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 83,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "0aa96235-9d4b-7e89-a464-4f5f9cfbea07",
+        "subject_id": "c6e33582-0e69-2ec6-95eb-39d564784c8a",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 54,
+          "test_1": 9,
+          "test_2": 9,
+          "assignment_1": 9,
+          "assignment_2": 9
+        },
+        "total_score": 90,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "37b93fa8-649d-bd64-ffb5-c2c6ff06972d",
+        "subject_id": "d73a844b-d97c-7dc1-691b-1e30a6e211ea",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 19,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 31,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "80ab180b-d503-fad0-8572-4058026a7502",
+        "subject_id": "38a86aad-c717-bc5c-3a2f-fa0e1e93e061",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 26,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 38,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "b587072d-f6de-3923-08ae-846431aef182",
+        "subject_id": "10166b70-62e3-c8d0-d795-83818d435578",
+        "assessment_scheme_id": "d6d3e543-e313-4282-9f62-5d172693e009",
+        "assessment_scores": {
+          "exam": 29,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 45,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      }
+    ],
+    "details": {
+      "rank": {
+        "total_score": 597,
+        "average_score": 59.7,
+        "class_position": 34,
+        "class_population": 40
+      },
+      "gender": "male",
+      "domains": [
+        {
+          "name": "Punctuality",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Attendance",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Honesty",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Cooperation",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Neatness",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Politeness",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Self-control",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Responsibility",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Handwriting",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Reading",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Verbal communication",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Drawing",
+          "type": "psychomotor",
+          "rating": "A"
+        },
+        {
+          "name": "Practical work",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Sports",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Music",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Creativity",
+          "type": "psychomotor",
+          "rating": "A"
+        }
+      ],
+      "settings": {
+        "term": "Third Term",
+        "session": "2025/2026",
+        "class_days": 60,
+        "term_start_date": "2026-04-20",
+        "term_end_date": "2026-07-10",
+        "next_term_begins": "2026-09-14",
+        "principal_name": "Grace Adebayo",
+        "form_master_remark_template": "Keep practising and participate confidently.",
+        "principal_remark_template": "Continue working steadily towards your learning goals."
+      },
+      "attendance": {
+        "leave": 3,
+        "absent": 6,
+        "present": 48,
+        "recorded": 60
+      },
+      "grade_scale": [],
+      "rating_scale": [
+        {
+          "rating": 5,
+          "description": "Excellent"
+        },
+        {
+          "rating": 4,
+          "description": "Very good"
+        },
+        {
+          "rating": 3,
+          "description": "Good"
+        },
+        {
+          "rating": 2,
+          "description": "Fair"
+        },
+        {
+          "rating": 1,
+          "description": "Needs improvement"
+        }
+      ],
+      "date_of_birth": "2014-08-22",
+      "subject_names": {
+        "10166b70-62e3-c8d0-d795-83818d435578": "Physical and Health Education",
+        "3120507a-60b6-4b78-28a0-2413474358a1": "Civic Education",
+        "38a86aad-c717-bc5c-3a2f-fa0e1e93e061": "Cultural and Creative Arts",
+        "55d9ccad-8754-3a8b-7425-ccff223ea6d9": "Basic Technology",
+        "c6e33582-0e69-2ec6-95eb-39d564784c8a": "Computer Studies",
+        "d094923c-a21f-9bbf-b3d1-5b9056b9afee": "Social Studies",
+        "d73a844b-d97c-7dc1-691b-1e30a6e211ea": "Business Studies",
+        "d84d7f26-2ff7-049a-ae7f-76a548c91adb": "Mathematics",
+        "d8d8e63e-bfa4-5e4e-f438-625ab50a54da": "English Studies",
+        "ecc07cae-69fd-5865-736b-332f955167e9": "Basic Science"
+      },
+      "logo_storage_path": null,
+      "photo_storage_path": null
+    },
+    "statistics": {
+      "10166b70-62e3-c8d0-d795-83818d435578": {
+        "first_term": 35,
+        "third_term": 45,
+        "second_term": 40,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 40,
+        "current_class_average": 61.5,
+        "subject_class_average": 63.1
+      },
+      "3120507a-60b6-4b78-28a0-2413474358a1": {
+        "first_term": 73,
+        "third_term": 83,
+        "second_term": 78,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 78,
+        "current_class_average": 66.5,
+        "subject_class_average": 65.35
+      },
+      "38a86aad-c717-bc5c-3a2f-fa0e1e93e061": {
+        "first_term": 94,
+        "third_term": 38,
+        "second_term": 33,
+        "current_position": 34,
+        "subject_position": 20,
+        "cumulative_average": 55,
+        "current_class_average": 64.4,
+        "subject_class_average": 63.25
+      },
+      "55d9ccad-8754-3a8b-7425-ccff223ea6d9": {
+        "first_term": 59,
+        "third_term": 69,
+        "second_term": 64,
+        "current_position": 15,
+        "subject_position": 15,
+        "cumulative_average": 64,
+        "current_class_average": 64.05,
+        "subject_class_average": 62.9
+      },
+      "c6e33582-0e69-2ec6-95eb-39d564784c8a": {
+        "first_term": 80,
+        "third_term": 90,
+        "second_term": 85,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 85,
+        "current_class_average": 61.95,
+        "subject_class_average": 60.8
+      },
+      "d094923c-a21f-9bbf-b3d1-5b9056b9afee": {
+        "first_term": 66,
+        "third_term": 76,
+        "second_term": 71,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 71,
+        "current_class_average": 59.5,
+        "subject_class_average": 62.2
+      },
+      "d73a844b-d97c-7dc1-691b-1e30a6e211ea": {
+        "first_term": 87,
+        "third_term": 31,
+        "second_term": 92,
+        "current_position": 34,
+        "subject_position": 7,
+        "cumulative_average": 70,
+        "current_class_average": 57.4,
+        "subject_class_average": 60.1
+      },
+      "d84d7f26-2ff7-049a-ae7f-76a548c91adb": {
+        "first_term": 45,
+        "third_term": 55,
+        "second_term": 50,
+        "current_position": 22,
+        "subject_position": 28,
+        "cumulative_average": 50,
+        "current_class_average": 61.6,
+        "subject_class_average": 63.2
+      },
+      "d8d8e63e-bfa4-5e4e-f438-625ab50a54da": {
+        "first_term": 38,
+        "third_term": 48,
+        "second_term": 43,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 43,
+        "current_class_average": 64.5,
+        "subject_class_average": 62.8
+      },
+      "ecc07cae-69fd-5865-736b-332f955167e9": {
+        "first_term": 52,
+        "third_term": 62,
+        "second_term": 57,
+        "current_position": 22,
+        "subject_position": 22,
+        "cumulative_average": 57,
+        "current_class_average": 68.6,
+        "subject_class_average": 63.6
+      }
+    },
+    "scheme": [
+      {
+        "key": "assignment_1",
+        "label": "1st CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "assignment_2",
+        "label": "2nd CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "test_1",
+        "label": "1st CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "test_2",
+        "label": "2nd CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "exam",
+        "label": "Examination",
+        "maxScore": 60
+      }
+    ]
+  },
+  {
+    "student": {
+      "id": "aded1ecb-6b52-092b-4b0b-8376f6d032f1",
+      "first_name": "Amina",
+      "last_name": "Yusuf",
+      "admission_number": "IH-TST-2026-N1-A-001",
+      "class_name": "Nursery 1 A",
+      "school_id": "d342eb87-8d6a-477a-a380-7fab83f586b7"
+    },
+    "results": [
+      {
+        "id": "acf34c4e-b6ba-766a-855b-3961e3f31332",
+        "subject_id": "99a167c1-2a7b-e932-d56e-f0759b9cbc46",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 42,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 66,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "6e308b59-4a46-48f2-5708-d5d3d488818d",
+        "subject_id": "fd9e05bc-0b92-c227-0f86-1c4b2185996f",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 45,
+          "test_1": 7,
+          "test_2": 7,
+          "assignment_1": 7,
+          "assignment_2": 7
+        },
+        "total_score": 73,
+        "status": "published",
+        "teacher_comment": "Good progress. Practise the areas discussed in class.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "8effb828-1bd5-f0d3-e6ff-c3fb79f61182",
+        "subject_id": "06c748ab-7795-5b85-ea90-dda2ba246ac7",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 48,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 80,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "41ec5633-68bf-99b9-3244-de3969343607",
+        "subject_id": "a781faec-e39b-dbd9-3141-ef9d14bbc5e3",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 55,
+          "test_1": 8,
+          "test_2": 8,
+          "assignment_1": 8,
+          "assignment_2": 8
+        },
+        "total_score": 87,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "5d2e6b0d-e069-ad33-1fec-0f2d96834e2a",
+        "subject_id": "d05b7631-f97b-3d37-1715-c5591712cf7c",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 58,
+          "test_1": 9,
+          "test_2": 9,
+          "assignment_1": 9,
+          "assignment_2": 9
+        },
+        "total_score": 94,
+        "status": "published",
+        "teacher_comment": "Excellent understanding; keep challenging yourself.",
+        "head_teacher_comment": "A promising performance. Keep up the effort."
+      },
+      {
+        "id": "0c3f9cf7-7187-4a88-b97d-055b20d54fc9",
+        "subject_id": "bc2629cb-ddbd-35d0-a667-ac692b80ee35",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 23,
+          "test_1": 3,
+          "test_2": 3,
+          "assignment_1": 3,
+          "assignment_2": 3
+        },
+        "total_score": 35,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "b26e0dd3-05fc-8b41-b5bc-4f1f8374225c",
+        "subject_id": "4a32c266-3e18-39b4-0d7e-8a9c41a098df",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 26,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 42,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "1004638a-a741-b4d4-87e7-4d9f8b6e8a9f",
+        "subject_id": "92186b55-74e4-014d-5f5d-003a9117d8a2",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 33,
+          "test_1": 4,
+          "test_2": 4,
+          "assignment_1": 4,
+          "assignment_2": 4
+        },
+        "total_score": 49,
+        "status": "published",
+        "teacher_comment": "Needs guided practice and regular revision.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "15a678d7-28f2-8c74-2c3f-5a7f0c3994e2",
+        "subject_id": "0d45300b-4fa0-31bc-7287-1df7a533fd9d",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 36,
+          "test_1": 5,
+          "test_2": 5,
+          "assignment_1": 5,
+          "assignment_2": 5
+        },
+        "total_score": 56,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      },
+      {
+        "id": "fab3e87a-0ca8-8195-e64f-26617e9ee854",
+        "subject_id": "7fb87df3-a436-894a-2ff1-5633e1ee3e06",
+        "assessment_scheme_id": "50e2c97f-9fd1-4a41-a988-756a487b8624",
+        "assessment_scores": {
+          "exam": 39,
+          "test_1": 6,
+          "test_2": 6,
+          "assignment_1": 6,
+          "assignment_2": 6
+        },
+        "total_score": 63,
+        "status": "published",
+        "teacher_comment": "Steady effort; more revision will improve confidence.",
+        "head_teacher_comment": "Continue learning steadily with support and practice."
+      }
+    ],
+    "details": {
+      "rank": {
+        "total_score": 645,
+        "average_score": 64.5,
+        "class_position": 8,
+        "class_population": 40
+      },
+      "gender": "male",
+      "domains": [
+        {
+          "name": "Punctuality",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Attendance",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Honesty",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Cooperation",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Neatness",
+          "type": "affective",
+          "rating": "B"
+        },
+        {
+          "name": "Politeness",
+          "type": "affective",
+          "rating": "C"
+        },
+        {
+          "name": "Self-control",
+          "type": "affective",
+          "rating": "D"
+        },
+        {
+          "name": "Responsibility",
+          "type": "affective",
+          "rating": "A"
+        },
+        {
+          "name": "Handwriting",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Reading",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Verbal communication",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Drawing",
+          "type": "psychomotor",
+          "rating": "A"
+        },
+        {
+          "name": "Practical work",
+          "type": "psychomotor",
+          "rating": "B"
+        },
+        {
+          "name": "Sports",
+          "type": "psychomotor",
+          "rating": "C"
+        },
+        {
+          "name": "Music",
+          "type": "psychomotor",
+          "rating": "D"
+        },
+        {
+          "name": "Creativity",
+          "type": "psychomotor",
+          "rating": "A"
+        }
+      ],
+      "settings": {
+        "term": "Third Term",
+        "session": "2025/2026",
+        "class_days": 60,
+        "term_start_date": "2026-04-20",
+        "term_end_date": "2026-07-10",
+        "next_term_begins": "2026-09-14",
+        "principal_name": "Grace Adebayo",
+        "form_master_remark_template": "Keep practising and participate confidently.",
+        "principal_remark_template": "Continue working steadily towards your learning goals."
+      },
+      "attendance": {
+        "leave": 3,
+        "absent": 6,
+        "present": 48,
+        "recorded": 60
+      },
+      "grade_scale": [],
+      "rating_scale": [
+        {
+          "rating": 5,
+          "description": "Excellent"
+        },
+        {
+          "rating": 4,
+          "description": "Very good"
+        },
+        {
+          "rating": 3,
+          "description": "Good"
+        },
+        {
+          "rating": 2,
+          "description": "Fair"
+        },
+        {
+          "rating": 1,
+          "description": "Needs improvement"
+        }
+      ],
+      "date_of_birth": "2022-08-20",
+      "subject_names": {
+        "06c748ab-7795-5b85-ea90-dda2ba246ac7": "Phonics",
+        "0d45300b-4fa0-31bc-7287-1df7a533fd9d": "Creative Arts",
+        "4a32c266-3e18-39b4-0d7e-8a9c41a098df": "Social Habits",
+        "7fb87df3-a436-894a-2ff1-5633e1ee3e06": "Physical Development",
+        "92186b55-74e4-014d-5f5d-003a9117d8a2": "Health Habits",
+        "99a167c1-2a7b-e932-d56e-f0759b9cbc46": "Literacy",
+        "a781faec-e39b-dbd9-3141-ef9d14bbc5e3": "Handwriting",
+        "bc2629cb-ddbd-35d0-a667-ac692b80ee35": "Basic Science",
+        "d05b7631-f97b-3d37-1715-c5591712cf7c": "Rhymes and Songs",
+        "fd9e05bc-0b92-c227-0f86-1c4b2185996f": "Numeracy"
+      },
+      "logo_storage_path": null,
+      "photo_storage_path": null
+    },
+    "statistics": {
+      "06c748ab-7795-5b85-ea90-dda2ba246ac7": {
+        "first_term": 70,
+        "third_term": 80,
+        "second_term": 75,
+        "current_position": 8,
+        "subject_position": 8,
+        "cumulative_average": 75,
+        "current_class_average": 63.5,
+        "subject_class_average": 62.35
+      },
+      "0d45300b-4fa0-31bc-7287-1df7a533fd9d": {
+        "first_term": 46,
+        "third_term": 56,
+        "second_term": 51,
+        "current_position": 22,
+        "subject_position": 28,
+        "cumulative_average": 51,
+        "current_class_average": 62.6,
+        "subject_class_average": 64.2
+      },
+      "4a32c266-3e18-39b4-0d7e-8a9c41a098df": {
+        "first_term": 32,
+        "third_term": 42,
+        "second_term": 37,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 37,
+        "current_class_average": 58.5,
+        "subject_class_average": 60.1
+      },
+      "7fb87df3-a436-894a-2ff1-5633e1ee3e06": {
+        "first_term": 53,
+        "third_term": 63,
+        "second_term": 58,
+        "current_position": 15,
+        "subject_position": 22,
+        "cumulative_average": 58,
+        "current_class_average": 58.05,
+        "subject_class_average": 60.75
+      },
+      "92186b55-74e4-014d-5f5d-003a9117d8a2": {
+        "first_term": 39,
+        "third_term": 49,
+        "second_term": 44,
+        "current_position": 28,
+        "subject_position": 34,
+        "cumulative_average": 44,
+        "current_class_average": 65.5,
+        "subject_class_average": 63.8
+      },
+      "99a167c1-2a7b-e932-d56e-f0759b9cbc46": {
+        "first_term": 56,
+        "third_term": 66,
+        "second_term": 61,
+        "current_position": 15,
+        "subject_position": 22,
+        "cumulative_average": 61,
+        "current_class_average": 61.05,
+        "subject_class_average": 63.75
+      },
+      "a781faec-e39b-dbd9-3141-ef9d14bbc5e3": {
+        "first_term": 77,
+        "third_term": 87,
+        "second_term": 82,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 82,
+        "current_class_average": 58.95,
+        "subject_class_average": 61.65
+      },
+      "bc2629cb-ddbd-35d0-a667-ac692b80ee35": {
+        "first_term": 91,
+        "third_term": 35,
+        "second_term": 30,
+        "current_position": 34,
+        "subject_position": 20,
+        "cumulative_average": 52,
+        "current_class_average": 61.4,
+        "subject_class_average": 60.25
+      },
+      "d05b7631-f97b-3d37-1715-c5591712cf7c": {
+        "first_term": 84,
+        "third_term": 94,
+        "second_term": 89,
+        "current_position": 1,
+        "subject_position": 1,
+        "cumulative_average": 89,
+        "current_class_average": 65.95,
+        "subject_class_average": 64.8
+      },
+      "fd9e05bc-0b92-c227-0f86-1c4b2185996f": {
+        "first_term": 63,
+        "third_term": 73,
+        "second_term": 68,
+        "current_position": 15,
+        "subject_position": 15,
+        "cumulative_average": 68,
+        "current_class_average": 68.05,
+        "subject_class_average": 63.05
+      }
+    },
+    "scheme": [
+      {
+        "key": "assignment_1",
+        "label": "1st CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "assignment_2",
+        "label": "2nd CA Assignment",
+        "maxScore": 10
+      },
+      {
+        "key": "test_1",
+        "label": "1st CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "test_2",
+        "label": "2nd CA Test",
+        "maxScore": 10
+      },
+      {
+        "key": "exam",
+        "label": "Examination",
+        "maxScore": 60
+      }
+    ]
+  }
+]

@@ -72,6 +72,7 @@ const controls=buttons(keypad);
 controls.find(e=>e.props?.['aria-label']==='Digit 3').props.onClick();assert.equal(entered,'123');
 controls.find(e=>e.props?.['aria-label']==='Delete last digit').props.onClick();assert.equal(entered,'1');
 controls.find(e=>e.props?.['aria-label']==='Use fingerprint').props.onClick();assert.equal(fingerprint,true);
+const noFingerprint=load('components/AppUnlockScreen.tsx').AppUnlockScreen({pin:'',busy:false,error:'',biometric:false,onPin:()=>{},onUnlock:()=>{},onReset:()=>{}});assert(!buttons(noFingerprint).some(e=>e.props?.['aria-label']==='Use fingerprint'),'Unavailable or disabled fingerprint must be absent, not a disabled icon');
 console.log('PASS: branded welcome slides and passcode keypad input, deletion and fingerprint action');
 
 native=true;user={id:"returning-account"};

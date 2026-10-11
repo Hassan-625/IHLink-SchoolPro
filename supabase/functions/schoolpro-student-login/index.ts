@@ -19,7 +19,7 @@ Deno.serve(async(req)=>{
   }
   const {data:schools,error:se}=await admin.from("schoolpro_schools").select("id").eq("code",code).limit(2);if(se)throw se;
   if(schools?.length!==1)return reply({error:"The sign-in details were not recognised. Check with your school."},401);
-  const {data:students,error:ste}=await admin.from("schoolpro_students").select("id,user_id,last_name,first_name").eq("school_id",schools[0].id).eq("admission_number",admission).eq("status","active").limit(2);if(ste)throw ste;
+  const {data:students,error:ste}=await admin.from("schoolpro_students").select("id,user_id,last_name,first_name").eq("school_id",schools[0].id).eq("admission_number",admission).in("status",["active","graduated"]).limit(2);if(ste)throw ste;
   if(students?.length!==1)return reply({error:"The sign-in details were not recognised. Check with your school."},401);
   const student=students[0];let email:string|undefined;
   if(!student.user_id){
@@ -48,3 +48,4 @@ Deno.serve(async(req)=>{
   return reply({session:{access_token:data.session.access_token,refresh_token:data.session.refresh_token}});
  }catch{return reply({error:"Student sign in could not be completed. Please try again or contact your school."},400);}
 });
+

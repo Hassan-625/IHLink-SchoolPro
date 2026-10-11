@@ -1,0 +1,27 @@
+begin;
+select set_config('request.jwt.claim.sub','7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d',true);
+do $$ begin if not exists(select 1 from schoolpro_schools where id='d342eb87-8d6a-477a-a380-7fab83f586b7' and name='IHLINK ACADEMY (Testing)' and owner_id='7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d')then raise exception 'Testing school required';end if;end $$;
+insert into schoolpro_assignments(id,school_id,class_id,subject_id,title,instructions,due_at,created_by,max_score,session)
+select md5('ihlink-academy-test-v1:assignment:'||c.id||':'||a)::uuid,'d342eb87-8d6a-477a-a380-7fab83f586b7',c.id,sa.subject_id,'TEST: Mathematics assignment '||a||' — '||c.name||' '||c.arm,
+case when a=1 then 'Show your working: 12 + 8; 15 - 6; 4 x 3. Explain one method you used.' else 'Complete the sample number-pattern exercise and explain your answers in full sentences.' end,'2025-10-10 15:00+00','7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d',10,'2025/2026'
+from schoolpro_classes c join schoolpro_subject_assignments sa on sa.class_id=c.id and sa.school_id=c.school_id join schoolpro_subjects sub on sub.id=sa.subject_id
+cross join generate_series(1,2)a where c.school_id='d342eb87-8d6a-477a-a380-7fab83f586b7' and sa.session='2025/2026' and sub.code like 'TST-%-02' on conflict(id)do nothing;
+insert into schoolpro_assignment_submissions(assignment_id,student_id,submission_text,score,feedback,status,graded_by,graded_at,submitted_at)
+select a.id,s.id,case when right(s.admission_number,3)::int%3=0 then 'Sample answer: 12 + 8 = 20, 15 - 6 = 9, 4 x 3 = 12. I used counting and repeated addition.' when right(s.admission_number,3)::int%3=1 then 'Sample answer: I grouped the numbers into tens and ones, then checked my work.' else 'Sample answer: I completed the exercise, but need more practice explaining each step.' end,
+(r.assessment_scores->>case when a.title like 'TEST: Mathematics assignment 1%' then 'assignment_1' else 'assignment_2' end)::numeric,
+'Fictional marked assignment for testing; compare this mark with the first-term assessment.','graded','7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d',now(),'2025-10-09 12:00+00'
+from schoolpro_assignments a join schoolpro_students s on s.class_id=a.class_id and s.school_id=a.school_id join schoolpro_results r on r.student_id=s.id and r.subject_id=a.subject_id and r.term='First Term' and r.session=a.session
+where a.school_id='d342eb87-8d6a-477a-a380-7fab83f586b7' and a.title like 'TEST: Mathematics assignment %' and s.admission_number like 'IH-TST-2026-%' on conflict(assignment_id,student_id)do nothing;
+insert into schoolpro_lesson_notes(id,school_id,subject_id,class_id,title,content,status,created_by,lesson_date,term,session,week,duration_minutes,plan,review_comment,reviewed_by,reviewed_at)
+select md5('ihlink-academy-test-v1:lesson:'||c.id)::uuid,'d342eb87-8d6a-477a-a380-7fab83f586b7',sa.subject_id,c.id,'TEST: Number operations — '||c.name||' '||c.arm,'Sample lesson: model number operations with worked examples, invite learners to explain their approach, and complete guided practice. Adapt difficulty to this class.','submitted',m.user_id,'2025-10-06','First Term','2025/2026',4,40,
+jsonb_build_object('objectives','Learners solve and explain age-appropriate number operations.','previous_knowledge','Counting and place value.','materials','Number cards, counters and board.','references','School mathematics scheme of work.','introduction','Review familiar number patterns.','development','Model examples and demonstrate checking answers.','learner_activity','Work in pairs and explain one solution.','evaluation','Complete three independent questions.','conclusion','Summarise the methods used.','homework','Complete the matching sample assignment.','reflection','Follow up with learners who need guided practice.'),'Sample review: objectives and activities are aligned.','7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d',now()
+from schoolpro_classes c join schoolpro_subject_assignments sa on sa.class_id=c.id and sa.school_id=c.school_id join schoolpro_subjects sub on sub.id=sa.subject_id join schoolpro_members m on m.id=sa.teacher_member_id
+where c.school_id='d342eb87-8d6a-477a-a380-7fab83f586b7' and sa.session='2025/2026' and sub.code like 'TST-%-02' on conflict(id)do nothing;
+update schoolpro_lesson_notes set status='approved',review_comment='Sample review: objectives and activities are aligned.' where school_id='d342eb87-8d6a-477a-a380-7fab83f586b7' and title like 'TEST: Number operations%' and status='submitted';
+insert into schoolpro_announcements(id,school_id,title,body,audience,published,created_by,published_at)
+values(md5('ihlink-academy-test-v1:announcement')::uuid,'d342eb87-8d6a-477a-a380-7fab83f586b7','TEST: Three-term results ready','This school contains fictional records for testing. Select 2025/2026 and a term to preview results, broadsheets, attendance and assignments.','all',true,'7a65cdab-a9c3-412d-b5d8-7d1bcd857c1d',now())on conflict(id)do nothing;
+insert into schoolpro_notifications(id,school_id,user_id,title,message,kind,href)
+select md5('ihlink-academy-test-v1:notice:'||p.id)::uuid,'d342eb87-8d6a-477a-a380-7fab83f586b7',p.id,'TEST: Academy results available','Sample results for 2025/2026 are published. Staff can review their allocated classes; parents can open their linked children.','info','/schoolpro/dashboard' from profiles p join auth.users u on u.id=p.id where u.raw_app_meta_data->>'testing_fixture'='ihlink-academy-v1'
+on conflict(id)do nothing;
+commit;
+select 'Sample assignments, answers, lesson plans and notifications ready' result;

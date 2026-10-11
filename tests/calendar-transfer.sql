@@ -1,5 +1,5 @@
 begin;
-do $$declare own uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();sid uuid:=gen_random_uuid();cid uuid:=gen_random_uuid();pupil uuid:=gen_random_uuid();route_id uuid:=gen_random_uuid();room_id uuid:=gen_random_uuid();denied boolean;state jsonb;begin
+do $$declare own uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();sid uuid:=gen_random_uuid();cid uuid:=gen_random_uuid();pupil uuid:=gen_random_uuid();future_pupil uuid:=gen_random_uuid();route_id uuid:=gen_random_uuid();room_id uuid:=gen_random_uuid();denied boolean;state jsonb;begin
  insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)select v,'authenticated','authenticated','calendar-fixture-'||v||'@example.invalid','{}','{"first_name":"Calendar","last_name":"Fixture"}',now(),now()from unnest(array[own,outsider])v;
  insert into public.schoolpro_schools(id,owner_id,name,code)values(sid,own,'Calendar transfer fixture','FIX-'||sid);
  insert into public.schoolpro_subscriptions(school_id,tier,billing_cycle,status,renews_at)values(sid,'enterprise','annual','active',now()+interval'90 days');update public.schoolpro_schools set status='active' where id=sid;
@@ -11,6 +11,9 @@ do $$declare own uuid:=gen_random_uuid();outsider uuid:=gen_random_uuid();sid uu
  denied:=false;begin perform public.schoolpro_save_academic_calendar(sid,'2026/2027','Second Term',current_date,current_date+15);exception when others then denied:=true;end;if not denied then raise exception 'Overlapping dates accepted';end if;
  insert into public.schoolpro_students(id,school_id,admission_number,first_name,last_name,class_id,admission_type,previous_school)values(pupil,sid,'CAL-1','Transferred','Fixture',cid,'transfer_in','Example school');
  if not exists(select 1 from public.schoolpro_enrollment_history where student_id=pupil and session='2026/2027')then raise exception 'Calendar enrolment missing';end if;
+ insert into public.schoolpro_students(id,school_id,admission_number,first_name,last_name,class_id,enrollment_session)values(future_pupil,sid,'CAL-FUTURE','Future','Fixture',cid,'2027/2028');
+ perform public.create_schoolpro_fee_bundle(sid,'Session fee',array['Basic 1'],'First Term','2026/2027',null,'[{"label":"Tuition","amount":120,"category":"fee"}]'::jsonb);
+ if(select count(*)from public.schoolpro_invoices where school_id=sid and session='2026/2027')<>1 or exists(select 1 from public.schoolpro_invoices where student_id=future_pupil)then raise exception 'Future pupil received past session fees';end if;
  insert into public.schoolpro_attendance(school_id,class_id,student_id,attendance_date)values(sid,cid,pupil,current_date);
  if not exists(select 1 from public.schoolpro_attendance where student_id=pupil and session='2026/2027' and term='First Term')then raise exception 'Attendance calendar missing';end if;
  insert into public.schoolpro_transport_routes(id,school_id,name,fee)values(route_id,sid,'Test bus',0);

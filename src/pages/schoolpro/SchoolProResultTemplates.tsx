@@ -44,7 +44,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
  const [previewField,setPreviewField]=useState("student_name");
  const [savedTemplate,setSavedTemplate]=useState<Template|null>(null),[editorSection,setEditorSection]=useState("all");const template=useMemo(()=>resolveResultSectionTemplate(savedTemplate,editorSection),[savedTemplate,editorSection]);const [file,setFile]=useState<File|null>(null),[logoFile,setLogoFile]=useState<File|null>(null);
  const [workbookPreview,setWorkbookPreview]=useState<Array<{cell:string;value:string}>>([]);
- const [selectedStudent,setSelectedStudent]=useState(""),[term,setTerm]=useState("First Term"),[session,setSession]=useState("2026/2027");
+ const [selectedStudent,setSelectedStudent]=useState(""),[term,setTerm]=useState("First Term"),[session,setSession]=useState("");
  useEffect(()=>{if(selectedStudent&&!visibleStudentIds.includes(selectedStudent))setSelectedStudent('')},[selectedStudent,visibleStudentIds]);
  const [busy,setBusy]=useState(false),[generatedUrl,setGeneratedUrl]=useState(""),[generatedName,setGeneratedName]=useState(""),[termSettings,setTermSettings]=useState<any>(null),[domainDefs,setDomainDefs]=useState<any[]>([]),[ratingScale,setRatingScale]=useState<any[]>([]),[newDomain,setNewDomain]=useState({type:"",name:""}),[newRating,setNewRating]=useState({rating:"5",description:"Excellent"}),[error,setError]=useState<string|null>(null),[message,setMessage]=useState<string|null>(null);
  const [outputs,setOutputs]=useState<any[]>([]),[historyError,setHistoryError]=useState('');

@@ -23,7 +23,7 @@ export function SchoolProSubjects(){
   const [schools,setSchools]=useState<School[]>([]),[schoolId,setSchoolId]=useState("");
   const [classes,setClasses]=useState<ClassRow[]>([]),[subjects,setSubjects]=useState<Subject[]>([]),[members,setMembers]=useState<Member[]>([]),[assignments,setAssignments]=useState<Assignment[]>([]),[tableSearch,setTableSearch]=useState("");
   const [form,setForm]=useState({name:"",code:"",className:""});
-  const [allocation,setAllocation]=useState({classId:"",subjectId:"",teacherId:"",session:"2026/2027"});
+  const [allocation,setAllocation]=useState({classId:"",subjectId:"",teacherId:"",session:""});
   const [targetClasses,setTargetClasses]=useState<string[]>([]);
   const [error,setError]=useState<string|null>(null),[message,setMessage]=useState<string|null>(null);
   const userName=profile?[profile.first_name,profile.last_name].filter(Boolean).join(" ")||profile.email:"School User";

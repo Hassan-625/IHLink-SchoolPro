@@ -12,7 +12,7 @@ export function useSchoolProContext():SchoolContext{
  const [state,setState]=useState<SchoolContext&{key:string}>({...empty,key:'',loading:true});
  useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')setRevision(v=>v+1);};window.addEventListener('focus',refresh);window.addEventListener('ihlink:school-refresh',refresh);return()=>{window.removeEventListener('focus',refresh);window.removeEventListener('ihlink:school-refresh',refresh);};},[]);
  useEffect(()=>{
-  let current=true;setState({...empty,key,loading:authLoading||Boolean(user&&supabase)});
+  let current=true;setState(previous=>!authLoading&&user&&previous.key===key&&previous.schoolId?previous:{...empty,key,loading:authLoading||Boolean(user&&supabase)});
   if(authLoading||!supabase||!user)return()=>{current=false};
   const db=supabase;const uid=user.id;
   const commit=(value:SchoolContext)=>{if(!current)return;if(value.schoolId)localStorage.setItem(storageKey,value.schoolId);setState({...value,key});};

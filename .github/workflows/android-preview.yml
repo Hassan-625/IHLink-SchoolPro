@@ -41,6 +41,7 @@ jobs:
       - name: Record checksums
         run: |
           mkdir -p android-delivery
+          cp "$(find "$ANDROID_HOME/build-tools" -path "*/lib/apksigner.jar" | sort -V | tail -1)" android-delivery/apksigner.jar
           cp android/app/build/outputs/apk/debug/app-debug.apk android-delivery/ihlink-preview.apk
           cp android/app/build/outputs/apk/release/app-release-unsigned.apk android-delivery/ihlink-release-unsigned.apk
           cp android/app/build/outputs/bundle/release/app-release.aab android-delivery/ihlink-release-unsigned.aab

@@ -8,8 +8,8 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  const summary=book.addWorksheet('Class Results');
  summary.addRow([schoolName,term,session]);
  const subjectLabels=[...new Set(reports.flatMap(report=>report.results.map(r=>subjectNames.get(r.subject_id)||'Subject')))];
- const classAverages=new Map<string,number[]>();
- for(const report of reports){const average=report.results.reduce((sum,r)=>sum+Number(r.total_score),0)/report.results.length;classAverages.set(report.student.class_name,[...(classAverages.get(report.student.class_name)||[]),average]);}
+ const classAverages=new Map<string,number[]>();const classTotals=new Map<string,number[]>();
+ for(const report of reports){const average=report.results.reduce((sum,r)=>sum+Number(r.total_score),0)/report.results.length;classTotals.set(report.student.class_name,[...(classTotals.get(report.student.class_name)||[]),report.results.reduce((sum,r)=>sum+Number(r.total_score),0)]);classAverages.set(report.student.class_name,[...(classAverages.get(report.student.class_name)||[]),average]);}
  summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects',...subjectLabels,'Class position','Class average (%)']);
  for(const [index,report] of reports.entries()){
   const s=report.student;
@@ -18,7 +18,7 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   const total=totals.reduce((sum,n)=>sum+n,0),average=total/totals.length;
   const marks=new Map(report.results.map(r=>[subjectNames.get(r.subject_id)||'Subject',Number(r.total_score)]));
   const classmates=classAverages.get(s.class_name)||[];
-  const position=1+new Set(classmates.filter(value=>value>average)).size;
+  const position=1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
   const classAverage=classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
   summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length,...subjectLabels.map(label=>marks.get(label)??''),position,classAverage]);
   const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\/?*\[\]:]/g,'-').slice(0,31);

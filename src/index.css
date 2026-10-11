@@ -404,7 +404,8 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
 
 /* Bulk reports must flow in order; absolute positioning overlaps pupils. */
 @media print {
-  @page { size: A4; }
+  @page school-result { size: A4 portrait; margin: 12mm; }
+  .result-print-wrapper, .school-report.result-print-page { page: school-result; }
   .school-report.result-print-page { position: static !important; break-after: page; page-break-after: always; }
   .school-report.result-print-page:last-child { break-after: auto; page-break-after: auto; }
   .result-print-wrapper { break-after: page; page-break-after: always; }

@@ -401,3 +401,17 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   color: #0f172a !important;
   background-color: #ffffff !important;
 }
+
+/* Bulk reports must flow in order; absolute positioning overlaps pupils. */
+@media print {
+  @page school-result { size: A4 portrait; margin: 12mm; }
+  .result-print-wrapper, .school-report.result-print-page { page: school-result; }
+  .school-report.result-print-page { position: static !important; break-after: page; page-break-after: always; }
+  .school-report.result-print-page:last-child { break-after: auto; page-break-after: auto; }
+  .result-print-wrapper { break-after: page; page-break-after: always; }
+  .result-print-wrapper:last-child { break-after: auto; page-break-after: auto; }
+  .school-report { break-inside: avoid; }
+  .school-broadsheet table th, .school-broadsheet table td { color: #0f172a !important; background: white !important; }
+  .school-report table tbody td { color: #0f172a !important; background: white !important; }
+  .school-report table thead th { color: white !important; background: #7e22ce !important; }
+}

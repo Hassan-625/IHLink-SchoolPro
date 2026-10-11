@@ -15,6 +15,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: node scripts/test-result-workflow.mjs
       - run: node scripts/test-class-results-export.mjs
       - run: node scripts/test-school-student-selection.mjs
       - run: node scripts/test-operational-roles.mjs

@@ -28,7 +28,7 @@ function load(file){
   if(name==='./MobileBrandPreview')return load('components/MobileBrandPreview.tsx');
   if(name==='./NativeSignedOutHome')return {NativeSignedOutHome:()=>node('div',{},'Welcome to '+product)};
   if(name==='@/lib/supabase')return {supabase:{}};
-  if(name==='@/lib/nativeVault')return {securitySupported:true,NativeVault:{}};
+  if(name==='@/lib/nativeVault')return {androidVault:native,securitySupported:true,NativeVault:{}};
   if(name.endsWith('NativeAppSecurity'))return {NativeAppSecurity:()=>node('div',{},'Set app passcode')};
   if(name.endsWith('/Modal'))return {Modal:({open,children})=>open?node('section',{role:'dialog'},children):null};
   if(name.endsWith('/Button'))return {Button:({children})=>node('button',{},children)};
@@ -74,7 +74,7 @@ controls.find(e=>e.props?.['aria-label']==='Delete last digit').props.onClick();
 controls.find(e=>e.props?.['aria-label']==='Use fingerprint').props.onClick();assert.equal(fingerprint,true);
 console.log('PASS: branded welcome slides and passcode keypad input, deletion and fingerprint action');
 
-user={id:"returning-account"};
+native=true;user={id:"returning-account"};
 const enrollment={enabled:true,biometricAvailable:true,biometricEnabled:false};
 html=render('components/NativeAppSecurity.tsx','NativeAppSecurity',[enrollment,'','','','',false],'',{setupOnly:true});
 assert(!html.includes('Current app passcode'));assert(!html.includes('Change app passcode'));assert(html.includes('Enable fingerprint'));assert(html.includes('Continue with passcode'));
@@ -84,6 +84,7 @@ choices.set('ihlink.'+product+'.fingerprint-choice','skipped');html=render(promp
 const auth=readFileSync(new URL('../src/context/AuthContext.tsx',import.meta.url),'utf8');assert(!auth.slice(auth.indexOf('async signOut()')).includes('NativeVault.reset()'),'Ordinary sign-out must preserve device security');
 console.log('PASS: setup uses fingerprint step instead of change-passcode form, wallet PIN follows device setup, and fingerprint skip persists');
 
+native=false;html=render('components/NativeAppSecurity.tsx','NativeAppSecurity',[enrollment,'','','','',false]);assert(!html.includes('Enable fingerprint'));assert(!html.includes('Disable fingerprint'));assert(!html.includes('Continue with passcode'));assert(html.includes('Change app passcode'));native=true;
 user={id:'reminder-test'};states=school?[vault,false]:[false,vault,false];cursor=0;
 const reminder=load(promptFile)[promptName]();reminder.props.onClose();
 const reminderState=load('lib/securitySetupReminder.ts');

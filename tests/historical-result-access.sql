@@ -1,0 +1,31 @@
+begin;
+do $$
+declare own uuid:=gen_random_uuid(); pupil_user uuid:=gen_random_uuid(); guardian uuid:=gen_random_uuid(); teacher uuid:=gen_random_uuid(); coordinator uuid:=gen_random_uuid(); outsider uuid:=gen_random_uuid(); sid uuid:=gen_random_uuid(); old_class uuid:=gen_random_uuid(); new_class uuid:=gen_random_uuid(); pupil uuid:=gen_random_uuid(); peer uuid:=gen_random_uuid(); math uuid:=gen_random_uuid(); english uuid:=gen_random_uuid(); member uuid:=gen_random_uuid(); form_member uuid:=gen_random_uuid(); scheme uuid:=gen_random_uuid(); denied boolean; n integer; ranking record;
+begin
+ insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)select v,'authenticated','authenticated','history-audit-'||v||'@example.invalid','{}','{"first_name":"History","last_name":"Fixture"}',now(),now()from unnest(array[own,pupil_user,guardian,teacher,coordinator,outsider])v;
+ insert into public.schoolpro_schools(id,owner_id,name,code)values(sid,own,'Historical print audit','HISTORY-'||sid);
+ insert into public.schoolpro_subscriptions(school_id,tier,billing_cycle,status,renews_at)values(sid,'enterprise','annual','active',now()+interval'90 days');update public.schoolpro_schools set status='active' where id=sid;
+ insert into public.schoolpro_classes(id,school_id,name,level)values(old_class,sid,'SS 2','senior_secondary'),(new_class,sid,'SS 3','senior_secondary');
+ insert into public.schoolpro_members(id,school_id,user_id,role)values(member,sid,teacher,'teacher'),(form_member,sid,coordinator,'class_teacher');update public.schoolpro_classes set form_teacher_id=form_member where id=old_class;
+ insert into public.schoolpro_students(id,school_id,user_id,admission_number,first_name,last_name,class_id,enrollment_session)values(pupil,sid,pupil_user,'HIST-1','Graduated','Fixture',old_class,'2025/2026'),(peer,sid,null,'HIST-2','Promoted','Fixture',old_class,'2025/2026');
+ insert into public.schoolpro_guardian_links(school_id,student_id,guardian_user_id,status,linked_by)values(sid,pupil,guardian,'active',own);
+ insert into public.schoolpro_subjects(id,school_id,name,code,class_name)values(math,sid,'Mathematics','HIST-MTH','SS 2'),(english,sid,'English','HIST-ENG','SS 2');
+ insert into public.schoolpro_subject_assignments(school_id,class_id,subject_id,teacher_member_id,session)values(sid,old_class,math,member,'2025/2026');
+ insert into public.schoolpro_assessment_schemes(id,school_id,name,school_level,components)values(scheme,sid,'History assessment','senior_secondary','[{"key":"ca","label":"CA","maxScore":40},{"key":"exam","label":"Exam","maxScore":60}]');
+ insert into public.schoolpro_results(school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,status,locked)values(sid,pupil,math,'First Term','2025/2026',scheme,'{"ca":30,"exam":50}','published',true),(sid,pupil,english,'First Term','2025/2026',scheme,'{"ca":25,"exam":45}','published',true),(sid,peer,math,'First Term','2025/2026',scheme,'{"ca":20,"exam":40}','published',true),(sid,peer,english,'First Term','2025/2026',scheme,'{"ca":20,"exam":40}','published',true);
+ update public.schoolpro_students set class_id=new_class,status='graduated' where id=pupil;update public.schoolpro_students set class_id=new_class where id=peer;
+ perform set_config('request.jwt.claim.sub',own::text,true);execute 'set local role authenticated';
+ select count(*) into n from public.schoolpro_printable_result(pupil,'First Term','2025/2026');if n<>2 then raise exception 'Owner cannot print graduated scores';end if;
+ select * into ranking from public.schoolpro_result_class_rank(pupil,'First Term','2025/2026');if ranking.class_population<>2 or ranking.class_position<>1 or ranking.total_score<>150 then raise exception 'Ranking used current class';end if;
+ if public.schoolpro_report_details(pupil,'First Term','2025/2026')->>'class_name'<>'SS 2' then raise exception 'Report shows promoted class';end if;
+ if (public.schoolpro_subject_statistics(pupil,'First Term','2025/2026')->math::text->>'current_class_average')::numeric<>70 then raise exception 'Subject average omitted historical cohort';end if;
+ perform set_config('request.jwt.claim.sub',pupil_user::text,true);select count(*) into n from public.schoolpro_printable_result(pupil,'First Term','2025/2026');if n<>2 then raise exception 'Graduate cannot print own result';end if;
+ denied:=false;begin perform public.schoolpro_printable_result(peer,'First Term','2025/2026');exception when others then denied:=true;end;if not denied then raise exception 'Graduate can print another pupil';end if;
+ perform set_config('request.jwt.claim.sub',guardian::text,true);select count(*) into n from public.schoolpro_printable_result(pupil,'First Term','2025/2026');if n<>2 then raise exception 'Guardian cannot print linked graduate';end if;
+ denied:=false;begin perform public.schoolpro_printable_result(peer,'First Term','2025/2026');exception when others then denied:=true;end;if not denied then raise exception 'Guardian can print unlinked pupil';end if;
+ perform set_config('request.jwt.claim.sub',teacher::text,true);select count(*) into n from public.schoolpro_printable_result(pupil,'First Term','2025/2026');if n<>1 then raise exception 'Subject teacher print bypassed assigned subject scope: %',n;end if;
+ perform set_config('request.jwt.claim.sub',coordinator::text,true);select count(*) into n from public.schoolpro_printable_result(pupil,'First Term','2025/2026');if n<>2 then raise exception 'Coordinator cannot print historical class';end if;
+ perform set_config('request.jwt.claim.sub',outsider::text,true);denied:=false;begin perform public.schoolpro_printable_result(pupil,'First Term','2025/2026');exception when others then denied:=true;end;if not denied then raise exception 'Outsider can print school result';end if;
+ execute 'reset role';
+end$$;
+rollback;

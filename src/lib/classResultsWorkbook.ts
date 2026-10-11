@@ -1,7 +1,7 @@
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import type {Column,Row} from 'exceljs';
 
-type Report = {student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
+type Report = {ranking?:{class_position:number|string;class_average:number|string};student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
 export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>}) {
  const book=new ExcelJS.Workbook();
  book.creator='IHLink SchoolPro';
@@ -18,8 +18,8 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   const total=totals.reduce((sum,n)=>sum+n,0),average=total/totals.length;
   const marks=new Map(report.results.map(r=>[subjectNames.get(r.subject_id)||'Subject',Number(r.total_score)]));
   const classmates=classAverages.get(s.class_name)||[];
-  const position=1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
-  const classAverage=classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
+  const position=report.ranking?Number(report.ranking.class_position):1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
+  const classAverage=report.ranking?Number(report.ranking.class_average):classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
   summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length,...subjectLabels.map(label=>marks.get(label)??''),position,classAverage]);
   const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\/?*\[\]:]/g,'-').slice(0,31);
   const sheet=book.addWorksheet(title);

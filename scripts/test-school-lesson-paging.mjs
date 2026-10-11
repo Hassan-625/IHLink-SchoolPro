@@ -1,0 +1,9 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import vm from 'node:vm';import ts from 'typescript';
+const source=ts.transpileModule(readFileSync('src/lib/schoolLessonPaging.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+const exports={};vm.runInNewContext(source,{exports,require(){return{schoolSection:level=>level}}});
+let calls=[];const db={from(table){calls.push(['from',table]);const q={};for(const method of ['select','eq','in','ilike','order','range'])q[method]=(...args)=>{calls.push([method,...args]);return q};q.then=resolve=>resolve({data:[{id:'later-page'}],count:10080,error:null});return q}};
+const filters={classId:'',section:'primary',status:'submitted',term:'Third Term',session:'2025/2026',search:'Math',page:12};
+const r=await exports.loadSchoolLessonPage(db,'school-one',filters,[{id:'primary-one',name:'Basic 1',level:'primary'},{id:'secondary-one',name:'SS 1',level:'senior_secondary'}]);assert.equal(r.count,10080);assert(calls.some(c=>c[0]==='eq'&&c[1]==='school_id'&&c[2]==='school-one'));assert.deepEqual(JSON.parse(JSON.stringify(calls.find(c=>c[0]==='in'))),['in','class_id',['primary-one']]);assert.deepEqual(calls.find(c=>c[0]==='range'),['range',600,649]);assert(calls.some(c=>c[0]==='eq'&&c[1]==='term'&&c[2]==='Third Term'));assert(calls.some(c=>c[0]==='order'&&c[1]==='id'));
+calls=[];const empty=await exports.loadSchoolLessonPage(db,'school-two',filters,[]);assert.equal(empty.count,0);assert.equal(calls.some(c=>c[0]==='range'),false);
+calls=[];await exports.loadSchoolLessonPage(db,'school-one',{...filters,classId:'one-arm',page:0},[]);assert(calls.some(c=>c[0]==='eq'&&c[1]==='class_id'&&c[2]==='one-arm'));assert.equal(calls.some(c=>c[0]==='in'),false);
+console.log('PASS: school-scoped lesson pages beyond 500 records, section/class filters, academic period and stable ordering.');

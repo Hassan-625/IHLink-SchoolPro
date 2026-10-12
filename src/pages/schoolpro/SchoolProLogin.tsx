@@ -50,7 +50,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         if(data.schoolId&&data.userId)localStorage.setItem(`ihlink_schoolpro_workspace_${data.userId}`,data.schoolId);
         const {data:sessionData,error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError||!sessionData.user){setError('Sign in could not be completed. Please try again.');return;}
         if(joiningCode.trim()){const result=await supabase.functions.invoke('invite-school-staff',{headers:{Authorization:`Bearer ${sessionData.session?.access_token}`},body:{action:'accept',code:joiningCode.trim()}});if(result.error||result.data?.error){let feedback=result.data?.error;if(!feedback&&result.error?.context instanceof Response){const response=await result.error.context.clone().json().catch(()=>null);feedback=response?.error;}setError(feedback||'This joining code could not be accepted. Ask your school for a fresh code.');return;}}
-        destination=await schoolSignInDestination(sessionData.user.id,profile?.id===sessionData.user.id&&profile.role==='super_admin',data.schoolId)||'/schoolpro';
+        destination=role==='parent'?config.dashboard:await schoolSignInDestination(sessionData.user.id,profile?.id===sessionData.user.id&&profile.role==='super_admin',data.schoolId)||'/schoolpro';
       }
       if(remember)localStorage.setItem('ih_remember_device','1');else localStorage.removeItem('ih_remember_device');navigate(destination);
     }catch{setError('Sign in could not be completed. Please try again.');}finally{setLoading(false);}

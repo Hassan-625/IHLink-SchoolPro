@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';import vm from 'node:vm';import ts from 'typescript';
+const exports={};const listeners={};vm.runInNewContext(ts.transpileModule(readFileSync('src/lib/schoolAccessCache.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText,{exports,Date,Map,Promise,window:{addEventListener:(n,f)=>listeners[n]=f}});
+let calls=0;let resolve;const run=()=>{calls++;return new Promise(r=>resolve=r)};
+const a=exports.schoolAccessRequest('userA:school:parent',run),b=exports.schoolAccessRequest('userA:school:parent',run);
+assert.equal(calls,1);resolve({role:'parent'});assert.deepEqual(await a,await b);
+assert.equal(exports.cachedSchoolAccess('userB:school:parent'),undefined);
+assert.equal(exports.cachedSchoolAccess('userA:otherSchool:parent'),undefined);
+assert.equal(exports.cachedSchoolAccess('userA:school:staff'),undefined);
+listeners['ihlink:school-refresh']();assert.equal(exports.cachedSchoolAccess('userA:school:parent'),undefined);
+await exports.schoolAccessRequest('userA:school:parent',async()=>({role:'parent'}));
+listeners['ihlink:account-change']();assert.equal(exports.cachedSchoolAccess('userA:school:parent'),undefined);
+console.log('PASS: concurrent access checks share one request; accounts, schools and portal roles remain isolated; refresh and logout clear cached values.');
+let finish;const late=exports.schoolAccessRequest('old-session',()=>new Promise(r=>finish=r));listeners['ihlink:account-change']();finish({role:'staff'});await late;assert.equal(exports.cachedSchoolAccess('old-session'),undefined,'A request finishing after logout must not repopulate the cache');

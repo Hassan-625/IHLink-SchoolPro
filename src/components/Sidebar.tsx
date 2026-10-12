@@ -68,6 +68,7 @@ export function DashboardLayout({
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
   const { signOut, profile } = useAuth();
+  const accountDisplayName=product==='schoolpro'&&userName.includes('@students.ihlink.invalid')?[profile?.first_name,profile?.last_name].filter(Boolean).join(' ')||'Student':userName;
   const roleKey = String(profile?.role || '');
   const canSeeAdministration = profile?.status === 'active' && ['super_admin', 'platform_admin', 'content_admin', 'finance', 'support'].includes(roleKey);
   const visibleSections = sections.map(section => ({...section, items: section.items.filter(item => canSeeAdministration || !/(^|https?:\/\/[^/]+)\/admin(?:\/|$|[?#])/i.test(item.href))})).filter(section => section.items.length);
@@ -182,9 +183,9 @@ export function DashboardLayout({
             </Link>
             <div className="relative">
               <button aria-label="Open profile menu" onClick={() => { setProfileOpen((v) => !v); setSearchOpen(false); }} className="flex items-center gap-2.5 pl-3 border-l border-border">
-                <Avatar name={userName} size="sm" />
+                <Avatar name={accountDisplayName} size="sm" />
                 <div className="hidden lg:block text-left">
-                  <p className="text-sm font-bold text-ink leading-none">{userName}</p>
+                  <p className="text-sm font-bold text-ink leading-none">{accountDisplayName}</p>
                   <p className="text-xs text-muted mt-0.5">{userRole}</p>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-muted" />

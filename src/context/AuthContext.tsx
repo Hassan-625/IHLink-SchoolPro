@@ -194,6 +194,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await supabase.auth.signOut({ scope: "local" });
           if(androidVault)vaultReady();
           setSession(null);
+          window.dispatchEvent(new Event("ihlink:account-change"));
           setProfile(null);
           setAdminAccess([]);
           setServiceAccess([]);

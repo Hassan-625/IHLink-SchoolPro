@@ -17,6 +17,7 @@ jobs:
       - run: npm run typecheck
       - run: node scripts/test-school-context-refresh.mjs
       - run: node scripts/test-school-access-cache.mjs
+      - run: node scripts/test-school-dashboard-roles.mjs
       - run: node scripts/test-school-context-relationships.mjs
       - run: node scripts/test-school-lesson-paging.mjs
       - run: node scripts/test-result-section-data.mjs

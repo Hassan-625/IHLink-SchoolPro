@@ -11,9 +11,9 @@ export function useSchoolProContext():SchoolContext{
  const sharedPortal=/^\/schoolpro\/(profile|report-card|transcript|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
  const studentPortal=/^\/schoolpro\/student-(dashboard|results|attendance|fees|timetable|assignments|cbt|library|announcements)(\/|$)/.test(pathname)||(sharedPortal&&rememberedPortal==='student');
  const parentPortal=/^\/schoolpro\/parent-(dashboard|results|attendance|fees|notifications)(\/|$)/.test(pathname)||(sharedPortal&&rememberedPortal==='parent');
- const staffPortal=pathname==='/schoolpro/teacher-dashboard';
+ const staffPortal=pathname==='/schoolpro/teacher-dashboard'||(!studentPortal&&!parentPortal&&!/^\/schoolpro\/(proprietor|admin)-dashboard$/.test(pathname)&&rememberedPortal==='staff');
  const ownerPortal=pathname==='/schoolpro/proprietor-dashboard'||pathname==='/schoolpro/admin-dashboard';
- const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
+ const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':rememberedPortal==='owner'?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
  const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null);
  const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);

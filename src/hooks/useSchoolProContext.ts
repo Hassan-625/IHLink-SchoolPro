@@ -5,7 +5,8 @@ import {useAuth} from '@/context/AuthContext';
 export type SchoolContext={schoolId:string|null;schoolName:string;role:string;loading:boolean;error:string|null};
 const empty:SchoolContext={schoolId:null,schoolName:'SchoolPro',role:'User',loading:false,error:null};
 export function useSchoolProContext():SchoolContext{
- const {user,profile,loading:authLoading}=useAuth();const {search}=useLocation();const requested=new URLSearchParams(search).get('school_id');
+ const {user,profile,loading:authLoading}=useAuth();const {search,pathname}=useLocation();
+ const studentPortal=/^\/schoolpro\/student-(dashboard|results|attendance|fees|timetable|assignments|cbt)(\/|$)/.test(pathname);const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
  const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null);
  const key=(user?.id||'')+':'+(selected||'');const [revision,setRevision]=useState(0);
@@ -18,6 +19,14 @@ export function useSchoolProContext():SchoolContext{
   const commit=(value:SchoolContext)=>{if(!current)return;if(value.schoolId)localStorage.setItem(storageKey,value.schoolId);setState({...value,key});};
   void(async()=>{
    if(profile?.role==='super_admin'&&selected){const r=await db.from('schoolpro_schools').select('id,name').eq('id',selected).maybeSingle();if(r.error)throw r.error;if(r.data){commit({schoolId:r.data.id,schoolName:r.data.name,role:'Super Administrator',loading:false,error:null});return;}}
+   // A verified student identity takes precedence on student-only routes, even if
+   // another school role or a remembered workspace was previously selected.
+   if(studentPortal){
+    const studentPortalRecord=await db.from('schoolpro_students').select('school_id,schoolpro_schools(name)').eq('user_id',uid).limit(1).maybeSingle();
+    if(studentPortalRecord.error)throw studentPortalRecord.error;
+    if(studentPortalRecord.data){const school=studentPortalRecord.data.schoolpro_schools as unknown as {name?:string}|null;
+     commit({schoolId:studentPortalRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:'student',loading:false,error:null});return;}
+   }
    let oq=db.from('schoolpro_schools').select('id,name').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1);if(selected)oq=oq.eq('id',selected);
    const owned=await oq.maybeSingle();if(owned.error)throw owned.error;if(owned.data){commit({schoolId:owned.data.id,schoolName:owned.data.name,role:'Proprietor',loading:false,error:null});return;}
    let mq=db.from('schoolpro_members').select('school_id,role,schoolpro_schools(name)').eq('user_id',uid).limit(1);if(selected)mq=mq.eq('school_id',selected);
@@ -31,6 +40,6 @@ export function useSchoolProContext():SchoolContext{
    commit({...empty,error:selected?'This school workspace is not linked to your account.':null});
   })().catch(()=>commit({...empty,error:'School access could not be loaded. Please try again.'}));
   return()=>{current=false};
- },[key,profile?.role,authLoading,revision]);
+ },[key,profile?.role,authLoading,revision,studentPortal]);
  return state.key===key?state:{...empty,loading:authLoading||Boolean(user)};
 }

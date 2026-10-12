@@ -14,9 +14,12 @@ export function useSchoolProPermissions(){
  useEffect(()=>{let active=true;setState({key,permissions:[],loading:true,error:null});
   if(ctx.loading)return;
   if(!supabase||!ctx.schoolId){setState({key,permissions:[],loading:false,error:ctx.error});return}
+  // Student and parent portals have fixed, least-privilege read scopes. They must not
+  // depend on the staff-only schoolpro_user_permissions RPC.
+  if(['student','parent'].includes(ctx.role.toLowerCase())){setState({key,permissions:[],loading:false,error:null});return}
   void supabase.rpc('schoolpro_user_permissions',{p_school:ctx.schoolId}).then(({data,error})=>{if(active)setState({key,permissions:error?[]:(data||[]) as string[],loading:false,error:error?.message||null})});
   return()=>{active=false};
- },[key,ctx.loading,ctx.error]);
+ },[key,ctx.loading,ctx.error,ctx.role]);
  const permissions=state.key===key?state.permissions:[];
  const role=ctx.role.toLowerCase();
  const portalPermissions=ctx.schoolId?(role==='student'?studentReadPermissions:role==='parent'?parentReadPermissions:[]):[];

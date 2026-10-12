@@ -1,3 +1,4 @@
+import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {loadSchoolLessonPage} from '@/lib/schoolLessonPaging';
 import {useEffect,useState,useRef} from 'react';
 import {ModulePage} from '@/components/ModulePage';
@@ -18,17 +19,18 @@ const empty=():Note=>({title:'',class_id:null,subject_id:null,lesson_date:'',ter
 const input='mt-1 w-full min-w-0 rounded-xl border bg-white p-3 text-sm';
 const label=(s:string)=>({draft:'Draft',submitted:'Awaiting review',approved:'Approved',changes_requested:'Changes requested'}[s]||s.replaceAll('_',' '));
 export function SchoolProLessonNotes(){
-const ctx=useSchoolProContext(),{user}=useAuth();
+const {session:workingSession}=useSchoolSession();const ctx=useSchoolProContext(),{user}=useAuth();
 const [rows,setRows]=useState<Note[]>([]),[classes,setClasses]=useState<any[]>([]),[subjects,setSubjects]=useState<any[]>([]),[allocations,setAllocations]=useState<any[]>([]),[member,setMember]=useState('');
 const [form,setForm]=useState<Note>(empty),[preview,setPreview]=useState<Note|null>(null),[feedback,setFeedback]=useState(''),[busy,setBusy]=useState(false),[loading,setLoading]=useState(true),[message,setMessage]=useState(''),[search,setSearch]=useState(''),[filterClass,setFilterClass]=useState(''),[filterSection,setFilterSection]=useState(''),[filterStatus,setFilterStatus]=useState('');
 const [page,setPage]=useState(0),[total,setTotal]=useState(0),[filterTerm,setFilterTerm]=useState(''),[filterSession,setFilterSession]=useState('');const request=useRef(0);
 const leader=['Proprietor','Super Administrator','administrator','head_teacher','vice_principal'].includes(ctx.role);
-async function reload(){if(!supabase||!ctx.schoolId)return;const version=++request.current;setLoading(true);const r=await loadSchoolLessonPage(supabase,ctx.schoolId,{classId:filterClass,section:filterSection,status:filterStatus,term:filterTerm,session:filterSession,search,page},classes);if(version!==request.current)return;setLoading(false);if(r.error){setRows([]);setTotal(0);setMessage(customerMessage(r.error.message));}else{setRows(r.data||[]);setTotal(r.count||0);}}
+async function reload(){if(!supabase||!ctx.schoolId||!workingSession)return;const version=++request.current;setLoading(true);const r=await loadSchoolLessonPage(supabase,ctx.schoolId,{classId:filterClass,section:filterSection,status:filterStatus,term:filterTerm,session:workingSession,search,page},classes);if(version!==request.current)return;setLoading(false);if(r.error){setRows([]);setTotal(0);setMessage(customerMessage(r.error.message));}else{setRows(r.data||[]);setTotal(r.count||0);}}
 useEffect(()=>{let current=true;setRows([]);setClasses([]);setSubjects([]);setAllocations([]);setMember('');setForm(empty());setPreview(null);setLoading(true);setMessage('');setFilterClass('');setFilterSection('');
 if(!supabase||!ctx.schoolId){setLoading(false);return;}const db=supabase;
-void Promise.all([db.from('schoolpro_classes').select('id,name,arm,level,form_teacher_id').eq('school_id',ctx.schoolId),db.from('schoolpro_subjects').select('id,name').eq('school_id',ctx.schoolId),db.from('schoolpro_subject_assignments').select('class_id,subject_id,teacher_member_id').eq('school_id',ctx.schoolId),db.from('schoolpro_members').select('id').eq('school_id',ctx.schoolId).eq('user_id',user?.id||'').maybeSingle()]).then(([b,c,d,e])=>{if(!current)return;setClasses(b.data||[]);setSubjects(c.data||[]);setAllocations(d.data||[]);setMember(e.data?.id||'');setLoading(false);if(b.error||c.error||d.error||e.error)setMessage('Lesson notes could not be fully loaded. Please refresh and try again.');}).catch(()=>{if(current){setLoading(false);setMessage('Lesson notes could not be loaded. Please try again.');}});return()=>{current=false};},[ctx.schoolId,user?.id]);
+void Promise.all([db.from('schoolpro_classes').select('id,name,arm,level,form_teacher_id').eq('school_id',ctx.schoolId),db.from('schoolpro_subjects').select('id,name').eq('school_id',ctx.schoolId),db.from('schoolpro_subject_assignments').select('class_id,subject_id,teacher_member_id').eq('school_id',ctx.schoolId).eq('session',workingSession),db.from('schoolpro_members').select('id').eq('school_id',ctx.schoolId).eq('user_id',user?.id||'').maybeSingle()]).then(([b,c,d,e])=>{if(!current)return;setClasses(b.data||[]);setSubjects(c.data||[]);setAllocations(d.data||[]);setMember(e.data?.id||'');setLoading(false);if(b.error||c.error||d.error||e.error)setMessage('Lesson notes could not be fully loaded. Please refresh and try again.');}).catch(()=>{if(current){setLoading(false);setMessage('Lesson notes could not be loaded. Please try again.');}});return()=>{current=false};},[ctx.schoolId,user?.id,workingSession]);
 useEffect(()=>{setPage(0);},[ctx.schoolId,filterClass,filterSection,filterStatus,filterTerm,filterSession,search]);
-useEffect(()=>{void reload();return()=>{request.current++;};},[ctx.schoolId,classes,filterClass,filterSection,filterStatus,filterTerm,filterSession,search,page]);
+useEffect(()=>{void reload();return()=>{request.current++;};},[ctx.schoolId,classes,filterClass,filterSection,filterStatus,filterTerm,filterSession,workingSession,search,page]);
+useEffect(()=>{setFilterSession(workingSession);setForm({...empty(),session:workingSession});setPreview(null);setFeedback('');setPage(0);},[workingSession]);
 const availableSubjects=subjects.filter(s=>leader||classes.find(c=>c.id===form.class_id)?.form_teacher_id===member||allocations.some(a=>a.class_id===form.class_id&&a.subject_id===s.id&&a.teacher_member_id===member));
 async function save(status:'draft'|'submitted'){
 if(busy||!supabase||!ctx.schoolId)return;
@@ -64,3 +66,4 @@ return <ModulePage product="schoolpro" sections={schoolSections} title="Lesson N
 {leader&&preview.id&&preview.status==='submitted'&&<div className="mt-5 border-t pt-4"><label className="block text-sm font-semibold">Review feedback<textarea rows={3} className={input} value={feedback} onChange={e=>setFeedback(e.target.value)}/></label><div className="mt-3 flex flex-wrap gap-2"><Button disabled={busy} onClick={()=>void decide('approved')}>Approve lesson</Button><Button disabled={busy} variant="secondary" onClick={()=>void decide('changes_requested')}>Request changes</Button></div></div>}
 </Card>}</ModulePage>;
 }
+

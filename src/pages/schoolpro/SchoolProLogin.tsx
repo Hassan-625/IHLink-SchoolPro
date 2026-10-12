@@ -38,7 +38,7 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
     try{
       if(role==='student'){
         const {data,error}=await supabase.functions.invoke('schoolpro-student-login',{body:{schoolCode,admissionNumber:email,password,...(challenge?{challenge}:{})}});
-        if(error||data?.error){setError(data?.error||'Sign in could not be completed. Check your details or contact your school.');return;}
+        if(error||data?.error){let feedback=data?.error;if(!feedback&&error?.context instanceof Response){const result=await error.context.clone().json().catch(()=>null);feedback=result?.error;}setError(feedback||'Sign in could not be completed. Please try again or contact your school.');return;}
         if(data?.requiresPasswordChange){setChallenge(data.challenge);setPassword('');return;}
         if(!data?.session){setError('Sign in could not be completed. Please try again.');return;}
         const {error:sessionError}=await supabase.auth.setSession(data.session);if(sessionError){setError('Sign in could not be completed. Please try again.');return;}

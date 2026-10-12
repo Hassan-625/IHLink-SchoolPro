@@ -1,3 +1,4 @@
+const schoolOperationalRoles=['administrator','bursar','accountant','vice_principal','head_teacher','exam_officer','registrar','admissions_officer','librarian','nurse','hostel_manager','transport_manager','inventory_officer','hr_officer','it_admin','counsellor','receptionist'];
 export function schoolRole(role:string){return role.trim().toLowerCase().replaceAll(' ','_');}
 export function canManageSchoolBilling(role:string){return ['proprietor','administrator','bursar'].includes(schoolRole(role));}
 export function schoolDashboard(role:string){
@@ -7,7 +8,7 @@ export function schoolDashboard(role:string){
   case 'class_teacher':case 'teacher':return '/schoolpro/teacher-dashboard';
   case 'proprietor':return '/schoolpro/proprietor-dashboard';
   case 'administrator':case 'bursar':case 'accountant':case 'super_administrator':return '/schoolpro/admin-dashboard';
-  default:return '/schoolpro';
+  default:return schoolOperationalRoles.includes(schoolRole(role))?'/schoolpro/admin-dashboard':'/schoolpro';
  }
 }
 export function schoolDashboardAllowed(path:string,role:string,globalRole?:string){
@@ -16,7 +17,7 @@ export function schoolDashboardAllowed(path:string,role:string,globalRole?:strin
  const management=['proprietor','administrator','bursar','accountant'];
  switch(path){
   case '/schoolpro/proprietor-dashboard':return normalized==='proprietor';
-  case '/schoolpro/admin-dashboard':return management.includes(normalized);
+  case '/schoolpro/admin-dashboard':return management.includes(normalized)||schoolOperationalRoles.includes(normalized);
   case '/schoolpro/teacher-dashboard':return ['teacher','class_teacher'].includes(normalized)||management.includes(normalized);
   case '/schoolpro/student-dashboard':return normalized==='student';
   case '/schoolpro/parent-dashboard':return normalized==='parent';

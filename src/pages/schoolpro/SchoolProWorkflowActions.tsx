@@ -1,3 +1,4 @@
+import {SchoolBulkAcademicActions} from '@/components/SchoolBulkAcademicActions';
 import {canManageSchoolOperation} from '@/lib/schoolOperationalRoles';
 import {useEffect,useState,useRef} from 'react';
 import {Card} from '@/components/ui/Card';

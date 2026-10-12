@@ -1,3 +1,5 @@
+import {SchoolSessionBar} from './SchoolSessionBar';
+import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
@@ -43,6 +45,8 @@ export function DashboardLayout({
   pageBreadcrumb,
   rightActions,
 }: DashboardLayoutProps) {
+  const sessionScope=useSchoolSession();
+  const scopedChildren=product==='schoolpro'?<><SchoolSessionBar/>{sessionScope.session?children:<p role="status">Select the academic session above to open this page.</p>}</>:children;
   const permissions=useSchoolProPermissions();
   const role=permissions.role.toLowerCase();
   const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
@@ -72,7 +76,7 @@ export function DashboardLayout({
 
   const isActive = (href: string) => location.pathname === href;
 
-  if(isNativeApp())return <main className="native-workspace"><div className="native-workspace-title"><h1>{pageTitle}</h1>{rightActions}</div><button type="button" aria-expanded={mobileOpen} aria-controls="native-school-menu" className="app-action app-action-secondary mb-4 flex items-center gap-2" onClick={()=>setMobileOpen(value=>!value)}>{mobileOpen?<X className="h-5 w-5"/>:<Menu className="h-5 w-5"/>}School menu</button>{mobileOpen&&<section id="native-school-menu" className="mb-5 space-y-3" aria-label="School tools"><nav aria-label="School options" className="grid grid-cols-2 gap-3">{visibleSections.flatMap(section=>section.items).slice(0,toolsExpanded?undefined:6).map((item,index)=><Link key={item.href} aria-current={isActive(item.href)?'page':undefined} className="app-service min-w-0 break-words" to={item.href} onClick={()=>{setMobileOpen(false);window.scrollTo({top:0,behavior:'instant'});}}><span className={`school-tool-icon school-tool-tone-${index%5}`}>{item.icon}</span>{item.label}</Link>)}</nav>{visibleSections.flatMap(section=>section.items).length>6&&<button type="button" aria-expanded={toolsExpanded} className="app-action app-action-secondary w-full" onClick={()=>setToolsExpanded(value=>!value)}>{toolsExpanded?'Show fewer tools':'View all school tools'}</button>}</section>}{children}</main>;
+  if(isNativeApp())return <main className="native-workspace"><div className="native-workspace-title"><h1>{pageTitle}</h1>{rightActions}</div><button type="button" aria-expanded={mobileOpen} aria-controls="native-school-menu" className="app-action app-action-secondary mb-4 flex items-center gap-2" onClick={()=>setMobileOpen(value=>!value)}>{mobileOpen?<X className="h-5 w-5"/>:<Menu className="h-5 w-5"/>}School menu</button>{mobileOpen&&<section id="native-school-menu" className="mb-5 space-y-3" aria-label="School tools"><nav aria-label="School options" className="grid grid-cols-2 gap-3">{visibleSections.flatMap(section=>section.items).slice(0,toolsExpanded?undefined:6).map((item,index)=><Link key={item.href} aria-current={isActive(item.href)?'page':undefined} className="app-service min-w-0 break-words" to={item.href} onClick={()=>{setMobileOpen(false);window.scrollTo({top:0,behavior:'instant'});}}><span className={`school-tool-icon school-tool-tone-${index%5}`}>{item.icon}</span>{item.label}</Link>)}</nav>{visibleSections.flatMap(section=>section.items).length>6&&<button type="button" aria-expanded={toolsExpanded} className="app-action app-action-secondary w-full" onClick={()=>setToolsExpanded(value=>!value)}>{toolsExpanded?'Show fewer tools':'View all school tools'}</button>}</section>}{scopedChildren}</main>;
 
   return (
     <div className="min-h-screen bg-surface flex min-w-0">
@@ -197,7 +201,7 @@ export function DashboardLayout({
         {/* Content */}
         <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 overflow-y-auto">
           <div className="max-w-[1280px] mx-auto animate-fade-in">
-            {children}
+            {scopedChildren}
           </div>
         </main>
       </div>

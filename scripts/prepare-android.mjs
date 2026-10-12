@@ -8,7 +8,7 @@ if(!xml.includes(`android:scheme="${config.appId}"`))xml=xml.replace('</activity
 if(!xml.includes(filter))throw new Error('Auth callback intent was not installed');
 writeFileSync(manifest,xml);
 const gradle='android/app/build.gradle';let source=readFileSync(gradle,'utf8');
-const buildNumber=Number(process.env.IHLINK_BUILD_NUMBER||10004);
+const buildNumber=Number(process.env.IHLINK_BUILD_NUMBER||10005);
 if(!Number.isInteger(buildNumber)||buildNumber<1||buildNumber>2100000000)throw new Error('Invalid build number');
 source=source.replace(/versionCode\s+\d+/,`versionCode ${buildNumber}`).replace(/versionName\s+"[^"]+"/,`versionName "1.0.4"`);
 writeFileSync(gradle,source);

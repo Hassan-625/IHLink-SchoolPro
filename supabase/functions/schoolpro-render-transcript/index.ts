@@ -1,3 +1,4 @@
+import {standardTranscript} from './standard.ts';
 import {createClient} from 'npm:@supabase/supabase-js@2.57.4';
 import {PDFDocument,StandardFonts,rgb} from 'npm:pdf-lib@1.17.1';
 import {orientDocument,drawDesignImage} from '../schoolpro-render-document/design.ts';
@@ -10,7 +11,7 @@ Deno.serve(async req=>{
  const authorization=req.headers.get('Authorization');if(!authorization)return respond({error:'Sign in to open a transcript'},401);
  const reader=createClient(Deno.env.get('SUPABASE_URL')!,Deno.env.get('SUPABASE_ANON_KEY')!,{global:{headers:{Authorization:authorization}}});
  const {data:{user}}=await reader.auth.getUser();if(!user)return respond({error:'Sign in to open a transcript'},401);
- const {student_id,issue_id}=await req.json();
+ const {student_id,issue_id,standard}=await req.json();
  const access=await reader.rpc('schoolpro_student_transcripts',{p_student:student_id});
  const record=(Array.isArray(access.data)?access.data:[]).find((r:any)=>r.id===issue_id&&r.allowed&&!r.revoked);
  if(access.error||!record?.snapshot)return respond({error:'This transcript is unavailable. Contact your school.'},403);
@@ -19,6 +20,7 @@ Deno.serve(async req=>{
  const saved=record.snapshot.design_snapshot;
  const selected=await admin.from('schoolpro_document_templates').select('*').eq('school_id',issued.school_id).eq('document_type','transcript').eq('is_active',true).eq('is_default',true).limit(1).maybeSingle();
  if(selected.error)throw selected.error;const template=saved||selected.data;
+ if(standard===true||!template){const pdf=await standardTranscript(record,admin,issued.school_id);const bytes=await pdf.save();let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192));return respond({ok:true,base64:btoa(binary),template_name:'Certified academic transcript',pages:pdf.getPageCount()});}
  let pdf=await PDFDocument.create();
  if(template?.storage_path){
  if(!String(template.storage_path).startsWith(issued.school_id+'/'))throw new Error('Invalid source');

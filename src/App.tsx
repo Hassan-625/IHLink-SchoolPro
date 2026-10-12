@@ -82,7 +82,11 @@ const Guard=({children,permission}:{children:ReactNode;permission?:string})=>{
  const portalOnly=/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(pathname);
  const portal=portalOnly||/\/schoolpro\/(report-card|transcript|receipts|invoices|payments|notifications)(\/|$)/.test(pathname);
  const billingOrProfile=/^\/schoolpro\/(subscription|profile)(\/|$)/.test(pathname);
- const permitted=module&&!billingOrProfile?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children;
+ // The dashboard is the landing page for a verified student/guardian identity.
+ // Their school role is resolved from the authenticated user's linked student or
+ // active guardian record; staff-only module permission RPCs must not block it.
+ const verifiedFamilyDashboard=Boolean(ctx.schoolId&&((pathname==='/schoolpro/student-dashboard'&&ctx.role==='student')||(pathname==='/schoolpro/parent-dashboard'&&ctx.role==='parent')));
+ const permitted=module&&!billingOrProfile&&!verifiedFamilyDashboard?<SchoolProPermissionGate permission={module} portal={portal} portalOnly={portalOnly}>{children}</SchoolProPermissionGate>:children;
  return <ProtectedRoute product="schoolpro" requireServiceAccess={!ctx.schoolId}>{ctx.schoolId&&!billingOrProfile?<SchoolProActivationGate>{permitted}</SchoolProActivationGate>:permitted}</ProtectedRoute>;
 };
 const studentViews=["results","fees","attendance","timetable","assignments","announcements","library"] as const;

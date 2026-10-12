@@ -415,3 +415,29 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   .school-report table tbody td { color: #0f172a !important; background: white !important; }
   .school-report table thead th { color: white !important; background: #7e22ce !important; }
 }
+
+/* Single-student report cards must not force an empty trailing sheet.
+   Other bulk result pages retain their intentional page breaks. */
+@media print {
+  @page { size: A4 portrait; margin: 8mm; }
+  .print-document.school-report {
+    break-after: auto !important;
+    page-break-after: auto !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    font-size: 9px !important;
+    line-height: 1.18 !important;
+  }
+  .print-document.school-report header { padding-bottom: 5px !important; }
+  .print-document.school-report header h1 { margin-top: 4px !important; font-size: 16px !important; }
+  .print-document.school-report header h2 { margin-top: 4px !important; font-size: 11px !important; }
+  .print-document.school-report header img { width: 38px !important; height: 38px !important; }
+  .print-document.school-report section { margin-top: 5px !important; margin-bottom: 5px !important; padding: 5px !important; gap: 4px !important; }
+  .print-document.school-report table { font-size: 8px !important; table-layout: auto !important; }
+  .print-document.school-report th,
+  .print-document.school-report td { padding: 2px 3px !important; line-height: 1.1 !important; }
+  .print-document.school-report p,
+  .print-document.school-report footer { margin-top: 3px !important; margin-bottom: 3px !important; }
+  .print-document.school-report .rounded-xl { border-radius: 5px !important; }
+  .print-document.school-report .school-table-scroll { overflow: visible !important; }
+}

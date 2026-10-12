@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+let boot=true;const root={innerHTML:'running application'},listeners={};
+vm.runInNewContext(script,{document:{getElementById:id=>id==='root'?root:id==='ihlink-boot-status'&&boot?{}:null},window:{addEventListener:(name,fn)=>listeners[name]=fn}});
+boot=false;listeners.unhandledrejection({reason:new Error('Temporary enrolment failure')});
+assert.equal(root.innerHTML,'running application','a data request failure must not replace a mounted application');
+boot=true;listeners.error({message:'Missing startup bundle'});
+assert.match(root.innerHTML,/startup diagnostic/);
+console.log('Startup-only diagnostic tests passed');

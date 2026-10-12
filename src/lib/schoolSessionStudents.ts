@@ -7,5 +7,5 @@ export async function schoolSessionStudents<T extends {id:string;class_id?:strin
  const rows=history.data||[];
  if(!rows.length){const known=await supabase.from('schoolpro_enrollment_history').select('student_id').eq('school_id',schoolId).limit(1);if(known.error)throw new Error('School enrolments could not be loaded.');return known.data?.length?[]:students;}
  const map=new Map(rows.map((row:any)=>[row.student_id,row]));
- return students.filter(student=>map.has(student.id)).map(student=>{const row:any=map.get(student.id);return {...student,class_id:row.class_id,class_name:[row.class_name,row.arm].filter(Boolean).join(' '),class_level:row.section};});
+ return students.filter(student=>map.has(student.id)).map(student=>{const row:any=map.get(student.id);return {...student,current_class_id:student.class_id,session_status:row.status,class_id:row.class_id,class_name:[row.class_name,row.arm].filter(Boolean).join(' '),class_level:row.section};});
 }

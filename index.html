@@ -21,7 +21,7 @@
       (function () {
         function showBootError(message) {
           var root = document.getElementById('root');
-          if (!root) return;
+          if (!root || !document.getElementById('ihlink-boot-status')) return;
           root.innerHTML =
             '<main style="min-height:100vh;padding:32px;font-family:system-ui,sans-serif;background:#fff;color:#071A3D">' +
             '<h1 style="font-size:24px;font-weight:800">IHLink startup diagnostic</h1>' +

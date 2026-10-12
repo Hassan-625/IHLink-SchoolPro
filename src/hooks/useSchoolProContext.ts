@@ -6,10 +6,14 @@ export type SchoolContext={schoolId:string|null;schoolName:string;role:string;lo
 const empty:SchoolContext={schoolId:null,schoolName:'SchoolPro',role:'User',loading:false,error:null};
 export function useSchoolProContext():SchoolContext{
  const {user,profile,loading:authLoading}=useAuth();const {search,pathname}=useLocation();
- const studentPortal=/^\/schoolpro\/student-(dashboard|results|attendance|fees|timetable|assignments|cbt)(\/|$)/.test(pathname);const requested=new URLSearchParams(search).get('school_id');
+ const studentPortal=/^\/schoolpro\/student-(dashboard|results|attendance|fees|timetable|assignments|cbt)(\/|$)/.test(pathname);
+ const parentPortal=/^\/schoolpro\/parent-(dashboard|results|attendance|fees|notifications)(\/|$)/.test(pathname);
+ const staffPortal=pathname==='/schoolpro/teacher-dashboard';
+ const ownerPortal=pathname==='/schoolpro/proprietor-dashboard'||pathname==='/schoolpro/admin-dashboard';
+ const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
  const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null);
- const key=(user?.id||'')+':'+(selected||'');const [revision,setRevision]=useState(0);
+ const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);
  const [state,setState]=useState<SchoolContext&{key:string}>({...empty,key:'',loading:true});
  useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')setRevision(v=>v+1);};window.addEventListener('focus',refresh);window.addEventListener('ihlink:school-refresh',refresh);return()=>{window.removeEventListener('focus',refresh);window.removeEventListener('ihlink:school-refresh',refresh);};},[]);
  useEffect(()=>{
@@ -27,6 +31,22 @@ export function useSchoolProContext():SchoolContext{
     if(studentPortalRecord.data){const school=studentPortalRecord.data.schoolpro_schools as unknown as {name?:string}|null;
      commit({schoolId:studentPortalRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:'student',loading:false,error:null});return;}
    }
+   // Parent portal identity must be backed by an active guardian link; never infer
+   // parent access from ownership or staff membership.
+   if(parentPortal){
+    const parentRecord=await db.from('schoolpro_guardian_links').select('school_id,schoolpro_schools(name)').eq('guardian_user_id',uid).eq('status','active').limit(1).maybeSingle();
+    if(parentRecord.error)throw parentRecord.error;
+    if(parentRecord.data){const school=parentRecord.data.schoolpro_schools as unknown as {name?:string}|null;
+     commit({schoolId:parentRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:'parent',loading:false,error:null});return;}
+   }
+   // Staff portal: resolve actual staff membership before any remembered owner
+   // workspace; only recognized educator roles can enter the teacher dashboard.
+   if(staffPortal){
+    const staffRecord=await db.from('schoolpro_members').select('school_id,role,schoolpro_schools(name)').eq('user_id',uid).in('role',['teacher','class_teacher','administrator','proprietor','bursar','accountant']).limit(1).maybeSingle();
+    if(staffRecord.error)throw staffRecord.error;
+    if(staffRecord.data){const school=staffRecord.data.schoolpro_schools as unknown as {name?:string}|null;
+     commit({schoolId:staffRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:staffRecord.data.role,loading:false,error:null});return;}
+   }
    let oq=db.from('schoolpro_schools').select('id,name').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1);if(selected)oq=oq.eq('id',selected);
    const owned=await oq.maybeSingle();if(owned.error)throw owned.error;if(owned.data){commit({schoolId:owned.data.id,schoolName:owned.data.name,role:'Proprietor',loading:false,error:null});return;}
    let mq=db.from('schoolpro_members').select('school_id,role,schoolpro_schools(name)').eq('user_id',uid).limit(1);if(selected)mq=mq.eq('school_id',selected);
@@ -40,6 +60,6 @@ export function useSchoolProContext():SchoolContext{
    commit({...empty,error:selected?'This school workspace is not linked to your account.':null});
   })().catch(()=>commit({...empty,error:'School access could not be loaded. Please try again.'}));
   return()=>{current=false};
- },[key,profile?.role,authLoading,revision,studentPortal]);
+ },[key,profile?.role,authLoading,revision,studentPortal,parentPortal,staffPortal]);
  return state.key===key?state:{...empty,loading:authLoading||Boolean(user)};
 }

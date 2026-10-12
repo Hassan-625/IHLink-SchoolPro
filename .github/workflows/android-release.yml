@@ -1,5 +1,16 @@
 name: Android signed release candidate
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'native/**'
+      - 'scripts/prepare-android.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/android-release.yml'
   workflow_dispatch:
 permissions:
   contents: read

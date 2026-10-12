@@ -471,3 +471,45 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
     page-break-after: auto !important;
   }
 }
+
+/* A4 report typography: use the printable width and legible type rather than
+   miniaturising the result. Keep the report in normal print flow. */
+@media print {
+  @page { size: A4 portrait; margin: 10mm; }
+  body:has(.school-report) .school-report {
+    width: 100% !important;
+    max-width: 190mm !important;
+    min-height: 0 !important;
+    font-size: 11pt !important;
+    line-height: 1.35 !important;
+  }
+  body:has(.school-report) .school-report header {
+    padding-top: 6mm !important;
+    padding-bottom: 4mm !important;
+  }
+  body:has(.school-report) .school-report header h1 { font-size: 18pt !important; }
+  body:has(.school-report) .school-report header h2 { font-size: 12pt !important; }
+  body:has(.school-report) .school-report header img { max-height: 16mm !important; width: auto !important; }
+  body:has(.school-report) .school-report table {
+    font-size: 9pt !important;
+    line-height: 1.22 !important;
+    width: 100% !important;
+  }
+  body:has(.school-report) .school-report th,
+  body:has(.school-report) .school-report td {
+    padding: 1.1mm 1mm !important;
+    line-height: 1.2 !important;
+  }
+  body:has(.school-report) .school-report section {
+    font-size: 10pt !important;
+    line-height: 1.25 !important;
+    margin-top: 2.5mm !important;
+    margin-bottom: 2.5mm !important;
+    padding: 2mm !important;
+  }
+  body:has(.school-report) .school-report section h3 { font-size: 10pt !important; }
+  body:has(.school-report) .school-report p,
+  body:has(.school-report) .school-report footer { font-size: 9pt !important; line-height: 1.25 !important; }
+  body:has(.school-report) .school-report .grid { gap: 2mm !important; }
+  body:has(.school-report) .school-report .school-table-scroll { overflow: visible !important; }
+}

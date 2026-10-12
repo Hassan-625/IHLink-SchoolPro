@@ -455,3 +455,32 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) .school-table-scroll {overflow:visible !important;}
   body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) tr {break-inside:avoid;}
 }
+
+/* Standalone student result: the screen-only 100vh host must not create a
+   second print sheet. Keep all result content, but remove host geometry. */
+@media print {
+  body:has(.school-report-host) .school-report-host {
+    display: block !important;
+    position: static !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+  }
+  body:has(.school-report-host) .school-report-host > div:not(:has(.school-report)) {
+    display: none !important;
+  }
+  body:has(.school-report-host) .school-report-host > .school-report {
+    position: static !important;
+    display: block !important;
+    break-before: auto !important;
+    break-after: auto !important;
+    break-inside: auto !important;
+    page-break-before: auto !important;
+    page-break-after: auto !important;
+    page-break-inside: auto !important;
+  }
+}

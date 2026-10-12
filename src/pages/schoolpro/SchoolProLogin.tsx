@@ -77,6 +77,14 @@ export function SchoolProLogin({ role }: SchoolProLoginProps) {
         {/* Right panel */}
         <div className={native?"app-card":"col-span-12 lg:col-span-7 flex items-center justify-center p-10 bg-white"}>
           <div className="w-full max-w-sm">
+            <nav aria-label="Choose SchoolPro login portal" className="mb-6 grid grid-cols-2 gap-2">
+              {([
+                {id:'school',label:'School Owner',path:'/schoolpro/login'},
+                {id:'student',label:'Student Portal',path:'/schoolpro/student-login'},
+                {id:'parent',label:'Parent Portal',path:'/schoolpro/parent-login'},
+                {id:'teacher',label:'Staff Portal',path:'/schoolpro/teacher-login'},
+              ] as const).map(item=><Link key={item.id} to={item.path} aria-current={role===item.id?'page':undefined} className={`rounded-xl border px-3 py-3 text-center text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-purple-600 ${role===item.id?'border-purple-600 bg-purple-50 text-purple-800':'border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50'}`}>{item.label}</Link>)}
+            </nav>
             <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">{config.title}</Badge>
             <h1 className="text-2xl font-extrabold text-ink mb-2">{challenge?'Choose your password':'Welcome Back'}</h1>
             {native&&!challenge&&<label className="mb-4 block text-sm font-semibold">Sign in as<select className="mt-2 w-full rounded-xl border p-3" value={role} onChange={event=>navigate(event.target.value==='school'?'/schoolpro/login':`/schoolpro/${event.target.value}-login`)}><option value="school">School owner</option><option value="teacher">Staff</option><option value="parent">Parent</option><option value="student">Student</option></select></label>}

@@ -441,3 +441,33 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   .print-document.school-report .rounded-xl { border-radius: 5px !important; }
   .print-document.school-report .school-table-scroll { overflow: visible !important; }
 }
+
+/* Chrome print preview: visibility:hidden leaves dashboard containers in layout,
+   which can create an entirely blank second sheet. Remove those containers from
+   print layout while preserving the report and all its ancestors. */
+@media print {
+  body:has(.school-report) *:not(:has(.school-report)):not(.school-report):not(.school-report *) {
+    display: none !important;
+  }
+  body:has(.school-report) #root,
+  body:has(.school-report) main,
+  body:has(.school-report) .min-h-screen,
+  body:has(.school-report) .school-report,
+  body:has(.school-report) .school-report-parent {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  body:has(.school-report) .school-report {
+    position: static !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body:has(.school-report) .school-report section,
+  body:has(.school-report) .school-report footer {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+}

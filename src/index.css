@@ -416,100 +416,42 @@ html[data-appearance] .payroll-paper :is(table, tbody, tr, th, td) {
   .school-report table thead th { color: white !important; background: #7e22ce !important; }
 }
 
-/* Single-student report cards must not force an empty trailing sheet.
-   Other bulk result pages retain their intentional page breaks. */
+
+/* One-page individual report: override legacy forced breaks and oversized print
+   typography. This does not change the bulk report pagination contract. */
 @media print {
   @page { size: A4 portrait; margin: 8mm; }
-  .print-document.school-report {
-    break-after: auto !important;
-    page-break-after: auto !important;
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) {
     break-inside: auto !important;
     page-break-inside: auto !important;
-    font-size: 9px !important;
-    line-height: 1.18 !important;
-  }
-  .print-document.school-report header { padding-bottom: 5px !important; }
-  .print-document.school-report header h1 { margin-top: 4px !important; font-size: 16px !important; }
-  .print-document.school-report header h2 { margin-top: 4px !important; font-size: 11px !important; }
-  .print-document.school-report header img { width: 38px !important; height: 38px !important; }
-  .print-document.school-report section { margin-top: 5px !important; margin-bottom: 5px !important; padding: 5px !important; gap: 4px !important; }
-  .print-document.school-report table { font-size: 8px !important; table-layout: auto !important; }
-  .print-document.school-report th,
-  .print-document.school-report td { padding: 2px 3px !important; line-height: 1.1 !important; }
-  .print-document.school-report p,
-  .print-document.school-report footer { margin-top: 3px !important; margin-bottom: 3px !important; }
-  .print-document.school-report .rounded-xl { border-radius: 5px !important; }
-  .print-document.school-report .school-table-scroll { overflow: visible !important; }
-}
-
-/* Chrome print preview: visibility:hidden leaves dashboard containers in layout,
-   which can create an entirely blank second sheet. Remove those containers from
-   print layout while preserving the report and all its ancestors. */
-@media print {
-  body:has(.school-report) *:not(:has(.school-report)):not(.school-report):not(.school-report *) {
-    display: none !important;
-  }
-  body:has(.school-report) #root,
-  body:has(.school-report) main,
-  body:has(.school-report) .min-h-screen,
-  body:has(.school-report) .school-report,
-  body:has(.school-report) .school-report-parent {
+    break-before: auto !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
     min-height: 0 !important;
     height: auto !important;
-    max-height: none !important;
-  }
-  body:has(.school-report) .school-report {
-    position: static !important;
-    break-after: auto !important;
-    page-break-after: auto !important;
-    margin: 0 !important;
     padding: 0 !important;
+    margin: 0 !important;
+    font-size: 10px !important;
+    line-height: 1.18 !important;
   }
-  body:has(.school-report) .school-report section,
-  body:has(.school-report) .school-report footer {
-    break-after: auto !important;
-    page-break-after: auto !important;
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) header {
+    padding-top: 2mm !important;
+    padding-bottom: 2mm !important;
   }
-}
-
-/* A4 report typography: use the printable width and legible type rather than
-   miniaturising the result. Keep the report in normal print flow. */
-@media print {
-  @page { size: A4 portrait; margin: 10mm; }
-  body:has(.school-report) .school-report {
-    width: 100% !important;
-    max-width: 190mm !important;
-    min-height: 0 !important;
-    font-size: 11pt !important;
-    line-height: 1.35 !important;
-  }
-  body:has(.school-report) .school-report header {
-    padding-top: 6mm !important;
-    padding-bottom: 4mm !important;
-  }
-  body:has(.school-report) .school-report header h1 { font-size: 18pt !important; }
-  body:has(.school-report) .school-report header h2 { font-size: 12pt !important; }
-  body:has(.school-report) .school-report header img { max-height: 16mm !important; width: auto !important; }
-  body:has(.school-report) .school-report table {
-    font-size: 9pt !important;
-    line-height: 1.22 !important;
-    width: 100% !important;
-  }
-  body:has(.school-report) .school-report th,
-  body:has(.school-report) .school-report td {
-    padding: 1.1mm 1mm !important;
-    line-height: 1.2 !important;
-  }
-  body:has(.school-report) .school-report section {
-    font-size: 10pt !important;
-    line-height: 1.25 !important;
-    margin-top: 2.5mm !important;
-    margin-bottom: 2.5mm !important;
-    padding: 2mm !important;
-  }
-  body:has(.school-report) .school-report section h3 { font-size: 10pt !important; }
-  body:has(.school-report) .school-report p,
-  body:has(.school-report) .school-report footer { font-size: 9pt !important; line-height: 1.25 !important; }
-  body:has(.school-report) .school-report .grid { gap: 2mm !important; }
-  body:has(.school-report) .school-report .school-table-scroll { overflow: visible !important; }
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) header h1 {font-size: 17px !important; margin: 2px 0 !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) header h2 {font-size: 11px !important; margin: 2px 0 !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) header img {max-height: 38px !important; width: auto !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) table {font-size: 9px !important; line-height: 1.1 !important; width:100% !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) th,
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) td {padding: 3px 4px !important; line-height: 1.15 !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) section {margin: 5px 0 !important; padding: 6px !important; font-size: 10px !important; line-height: 1.18 !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) .grid {gap: 5px !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) footer {margin: 4px 0 0 !important; font-size: 9px !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) .school-table-scroll {overflow:visible !important;}
+  body:has(.school-report:not(.result-print-page)) .school-report:not(.result-print-page) tr {break-inside:avoid;}
 }

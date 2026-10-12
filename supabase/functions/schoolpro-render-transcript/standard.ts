@@ -1,7 +1,7 @@
 import {PDFDocument,StandardFonts,rgb} from 'npm:pdf-lib@1.17.1';
 export async function standardTranscript(record:any,admin:any,schoolId:string){
 const pdf=await PDFDocument.create(),normal=await pdf.embedFont(StandardFonts.Helvetica),bold=await pdf.embedFont(StandardFonts.HelveticaBold),s=record.snapshot;
-let page:any,y=0;const clean=(v:any)=>String(v??'').replace(/[^\\x20-\\x7e]/g,' ').replace(/\\s+/g,' ').trim();
+let page:any,y=0;const clean=(v:any)=>String(v??'').replace(/[^\x20-\x7e]/g,' ').replace(/\s+/g,' ').trim();
 function newPage(){page=pdf.addPage([595.28,841.89]);y=800;line(s.school_name,17,true);line('OFFICIAL ACADEMIC TRANSCRIPT',12,true);line(s.student_name+' | Admission: '+s.admission_number,10);line('Serial: '+record.serial_number+' | Issued: '+record.issued_at.slice(0,10),8);y-=12;}
 function line(value:any,size=9,strong=false){const words=clean(value).split(' ');let text='';for(const word of words){const next=(text?text+' ':'')+word;if(normal.widthOfTextAtSize(next,size)>510&&text){if(y<55)newPage();page.drawText(text,{x:40,y,size,font:strong?bold:normal});y-=size+5;text=word;}else text=next;}if(text){if(y<55)newPage();page.drawText(text,{x:40,y,size,font:strong?bold:normal});y-=size+5;}}
 const sessions=[...new Set<string>(s.records.map((r:any)=>r.session))],terms=['First Term','Second Term','Third Term'];

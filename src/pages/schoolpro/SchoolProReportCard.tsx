@@ -66,12 +66,15 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   }
 
   
+
 .school-report {
   box-sizing: border-box !important;
   width: 100% !important;
   max-width: none !important;
   min-height: 0 !important;
   height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
   margin: 0 !important;
   padding: 4mm !important;
   box-shadow: none !important;

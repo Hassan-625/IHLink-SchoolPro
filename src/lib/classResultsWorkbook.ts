@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import type {Cell,Column,Row} from 'exceljs';
 
 type Report = {ranking?:{class_position:number|string;class_average:number|string};student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
-export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames,subjectAverageLabel='CLASS SUBJECT AVERAGE'}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>;subjectAverageLabel?:string}) {
+export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames,subjectClassNames,subjectAverageLabel='CLASS SUBJECT AVERAGE'}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>;subjectClassNames?:Map<string,string>;subjectAverageLabel?:string}) {
  const book=new ExcelJS.Workbook();
  book.creator='IHLink SchoolPro';
  const summary=book.addWorksheet('Class Results');
@@ -11,6 +11,7 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  const subjectLabels=subjectIds.map(id=>subjectNames.get(id)||'Unmapped subject');
  const classAverages=new Map<string,number[]>();const classTotals=new Map<string,number[]>();
  for(const report of reports){
+  for(const result of report.results){const subjectClass=subjectClassNames?.get(result.subject_id);if(subjectClass&&subjectClass!==report.student.class_name)throw new Error(`Subject mapping mismatch: ${subjectNames.get(result.subject_id)||result.subject_id} belongs to ${subjectClass}, not ${report.student.class_name}`);}
   const scores=report.results.map(result=>Number(result.total_score));
   if(!scores.length||scores.some(score=>!Number.isFinite(score)||score<0||score>100))throw new Error('Invalid result scores');
   const total=scores.reduce((sum,score)=>sum+score,0),average=total/scores.length;

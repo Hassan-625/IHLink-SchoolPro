@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import type {Cell,Column,Row} from 'exceljs';
 
 type Report = {ranking?:{class_position:number|string;class_average:number|string};student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
-export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>}) {
+export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>;subjectAverageLabel?:string}) {
  const book=new ExcelJS.Workbook();
  book.creator='IHLink SchoolPro';
  const summary=book.addWorksheet('Class Results');
@@ -52,7 +52,7 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
    const values=subjectMarks.get(JSON.stringify([className,subjectId]))||[];
    return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:'';
   });
-  const row=summary.addRow(['','CLASS SUBJECT AVERAGE',className,'','',averages.filter(value=>value!=='').length,...averages,'','']);
+  const row=summary.addRow(['',subjectAverageLabel,className,'','',averages.filter(value=>value!=='').length,...averages,'','']);
   row.font={bold:true};
   row.eachCell((cell:Cell)=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF2F8'}};cell.border={top:{style:'thin',color:{argb:'FF78909C'}}}});
   row.eachCell((cell:Cell,columnNumber:number)=>{if(columnNumber>=7&&columnNumber<7+subjectIds.length&&typeof cell.value==='number')cell.numFmt='0.00'});

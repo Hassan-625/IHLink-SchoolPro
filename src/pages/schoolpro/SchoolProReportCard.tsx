@@ -65,31 +65,34 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
     overflow: visible !important;
   }
 
-  .school-report {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: 0 !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 2mm !important;
-    box-shadow: none !important;
-    font-size: 8px !important;
-    line-height: 1.08 !important;
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
+  
+.school-report {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 4mm !important;
+  box-shadow: none !important;
+  font-size: 9px !important;
+  line-height: 1.2 !important;
+  break-after: auto !important;
+  page-break-after: auto !important;
+}
 
   .school-report header {
     padding-bottom: 2px !important;
     border-bottom-width: 2px !important;
   }
 
-  .school-report header > div {
-    width: 24px !important;
-    height: 24px !important;
-    font-size: 11px !important;
-  }
+  
+.school-report header > div:first-child,
+.school-report header > div:last-child {
+  width: 40px !important;
+  height: 40px !important;
+  font-size: 11px !important;
+}
 
   .school-report header img {
     max-height: 24px !important;

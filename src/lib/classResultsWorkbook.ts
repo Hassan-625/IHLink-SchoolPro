@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs/dist/exceljs.min.js';
-import type {Column,Row} from 'exceljs';
+import type {Cell,Column,Row} from 'exceljs';
 
 type Report = {ranking?:{class_position:number|string;class_average:number|string};student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
 export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>}) {
@@ -54,8 +54,8 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   });
   const row=summary.addRow(['','CLASS SUBJECT AVERAGE',className,'','',averages.filter(value=>value!=='').length,...averages,'','']);
   row.font={bold:true};
-  row.eachCell(cell=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF2F8'}};cell.border={top:{style:'thin',color:{argb:'FF78909C'}}}});
-  row.eachCell((cell,columnNumber)=>{if(columnNumber>=7&&columnNumber<7+subjectIds.length&&typeof cell.value==='number')cell.numFmt='0.00'});
+  row.eachCell((cell:Cell)=>{cell.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFEAF2F8'}};cell.border={top:{style:'thin',color:{argb:'FF78909C'}}}});
+  row.eachCell((cell:Cell,columnNumber:number)=>{if(columnNumber>=7&&columnNumber<7+subjectIds.length&&typeof cell.value==='number')cell.numFmt='0.00'});
  }
  summary.columns.forEach((column:Column)=>{column.width=24});summary.getRow(2).font={bold:true};summary.getColumn(5).numFmt='0.00';summary.views=[{state:'frozen',ySplit:2}];
  for(let column=7;column<7+subjectIds.length;column++)summary.getColumn(column).numFmt='0.00';

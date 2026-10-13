@@ -16,7 +16,12 @@ export function getSchoolData<T>(
   if (existing && existing.expiresAt > Date.now()) return existing.promise as Promise<T>;
   if (existing) entries.delete(key);
 
-  const promise = Promise.resolve().then(loader).catch((error) => {
+  const promise = Promise.resolve().then(loader).then((value) => {
+    if (value && typeof value === "object" && "error" in value && (value as { error?: unknown }).error) {
+      entries.delete(key);
+    }
+    return value;
+  }).catch((error) => {
     entries.delete(key);
     throw error;
   });

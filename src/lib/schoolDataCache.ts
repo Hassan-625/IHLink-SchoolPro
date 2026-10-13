@@ -1,5 +1,3 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
-
 /**
  * In-memory, school-scoped request/data cache.
  * Deduplicates concurrent reads and reuses successful results during navigation.

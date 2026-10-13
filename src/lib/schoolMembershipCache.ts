@@ -25,7 +25,7 @@ export function getSchoolMembership(
     .limit(1);
   if (schoolId) query = query.eq("school_id", schoolId);
 
-  const request = query.maybeSingle().then(({ data, error }) => {
+  const request = Promise.resolve(query.maybeSingle()).then(({ data, error }) => {
     if (error) {
       memberships.delete(key);
       throw error;

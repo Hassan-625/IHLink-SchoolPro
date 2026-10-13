@@ -1,4 +1,5 @@
 import {cachedSchoolAccess,saveSchoolAccess,schoolAccessRequest} from '@/lib/schoolAccessCache';
+import {getSchoolMembership} from '@/lib/schoolMembershipCache';
 import {useEffect,useState} from 'react';
 import {useLocation} from 'react-router-dom';
 import {supabase} from '@/lib/supabase';
@@ -45,15 +46,13 @@ export function useSchoolProContext():SchoolContext{
    // Staff portal: resolve actual staff membership before any remembered owner
    // workspace; only recognized educator roles can enter the teacher dashboard.
    if(staffPortal){
-    const staffRecord=await db.from('schoolpro_members').select('school_id,role,schoolpro_schools!schoolpro_members_school_id_fkey(name)').eq('user_id',uid).limit(1).maybeSingle();
-    if(staffRecord.error)throw staffRecord.error;
-    if(staffRecord.data){const school=staffRecord.data.schoolpro_schools as unknown as {name?:string}|null;
-     return ({schoolId:staffRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:staffRecord.data.role,loading:false,error:null});}
+    const staffRecord=await getSchoolMembership(db,uid,selected);
+    if(staffRecord){const school=staffRecord.schoolpro_schools as unknown as {name?:string}|null;
+     return ({schoolId:staffRecord.school_id,schoolName:school?.name||'SchoolPro',role:staffRecord.role,loading:false,error:null});}
    }
    let oq=db.from('schoolpro_schools').select('id,name').eq('owner_id',uid).order('created_at',{ascending:false}).limit(1);if(selected)oq=oq.eq('id',selected);
    const owned=await oq.maybeSingle();if(owned.error)throw owned.error;if(owned.data){return ({schoolId:owned.data.id,schoolName:owned.data.name,role:'Proprietor',loading:false,error:null});}
-   let mq=db.from('schoolpro_members').select('school_id,role,schoolpro_schools!schoolpro_members_school_id_fkey(name)').eq('user_id',uid).limit(1);if(selected)mq=mq.eq('school_id',selected);
-   const member=await mq.maybeSingle();if(member.error)throw member.error;if(member.data){const s=member.data.schoolpro_schools as unknown as {name?:string}|null;return ({schoolId:member.data.school_id,schoolName:s?.name||'SchoolPro',role:member.data.role,loading:false,error:null});}
+   const member=await getSchoolMembership(db,uid,selected);if(member){const s=member.schoolpro_schools as unknown as {name?:string}|null;return ({schoolId:member.school_id,schoolName:s?.name||'SchoolPro',role:member.role,loading:false,error:null});}
    let sq=db.from('schoolpro_students').select('school_id,schoolpro_schools!schoolpro_students_school_id_fkey(name)').eq('user_id',uid).limit(1);if(selected)sq=sq.eq('school_id',selected);
    const student=await sq.maybeSingle();if(student.error)throw student.error;if(student.data){const s=student.data.schoolpro_schools as unknown as {name?:string}|null;return ({schoolId:student.data.school_id,schoolName:s?.name||'SchoolPro',role:'student',loading:false,error:null});}
    let gq=db.from('schoolpro_guardian_links').select('school_id,schoolpro_schools!schoolpro_guardian_links_school_id_fkey(name)').eq('guardian_user_id',uid).eq('status','active').limit(1);if(selected)gq=gq.eq('school_id',selected);

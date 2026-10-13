@@ -30,7 +30,9 @@ export function getSchoolMembership(
       memberships.delete(key);
       throw error;
     }
-    return (data as SchoolMembership) || null;
+    const membership = (data as SchoolMembership) || null;
+    if (membership?.school_id) memberships.set(`${userId}:${membership.school_id}`, request);
+    return membership;
   }).catch((error) => {
     memberships.delete(key);
     throw error;
@@ -45,5 +47,4 @@ export function clearSchoolMembershipCache() {
 
 if (typeof window !== "undefined") {
   window.addEventListener("ihlink:account-change", clearSchoolMembershipCache);
-  window.addEventListener("ihlink:school-refresh", clearSchoolMembershipCache);
 }

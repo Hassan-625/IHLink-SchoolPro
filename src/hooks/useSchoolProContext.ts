@@ -16,7 +16,7 @@ export function useSchoolProContext():SchoolContext{
  const ownerPortal=pathname==='/schoolpro/proprietor-dashboard'||pathname==='/schoolpro/admin-dashboard';
  const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':rememberedPortal==='owner'?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
- const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null);
+ const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null)||(profile?.role==='super_admin'?localStorage.getItem('ihlink_schoolpro_admin_school'):null);
  const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);
  const [state,setState]=useState<SchoolContext&{key:string}>(()=>{const cached=cachedSchoolAccess<SchoolContext>('context:'+key,true);return cached?{...cached,key}:{...empty,key:'',loading:true}});
  useEffect(()=>{const refresh=()=>setRevision(v=>v+1);window.addEventListener('ihlink:school-refresh',refresh);return()=>window.removeEventListener('ihlink:school-refresh',refresh);},[]);
@@ -26,7 +26,10 @@ export function useSchoolProContext():SchoolContext{
   const db=supabase;const uid=user.id;
   const commit=(value:SchoolContext)=>{if(!current)return;if(value.schoolId){localStorage.setItem(storageKey,value.schoolId);if(portalScope!=='general')localStorage.setItem('ihlink_schoolpro_portal_'+uid,portalScope);saveSchoolAccess('context:'+uid+':'+value.schoolId+':'+portalScope,value);}saveSchoolAccess('context:'+key,value);setState({...value,key});};
   void schoolAccessRequest<SchoolContext>('context:'+key,async()=>{
-   if(profile?.role==='super_admin'&&selected){const r=await db.from('schoolpro_schools').select('id,name').eq('id',selected).maybeSingle();if(r.error)throw r.error;if(r.data){return ({schoolId:r.data.id,schoolName:r.data.name,role:'Super Administrator',loading:false,error:null});}}
+   if(profile?.role==='super_admin'&&selected){const r=await db.from('schoolpro_schools').select('id,name').eq('id',selected).maybeSingle();if(r.error)throw r.error;if(r.data){return ({schoolId:r.data.id,schoolName:r.data.name,role:'Super Administrator',loading:false,error:null});}return ({schoolId:null,schoolName:'Select a school',role:'Super Administrator',loading:false,error:'The selected school is unavailable. Choose a school from the Super Admin workspace selector.'});}
+   // Platform Super Admin is a global identity, never a school owner/member fallback.
+   // Without an explicit workspace selection, do not silently attach it to an owned school.
+   if(profile?.role==='super_admin'&&!selected){return ({schoolId:null,schoolName:'Select a school',role:'Super Administrator',loading:false,error:null});}
    // A verified student identity takes precedence on student-only routes, even if
    // another school role or a remembered workspace was previously selected.
    if(studentPortal){
@@ -57,7 +60,6 @@ export function useSchoolProContext():SchoolContext{
    const student=await sq.maybeSingle();if(student.error)throw student.error;if(student.data){const s=student.data.schoolpro_schools as unknown as {name?:string}|null;return ({schoolId:student.data.school_id,schoolName:s?.name||'SchoolPro',role:'student',loading:false,error:null});}
    let gq=db.from('schoolpro_guardian_links').select('school_id,schoolpro_schools!schoolpro_guardian_links_school_id_fkey(name)').eq('guardian_user_id',uid).eq('status','active').limit(1);if(selected)gq=gq.eq('school_id',selected);
    const guardian=await gq.maybeSingle();if(guardian.error)throw guardian.error;if(guardian.data){const s=guardian.data.schoolpro_schools as unknown as {name?:string}|null;return ({schoolId:guardian.data.school_id,schoolName:s?.name||'SchoolPro',role:'parent',loading:false,error:null});}
-   if(profile?.role==='super_admin'&&!selected){const r=await db.from('schoolpro_schools').select('id,name').order('created_at',{ascending:false}).limit(1).maybeSingle();if(r.error)throw r.error;return ({schoolId:r.data?.id||null,schoolName:r.data?.name||'SchoolPro',role:'Super Administrator',loading:false,error:null});}
    if(selected&&!valid){localStorage.removeItem(storageKey);setRevision(v=>v+1);}
    return ({...empty,error:selected?'This school workspace is not linked to your account.':null});
   }).then(commit).catch(()=>commit({...empty,error:'School access could not be loaded. Please try again.'}));

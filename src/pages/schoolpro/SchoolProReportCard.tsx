@@ -31,6 +31,7 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
  const average=useMemo(()=>rows.length?rows.reduce((sum,r)=>sum+r.total_score,0)/rows.length:0,[rows]);
  if(student&&access?.allowed===false)return <Wrapper product="schoolpro" showFooter={false}><div className={embedded?"result-print-wrapper bg-white":"school-report-host min-h-screen bg-surface p-4 md:p-8"}><div className="mx-auto max-w-2xl rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center shadow-float"><h1 className="text-2xl font-black text-amber-900">Report card access paused</h1><p className="mt-2 text-amber-800">{access.reason}</p><p className="mt-4 font-bold text-amber-900">Outstanding balance: {new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN"}).format(access.outstanding)}</p><p className="mt-2 text-sm text-amber-700">Please contact the school bursary after payment.</p></div></div></Wrapper>;
  return <Wrapper product="schoolpro" showFooter={false}><style>{`
+
 @page {
   size: A4 portrait;
   margin: 5mm;
@@ -60,119 +61,105 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   .school-report-host,
   .result-print-wrapper {
     min-height: 0 !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
   }
 
-  
+  .school-report {
+    display: block !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 4mm !important;
+    box-shadow: none !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
 
-.school-report {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  max-width: none !important;
-  min-height: 0 !important;
-  height: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-  margin: 0 !important;
-  padding: 4mm !important;
-  box-shadow: none !important;
-  font-size: 9px !important;
-  line-height: 1.2 !important;
-  break-after: auto !important;
-  page-break-after: auto !important;
-}
+  .school-report header {
+    padding-bottom: 6px !important;
+    margin-bottom: 8px !important;
+    border-bottom-width: 2px !important;
+  }
 
-
-.school-report header {
-  padding-bottom: 6px !important;
-  margin-bottom: 6px !important;
-  border-bottom-width: 2px !important;
-}
-
-.school-report header > div:first-child,
-.school-report header > div:last-child {
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-.school-report header img {
-  max-height: 32px !important;
-  max-width: 36px !important;
-  object-fit: contain !important;
-}
-
- 
-.school-report header > div:first-child,
-.school-report header > div:last-child {
-  width: 40px !important;
-  height: 40px !important;
-  font-size: 11px !important;
-}
+  .school-report header > div:first-child,
+  .school-report header > div:last-child {
+    width: 40px !important;
+    height: 40px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 11px !important;
+  }
 
   .school-report header img {
-    max-height: 24px !important;
+    max-width: 36px !important;
+    max-height: 32px !important;
     object-fit: contain !important;
   }
 
   .school-report h1 {
     margin-top: 2px !important;
-    font-size: 13px !important;
-    line-height: 1.05 !important;
+    font-size: 16px !important;
+    line-height: 1.15 !important;
   }
 
   .school-report h2 {
-    margin-top: 2px !important;
-    font-size: 8px !important;
-    line-height: 1.05 !important;
+    margin-top: 3px !important;
+    font-size: 9px !important;
+    line-height: 1.15 !important;
   }
 
   .school-report h3 {
-    font-size: 7.5px !important;
-    line-height: 1.05 !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
   }
 
   .school-report p,
   .school-report footer {
-    font-size: 6.5px !important;
-    line-height: 1.05 !important;
-    margin-top: 1px !important;
+    font-size: 7.5px !important;
+    line-height: 1.2 !important;
+    margin-top: 3px !important;
   }
 
-  
-.school-report section {
-  margin-top: 4px !important;
-  margin-bottom: 4px !important;
-  font-size: 8px !important;
-  line-height: 1.15 !important;
-  break-inside: avoid !important;
-  page-break-inside: avoid !important;
-}
+  .school-report section {
+    margin-top: 6px !important;
+    margin-bottom: 6px !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 
   .school-report section > div,
   .school-report section.rounded-xl {
-    padding: 2px !important;
+    padding: 4px !important;
   }
 
   .school-report section[aria-label="Student information"] {
     margin: 6px 0 !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 2px 5px !important;
+    gap: 4px 6px !important;
   }
 
   .school-report table {
     width: 100% !important;
     table-layout: fixed !important;
-    font-size: 6.5px !important;
-    line-height: 1 !important;
+    font-size: 8px !important;
+    line-height: 1.15 !important;
     border-collapse: collapse !important;
   }
 
   .school-report td,
   .school-report th {
-    padding: 2px !important;
+    padding: 4px !important;
     overflow-wrap: anywhere !important;
   }
 
@@ -183,28 +170,28 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
 
   .school-report section[aria-label="Attendance"] > div {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 2px !important;
+    gap: 4px !important;
   }
 
   .school-report section[aria-label="Behaviour and practical skills"],
   .school-report section[aria-label="Remarks and signatures"] {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 3px !important;
+    gap: 6px !important;
   }
 
   .school-report section[aria-label="Behaviour and practical skills"] td {
-    padding: 1px !important;
+    padding: 3px !important;
   }
 
   .school-report section[aria-label="Remarks and signatures"] img {
-    max-height: 20px !important;
-    margin-top: 1px !important;
+    max-height: 24px !important;
+    margin-top: 3px !important;
     object-fit: contain !important;
   }
 
   .school-report footer {
-    padding-top: 1px !important;
-    margin-top: 2px !important;
+    padding-top: 3px !important;
+    margin-top: 5px !important;
   }
 
   .school-table-scroll,
@@ -214,8 +201,8 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
 
   .school-report button {
     display: none !important;
-    }
-}`}
+  }
+}
 </style><div className={embedded?"result-print-wrapper bg-white":"school-report-host min-h-screen bg-surface p-4 md:p-8"}>{!embedded&&<div className="mx-auto mb-4 flex max-w-6xl justify-end"><Button variant="secondary" leftIcon={<Printer className="h-4 w-4"/>} disabled={!student||!rows.length||access?.allowed!==true||!!error} onClick={()=>void printSchoolDocument({name:schoolFileName([school?.name,student?.class_name,student?[student.first_name,student.last_name].join(" "):null,term,session,"Result"],"pdf")})}>Print / Save PDF</Button></div>}<article className={"school-report print-document mx-auto max-w-6xl bg-white p-6 shadow-float md:p-10"+(embedded?" result-print-page":"")}>{error&&<p className="text-rose-600">{customerMessage(error)}</p>}{!studentId&&<p className="text-center text-muted">Open a result to view its report card.</p>}{student&&rows.length>0&&<><header className="grid grid-cols-[56px_minmax(0,1fr)_48px] items-center gap-2 border-b-4 border-purple-600 pb-2 text-center"><div className="flex justify-start">{images.logo?<img src={images.logo} alt="School logo" className="h-12 w-12 object-contain"/>:<div className="grid h-12 w-12 place-items-center rounded-lg bg-purple-700 text-sm font-black text-white">{school?.name?.slice(0,2)||"SP"}</div>}</div><div><h1 className="text-xl font-black leading-tight text-navy-900">{school?.name||"IHLink SchoolPro"}</h1><p className="text-xs text-muted">{school?.address||"Nigeria"}</p><p className="mt-1 text-xs font-bold text-purple-700">{term.toUpperCase()} REPORT • {session} SESSION</p></div><div className="flex justify-end">{images.photo&&<img src={images.photo} alt="Student photograph" className="h-12 w-10 object-cover"/>}</div></header><section aria-label="Student information" className="my-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs sm:grid-cols-3"><div><b>Student:</b> {student.first_name} {student.last_name}</div><div><b>Gender:</b> {display(details?.gender)}</div><div><b>Admission No:</b> {student.admission_number}</div><div><b>DOB:</b> {display(details?.date_of_birth)}</div><div><b>Class:</b> {student.class_name}</div><div><b>Session / Term:</b> {session} · {term}</div></section><div className="overflow-x-auto"><div className="school-table-scroll"><table className="w-full border-collapse text-sm"><thead><tr className="bg-purple-700 text-white"><th className="border border-purple-500 p-1">Subject</th>{components.map(c=><th key={c.key} className="border border-purple-500 p-3">{c.label}<br/>/ {c.maxScore}</th>)}<th className="border border-purple-500 p-1">Total</th><th className="border border-purple-500 p-1">Subject position</th><th className="border border-purple-500 p-1">Grade</th><th className="border border-purple-500 p-1">Class average</th></tr></thead><tbody>{rows.map(r=><tr key={r.id}><td className="border p-1 font-semibold">{r.subject?.name||"Subject"}</td>{components.map(c=><td key={c.key} className="border p-1">{r.assessment_scores[c.key]??0}</td>)}<td className="border p-1 font-bold">{r.total_score}</td><td className="border p-1">{display(subjectStats[r.subject_id]?.current_position)}</td><td className="border p-1 font-bold">{band(r.total_score)?.label||grade(r.total_score)}</td><td className="border p-1">{display(subjectStats[r.subject_id]?.current_class_average)}</td></tr>)}</tbody></table></div></div>{!rows.length&&<p className="py-8 text-center text-sm text-muted">No result records for this term and session.</p>}<section aria-label="Overall result" className="my-4 grid grid-cols-2 gap-2 rounded-xl border p-3 text-sm sm:grid-cols-4"><div><b>Total:</b> {rows.reduce((sum,r)=>sum+r.total_score,0).toFixed(1)} / {rows.length*100}</div><div><b>Average:</b> {average.toFixed(1)}%</div><div><b>Grade:</b> {band(average)?.label||grade(average)}</div><div><b>Position:</b> {display(details?.rank?.class_position)} / {display(details?.rank?.class_population)}</div></section>
 <section aria-label="Attendance" className="my-4 rounded-xl border p-3 text-sm"><h3 className="font-bold">Attendance and term dates</h3><div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4"><span>School days: {display(details?.settings?.class_days)}</span><span>Present: {details?.attendance?.recorded?display(details.attendance.present):''}</span><span>Absent: {details?.attendance?.recorded?display(details.attendance.absent):''}</span><span>Leave: {details?.attendance?.recorded?display(details.attendance.leave):''}</span><span>Term begins: {display(details?.settings?.term_start_date)}</span><span>Term ends: {display(details?.settings?.term_end_date)}</span><span>Next term: {display(details?.settings?.next_term_begins)}</span></div></section>
 <section aria-label="Behaviour and practical skills" className="my-4 grid gap-4 sm:grid-cols-2">{['affective','psychomotor'].map(type=><div key={type} className="rounded-xl border p-3"><h3 className="font-bold">{type==='affective'?'Behaviour and attitudes':'Practical skills'}</h3><table className="mt-2 w-full text-sm"><thead><tr><th className="text-left">Area</th><th className="text-right">Rating</th></tr></thead><tbody>{(details?.domains||[]).filter((d:any)=>d.type===type).map((d:any)=><tr key={d.name} className="border-t"><td className="py-1">{d.name}</td><td className="text-right">{display(d.rating)}</td></tr>)}</tbody></table></div>)}</section>

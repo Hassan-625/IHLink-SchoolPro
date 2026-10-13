@@ -31,7 +31,7 @@ export function getSchoolMembership(
       throw error;
     }
     const membership = (data as SchoolMembership) || null;
-    if (membership?.school_id) memberships.set(`${userId}:${membership.school_id}`, request);
+    if (membership?.school_id) memberships.set(`${userId}:${membership.school_id}`, Promise.resolve(membership));
     return membership;
   }).catch((error) => {
     memberships.delete(key);

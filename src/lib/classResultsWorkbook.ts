@@ -35,11 +35,11 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   const position=report.ranking?Number(report.ranking.class_position):1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
   const classAverage=report.ranking?Number(report.ranking.class_average):classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
   summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length,...subjectIds.map(id=>marks.get(id)??''),position,classAverage]);
-  const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\\\/?*\\[\\]:]/g,'-').slice(0,31);
+  const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\/?*\[\]:]/g,'-').slice(0,31);
   const sheet=book.addWorksheet(title);
   sheet.addRow([schoolName]);sheet.addRow([[s.first_name,s.last_name].join(' '),s.admission_number,s.class_name]);sheet.addRow([term,session]);
   const keys=[...new Set(report.results.flatMap(result=>Object.keys(result.assessment_scores||{})))];
-  const label=(key:string)=>key.replace(/[_-]+/g,' ').replace(/\\b\\w/g,c=>c.toUpperCase());
+  const label=(key:string)=>key.replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
   sheet.addRow(['Subject',...keys.map(label),'Total','Teacher comment','Head teacher comment']);
   for(const result of report.results)sheet.addRow([subjectNames.get(result.subject_id)||'Unmapped subject',...keys.map(key=>result.assessment_scores?.[key]??''),Number(result.total_score),result.teacher_comment||'',result.head_teacher_comment||'']);
   sheet.addRow(['Average (%)',average]);

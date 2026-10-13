@@ -14,6 +14,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Validate class subject-average export independently
+        run: node scripts/test-class-results-export.mjs
       - run: npm run typecheck
       - run: node scripts/test-startup-diagnostic.mjs
       - run: node scripts/test-school-context-refresh.mjs

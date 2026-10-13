@@ -97,17 +97,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     client.auth.getSession().then(({ data }) => void loadProfile(data.session));
     const { data: listener } = client.auth.onAuthStateChange(
-      (_event, nextSession) => {
-        // Keep the auth callback synchronous. Supabase documents that awaiting
-        // other client calls from this callback can deadlock subsequent calls.
+      (event, nextSession) => {
+        // Token rotation is not a new sign-in. Keep the authenticated session
+        // current without repeating profile, membership, activation, or access queries.
         setSession(nextSession);
         if (!nextSession?.user) {
           setProfile(null);
           setAdminAccess([]);
           setServiceAccess([]);
           setLoading(false);
+          window.dispatchEvent(new Event("ihlink:account-change"));
           return;
         }
+        if (event === "TOKEN_REFRESHED") return;
+        // Initial session, actual sign-in, and explicit account/profile changes
+        // are the points where account access data should be resolved.
+        if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN" && event !== "USER_UPDATED" && event !== "PASSWORD_RECOVERY") return;
         setLoading(true);
         window.setTimeout(() => {
           if (active) void loadProfile(nextSession);
@@ -123,9 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase || !session?.user || !profile) return;
     const client = supabase;
-    const timeoutMs = profile.role === "super_admin" || profile.role === "platform_admin" || profile.role === "support" || profile.role === "finance"
-      ? 15 * 60 * 1000
-      : 30 * 60 * 1000;
+    const timeoutMs = 10 * 60 * 1000;
     const expire=()=>{if(androidVault&&profile.role==='customer')void NativeVault.status().then(status=>{if(status.enabled)window.dispatchEvent(new Event('ihlink:lock-app'));else void client.auth.signOut({scope:'local'});});else void client.auth.signOut({scope:'local'});};
     const activityKey='ihlink.native.activity.'+session.user.id;
     const isAdministrator=profile.role!=='customer';
@@ -144,7 +147,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       events.forEach((event) => window.removeEventListener(event, reset));
     };
-  }, [profile, session?.user]);
+  }, [profile, session?.user?.id]);
 
   const value = useMemo<AuthValue>(
     () => ({

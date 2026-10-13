@@ -81,12 +81,27 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   page-break-after: auto !important;
 }
 
-  .school-report header {
-    padding-bottom: 2px !important;
-    border-bottom-width: 2px !important;
-  }
 
-  
+.school-report header {
+  padding-bottom: 6px !important;
+  margin-bottom: 6px !important;
+  border-bottom-width: 2px !important;
+}
+
+.school-report header > div:first-child,
+.school-report header > div:last-child {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.school-report header img {
+  max-height: 32px !important;
+  max-width: 36px !important;
+  object-fit: contain !important;
+}
+
+ 
 .school-report header > div:first-child,
 .school-report header > div:last-child {
   width: 40px !important;
@@ -123,14 +138,15 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
     margin-top: 1px !important;
   }
 
-  .school-report section {
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-    font-size: 7px !important;
-    line-height: 1.05 !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
+  
+.school-report section {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
+  font-size: 8px !important;
+  line-height: 1.15 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
 
   .school-report section > div,
   .school-report section.rounded-xl {
@@ -138,7 +154,7 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   }
 
   .school-report section[aria-label="Student information"] {
-    margin: 3px 0 !important;
+    margin: 6px 0 !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 2px 5px !important;
   }

@@ -68,20 +68,22 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   }
 
   .school-report {
-    display: block !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-    max-width: none !important;
-    min-height: 0 !important;
-    height: auto !important;
-    margin: 0 !important;
-    padding: 4mm !important;
-    box-shadow: none !important;
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 2mm !important;
+  box-shadow: none !important;
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  break-before: avoid !important;
+  break-after: avoid !important;
+  page-break-before: avoid !important;
+  page-break-after: avoid !important;
+}
 
   .school-report header {
     padding-bottom: 6px !important;
@@ -130,13 +132,13 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
   }
 
   .school-report section {
-    margin-top: 6px !important;
-    margin-bottom: 6px !important;
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
+  margin-top: 3px !important;
+  margin-bottom: 3px !important;
+  font-size: 8px !important;
+  line-height: 1.1 !important;
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+}
 
   .school-report section > div,
   .school-report section.rounded-xl {
@@ -157,11 +159,10 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
     border-collapse: collapse !important;
   }
 
-  .school-report td,
-  .school-report th {
-    padding: 4px !important;
-    overflow-wrap: anywhere !important;
-  }
+ .school-report section > div,
+.school-report section.rounded-xl {
+  padding: 3px !important;
+}
 
   .school-report tr {
     break-inside: avoid !important;

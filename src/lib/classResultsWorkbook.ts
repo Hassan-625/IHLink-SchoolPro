@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs/dist/exceljs.min.js';
 import type {Cell,Column,Row} from 'exceljs';
 
 type Report = {ranking?:{class_position:number|string;class_average:number|string};student:{first_name:string;last_name:string;admission_number:string;class_name:string};results:{subject_id:string;total_score:number|string;assessment_scores?:Record<string,number>;teacher_comment?:string;head_teacher_comment?:string}[]};
-export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>;subjectAverageLabel?:string}) {
+export function buildClassResultsWorkbook({schoolName,term,session,reports,subjectNames,subjectAverageLabel='CLASS SUBJECT AVERAGE'}:{schoolName:string;term:string;session:string;reports:Report[];subjectNames:Map<string,string>;subjectAverageLabel?:string}) {
  const book=new ExcelJS.Workbook();
  book.creator='IHLink SchoolPro';
  const summary=book.addWorksheet('Class Results');

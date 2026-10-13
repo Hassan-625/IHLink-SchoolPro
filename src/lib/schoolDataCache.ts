@@ -9,7 +9,7 @@ const DEFAULT_TTL_MS = 120_000;
 
 export function getSchoolData<T>(
   key: string,
-  loader: () => Promise<T>,
+  loader: () => PromiseLike<T> | T,
   ttlMs = DEFAULT_TTL_MS,
 ): Promise<T> {
   const existing = entries.get(key);

@@ -11,6 +11,15 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  const classAverages=new Map<string,number[]>();const classTotals=new Map<string,number[]>();
  for(const report of reports){const average=report.results.reduce((sum,r)=>sum+Number(r.total_score),0)/report.results.length;classTotals.set(report.student.class_name,[...(classTotals.get(report.student.class_name)||[]),report.results.reduce((sum,r)=>sum+Number(r.total_score),0)]);classAverages.set(report.student.class_name,[...(classAverages.get(report.student.class_name)||[]),average]);}
  summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects',...subjectLabels,'Class position','Class average (%)']);
+ const subjectMarks=new Map<string,number[]>();
+ for(const report of reports){
+  for(const result of report.results){
+   const label=subjectNames.get(result.subject_id)||'Subject';
+   const key=JSON.stringify([report.student.class_name,label]);
+   const score=Number(result.total_score);
+   if(Number.isFinite(score)&&score>=0&&score<=100)subjectMarks.set(key,[...(subjectMarks.get(key)||[]),score]);
+  }
+ }
  for(const [index,report] of reports.entries()){
   const s=report.student;
   const totals=report.results.map(r=>Number(r.total_score));
@@ -32,6 +41,13 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   sheet.columns.forEach((c:Column)=>{c.width=20});sheet.getColumn(1).width=28;sheet.getRow(4).font={bold:true};
   sheet.eachRow((row:Row)=>{row.alignment={vertical:'top',wrapText:true}});
   sheet.pageSetup={paperSize:9,orientation:'portrait',fitToPage:true,fitToWidth:1,fitToHeight:1,printArea:`A1:${sheet.getColumn(sheet.columnCount).letter}${sheet.rowCount}`};
+ }
+ for(const className of [...new Set(reports.map(report=>report.student.class_name))]){
+  const averages=subjectLabels.map(label=>{
+   const values=subjectMarks.get(JSON.stringify([className,label]))||[];
+   return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:'';
+  });
+  summary.addRow([ '', 'CLASS SUBJECT AVERAGE', className, '', '', averages.filter(value=>value!=='').length, ...averages, '', '' ]);
  }
  summary.columns.forEach((c:Column)=>{c.width=24});summary.getRow(2).font={bold:true};summary.getColumn(5).numFmt='0.00';summary.views=[{state:'frozen',ySplit:2}];
  summary.pageSetup={paperSize:9,orientation:'landscape',fitToPage:true,fitToWidth:1,fitToHeight:0,printTitlesRow:'1:2'};

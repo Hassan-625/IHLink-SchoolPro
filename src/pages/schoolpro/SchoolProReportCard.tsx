@@ -77,6 +77,8 @@ export function SchoolProReportCard({selection,embedded=false,onReady}:{selectio
     font-size: 8px !important;
     line-height: 1.08 !important;
     zoom: 0.9;
+    break-after: auto !important;
+    page-break-after: auto !important;
   }
 
   .school-report header {

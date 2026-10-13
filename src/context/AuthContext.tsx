@@ -95,7 +95,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    client.auth.getSession().then(({ data }) => void loadProfile(data.session));
     const { data: listener } = client.auth.onAuthStateChange(
       (event, nextSession) => {
         // Token rotation is not a new sign-in. Keep the authenticated session

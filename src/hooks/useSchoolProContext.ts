@@ -18,7 +18,7 @@ export function useSchoolProContext():SchoolContext{
  const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null);
  const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);
  const [state,setState]=useState<SchoolContext&{key:string}>(()=>{const cached=cachedSchoolAccess<SchoolContext>('context:'+key,true);return cached?{...cached,key}:{...empty,key:'',loading:true}});
- useEffect(()=>{const refresh=()=>{if(document.visibilityState==='visible')setRevision(v=>v+1);};window.addEventListener('focus',refresh);window.addEventListener('ihlink:school-refresh',refresh);return()=>{window.removeEventListener('focus',refresh);window.removeEventListener('ihlink:school-refresh',refresh);};},[]);
+ useEffect(()=>{const refresh=()=>setRevision(v=>v+1);window.addEventListener('ihlink:school-refresh',refresh);return()=>window.removeEventListener('ihlink:school-refresh',refresh);},[]);
  useEffect(()=>{
   let current=true;setState(previous=>!authLoading&&user&&previous.key===key&&previous.schoolId?previous:{...empty,key,loading:authLoading||Boolean(user&&supabase)});
   if(authLoading||!supabase||!user)return()=>{current=false};

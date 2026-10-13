@@ -2,6 +2,7 @@ import {securitySupported,nativeAuthStorage} from '@/lib/nativeVault';
 import {isNativeApp,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import { createClient } from "@supabase/supabase-js";
 
+// The URL and publishable-key fallbacks below keep the browser client configured by default.
 // These are public browser credentials (not the service-role secret). Environment
 // variables can override them for staging or a future Supabase project.
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ||

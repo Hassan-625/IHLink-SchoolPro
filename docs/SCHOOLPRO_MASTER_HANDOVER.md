@@ -346,3 +346,15 @@ No production data/policy changes, PR merge, or Render deployment occurred. Next
 The context-clear guard exposed one related state issue worth preventing: pending workbook/logo uploads from school A could remain in editor state during a direct school A → school B reload. The loader now locks saving and clears pending workbook/logo selections at the start of every reload, not only when the school context is empty. This prevents an unsaved school-specific workbook/logo from accidentally being uploaded into another school's configuration after switching contexts. Regression assertion updated.
 
 Commits: source [46d993d](https://github.com/Hassan-625/IHLink-SchoolPro/commit/46d993dc73198a0223b9af3b8a602ea840222a19); test [1b10797](https://github.com/Hassan-625/IHLink-SchoolPro/commit/1b1079755d129fd2759a115d0b97d61fa8d76c9e). CI has not yet been confirmed for these newest changes. The earlier CI green runs remain valid for the earlier section-race correction only, not these follow-up changes.
+
+
+### Continuation update — 14 October 2026, generation blocked during school-context reload
+
+The latest source-level review found that the save action was blocked while the Result Design Studio reloaded a school/section, but the Generate workbook action did not have the equivalent readiness guard. During a rapid school-context change, a user could attempt generation while the saved template and roster were still being refreshed. Generation now stops with a clear message until the active section configuration is ready, and it also requires the selected student to exist in the currently loaded roster before resolving or downloading a template.
+
+- Source commit: [4e2b0ff](https://github.com/Hassan-625/IHLink-SchoolPro/commit/4e2b0fffac90e2d89ff9bc9b3698b0513d58ec8a)
+- Regression-test commit: [ea3c396](https://github.com/Hassan-625/IHLink-SchoolPro/commit/ea3c3969b9d086cc4a9ed1b6b3704c2dd2d197e0)
+- Prior latest CI: SchoolPro CI [run 38615917765](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38615917765) passed typecheck, the result-section test, other scripted checks and production build; payment validation [run 38615917733](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38615917733) passed. Those runs predate the generation-guard commits, so the new correction is pending CI.
+- Vercel reported a failure for the prior test commit, while a separate Vercel status on the source commit reported success. These are Vercel checks, not Render deployment status; no conclusion about Render production health is drawn from them.
+
+The fix is source/test only. No production database, policy, data, merge or Render deployment was changed. PR #103 remains unmerged. Next: verify CI for ea3c396, correct any failures, then continue reviewing result-field calculations and section-specific persistence. Authenticated save → reload → generate → inspect-output acceptance for all four sections remains outstanding.

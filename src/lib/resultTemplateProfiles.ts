@@ -1,7 +1,8 @@
-export type ReportSection='nursery'|'primary';
+export type ReportSection='nursery'|'primary'|'junior_secondary'|'senior_secondary';
 export const resultTemplateProfile=(section:ReportSection)=>{
  const end=section==='nursery'?24:27,summary=end+3,remark=end+20;
- return {name:section==='nursery'?'Nursery report':'Primary report',sheet_name:'Sheet1',start_row:13,
+ const sectionLabel=section==='junior_secondary'?'Junior secondary':section==='senior_secondary'?'Senior secondary':section==='nursery'?'Nursery':'Primary';
+ return {name:sectionLabel+' report',sheet_name:'Sheet1',start_row:13,
  field_cells:{school_name:'',student_name:'C8:J8',admission_number:'C9:E9',class_name:'J9:L9',term:'E7',session:'J7:K7',term_ending:'C10:D10',next_term_begins:'L10:M10',class_population:`C${summary}`,class_position:`C${summary+1}`},
  columns:{subject:'B',total:'G',grade:'K',status:'',first_term:'H',second_term:'I',subject_average:'J',subject_position:'L',subject_class_average:'M',subject_remark:'N'},
  component_columns:{__layout:{section,last_subject_row:end,preserve_subject_labels:true,grade_thresholds:[75,65,55,45,40]}},

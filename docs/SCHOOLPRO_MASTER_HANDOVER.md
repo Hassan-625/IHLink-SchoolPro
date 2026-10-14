@@ -305,3 +305,20 @@ The new source/test commit `b2b6b9bf2700cfb0480808c1a082fc0894359037` has now pa
 The section-switch pending-upload safety fix is therefore **CI verified**. This does not certify authenticated production behavior or the whole Result Design Studio. The next acceptance gate remains upload/save → navigate away/reload → verify section-specific mappings/workbook persisted → generate and inspect output for Nursery, Primary, Junior Secondary and Senior Secondary, including term-history columns and two-school role isolation. Those live checks remain unverified without an authorized test session.
 
 No production migration/data changes, PR merge, or Render deployment were made. PR #103 remains unmerged pending acceptance evidence and user approval.
+
+### Continuation update — 14 October 2026, stale section-mapping race found and guarded
+
+After the section-switch safety fix passed CI, further source tracing found a related race: the selected student's section could change while the async section config reload was still pending. During that brief interval, the visible editor config could still represent the previous section, and a fast save could persist those old mappings against the target section's workbook path.
+
+**Branch correction added (CI pending):**
+- Introduced a section-config readiness guard.
+- Section auto-switch now locks saving and clears pending workbook/logo/feedback while target mappings reload.
+- The save handler refuses to persist while the target section is not ready.
+- The load path unlocks saving only after it has applied the target section config.
+- Added static regression assertions for the lock, save guard and unlock behavior.
+
+Commits: source [30287ff](https://github.com/Hassan-625/IHLink-SchoolPro/commit/30287ff9fbaed86a214b4bb79abfe77b8c8be482); test [08b24ff](https://github.com/Hassan-625/IHLink-SchoolPro/commit/08b24ff83f6428125aeae3b447726163e84d51cf). The earlier pending-upload fix on parent commit `b2b6b9b` passed SchoolPro CI [38613798557](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613798557) and payment validation [38613799095](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613799095). No workflow run/status has yet been returned for the new stale-config-race fix, so **this latest correction remains unverified until CI passes**.
+
+This was a source-level race finding, not evidence of a production data loss incident. No production data/policy changes, PR merge or Render deployment occurred.
+
+**Next action:** verify CI for `08b24ff`, then continue acceptance of section-specific save/load and workbook generation. Authenticated round-trip and two-school role-matrix tests remain open.

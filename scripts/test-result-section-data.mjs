@@ -19,6 +19,11 @@ assert(page.includes("const request=++loadSequence.current;"),"each async sectio
 assert(page.includes('const request=++loadSequence.current;setSectionConfigReady(false);setFile(null);setLogoFile(null);if(!supabase||!schoolId){setStudents([]);setSchemes([]);setSavedTemplate(null);return;}'),"clearing the active school must invalidate pending loads and clear school-scoped result state");
 assert(page.includes("if(request!==loadSequence.current)return;"),"stale async section loads must not overwrite newer mappings or unlock saving");
 assert(page.includes("if(request===loadSequence.current)setSectionConfigReady(true);"),"only the latest section load may unlock saving");
+assert(page.includes('keepResultSectionTemplate(savedTemplate,editorSection,payload)'),"saving a named section must persist its own design snapshot without replacing the school default");
+assert(page.includes('await supabase.from("schoolpro_result_templates").update(rowPayload as never).eq("id",savedTemplate.id).eq("school_id",schoolId)'),"updating a saved section design must be scoped to the current school and template row");
+assert(page.includes('await supabase.from("schoolpro_result_templates").upsert(rowPayload as never,{onConflict:"school_id"})'),"creating or replacing the school default template must use the school-scoped unique conflict key");
+assert(page.includes('let path=file?\u0060\u0024{schoolId}/\u0024{crypto.randomUUID()}-result-template.xlsx\u0060:template?.storage_path||\u0060\u0024{schoolId}/result-template.xlsx\u0060'),"uploaded workbook storage paths must be namespaced by the active school");
+assert(page.includes('db.storage.from("school-result-templates").download(template.storage_path)'),"generation must download the resolved section template path, not a hard-coded default workbook");
 const updated={...base,component_columns:keepResultSectionTemplate(base,'senior_secondary',{id:'different',school_id:'different-school',storage_path:'school/senior.xlsx',component_columns:{exam:'H',__section_templates:{invalid:{}}}})};
 assert.equal(resolveResultSectionTemplate(updated,'primary').storage_path,'school/primary.xlsx');
 assert.equal(resolveResultSectionTemplate(updated,'senior_secondary').school_id,'only-this-school');

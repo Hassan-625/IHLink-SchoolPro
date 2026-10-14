@@ -446,3 +446,15 @@ Source review confirmed a real reporting defect in src/pages/schoolpro/SchoolPro
 **Scoring boundary:** this corrects the obtainable-marks summary field only. It does not alter stored marks, assessment scoring, grade bands, subject averages, ranking, published results or historical records. The existing overall-average/grade semantics still need a separate contract review to confirm whether the school's grade scale expects raw subject marks or normalized percentages when schemes differ from 100. Do not silently change those semantics without confirming the scoring contract. CI must be re-run for this latest change before marking it verified.
 
 No production migration/policy/data changes, PR merge or Render deployment occurred. The document-security migration remains staged and requires explicit approval before production application. Authenticated save/reload/generate acceptance for all four sections remains outstanding.
+
+### Continuation update — assessment-summary follow-up and CI checkpoint
+
+A further source review of the result-generation path found the current overall average is computed as the arithmetic mean of each subject's total_score, and the resulting value is compared directly with the configured grade-band min_score/max_score. Per-subject grade output likewise compares the cumulative raw score (or current raw score) directly to grade bands unless the section profile's fixed threshold list overrides it. The report now derives total_marks_obtainable from the linked assessment schemes, but the source does not yet establish whether total_score is normalized to a common scale before being stored. Therefore **do not change overall average, grade band, or ranking formulas yet**: first trace where total_score is produced and verify whether grade bands are defined as raw marks or percentages. If subjects can have different maxima and scores are raw, direct arithmetic averaging can be misleading; if scores are normalized upstream, changing it here would be wrong.
+
+Latest CI checkpoint for the assessment-maximum correction:
+- Payment validation run [38641562351](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38641562351) completed successfully (type-check and build).
+- SchoolPro CI run [38641562310](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38641562310) passed type-check and all scripted regression tests plus mobile/layout checks; production build was still running at the last poll. Do not record full CI success until that run concludes successfully.
+
+Next actions: (1) verify run 38641562310 reaches a successful conclusion; (2) trace total_score generation and grade-band contract, then add regression tests for mixed-max schemes without changing stored/published marks; (3) continue authenticated section-specific upload → mapping → save → reload → workbook generation checks. These source tests do not replace live authenticated acceptance.
+
+No production data/policies changed, no PR merge, and no Render deployment occurred. Document-security migration remains staged and unapplied.

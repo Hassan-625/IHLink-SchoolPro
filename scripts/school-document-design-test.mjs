@@ -29,5 +29,8 @@ assert.match(policyMigration,/with check\s*\([\s\S]*private\.schoolpro_module_al
 assert.match(policyMigration,/with check\s*\([\s\S]*schoolpro_member_can_manage\(school_id\)/i,'draft updates must re-check authorization against the updated school_id');
 assert.match(policyMigration,/with check\s*\([\s\S]*output_storage_path is null/i,'draft updates must not attach an issued output');
 assert.match(policyMigration,/with check\s*\([\s\S]*issued_at is null/i,'draft updates must not set issuance timestamps');
+assert.match(policyMigration,/student_id is null[\s\S]*st\.school_id = schoolpro_document_issues\.school_id/i,'insert/update must bind any selected student to the issue school');
+assert.match(policyMigration,/create policy "students read own issued documents"[\s\S]*st\.school_id = schoolpro_document_issues\.school_id/i,'student issue reads must bind student and issue to the same school');
+assert.match(policyMigration,/create policy "guardians read ward issued documents"[\s\S]*st\.school_id = schoolpro_document_issues\.school_id/i,'guardian issue reads must bind ward and issue to the same school');
 assert.match(policyMigration,/where m\.school_id = schoolpro_document_issues\.school_id[\s\S]*m\.user_id = auth\.uid\(\)/i,'staff-role exception must remain scoped to the issue school and current user');
 console.log('PASS: portrait/landscape PDF pages, logo and two signatures, snapshot settings, immutable issued documents, revoked documents and school asset boundaries.');

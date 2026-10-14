@@ -211,3 +211,18 @@ Latest code/test commits:
 - [`b390649`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/b390649565b236b7cd1ce58d53c0e61fe62b017d) — static regression assertion.
 
 CI must be rerun/confirmed for this latest change. Do not apply the migration until the SQL and role-matrix acceptance are reviewed.
+
+
+### Continuation update — 14 October 2026, fail-closed module entitlement
+
+The latest complete SchoolPro CI run before the final null-safety adjustment passed on commit [b390649](https://github.com/Hassan-625/IHLink-SchoolPro/commit/b390649565b236b7cd1ce58d53c0e61fe62b017d): [CI run #677](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612150673). Payment-page validation also passed on that commit. The full CI run had completed its mobile-layout check and production build successfully.
+
+During the SQL review, one additional fail-closed edge case was identified in the staged finalization RPC: in PL/pgSQL, a boolean expression that evaluates to NULL does not enter an `IF NOT (...)` branch. If the module-entitlement helper ever returns NULL for an absent or incomplete entitlement, the old check could fail to reject it. The staged migration now uses `private.schoolpro_module_allowed(i.school_id, 'documents') is not true`, which rejects both FALSE and NULL. A static regression assertion was added to `scripts/school-document-design-test.mjs`.
+
+Commits:
+- [94f32c3](https://github.com/Hassan-625/IHLink-SchoolPro/commit/94f32c3c69d7709f5e1fc18f2113918b3c3a5f6e) — fail-closed module-entitlement guard in staged migration.
+- [a9b790c](https://github.com/Hassan-625/IHLink-SchoolPro/commit/a9b790cfed608de64e8c96a2246a15b074eb945d) — static regression assertion for FALSE/NULL entitlement behavior.
+
+**Current verification:** the new SchoolPro CI run [38612173100](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612173100) was still in progress at this update. Payment validation passed for the prior commit but must be confirmed for the new head. The branch remains `fix/result-design-section-selection`; PR #103 remains open/draft and unmerged. No production migration, storage policy, data, or Render deployment has been changed.
+
+**Next action:** verify CI and payment validation for commit `a9b790c`; then finish reviewing the RPC's effective grants and run the authenticated document role-matrix/two-school isolation checks. The Result Design Studio save → reload → generate → inspect-output acceptance for all four sections remains outstanding. Do not merge or deploy before the acceptance evidence and explicit approval.

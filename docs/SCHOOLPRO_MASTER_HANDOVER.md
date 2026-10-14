@@ -226,3 +226,15 @@ Commits:
 **Current verification:** the new SchoolPro CI run [38612173100](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612173100) was still in progress at this update. Payment validation passed for the prior commit but must be confirmed for the new head. The branch remains `fix/result-design-section-selection`; PR #103 remains open/draft and unmerged. No production migration, storage policy, data, or Render deployment has been changed.
 
 **Next action:** verify CI and payment validation for commit `a9b790c`; then finish reviewing the RPC's effective grants and run the authenticated document role-matrix/two-school isolation checks. The Result Design Studio save → reload → generate → inspect-output acceptance for all four sections remains outstanding. Do not merge or deploy before the acceptance evidence and explicit approval.
+
+
+### Continuation update — RPC permission review and latest checks
+
+The latest payment-page validation run for commit `a9b790c` passed: [run 38612471126](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612471126). In SchoolPro CI [run 38612470752](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612470752), type-checking and all test steps through `school-document-design-test.mjs` passed, including the new NULL-entitlement assertion. The mobile-frame/carousel/customer-layout step and final build were still in progress at the time of review; do not mark the run fully green yet.
+
+RPC grant review:
+- The staged migration uses `CREATE OR REPLACE FUNCTION public.finalize_schoolpro_document_issue(uuid, text)`, rather than dropping/recreating the function. PostgreSQL's `CREATE OR REPLACE FUNCTION` preserves the existing function's ownership and privileges, so the replacement itself should not erase existing EXECUTE grants.
+- The checked-in migration excerpts reviewed so far do not establish the current live ACL for this exact RPC. Effective grants still require a read-only catalog query against the intended Supabase project (e.g. `pg_proc`/ `aclexplode(proacl)`) or confirmation from the migration that originally created the function. Do not infer live grants solely from the replacement migration.
+- No authenticated database session was available for the cross-school/role-matrix test in this step. These tests remain outstanding.
+
+No production migration, RLS/storage policy, production data, or Render deployment has been changed. PR #103 remains open and unmerged. Next: wait for the latest CI to finish, establish the RPC's effective grants from authoritative catalog/source evidence, then proceed with authenticated role-matrix and two-school isolation acceptance before any merge/deploy.

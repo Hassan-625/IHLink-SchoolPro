@@ -249,3 +249,20 @@ No production migration, RLS/storage policy, production data, or Render deployme
 The live migration ledger confirms the proposed migration `20261014190000_harden_schoolpro_document_issue_update_tenant_scope` has not been applied to production. No production RLS/storage policy, data, or Render deployment was changed during this check.
 
 **Next action:** proceed to the next acceptance item in the original sequence: authenticated Result Design Studio save → reload → generate → inspect-output for Nursery, Primary, Junior Secondary and Senior Secondary. The available tools still do not provide a signed-in browser session for this end-to-end journey, so it cannot honestly be marked passed yet. Continue with the document-security role matrix and two-school isolation checks when authenticated test access is available. PR #103 remains unmerged; do not deploy to Render or apply the staged migration without explicit approval and complete acceptance evidence.
+
+
+### Continuation update — live production policy re-check (14 October 2026)
+
+A second read-only query of `pg_policies` against production project `lnqsroyiybutkfngbyge` confirms the staged document-security migration is **not live** and the following original policy definitions remain present:
+
+- `authorized staff update draft document issues`: `WITH CHECK` currently only requires draft status and `issued_at IS NULL`; it does not revalidate same-school student binding, null output path, module entitlement, or the authorized staff role after row changes.
+- `students read own issued documents`: the live predicate still contains tautological `st.school_id = st.school_id`.
+- `guardians read ward issued documents`: the live policy checks the active guardian link but does not explicitly bind the student's school to the issue's school.
+- `schoolpro document outputs read` storage policy: the guardian branch checks a link to `d.student_id` without requiring a successfully joined student row in the issue's school.
+- `authorized staff create draft document issues`: the live insert policy does not bind a non-null student to the same school as the issue.
+
+These are verified live policy-definition defects, not evidence that an unauthorized read or write was successfully exploited. Do not attempt exploitation against production. The staged migration addresses these definitions and adds module and private-bucket object-existence checks to the finalization RPC. Keep the remediation **IMPLEMENTED IN BRANCH — NOT APPLIED TO PRODUCTION** until review, acceptance and explicit approval.
+
+**Latest CI watch:** SchoolPro CI run [38613132633](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613132633) is still in progress; typecheck and all scripted tests, including document-design regression, have passed so far, with mobile-layout checks and build still pending at last inspection. Payment validation run [38613132379](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613132379) passed. The documentation update commit is [2b217335870959fe00c7b893029681da7cadab39](https://github.com/Hassan-625/IHLink-SchoolPro/commit/2b217335870959fe00c7b893029681da7cadab39).
+
+**Next:** inspect completion of CI run 38613132633, then continue source-level acceptance review for Result Design Studio persistence/mapping/output. Authenticated save → reload → generated-output inspection and two-school/role-matrix runtime tests remain blocked until a safe authenticated test session is available. No production changes, PR merge, or Render deployment were made.

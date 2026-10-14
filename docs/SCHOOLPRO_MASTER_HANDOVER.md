@@ -198,3 +198,16 @@ The staged migration now replaces this RPC to require:
 - the existing lifecycle trigger bypass flag, update, and audit event behavior.
 
 Static regression assertions were added to `scripts/school-document-design-test.mjs`. Latest code commit: [`4c3764c`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/4c3764cb1200761eaf4558ecfbdc6f7704f00038). **This remains staged only.** CI must pass against this code; the SQL must be reviewed before applying; authenticated acceptance is still required. No production migration or policy has been applied.
+
+
+### Additional finding — private output storage read policy
+
+The read-only audit of `storage.objects` found that the guardian branch of the `schoolpro document outputs read` policy checked an active guardian link against the issue's student ID but did not require the joined student record to resolve within the same school as the issue. The student join was already school-scoped, but because it was a LEFT JOIN, the guardian branch could still evaluate independently for a legacy/inconsistent issue row.
+
+The staged migration now recreates that read policy so guardian access requires a resolved student row whose `school_id` matches the document issue. Student access likewise requires that matching row to exist. The static document regression script asserts this condition. This is a defense-in-depth correction for existing or inconsistent rows; no production storage policy has been changed.
+
+Latest code/test commits:
+- [`a26e426`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/a26e42622e792cef1af15c04cf072ec5a23a5422) — staged storage read policy correction.
+- [`b390649`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/b390649565b236b7cd1ce58d53c0e61fe62b017d) — static regression assertion.
+
+CI must be rerun/confirmed for this latest change. Do not apply the migration until the SQL and role-matrix acceptance are reviewed.

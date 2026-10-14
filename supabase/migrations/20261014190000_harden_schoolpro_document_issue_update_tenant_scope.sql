@@ -196,3 +196,52 @@ begin
    where id = i.id;
 end
 $function$;
+
+
+-- Keep storage reads aligned with the document issue's school. In particular,
+-- a guardian link alone must not authorize an output if the linked student
+-- does not resolve inside the same school as the document issue.
+drop policy if exists "schoolpro document outputs read" on storage.objects;
+
+create policy "schoolpro document outputs read"
+  on storage.objects
+  for select
+  to authenticated
+  using (
+    bucket_id = 'schoolpro-document-outputs'
+    and exists (
+      select 1
+        from public.schoolpro_document_issues d
+        left join public.schoolpro_students st
+          on st.id = d.student_id
+         and st.school_id = d.school_id
+       where d.output_storage_path = storage.objects.name
+         and (
+           public.schoolpro_member_can_manage(d.school_id)
+           or private.is_admin(array['super_admin'::public.user_role])
+           or exists (
+             select 1
+               from public.schoolpro_members m
+              where m.school_id = d.school_id
+                and m.user_id = auth.uid()
+                and m.role::text = any (array['registrar', 'head_teacher', 'vice_principal'])
+           )
+           or (
+             d.status = any (array['issued', 'revoked'])
+             and st.id is not null
+             and st.user_id = auth.uid()
+           )
+           or (
+             d.status = any (array['issued', 'revoked'])
+             and st.id is not null
+             and exists (
+               select 1
+                 from public.schoolpro_guardian_links g
+                where g.student_id = st.id
+                  and g.guardian_user_id = auth.uid()
+                  and g.status = 'active'
+             )
+           )
+         )
+    )
+  );

@@ -26,6 +26,15 @@ create policy "authorized staff update draft document issues"
     status = 'draft'
     and issued_at is null
     and output_storage_path is null
+    and (
+      student_id is null
+      or exists (
+        select 1
+        from public.schoolpro_students st
+        where st.id = schoolpro_document_issues.student_id
+          and st.school_id = schoolpro_document_issues.school_id
+      )
+    )
     and private.schoolpro_module_allowed(school_id, 'documents')
     and (
       schoolpro_member_can_manage(school_id)

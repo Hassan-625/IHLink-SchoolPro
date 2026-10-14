@@ -15,7 +15,7 @@ assert.equal(resolveResultSectionTemplate(updated,'primary').storage_path,'schoo
 assert.equal(resolveResultSectionTemplate(updated,'senior_secondary').school_id,'only-this-school');
 assert.equal(updated.component_columns.__section_templates.senior_secondary.id,undefined);
 assert.equal(updated.component_columns.__section_templates.senior_secondary.component_columns.__section_templates,undefined);
-assert.equal(base.component_columns.__section_templates.senior_secondary,undefined);
+assert.equal(base.component_columns.__section_templates.senior_secondary.storage_path,'school/senior.xlsx','saving one section must not mutate the original template');
 const {fetchSchoolRows}=await module('src/lib/schoolDataPaging.ts');
 const pupils=Array.from({length:1120},(_,i)=>({id:i}));let ranges=[];
 const query={range:async(start,end)=>{ranges.push([start,end]);return {data:pupils.slice(start,end+1),error:null};}};

@@ -1,6 +1,6 @@
 import {useSchoolClassScope} from '@/hooks/useSchoolClassScope';
 import {schoolSessionStudents} from '@/lib/schoolSessionStudents';
-import {RESULT_SECTIONS,resolveResultSectionTemplate,keepResultSectionTemplate} from '@/lib/resultSectionTemplates';
+import {RESULT_SECTIONS,resolveResultSectionTemplate,keepResultSectionTemplate,normalizeResultSection} from '@/lib/resultSectionTemplates';
 import {fetchSchoolRows} from '@/lib/schoolDataPaging';
 import {SchoolStudentFilters} from '@/components/SchoolStudentFilters';
 import {workbookCellText} from '@/lib/workbookText';
@@ -57,7 +57,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
  const [config,setConfig]=useState({name:"School Branded Result",sheet_name:"Result",start_row:10,field_cells:{...initialFields},columns:{...initialColumns},component_columns:{} as Record<string,any>,custom_fields:[] as CustomField[],logo_storage_path:null as string|null,logo_cell:"A1",logo_width:120,logo_height:80,photo_cell:"J2",photo_width:90,photo_height:110,principal_signature_cell:"J40",teacher_signature_cell:"B40",signature_width:120,signature_height:45,qr_cell:"J32",qr_size:90});
  useEffect(()=>{let current=true;setWorkbookPreview([]);if(!file)return;void (async()=>{try{const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await file.arrayBuffer());const sheet=workbook.getWorksheet(config.sheet_name)||workbook.worksheets[0];const rows:Array<{cell:string;value:string}>=[];sheet?.eachRow((row:any)=>row.eachCell((cell:any)=>{if(rows.length<1000)rows.push({cell:cell.address,value:cell.formula?'='+cell.formula:workbookCellText(cell)});}));if(current)setWorkbookPreview(rows);}catch{if(current)setError('This workbook could not be previewed. Please upload a valid Excel workbook.');}})();return()=>{current=false};},[file,config.sheet_name]);
  const coordinatorOnly=['teacher','class_teacher'].includes(ctx.role.toLowerCase());const canManageDesign=!coordinatorOnly;
- useEffect(()=>{if(coordinatorOnly&&selectedStudent){const pupil=students.find(s=>s.id===selectedStudent);if(pupil?.class_level)setEditorSection(pupil.class_level);}},[coordinatorOnly,selectedStudent,students]);
+ useEffect(()=>{if(selectedStudent){const pupil=students.find(s=>s.id===selectedStudent);if(pupil?.class_level){const section=normalizeResultSection(pupil.class_level);if(section!=="all")setEditorSection(section);}}},[selectedStudent,students]);
  const userName=profile?[profile.first_name,profile.last_name].filter(Boolean).join(" ")||profile.email:"School User";
  const components=useMemo(()=>schemes[0]?.components||[],[schemes]);
 

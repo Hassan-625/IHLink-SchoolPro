@@ -388,3 +388,21 @@ The strengthened persistence regression test in commit [917d0bb](https://github.
 Further source review confirmed that workbook generation fetches previous-term results only for terms preceding the selected term; First Term therefore has no previous-term fetch, Second Term loads First Term, and Third Term loads First and Second Term. The generated rows write prior-term scores to configured columns and calculate each subject's cumulative average only when all required term scores are present. This is source-level evidence; it does not prove the actual generated workbook or authenticated round-trip works.
 
 **Next:** recheck CI run 38638506703 until the mobile check and production build complete. If green, record full CI success and continue the four-section authenticated save/reload/generate/output acceptance. The live authenticated journey and two-school role/storage isolation remain outstanding. No production policy/data changes, PR merge, or Render deployment occurred.
+
+
+### Continuation update — 14 October 2026, CI complete and live document-policy audit
+
+**Result Design Studio CI:** workflow run [38638506703](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38638506703) completed with conclusion **success**, including type-checking, section-data and result-workflow tests, mobile-layout checks, and the production build. Payment-validation run [38638506693](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38638506693) also passed. This is repository CI evidence only; authenticated browser save/reload/generate acceptance remains outstanding.
+
+**Read-only production policy check** against Supabase project `lnqsroyiybutkfngbyge` found that migration `20261014190000_harden_schoolpro_document_issue_update_tenant_scope.sql` is not present in the live `supabase_migrations.schema_migrations` ledger (the query for versions on/after 20261014 returned no rows). The existing live policies still show these gaps:
+- Draft issue UPDATE `WITH CHECK` confirms draft status and `issued_at IS NULL`, but does not reassert the module entitlement, same-school student binding, `output_storage_path IS NULL`, and the same authorized role/school predicate.
+- Draft issue INSERT does not require a linked student to belong to the issue's `school_id`.
+- Student SELECT contains tautology `st.school_id = st.school_id`, rather than binding the student's school to the issue's school.
+- Guardian SELECT checks an active guardian link to the issue's student but does not bind that student's school to the issue's school.
+- The live private-bucket storage SELECT policy joins a student only when the student matches the issue's school, but its guardian branch can still pass on a guardian link to `d.student_id` without requiring the joined same-school student row to exist.
+
+These are policy-definition defects and an authorization-risk finding; this read-only check does **not** prove that an unauthorized user accessed any record. The branch contains the staged migration that corrects these correlations, hardens draft INSERT/UPDATE checks, requires an actual output object, and aligns the finalization RPC and storage-read authorization.
+
+**Safety decision:** migration remains staged. Do not apply it to production until its SQL is reviewed against the live schema, regression tests pass, and the user explicitly approves the production policy change. No production data or policy was changed, no PR was merged, and no Render deployment occurred.
+
+**Next action:** review/test the staged migration against the exact live schema and role matrix; then, separately, continue authenticated four-section Result Design Studio acceptance. Keep both workstreams open until independently evidenced.

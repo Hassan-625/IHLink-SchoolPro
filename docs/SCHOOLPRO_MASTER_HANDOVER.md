@@ -332,3 +332,11 @@ A deeper review found that overlapping async load requests could finish out of o
 Commits: source guard c808fd6850614ebb57bd2928368b0284e425a2d1; stale-load test cf82b43c66562a1ab31acb52d18c2732235b861e; assertion correction 662cfa14cab8719012494ddcf747fe477e042bce. No CI run/status was returned for the latest test commit at this check. The current source/test changes remain unverified until a fresh CI run passes.
 
 No production data/policy changes, PR merge, or Render deployment occurred. Next: confirm CI on the latest commit, resolve any remaining failures, then continue authenticated section-specific save/reload/generate acceptance and cross-school role-matrix verification.
+
+### Continuation update — 14 October 2026: CI green and school-context invalidation
+
+The corrected section-readiness and stale-load regression suite passed in SchoolPro CI run [38614735834](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38614735834); payment validation also passed in [38614735846](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38614735846). These checks cover source-level tests/build, not authenticated production save/reload behavior.
+
+A further source audit identified a tenant-context edge case: if the active school context cleared while a previous school's asynchronous result-template load was still in flight, the early return could leave the previous request valid. The loader now increments its request identity before checking school context and clears school-scoped students, schemes, and saved template when no school is active. A regression assertion was added. Commits: source [e2a8a3b](https://github.com/Hassan-625/IHLink-SchoolPro/commit/e2a8a3b9d4b1fd5b1fce5a654d26fdcb339b459e); test [460cb5c](https://github.com/Hassan-625/IHLink-SchoolPro/commit/460cb5cff62e7f12da5d8869e733387853eef3e9). CI for this newest change is pending confirmation.
+
+No production data/policy changes, PR merge, or Render deployment occurred. Next: verify CI for this context-clear guard, then continue section-specific save/reload/workbook checks and authenticated cross-school isolation tests.

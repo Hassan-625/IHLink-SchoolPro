@@ -358,3 +358,10 @@ The latest source-level review found that the save action was blocked while the 
 - Vercel reported a failure for the prior test commit, while a separate Vercel status on the source commit reported success. These are Vercel checks, not Render deployment status; no conclusion about Render production health is drawn from them.
 
 The fix is source/test only. No production database, policy, data, merge or Render deployment was changed. PR #103 remains unmerged. Next: verify CI for ea3c396, correct any failures, then continue reviewing result-field calculations and section-specific persistence. Authenticated save → reload → generate → inspect-output acceptance for all four sections remains outstanding.
+
+
+### CI follow-up — generation-guard assertion correction
+
+SchoolPro CI run [38637970880](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38637970880) reached the result-section test and failed because that test still expected the prior optional-chaining expression (`selected?.class_level`) after the source now validates the selected student before reading `selected.class_level`. This was a stale static assertion, not a TypeScript failure or a demonstrated runtime defect. Updated the assertion to match the validated-student path in commit [bf790b9](https://github.com/Hassan-625/IHLink-SchoolPro/commit/bf790b99497dc53a4dc4086441273c10544f439a). Payment validation run [38637970110](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38637970110) was in progress at the time of this update. The corrected test commit must pass a fresh CI run before this source fix is considered CI-verified.
+
+No production change, merge, or Render deployment was made. Next: verify the new CI run and repair any further assertion issues before returning to section-specific persistence/output review.

@@ -10,3 +10,13 @@ export function keepResultSectionTemplate(base:any,section:string,copy:any){
  const {__section_templates,...columns}=design.component_columns||{};
  return {...base?.component_columns,__section_templates:{...base?.component_columns?.__section_templates,[section]:{...design,component_columns:columns}}};
 }
+
+/** Resolve common class-level labels to the school-owned result design section. */
+export function normalizeResultSection(value:unknown):string{
+ const level=String(value||"").toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_+|_+$/g,"");
+ if(/(^|_)(nursery|kindergarten|preprimary|pre_primary|kg)(_|$)/.test(level))return "nursery";
+ if(/(^|_)(junior_secondary|junior|jss)(_|$)/.test(level)||level.startsWith("jss"))return "junior_secondary";
+ if(/(^|_)(senior_secondary|senior|sss)(_|$)/.test(level)||level.startsWith("sss"))return "senior_secondary";
+ if(/(^|_)(primary|basic)(_|$)/.test(level))return "primary";
+ return "all";
+}

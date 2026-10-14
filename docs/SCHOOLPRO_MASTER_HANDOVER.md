@@ -184,3 +184,17 @@ Added static migration assertions to `scripts/school-document-design-test.mjs`, 
 **Verification state:** migration and test are staged in the feature branch; CI for the new head had not yet returned a workflow run at the last check, and Vercel status was pending. Do not mark the remediation passed until CI validates the new head and the SQL is reviewed against the live schema. Do not apply the migration to production without the planned review and explicit approval.
 
 **Next action:** recheck CI and review the migration/test results. If green, continue the authenticated role-matrix and two-school acceptance. If CI fails, correct the branch before proceeding. The Result Design Studio save/reload/generate acceptance remains outstanding and PR #103 must remain draft until both workstreams are evidenced.
+
+
+### Additional finding — document finalization RPC
+
+Read-only inspection of `public.finalize_schoolpro_document_issue(p_issue, p_output_path)` found that the existing SECURITY DEFINER RPC checked the actor's school role and that the path began with the issue's school ID, but did not check the documents-module entitlement and did not confirm that the exact path existed in the intended private output bucket before marking the document issued.
+
+The staged migration now replaces this RPC to require:
+- an authenticated actor and draft issue;
+- the documents module entitlement for that school;
+- the existing authorized school-role check;
+- a school-prefixed output path and an existing object with that exact path in `schoolpro-document-outputs`;
+- the existing lifecycle trigger bypass flag, update, and audit event behavior.
+
+Static regression assertions were added to `scripts/school-document-design-test.mjs`. Latest code commit: [`4c3764c`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/4c3764cb1200761eaf4558ecfbdc6f7704f00038). **This remains staged only.** CI must pass against this code; the SQL must be reviewed before applying; authenticated acceptance is still required. No production migration or policy has been applied.

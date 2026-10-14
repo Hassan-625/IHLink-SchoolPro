@@ -238,3 +238,14 @@ RPC grant review:
 - No authenticated database session was available for the cross-school/role-matrix test in this step. These tests remain outstanding.
 
 No production migration, RLS/storage policy, production data, or Render deployment has been changed. PR #103 remains open and unmerged. Next: wait for the latest CI to finish, establish the RPC's effective grants from authoritative catalog/source evidence, then proceed with authenticated role-matrix and two-school isolation acceptance before any merge/deploy.
+
+
+### Continuation update — 14 October 2026, CI and live RPC ACL verified
+
+**Latest branch-check evidence:** the SchoolPro CI workflow [run 38612535468](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612535468) completed successfully for commit `501e006a3e646f07fcef1327a4a0654ae7ced8eb`. The `validate` job passed typecheck, the school-context/access/role tests, result section/workflow/export tests, operational-role and native-entry security checks, document-design regression tests, mobile-frame/carousel/customer-layout checks, artifact upload and production build. Payment validation [run 38612535370](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38612535370) also completed successfully for that commit. The commit's combined status additionally reports Vercel success, which is not Render deployment evidence.
+
+**Authoritative read-only Supabase ACL query:** against project `lnqsroyiybutkfngbyge`, `public.finalize_schoolpro_document_issue(p_issue uuid, p_output_path text)` exists as a SECURITY DEFINER function owned by `postgres`. Its effective ACL entries are EXECUTE for `authenticated` and `service_role`, plus owner `postgres`; there is no EXECUTE entry for `PUBLIC` or `anon`. Raw ACL returned: `{postgres=X/postgres,authenticated=X/postgres,service_role=X/postgres}`. This closes the previously open question about the live function's grants. It does **not** certify the function's full behavior or the staged replacement migration; authorization logic and authenticated tests remain necessary.
+
+The live migration ledger confirms the proposed migration `20261014190000_harden_schoolpro_document_issue_update_tenant_scope` has not been applied to production. No production RLS/storage policy, data, or Render deployment was changed during this check.
+
+**Next action:** proceed to the next acceptance item in the original sequence: authenticated Result Design Studio save → reload → generate → inspect-output for Nursery, Primary, Junior Secondary and Senior Secondary. The available tools still do not provide a signed-in browser session for this end-to-end journey, so it cannot honestly be marked passed yet. Continue with the document-security role matrix and two-school isolation checks when authenticated test access is available. PR #103 remains unmerged; do not deploy to Render or apply the staged migration without explicit approval and complete acceptance evidence.

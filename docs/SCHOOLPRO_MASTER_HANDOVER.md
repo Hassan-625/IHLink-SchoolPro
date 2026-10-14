@@ -281,3 +281,17 @@ These are verified live policy-definition defects, not evidence that an unauthor
 **Production state:** no merge, migration, production policy/data change, or Render deployment was performed. PR #103 remains the review vehicle; keep it unmerged until the outstanding acceptance and security gates are evidenced and the user approves release.
 
 **Next action:** continue with the authenticated Result Design Studio save/reload/generate/output acceptance when a suitable authorized test session is available. In parallel, review the exact save/load and term-history branches for any source-level gaps; do not represent synthetic CI as a live pass.
+
+### Continuation update — 14 October 2026, section-switch upload safety
+
+During the source review, I traced the selected-student → section auto-selection behavior. Selecting a pupil in another section changes the editor section and reloads the saved design, but the prior implementation did not clear a pending, unsaved workbook or logo. That could leave an uploaded-but-unsaved file in the editor while the section selector has changed, allowing the user to accidentally save the pending file against the wrong section. This was a source-level UX/data-association risk; no production incident was inferred.
+
+**Branch correction:** updated `src/pages/schoolpro/SchoolProResultTemplates.tsx` so an automatic section switch clears the pending workbook, pending logo, and stale feedback before changing the section. Added a regression assertion in `scripts/test-result-section-data.mjs` to guard that behavior.
+
+- Source commit: [7f24b4c](https://github.com/Hassan-625/IHLink-SchoolPro/commit/7f24b4cc400c994402e38ae7bee53994e8d6b4e0)
+- Test commit / current tested branch tip at this update: [b2b6b9b](https://github.com/Hassan-625/IHLink-SchoolPro/commit/b2b6b9bf2700cfb0480808c1a082fc0894359037)
+- The earlier CI run [38613132633](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613132633) passed before this new change. No PR-triggered run for the new test commit was returned by the available workflow-run lookup; **the new change is not yet CI-verified**.
+
+No database or production data changes, merge, or Render deployment were made. The authenticated save/reload/generate/output test and cross-school role matrix remain outstanding.
+
+**Next action:** obtain CI evidence for commit `b2b6b9b` (type-check, result-section regression tests and full build), then continue the source review and pursue authenticated end-to-end acceptance. Do not call this fix verified until the new commit's CI is green.

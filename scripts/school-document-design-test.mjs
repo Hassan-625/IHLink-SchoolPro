@@ -24,4 +24,10 @@ reset();issue.status='issued';issue.output_storage_path=school+'/generated/exist
 reset();issue.status='revoked';assert.equal((await invoke()).status,400);assert.equal(uploads,0);
 reset();issue.payload.design_snapshot.settings.logo_storage_path='other-school/logo.png';assert.equal((await invoke()).status,400);assert.equal(uploads,0,'cross-school assets rejected');
 reset();authenticated=false;assert.equal((await invoke()).status,400);assert.equal(uploads,0);
+const policyMigration=readFileSync(new URL('supabase/migrations/20261014190000_harden_schoolpro_document_issue_update_tenant_scope.sql',root),'utf8');
+assert.match(policyMigration,/with check\s*\([\s\S]*private\.schoolpro_module_allowed\(school_id, 'documents'\)/i,'draft updates must retain the documents module guard');
+assert.match(policyMigration,/with check\s*\([\s\S]*schoolpro_member_can_manage\(school_id\)/i,'draft updates must re-check authorization against the updated school_id');
+assert.match(policyMigration,/with check\s*\([\s\S]*output_storage_path is null/i,'draft updates must not attach an issued output');
+assert.match(policyMigration,/with check\s*\([\s\S]*issued_at is null/i,'draft updates must not set issuance timestamps');
+assert.match(policyMigration,/where m\.school_id = schoolpro_document_issues\.school_id[\s\S]*m\.user_id = auth\.uid\(\)/i,'staff-role exception must remain scoped to the issue school and current user');
 console.log('PASS: portrait/landscape PDF pages, logo and two signatures, snapshot settings, immutable issued documents, revoked documents and school asset boundaries.');

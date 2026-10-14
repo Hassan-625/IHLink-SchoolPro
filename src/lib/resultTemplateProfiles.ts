@@ -41,3 +41,11 @@ export function assessmentMaximumForResults(results:Array<{assessment_scheme_id?
  }
  return maximum>0?maximum:null;
 }
+
+/** Sum saved per-subject totals for one term; null means no valid rows are available. */
+export function sumResultTotals(rows:Array<{total_score:number|string}>):number|null{
+ if(!rows.length)return null;
+ let total=0;
+ for(const row of rows){const value=Number(row.total_score);if(!Number.isFinite(value))return null;total+=value;}
+ return total;
+}

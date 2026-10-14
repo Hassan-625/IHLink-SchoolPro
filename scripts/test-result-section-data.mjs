@@ -52,3 +52,14 @@ assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'missing'}],scor
 assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'empty'}],[{id:'empty',components:[]}]),null,'empty component schemes must not invent a maximum');
 assert.equal(assessmentMaximumForResults([],scoringSchemes),null,'no results must not invent an obtainable maximum');
 assert(page.includes('total_marks_obtainable:assessmentMaximumForResults(resultRows,schemes)??""'),'result output must not assume every subject is out of 100');
+
+const {sumResultTotals}=await module('src/lib/resultTemplateProfiles.ts');
+assert.equal(sumResultTotals([{total_score:72},{total_score:65}]),137,'current-term summary must total each subject total');
+assert.equal(sumResultTotals([{total_score:'62'},{total_score:70}]),132,'historical term summary must sum saved subject totals');
+assert.equal(sumResultTotals([{total_score:10},{total_score:'bad'}]),null,'invalid totals must not silently become a valid total');
+assert.equal(sumResultTotals([]),null,'missing term results must not invent a zero total');
+assert(page.includes('termTotalRows.current.push({total_score:result.total_score})'),'generated result must collect current-term subject totals');
+assert(page.includes("termTotalRows[key==='first_term'?'first':'second'].push({total_score:found.total_score})"),'generated result must collect previous term totals by subject');
+assert(page.includes('if(template.columns.total)writeMappedCell(`${template.columns.total}${summaryRow}`,currentTotal??\'\')'),'generated workbook must place current-term total below subject rows');
+assert(page.includes('if(template.columns.first_term)writeMappedCell(`${template.columns.first_term}${summaryRow}`,firstTotal??\'\')'),'generated workbook must place first-term total below subject rows');
+assert(page.includes('if(template.columns.second_term)writeMappedCell(`${template.columns.second_term}${summaryRow}`,secondTotal??\'\')'),'generated workbook must place second-term total below subject rows');

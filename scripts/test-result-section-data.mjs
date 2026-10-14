@@ -15,7 +15,7 @@ assert(page.includes('if(section!=="all"&&section!==editorSection){setSectionCon
 assert(page.includes('if(!sectionConfigReady){setError("The selected section design is still loading. Please wait before saving.");return;}'),"save must be blocked until target section configuration has reloaded");
 assert(page.includes("setSectionConfigReady(true);"),"section configuration must unlock after the target config is loaded");
 assert(page.includes("const request=++loadSequence.current;"),"each async section load must have a request identity");
-assert(page.includes('const request=++loadSequence.current;if(!supabase||!schoolId){setStudents([]);setSchemes([]);setSavedTemplate(null);setSectionConfigReady(false);return;}'),"clearing the active school must invalidate pending loads and clear school-scoped result state");
+assert(page.includes('const request=++loadSequence.current;setSectionConfigReady(false);setFile(null);setLogoFile(null);if(!supabase||!schoolId){setStudents([]);setSchemes([]);setSavedTemplate(null);return;}'),"clearing the active school must invalidate pending loads and clear school-scoped result state");
 assert(page.includes("if(request!==loadSequence.current)return;"),"stale async section loads must not overwrite newer mappings or unlock saving");
 assert(page.includes("if(request===loadSequence.current)setSectionConfigReady(true);"),"only the latest section load may unlock saving");
 const updated={...base,component_columns:keepResultSectionTemplate(base,'senior_secondary',{id:'different',school_id:'different-school',storage_path:'school/senior.xlsx',component_columns:{exam:'H',__section_templates:{invalid:{}}}})};

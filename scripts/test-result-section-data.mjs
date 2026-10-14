@@ -14,6 +14,9 @@ assert(page.includes('if(section!=="all"&&section!==editorSection){setFile(null)
 assert(page.includes('if(section!=="all"&&section!==editorSection){setSectionConfigReady(false);setFile(null);setLogoFile(null);setError(null);setMessage(null);setEditorSection(section);}'),"section changes must lock saving while the target section mappings reload");
 assert(page.includes('if(!sectionConfigReady){setError("The selected section design is still loading. Please wait before saving.");return;}'),"save must be blocked until target section configuration has reloaded");
 assert(page.includes("setSectionConfigReady(true);"),"section configuration must unlock after the target config is loaded");
+assert(page.includes("const request=++loadSequence.current;"),"each async section load must have a request identity");
+assert(page.includes("if(request!==loadSequence.current)return;"),"stale async section loads must not overwrite newer mappings or unlock saving");
+assert(page.includes("if(request===loadSequence.current)setSectionConfigReady(true);"),"only the latest section load may unlock saving");
 const updated={...base,component_columns:keepResultSectionTemplate(base,'senior_secondary',{id:'different',school_id:'different-school',storage_path:'school/senior.xlsx',component_columns:{exam:'H',__section_templates:{invalid:{}}}})};
 assert.equal(resolveResultSectionTemplate(updated,'primary').storage_path,'school/primary.xlsx');
 assert.equal(resolveResultSectionTemplate(updated,'senior_secondary').school_id,'only-this-school');

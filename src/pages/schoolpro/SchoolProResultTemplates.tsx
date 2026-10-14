@@ -62,7 +62,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
  const components=useMemo(()=>schemes[0]?.components||[],[schemes]);
 
  const loadSchools=useCallback(async()=>{if(!supabase||!user||ctx.loading)return;if(ctx.schoolId){setSchools([{id:ctx.schoolId,name:ctx.schoolName}]);setSchoolId(ctx.schoolId);}else{setSchools([]);setSchoolId("");}},[user,ctx.loading,ctx.schoolId,ctx.schoolName]);
- const load=useCallback(async()=>{const request=++loadSequence.current;if(!supabase||!schoolId){setStudents([]);setSchemes([]);setSavedTemplate(null);setSectionConfigReady(false);return;}const [a,b,c]=await Promise.all([
+ const load=useCallback(async()=>{const request=++loadSequence.current;setSectionConfigReady(false);setFile(null);setLogoFile(null);if(!supabase||!schoolId){setStudents([]);setSchemes([]);setSavedTemplate(null);return;}const [a,b,c]=await Promise.all([
   fetchSchoolRows(supabase.from("schoolpro_students").select("id,first_name,last_name,admission_number,class_id,class_name,photo_storage_path,gender,date_of_birth").eq("school_id",schoolId).order("first_name").order("id")),
   supabase.from("schoolpro_assessment_schemes").select("id,name,components").eq("school_id",schoolId).order("is_default",{ascending:false}),
   supabase.from("schoolpro_result_templates").select("*").eq("school_id",schoolId).maybeSingle()

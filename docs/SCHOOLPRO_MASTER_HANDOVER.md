@@ -159,3 +159,28 @@ Maintain module-by-module acceptance for admissions, attendance, assignments, le
 
 ## 9. Immediate next action
 Run the authenticated saved-template → reload → generate → inspect-output acceptance for Nursery, Primary, Junior Secondary and Senior Secondary. Before that, confirm whether a relevant pull request is open and its exact status; the PR number was not established by the available evidence. Do not merge or deploy during this validation. Once this is proven, proceed to the combined document-security role matrix and school-isolation acceptance, then follow the larger handover sequence.
+
+
+## 10. Continuation update — 14 October 2026, document authorization audit
+
+**Current review branch head:** [4968a60903a5246c381c235c678c8b68987c318f](https://github.com/Hassan-625/IHLink-SchoolPro/commit/4968a60903a5246c381c235c678c8b68987c318f). PR [#103](https://github.com/Hassan-625/IHLink-SchoolPro/pull/103) remains open and draft. No merge or deployment was performed. Render's live SchoolPro deployment was still commit `29856dff17ea8a3bc8bb31b7900967b7df9d316b` when checked.
+
+### New read-only production finding
+
+The connected Supabase database's `pg_policies` output showed that `authorized staff update draft document issues` had a `WITH CHECK` condition limited to `status = 'draft'` and `issued_at IS NULL`. It did not re-check the new row's school access, documents-module entitlement, or null output path. The existing `students read own issued documents` policy also used the tautology `st.school_id = st.school_id` rather than binding the student to the issue's school. The guardian read policy did not explicitly bind the ward's school to the issue's school. The draft issue insert policy also did not verify that a non-null student belongs to the same school as the issue.
+
+These are policy-level tenant-binding gaps found by inspection, not proof that an exploit has occurred. **Production policies have not been changed.**
+
+### Staged remediation in PR #103
+
+Added migration [`20261014190000_harden_schoolpro_document_issue_update_tenant_scope.sql`](https://github.com/Hassan-625/IHLink-SchoolPro/blob/fix/result-design-section-selection/supabase/migrations/20261014190000_harden_schoolpro_document_issue_update_tenant_scope.sql) to:
+- Revalidate school/module/role authorization in the updated draft issue row.
+- Require draft issues to have no issuance timestamp or output path.
+- Bind non-null student IDs to the same school on issue creation and draft updates.
+- Bind student and guardian issued-document reads to the same school as the document issue.
+
+Added static migration assertions to `scripts/school-document-design-test.mjs`, which is already part of the SchoolPro CI job. Latest code commit is [`4968a609`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/4968a60903a5246c381c235c678c8b68987c318f).
+
+**Verification state:** migration and test are staged in the feature branch; CI for the new head had not yet returned a workflow run at the last check, and Vercel status was pending. Do not mark the remediation passed until CI validates the new head and the SQL is reviewed against the live schema. Do not apply the migration to production without the planned review and explicit approval.
+
+**Next action:** recheck CI and review the migration/test results. If green, continue the authenticated role-matrix and two-school acceptance. If CI fails, correct the branch before proceeding. The Result Design Studio save/reload/generate acceptance remains outstanding and PR #103 must remain draft until both workstreams are evidenced.

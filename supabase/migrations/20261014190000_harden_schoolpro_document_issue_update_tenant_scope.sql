@@ -116,6 +116,7 @@ create policy "guardians read ward issued documents"
         on st.id = g.student_id
        and st.school_id = schoolpro_document_issues.school_id
       where g.student_id = schoolpro_document_issues.student_id
+        and g.school_id = schoolpro_document_issues.school_id
         and g.guardian_user_id = auth.uid()
         and g.status = 'active'
     )
@@ -151,6 +152,14 @@ begin
   end if;
   if i.status <> 'draft' then
     raise exception 'Only draft documents can be issued';
+  end if;
+  if i.student_id is not null and not exists (
+    select 1
+      from public.schoolpro_students st
+     where st.id = i.student_id
+       and st.school_id = i.school_id
+  ) then
+    raise exception 'Document student does not belong to the issuing school';
   end if;
   if trim(coalesce(p_output_path, '')) = ''
      or p_output_path not like i.school_id::text || '/%' then
@@ -238,6 +247,7 @@ create policy "schoolpro document outputs read"
                select 1
                  from public.schoolpro_guardian_links g
                 where g.student_id = st.id
+                  and g.school_id = d.school_id
                   and g.guardian_user_id = auth.uid()
                   and g.status = 'active'
              )

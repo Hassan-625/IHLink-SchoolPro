@@ -24,3 +24,20 @@ export function subjectClassSummary(rows:Array<{student_id:string;subject_id:str
  const averages=new Map([...marks].map(([id,scores])=>[id,[...scores.values()].reduce((a,b)=>a+b,0)/terms.length]));const score=averages.get(studentId);if(score===undefined)return null;
  return {position:1+[...averages.values()].filter(value=>value>score).length,classAverage:[...averages.values()].reduce((a,b)=>a+b,0)/averages.size};
 }
+export function assessmentMaximumForResults(results:Array<{assessment_scheme_id?:string|null}>,schemes:Array<{id:string;components:Array<{maxScore:number|string}>}>):number|null{
+ if(!results.length)return null;
+ let maximum=0;
+ for(const result of results){
+  if(!result.assessment_scheme_id)return null;
+  const scheme=schemes.find(item=>item.id===result.assessment_scheme_id);
+  if(!scheme?.components?.length)return null;
+  let subjectMaximum=0;
+  for(const component of scheme.components){
+   const value=Number(component.maxScore);
+   if(!Number.isFinite(value)||value<=0)return null;
+   subjectMaximum+=value;
+  }
+  maximum+=subjectMaximum;
+ }
+ return maximum>0?maximum:null;
+}

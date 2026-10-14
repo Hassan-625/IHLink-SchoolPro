@@ -322,3 +322,13 @@ Commits: source [30287ff](https://github.com/Hassan-625/IHLink-SchoolPro/commit/
 This was a source-level race finding, not evidence of a production data loss incident. No production data/policy changes, PR merge or Render deployment occurred.
 
 **Next action:** verify CI for `08b24ff`, then continue acceptance of section-specific save/load and workbook generation. Authenticated round-trip and two-school role-matrix tests remain open.
+
+### Continuation update — 14 October 2026: stale-load race and CI correction
+
+The first CI attempt for the section-readiness guard failed in scripts/test-result-section-data.mjs because one static assertion still expected the old section-switch code. Type-check and earlier checks passed before this assertion failed. Payment validation run 38614446463 passed.
+
+A deeper review found that overlapping async load requests could finish out of order and allow an older section response to overwrite newer mappings or mark the editor ready. Added a monotonically increasing loadSequence request identity; stale requests return before applying roster/config state, and only the latest request may unlock saving. Updated the test assertion to match the readiness lock and added checks for stale-load protection.
+
+Commits: source guard c808fd6850614ebb57bd2928368b0284e425a2d1; stale-load test cf82b43c66562a1ab31acb52d18c2732235b861e; assertion correction 662cfa14cab8719012494ddcf747fe477e042bce. No CI run/status was returned for the latest test commit at this check. The current source/test changes remain unverified until a fresh CI run passes.
+
+No production data/policy changes, PR merge, or Render deployment occurred. Next: confirm CI on the latest commit, resolve any remaining failures, then continue authenticated section-specific save/reload/generate acceptance and cross-school role-matrix verification.

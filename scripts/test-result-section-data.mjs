@@ -3,6 +3,8 @@ import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
 async function module(path){const code=ts.transpileModule(await readFile(path,'utf8'),{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));}
 const {resolveResultSectionTemplate,keepResultSectionTemplate}=await module('src/lib/resultSectionTemplates.ts');
+const {normalizeResultSection}=await module('src/lib/resultSectionTemplates.ts');
+for(const [label,expected] of [['Nursery 2','nursery'],['KG 1','nursery'],['Primary 4','primary'],['Basic 6','primary'],['JSS 2','junior_secondary'],['Junior Secondary 3','junior_secondary'],['SSS 1','senior_secondary'],['Senior Secondary 2','senior_secondary'],['Unknown','all']])assert.equal(normalizeResultSection(label),expected,`section normalization for ${label}`);
 const base={id:'private-row',school_id:'only-this-school',storage_path:'school/default.xlsx',component_columns:{exam:'E',__section_templates:{nursery:{storage_path:'school/nursery.xlsx',component_columns:{exam:'F'}},primary:{storage_path:'school/primary.xlsx',component_columns:{exam:'G'}}}}};
 assert.equal(resolveResultSectionTemplate(base,'nursery').storage_path,'school/nursery.xlsx');
 assert.equal(resolveResultSectionTemplate(base,'primary').component_columns.exam,'G');

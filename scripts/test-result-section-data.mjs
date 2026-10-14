@@ -9,6 +9,8 @@ const base={id:'private-row',school_id:'only-this-school',storage_path:'school/d
 assert.equal(resolveResultSectionTemplate(base,'nursery').storage_path,'school/nursery.xlsx');
 assert.equal(resolveResultSectionTemplate(base,'primary').component_columns.exam,'G');
 assert.equal(resolveResultSectionTemplate(base,'junior_secondary').storage_path,'school/default.xlsx');
+for(const [className,section,path] of [['Nursery 2','nursery','school/nursery.xlsx'],['Primary 4','primary','school/primary.xlsx'],['JSS 2','junior_secondary','school/default.xlsx'],['SSS 1','senior_secondary','school/default.xlsx']])assert.equal(resolveResultSectionTemplate(base,normalizeResultSection(className)).storage_path,path,`generated workbook selection for ${className}`);
+const page=await readFile('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');assert(page.includes('resolveResultSectionTemplate(savedTemplate,normalizeResultSection(selected?.class_level||"all"))!'),'workbook generation must normalize the selected student class section before resolving the saved template');
 const updated={...base,component_columns:keepResultSectionTemplate(base,'senior_secondary',{id:'different',school_id:'different-school',storage_path:'school/senior.xlsx',component_columns:{exam:'H',__section_templates:{invalid:{}}}})};
 assert.equal(resolveResultSectionTemplate(updated,'primary').storage_path,'school/primary.xlsx');
 assert.equal(resolveResultSectionTemplate(updated,'senior_secondary').school_id,'only-this-school');

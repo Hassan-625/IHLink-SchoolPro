@@ -295,3 +295,13 @@ During the source review, I traced the selected-student → section auto-selecti
 No database or production data changes, merge, or Render deployment were made. The authenticated save/reload/generate/output test and cross-school role matrix remain outstanding.
 
 **Next action:** obtain CI evidence for commit `b2b6b9b` (type-check, result-section regression tests and full build), then continue the source review and pursue authenticated end-to-end acceptance. Do not call this fix verified until the new commit's CI is green.
+
+### Continuation update — 14 October 2026, section-switch safety CI verified
+
+The new source/test commit `b2b6b9bf2700cfb0480808c1a082fc0894359037` has now passed its associated GitHub Actions checks:
+- SchoolPro CI [run 38613798557](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613798557) — passed type-check, startup/context/role checks, `scripts/test-result-section-data.mjs`, result workflow, class-results export, document-design assertions, template preview, mobile-layout checks, artifact upload and production build.
+- Payment validation [run 38613799095](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38613799095) — passed TypeScript check and build.
+
+The section-switch pending-upload safety fix is therefore **CI verified**. This does not certify authenticated production behavior or the whole Result Design Studio. The next acceptance gate remains upload/save → navigate away/reload → verify section-specific mappings/workbook persisted → generate and inspect output for Nursery, Primary, Junior Secondary and Senior Secondary, including term-history columns and two-school role isolation. Those live checks remain unverified without an authorized test session.
+
+No production migration/data changes, PR merge, or Render deployment were made. PR #103 remains unmerged pending acceptance evidence and user approval.

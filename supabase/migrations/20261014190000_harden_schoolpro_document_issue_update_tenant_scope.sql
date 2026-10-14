@@ -156,7 +156,7 @@ begin
      or p_output_path not like i.school_id::text || '/%' then
     raise exception 'Invalid output path';
   end if;
-  if not private.schoolpro_module_allowed(i.school_id, 'documents') then
+  if private.schoolpro_module_allowed(i.school_id, 'documents') is not true then
     raise exception 'Module permission denied: documents';
   end if;
   if not (

@@ -1,3 +1,4 @@
+// Regression coverage: wait for all asynchronous report data before validating term history and A4 output.
 import {readFile,writeFile,rm,mkdir} from 'node:fs/promises';
 import {spawn} from 'node:child_process';
 import assert from 'node:assert/strict';

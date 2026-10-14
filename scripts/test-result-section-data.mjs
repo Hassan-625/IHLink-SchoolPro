@@ -44,3 +44,11 @@ const query={range:async(start,end)=>{ranges.push([start,end]);return {data:pupi
 const roster=await fetchSchoolRows(query);assert.equal(roster.data.length,1120);assert.equal(new Set(roster.data.map(x=>x.id)).size,1120);assert.deepEqual(ranges,[[0,499],[500,999],[1000,1499]]);
 const failure=await fetchSchoolRows({range:async(start)=>start?{data:null,error:{message:'Request failed'}}:{data:pupils.slice(0,500),error:null}});assert.deepEqual(failure.data,[]);assert(failure.error);
 console.log('PASS: distinct section designs, school identity retained, independent saves, full 1,120-pupil paging and failures cannot masquerade as complete rosters.');
+const {assessmentMaximumForResults}=await module('src/lib/resultTemplateProfiles.ts');
+const scoringSchemes=[{id:'lower-primary',components:[{maxScore:10},{maxScore:30}]},{id:'senior-secondary',components:[{maxScore:20},{maxScore:30},{maxScore:50}]}];
+assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'lower-primary'},{assessment_scheme_id:'senior-secondary'}],scoringSchemes),140,'obtainable marks must sum each result row assessment scheme component maxima');
+assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'lower-primary'}],scoringSchemes),40,'a single subject maximum must use its own assessment scheme');
+assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'missing'}],scoringSchemes),null,'unknown scheme must not invent a maximum');
+assert.equal(assessmentMaximumForResults([{assessment_scheme_id:'empty'}],[{id:'empty',components:[]}]),null,'empty component schemes must not invent a maximum');
+assert.equal(assessmentMaximumForResults([],scoringSchemes),null,'no results must not invent an obtainable maximum');
+assert(page.includes('total_marks_obtainable:assessmentMaximumForResults(resultRows,schemes)??""'),'result output must not assume every subject is out of 100');

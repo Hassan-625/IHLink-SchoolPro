@@ -58,8 +58,8 @@ begin
     raise exception 'Invalid school bank account';
   end if;
 
-  -- Lock each same-school invoice while validating the allocation so concurrent requests
-  -- cannot both spend the same outstanding balance.
+  -- Lock each same-school invoice so a concurrent invoice update cannot race this validation.
+  -- This lock does not reserve balance across multiple pending submissions; review-lifecycle tests remain required.
   for a in select value from jsonb_array_elements(p_allocations) loop
     select * into inv
     from public.schoolpro_invoices

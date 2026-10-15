@@ -14,7 +14,7 @@ const checks = [
   ["rejects duplicate invoice allocations", /group by \(x->>'invoice_id'\)\s+having count\(\*\) > 1/i],
   ["locks requested invoices in deterministic order", /order by i\.id\s+for update of i/i],
   ["reserves balances already covered by pending submissions", /ps\.status = 'pending'[\s\S]*?inv\.amount_due - inv\.amount_paid - pending_alloc/i],
-  ["validates active guardian link for each invoice student", /g\.student_id = inv\.student_id[\s\S]*?g\.guardian_user_id = auth\.uid\(\)[\s\S]*?g\.status = 'active'/i],
+  ["validates active guardian link for each invoice student in the invoice school", /g\.student_id = inv\.student_id[\s\S]*?g\.school_id = inv\.school_id[\s\S]*?g\.guardian_user_id = auth\.uid\(\)[\s\S]*?g\.status = 'active'/i],
   ["requires allocation total to equal receipt total", /if sum_alloc <> p_total then/i],
   ["restricts RPC execution to authenticated callers", /revoke all on function public\.submit_schoolpro_payment[\s\S]*?from public, anon;[\s\S]*?grant execute on function public\.submit_schoolpro_payment[\s\S]*?to authenticated;/i],
 ];

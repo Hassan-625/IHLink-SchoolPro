@@ -895,3 +895,12 @@ After every meaningful action, update this same file with:
 
 - Compared the branch merge base `078a213fb514f32e41b821a30f0148297db152a4` with current base tip `f4b5ce0e0973210cd62f654f50d4fdc06aece018`. The base is exactly **one commit ahead**, and that commit changes only `.github/workflows/ci.yml` (one deletion). The PR branch also edits this same workflow file, making it the first conflict/integration point to inspect. GitHub still reports `mergeable: false`; the connector does not expose the full conflict markers here, so this is a likely conflict area, not a confirmed root cause.
 - Do not merge or blindly rebase. Safe next step is to inspect the exact base commit patch and reconcile the workflow so both the base branch's intended change and the branch's new regression tests/triggers are preserved, then re-check PR mergeability and obtain actual CI logs.
+
+
+## 2026-10-15 continuation — PR workflow trigger reconciled
+
+- Updated `.github/workflows/ci.yml` on `fix/result-design-section-selection` to preserve the base branch's intent: `pull_request:` now has no target-branch filter, so checks can run for PRs targeting feature branches as well as `main`. Kept the existing push filter for `main` and the active feature branch, and retained the auth-race and workspace-authorization source-contract test steps.
+- Workflow change commit: `b23ffcc7e8472fa52b20eea87f77d4d9ff9f1786`.
+- This resolves the workflow-trigger mismatch in the branch's own file; it does **not** prove the PR is mergeable or that tests passed. Re-fetch PR #103 and latest-head statuses/workflow runs before concluding.
+- No merge, rebase, Render deployment, production data/policy change, or paid Supabase branch was performed.
+- **Next:** check latest PR mergeability and whether GitHub Actions actually ran against the new head. If non-mergeable remains, do not merge; inspect the specific remaining conflict. Section A still needs executed regression tests and authenticated two-school isolation evidence before Section B acceptance; Section D stays paused.

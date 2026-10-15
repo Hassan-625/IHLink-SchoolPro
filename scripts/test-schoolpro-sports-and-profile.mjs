@@ -1,0 +1,32 @@
+import { readFileSync } from 'node:fs';
+import assert from 'node:assert/strict';
+const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
+const app = read('../src/App.tsx');
+const sports = read('../src/pages/schoolpro/SchoolProSports.tsx');
+const nav = read('../src/pages/schoolpro/schoolShared.tsx');
+const permissions = read('../src/lib/schoolPermissions.ts');
+const ops = read('../src/lib/schoolOperationalRoles.ts');
+const migration = read('../supabase/migrations/20261015235000_schoolpro_sports_houses_management.sql');
+const students = read('../src/pages/schoolpro/SchoolProStudents.tsx');
+const profileMigration = read('../supabase/migrations/20261016001500_schoolpro_student_profile_corrections.sql');
+assert.match(app, /path="\/schoolpro\/sports".*SchoolProSports/);
+assert.match(sports, /schoolpro_sports_houses/);
+assert.match(sports, /schoolpro_sports_teams/);
+assert.match(sports, /schoolpro_sports_activities/);
+assert.match(sports, /schoolpro_sports_fixtures/);
+assert.match(sports, /schoolpro_sports_participants/);
+assert.match(sports, /home_team_id/);
+assert.match(sports, /student_id/);
+assert.match(nav, /Sports & Houses/);
+assert.match(permissions, /'sports':'calendar'/);
+assert.match(ops, /sports:\['game_master'/);
+for (const table of ['schoolpro_sports_houses','schoolpro_sports_teams','schoolpro_sports_activities','schoolpro_sports_participants','schoolpro_sports_fixtures']) {
+ assert.match(migration, new RegExp('alter table public\\.'+table+' enable row level security'));
+ assert.match(migration, new RegExp('create policy '+table+'_access'));
+}
+assert.match(migration, /schoolpro_validate_sports_school_scope/);
+assert.match(students, /middle_name/);
+assert.match(students, /async function editStudent/);
+assert.match(students, /schoolpro_student_profile_audit/);
+assert.match(profileMigration, /changed_fields text\[\]/);
+console.log('SchoolPro sports and student-profile contract checks passed.');

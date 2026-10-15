@@ -24,7 +24,7 @@ Deno.serve(async(req:Request)=>{
   if(!school||(!globalAdmin&&!schoolLeader))return reply({error:'Only the school owner or administrator can correct these profile details.'},403);
   const [{data:member},{data:guardian}]=await Promise.all([
    admin.from('schoolpro_members').select('id').eq('school_id',schoolId).eq('user_id',targetUserId).maybeSingle(),
-   admin.from('schoolpro_guardian_links').select('id').eq('school_id',schoolId).eq('guardian_user_id',targetUserId).limit(1).maybeSingle()
+   admin.from('schoolpro_guardian_links').select('id,phone').eq('school_id',schoolId).eq('guardian_user_id',targetUserId).limit(1).maybeSingle()
   ]);
   if(!member&&!guardian)return reply({error:'This account is not linked to the selected school.'},404);
   const first=String(body.firstName||'').trim(),middle=String(body.middleName||'').trim(),last=String(body.lastName||'').trim();
@@ -39,8 +39,9 @@ Deno.serve(async(req:Request)=>{
   // Never mutate auth.users directly for a school-admin email correction. Supabase
   // admin updates bypass confirmation; until a verified email-change delivery flow
   // is available, preserve the existing sign-in email and save only safe fields.
+  const beforeValues={...before,phone:guardian?.phone??before.phone};
   const next={first_name:first,middle_name:middle||null,last_name:last,email:before.email,phone:phone||null};
-  const fields=Object.keys(next).filter(k=>(before as Record<string,unknown>)[k]!== (next as Record<string,unknown>)[k]);
+  const fields=Object.keys(next).filter(k=>(beforeValues as Record<string,unknown>)[k]!== (next as Record<string,unknown>)[k]);
   if(!fields.length)return reply({ok:true,changed:false,emailChangeRequired});
   const {error:updateError}=await admin.from('profiles').update(next).eq('id',targetUserId);
   if(updateError)throw updateError;
@@ -48,7 +49,7 @@ Deno.serve(async(req:Request)=>{
    const {error:phoneError}=await admin.from('schoolpro_guardian_links').update({phone:phone||null}).eq('school_id',schoolId).eq('guardian_user_id',targetUserId);
    if(phoneError)throw phoneError;
   }
-  const {error:auditError}=await admin.from('schoolpro_profile_change_audit').insert({school_id:schoolId,target_user_id:targetUserId,changed_by:actor.id,changed_fields:fields,before_values:before,after_values:next});
+  const {error:auditError}=await admin.from('schoolpro_profile_change_audit').insert({school_id:schoolId,target_user_id:targetUserId,changed_by:actor.id,changed_fields:fields,before_values:beforeValues,after_values:next});
   if(auditError)throw auditError;
   return reply({ok:true,changed:true,emailChangeRequired});
  }catch(error){console.error('schoolpro-profile-correction failed',error instanceof Error?error.message:'unknown');return reply({error:'Profile correction failed. Refresh and try again.'},500);}

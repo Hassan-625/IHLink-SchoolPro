@@ -23,7 +23,7 @@ Deno.serve(async(req:Request)=>{
   const {schoolId,email,role,relationship='guardian'}=body;
   const normalized=String(email||'').trim().toLowerCase();
   const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
-  stage='authorization_lookups';const [{data:school,error:se,{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
+  stage='authorization_lookups';const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
   if(se||me||pe)throw new Error('lookup');
   if(!school||profile?.status!=='active'||(profile.role!=='super_admin'&&school.owner_id!==user.id&&!['proprietor','administrator'].includes(member?.role||'')))return respond({error:'Only school leaders can add accounts to this school.'},403);
   if(body.action==='list'){

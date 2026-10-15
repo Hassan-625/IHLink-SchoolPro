@@ -279,7 +279,7 @@ returns boolean language sql stable security definer set search_path='' as $$
  )
 $$;
 revoke all on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid,uuid) from public,anon;
-grant execute on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid) to authenticated;
+grant execute on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid,uuid) to authenticated;
 drop policy if exists "Question bank scoped read" on public.schoolpro_question_bank;
 create policy "Question bank scoped read" on public.schoolpro_question_bank for select to authenticated
 using (private.schoolpro_can_read_question_scope(school_id,id,class_id,subject_id));

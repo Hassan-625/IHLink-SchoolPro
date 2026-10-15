@@ -1176,3 +1176,23 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 - **Additional routing safeguard:** `src/lib/schoolAccess.ts` now recognizes both specialist roles as school operational roles so they resolve to the school operational dashboard rather than falling through to the public SchoolPro landing page. Commit: `dc426c211117caea2af52135f59913066d15e50c`.
 - **Current branch/PR verification:** PR #105 remains **open and draft**, not merged. Its head now points to `dc426c211117caea2af52135f59913066d15e50c`. The latest reported Vercel status for that commit is **pending**; no successful build or test result is claimed.
 - **Permission boundary:** recognizing these roles for workspace routing does not grant them module access. The actual `schoolpro_user_permissions` role defaults/overrides and database authorization/RLS must be inspected and tested before assigning discipline or sports/games access. Keep both roles blocked from privileged data by default.
+
+
+### 2026-10-15 continuation — Parent / Guardian table contact details and specialist-role permissions
+
+**Parent / Guardian contact-detail issue confirmed and addressed in source:**
+- The live schema already stores the relationship on `schoolpro_guardian_links.relationship`, and the table query selected it, but the table did not have a separate Email or Phone column and its narrow minimum width made the information difficult to inspect.
+- Read-only aggregate check against the live database found **842 guardian links**, with **0 blank relationship values**, **0 records where both parent name fields were blank**, and **842 linked profiles with no phone number recorded**. No personal contact values were retrieved for this check.
+- `src/pages/schoolpro/SchoolProParents.tsx`: added explicit Email and Phone columns; retains Parent name, Student, Relationship, and Status; includes phone in search; shows a clear “Not recorded” state and an authorized school-leader Edit action for the school-specific contact number.
+- `src/components/SchoolAccountForm.tsx`: adds a required parent/guardian phone field when creating or linking a parent.
+- `supabase/functions/invite-school-staff/index.ts`: validates and saves the supplied number on all three invitation-insert paths.
+- New migration `supabase/migrations/20261015220000_schoolpro_guardian_contact_phone.sql`: adds school-scoped `phone` to guardian links and `guardian_phone` to invitations; updates invitation acceptance to persist the number for each linked child without overwriting an existing number with null. **Not applied to production.**
+- Existing guardian records have no stored phone number to display yet; a school leader must enter/correct those numbers in the table after the migration and UI are deployed. Email/name data is present in the live profile join according to the aggregate check; re-test the rendered table after deployment. Relationship data is present and now receives its own visible column.
+
+**Discipline Master / Game Master authorization source changes:**
+- `src/pages/schoolpro/SchoolProDiscipline.tsx`: Discipline Master is included in the role list permitted to review/follow up discipline concerns.
+- `src/lib/schoolOperationalRoles.ts`: Game Master is permitted to manage school calendar events for games/competition scheduling.
+- New migration `supabase/migrations/20261015223000_schoolpro_specialist_role_permissions.sql`: adds least-privilege defaults in `schoolpro_user_permissions` (Discipline Master: dashboard/discipline/notifications; Game Master: dashboard/calendar/notifications) and extends the database RLS policies for school-scoped discipline records and calendar event management.
+- A dedicated sports team, fixtures, and competition-results module does not yet exist in the current routes/schema. Game Master is therefore currently scoped to calendar-based event scheduling; do not describe a full games-management module as complete.
+- The enum/invitation migration `20261015203000_schoolpro_discipline_game_master_roles.sql`, guardian-contact migration, and specialist-permissions migration are all source-only and **not applied to production**. Apply in chronological order only after review and approval. Then deploy the frontend and `invite-school-staff` Edge Function together.
+- Validation is still in progress. PR #105 remains open/draft and unmerged; latest Vercel status observed was pending and relevant GitHub Actions workflows were still running. No successful build, E2E result, production migration, or deployment is claimed.

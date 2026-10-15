@@ -272,7 +272,8 @@ returns boolean language sql stable security definer set search_path='' as $$
      join public.schoolpro_classes c on c.id=t.class_id and c.school_id=t.school_id
      join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
      where tq.question_id=p_question
-       and t.school_id=p_school and t.class_id is not null
+       and t.school_id=p_school and t.class_id is not null and t.subject_id=p_subject
+       and (p_class is null or p_class=t.class_id)
        and m.user_id=auth.uid() and m.role::text in('teacher','class_teacher')
    )
  )

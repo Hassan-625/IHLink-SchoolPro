@@ -1159,3 +1159,15 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 - **UI/authorization status: OUTSTANDING.** The database migration alone does not add the options to the staff form, Role & Permission page, permission checks, navigation/feature gating, or role-specific access. Inspect and update all role registries, labels, validation schemas, invitation acceptance logic, authorization matrices and tests so both roles behave consistently.
 - Suggested initial least-privilege intent to validate with the product owner/role matrix: Discipline Master is for authorized discipline/behaviour records and related workflows; Game Master is for sports/games activities and related workflows. Do not infer unrestricted access to student profiles, results, finance, or administration from these titles.
 - **Retry gate:** do not ask the user to retry with either new role until the production migration is approved/applied and the staff UI/authorization changes are deployed to the environment being tested. The earlier roles supported by the already-applied constraint can be retried separately if desired.
+
+
+### 2026-10-15 continuation — Discipline Master / Game Master source wiring
+
+- **Source changes committed on the existing diagnostic branch; not merged or deployed:**
+  - `src/lib/schoolRoles.ts`: adds canonical role codes and labels to the shared role catalogue used by the Role & Permission catalogue, with least-privilege descriptions.
+  - `src/pages/schoolpro/SchoolProStaff.tsx`: includes both specialist roles in the staff list's Operations filter.
+  - `supabase/functions/invite-school-staff/index.ts`: allows both role codes through the staff-invitation request validator.
+- Commits: `42b8fc1e4e05ab8261920ae69adb079b13ddf7ce`, `c183472d079b13f5a235cfa6bab8a107f1a28d6b`, `76b8bcec77f97a322452dce1b23042f47513f69b`.
+- The staff form's role options are derived from the shared role catalogue, so both labels should appear there after this branch is built. The Role & Permission page also consumes that catalogue.
+- **Not yet complete / release blocked:** no CI/typecheck or end-to-end test has been run for these edits; the new enum/check-constraint migration is still not applied to production; the invitation Edge Function has not been deployed; and role-specific backend authorization, route/module gating, and RLS for discipline and sports/games records have not been established by this change. The descriptive catalogue text is not itself an authorization control.
+- **Next required work:** trace the real role-to-permission enforcement (frontend route guards, backend RPC/Edge Function authorization and RLS), define least-privilege permissions for these two roles, add focused tests, run CI, then obtain explicit approval before applying the new-role migration and deploying the related source. Only after that should the user retry staff creation with either new role.

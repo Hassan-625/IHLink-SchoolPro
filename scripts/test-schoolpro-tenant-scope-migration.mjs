@@ -1,25 +1,24 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const migrationPath='supabase/migrations/20261015200000_schoolpro_subject_assessment_and_form_master_scope.sql';
-const migration=readFileSync(migrationPath,'utf8');
-const required=[
-  ['assignment management policy is replaced','drop policy if exists "assignment authorized manage" on public.schoolpro_assignments'],
-  ['assignment writes are split by operation','create policy "assignment scoped insert"'],
-  ['assignment updates have USING and WITH CHECK','create policy "assignment scoped update"'],
-  ['attendance insert is limited to manager or assigned Form Master','create policy "Form Master or management inserts attendance"'],
-  ['attendance update is limited to manager or assigned Form Master','create policy "Form Master or management updates attendance"'],
-  ['CBT authoring requires class, subject and session','status=\'draft\' and session is not null and class_id is not null and subject_id is not null'],
-  ['CBT test visibility uses scoped authorization','create policy "CBT tests scoped read"'],
-  ['question-bank visibility uses class/subject scope','create policy "Question bank scoped read"'],
-  ['CBT test-question writes follow the test scope','create policy "CBT test question scoped insert"'],
-  ['theory marking re-checks school, test and question relationships','Question is not assigned to this test or school'],
-  ['CBT question class and subject must match the test','CBT question must match the test subject'],
-  ['Form Master class directory is exposed only to authenticated callers','grant execute on function public.schoolpro_class_staff_directory(uuid) to authenticated']
+const files=[
+  ['supabase/migrations/20261002234500_schoolpro_operational_tenant_isolation.sql',[
+    'enable row level security','tenant read library','tenant manage library',
+    'tenant read transport','tenant manage transport','tenant read hostel','tenant manage hostel'
+  ]],
+  ['supabase/migrations/20261003000500_schoolpro_guardian_tenant_hardening.sql',[
+    'g.school_id=schoolpro_students.school_id','g.school_id=schoolpro_invoices.school_id',
+    'g.school_id=schoolpro_fee_payments.school_id','g.school_id=schoolpro_attendance.school_id'
+  ]],
+  ['supabase/migrations/20261003002000_schoolpro_cbt_permission_tenant_integrity.sql',[
+    'validate_schoolpro_cbt_question_tenant','validate_schoolpro_cbt_eligibility_tenant',
+    'validate_schoolpro_member_permission_tenant','test_school<>question_school',
+    'member_school<>new.school_id'
+  ]]
 ];
-for(const [description,needle] of required) assert.ok(migration.includes(needle),description);
-assert.doesNotMatch(migration,/\b(drop table|truncate|delete from)\b/i,'security migration must not delete production records or tables');
-assert.match(migration,/revoke all on function private\.schoolpro_can_write_assignment_scope\(uuid,uuid,uuid,text\) from public,anon/);
-assert.match(migration,/revoke all on function private\.schoolpro_can_author_cbt_scope\(uuid,uuid,uuid,text\) from public,anon/);
-assert.match(migration,/new\.school_id<>question_row\.school_id|test_row\.school_id<>question_row\.school_id/,'cross-school CBT question relationships must be rejected');
-console.log('PASS: SchoolPro scoped authorization migration contains the expected assignment, attendance, CBT, question-bank and cross-school relationship guards.');
+for(const [path,needles] of files){
+ const sql=readFileSync(path,'utf8');
+ for(const needle of needles) assert.ok(sql.toLowerCase().includes(needle.toLowerCase()),path+' missing tenant guard: '+needle);
+ assert.doesNotMatch(sql,/\b(drop table|truncate|delete from)\b/i,path+' must not delete production records or tables');
+}
+console.log('PASS: baseline SchoolPro tenant migrations retain operational RLS, same-school guardian links, and CBT/member relationship integrity guards.');

@@ -1389,3 +1389,9 @@ PR #105 remains draft and targets `fix/result-design-section-selection`, not `ma
 - B: **NOT STARTED under the user's required sequence**; do not begin until A has been merged and verified.
 - Production migration / Render deployment: **NOT PERFORMED**.
 
+### A acceptance audit — test coverage limitation found
+- `scripts/test-school-context-authorization-contract.mjs` is a **source-contract/static assertion** over the frontend context hook. It verifies selected authorization-related source fragments but does not execute Supabase RLS or prove cross-tenant denial.
+- `scripts/test-school-context-relationships.mjs` is an unauthenticated schema/relationship smoke test with a publishable API key and a zero-row query. Its own output explicitly states it does not verify authenticated tenant RLS isolation.
+- `scripts/schoolpro-account-access-test.mjs` uses a local in-memory mocked Supabase/query harness for its assertions. Useful for application logic regression, but it is not a live authenticated two-school RLS/RPC/storage acceptance test.
+- Therefore these scripts are useful CI evidence but do **not** close A. A still needs a safe authenticated test route that exercises real database authorization boundaries with separate school identities, including direct API/RPC/storage attempts and negative cases. Do not use or expose production credentials in scripts/logs, and do not create a paid Supabase branch to obtain this evidence.
+

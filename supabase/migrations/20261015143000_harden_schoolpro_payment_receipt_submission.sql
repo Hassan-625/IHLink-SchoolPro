@@ -28,7 +28,8 @@ begin
     raise exception 'Authentication required';
   end if;
 
-  if p_total is null or p_total <= 0 or p_total <> round(p_total, 2)
+  if p_total is null or p_total::text in ('NaN', 'Infinity', '-Infinity')
+     or p_total <= 0 or p_total <> round(p_total, 2)
      or p_payment_date is null
      or p_allocations is null
      or jsonb_typeof(p_allocations) <> 'array'
@@ -129,6 +130,7 @@ begin
     end if;
 
     if (a->>'amount') is null
+       or (a->>'amount')::numeric::text in ('NaN', 'Infinity', '-Infinity')
        or (a->>'amount')::numeric <= 0
        or (a->>'amount')::numeric <> round((a->>'amount')::numeric, 2) then
       raise exception 'Allocation must be a positive amount with at most two decimal places';

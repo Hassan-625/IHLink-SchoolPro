@@ -133,3 +133,34 @@ Continue the acceptance-gated sequence below. Subscription work is a parallel su
 1. Re-check PR #104 CI against the latest commit and review the migration/RLS/function dependencies before any merge request.
 2. Record the result of the subscription checks without changing the main A → B → C → D order.
 3. Resume the core handover at the last verified acceptance gate, starting with A's remaining auth/tenant-isolation validation, then B.
+
+
+## Progress and outstanding report — 15 October 2026
+
+### CI status checked against the latest reported PR #104 head
+
+- Commit: `7c2a9abb60f892bf3a273ade45e98e49fc3a934a`.
+- [SchoolPro CI run 38747113134](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113134): completed successfully.
+- [Validate payment pages run 38747113328](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113328): completed successfully.
+- These results confirm the configured automated checks passed for the checked commit. They do not prove the subscription migration is safe or the full lifecycle works against a database.
+
+### Current subscription rules (annual for Demo and paid access)
+
+- Demo access is free for 12 months. While Demo remains active, selecting a commercial plan must not expose a payable amount or create/show a payable subscription invoice.
+- Paid access is annual for 12 months from its effective start date and renews annually.
+- A 14-day grace period follows paid expiry; suspension follows only if payment remains unconfirmed.
+- After Demo expires, the selected paid plan can proceed to invoicing. The invoice must be visible in the proprietor dashboard and Super Admin Control Center even before email is configured.
+- Upgrade requests originate with the proprietor and require Super Admin review. Finance manually verifies the uploaded receipt. BillStack is reserved for DataSub; SchoolPro subscription and school-fee payments must not use BillStack.
+- Keep active entitlement, selected commercial plan, invoice state and payment confirmation as separate state concepts.
+
+### Outstanding before PR #104 can be accepted for production
+
+1. SQL-level validation of migration syntax and semantics, dependencies, grants/RLS, function privileges, idempotency, locking/concurrency, and rollback/recovery plan.
+2. Non-production functional tests covering Demo start/expiry and suppression of paid billing during Demo; annual paid start/renewal; expiry + 14-day grace + suspension; invoice availability in both dashboards; receipt upload and Finance approve/reject; upgrade request/review and invoice balance.
+3. Confirm the upgrade calculation. Current behavior is annual target price minus the stored paid annual amount; this is a price-difference calculation, not time-based proration. Downgrade and mid-term credit rules must be explicit before release.
+4. Confirm audit trail and idempotency for duplicate receipt submissions, repeated approvals, repeated invoice generation and lifecycle jobs.
+5. Re-run checks for any later head. Keep PR #104 separate from the main A → B → C → D handover. No merge, deployment, production migration or production subscription-row change is authorized by this report.
+
+### Main handover remains unchanged
+
+The master handover is authoritative for the full project scope. This document is a supporting authority/workspace handover and must not replace or shrink the master checklist. Continue A (authentication/tenant isolation) → B (sessions, student population, class/arm rosters) → C (assessments, calculations, review/publication) → D (Result Design Studio and custom Excel workbooks), with each stage gated on evidence-based acceptance. The known report-card print/CSS issue remains deferred as agreed.

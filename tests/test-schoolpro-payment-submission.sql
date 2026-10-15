@@ -34,6 +34,18 @@ begin
     if sqlerrm='TEST FAILURE: MIME mismatch was accepted' then raise; end if;
   end;
 
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,'NaN'::numeric,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: NaN total was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: NaN total was accepted' then raise; end if;
+  end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount','NaN')));
+    raise exception 'TEST FAILURE: NaN allocation was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: NaN allocation was accepted' then raise; end if;
+  end;
   submission_id := public.submit_schoolpro_payment(school_id,bank_id,700,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',700)));
   if not exists(select 1 from public.schoolpro_payment_submissions where id=submission_id and status='pending') then raise exception 'TEST FAILURE: valid submission not pending'; end if;
   begin

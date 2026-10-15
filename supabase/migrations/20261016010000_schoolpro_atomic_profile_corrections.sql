@@ -32,7 +32,7 @@ create or replace function public.schoolpro_correct_member_profile_atomic(
 ) returns jsonb
 language plpgsql security definer set search_path = ''
 as $$
-declare school_owner uuid; actor_role text; global_role text; global_status text; before_profile jsonb; after_profile jsonb; guardian_before jsonb; fields text[];
+declare school_owner uuid; actor_role text; global_role text; global_status text; before_profile jsonb; after_profile jsonb; fields text[];
 begin
  if auth.role() <> 'service_role' then raise exception 'Service role required'; end if;
  select owner_id into school_owner from public.schoolpro_schools where id=p_school_id;
@@ -48,12 +48,10 @@ begin
  select jsonb_build_object('first_name',first_name,'middle_name',middle_name,'last_name',last_name,'email',email,'phone',phone)
  into before_profile from public.profiles where id=p_target_user_id for update;
  if before_profile is null then raise exception 'Profile not found'; end if;
- select jsonb_build_object('phone',phone) into guardian_before from public.schoolpro_guardian_links where school_id=p_school_id and guardian_user_id=p_target_user_id order by id limit 1 for update;
  after_profile:=jsonb_build_object('first_name',trim(p_first_name),'middle_name',nullif(trim(coalesce(p_middle_name,'')),''),'last_name',trim(p_last_name),'email',before_profile->'email','phone',nullif(trim(coalesce(p_phone,'')),''));
  select coalesce(array_agg(k order by k),array[]::text[]) into fields from jsonb_each(after_profile) n(k,v) where before_profile->k is distinct from n.v;
  if cardinality(fields)>0 then
    update public.profiles set first_name=after_profile->>'first_name',middle_name=after_profile->>'middle_name',last_name=after_profile->>'last_name',phone=after_profile->>'phone' where id=p_target_user_id;
-   update public.schoolpro_guardian_links set phone=after_profile->>'phone' where school_id=p_school_id and guardian_user_id=p_target_user_id;
    insert into public.schoolpro_profile_change_audit(school_id,target_user_id,changed_by,changed_fields,before_values,after_values)
    values(p_school_id,p_target_user_id,p_actor_id,fields,before_profile,after_profile);
  end if;

@@ -20,6 +20,7 @@ files.push(['supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant
   "split_part(p_receipt_path,'/',1)<>v_user::text",
   "o.bucket_id='schoolpro-payment-receipts'",
   'and o.name=p_receipt_path',
+  'coalesce(o.owner_id,o.owner::text)=v_user::text',
   'where id=(a->>\'invoice_id\')::uuid and school_id=p_school',
   'for update',
   'g.school_id=p_school and g.student_id=inv.student_id',

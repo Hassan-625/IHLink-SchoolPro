@@ -13,7 +13,9 @@ for (const [fragment,reason] of [
   ["if(selected)sq=sq.eq('school_id',selected)",'generic student lookup must be school-scoped'],
   ["if(selected)gq=gq.eq('school_id',selected)",'generic guardian lookup must be school-scoped'],
   ["if(studentPortal)",'student portal must resolve through authenticated student identity'],
+  ["if(selected)studentPortalQuery=studentPortalQuery.eq('school_id',selected)",'student portal identity lookup must honor the selected school workspace'],
   ["if(parentPortal)",'parent portal must resolve through guardian identity'],
+  ["if(selected)parentPortalQuery=parentPortalQuery.eq('school_id',selected)",'parent portal identity lookup must honor the selected school workspace'],
   [".eq('status','active')",'guardian access must require an active link'],
 ]) assert.ok(source.includes(fragment),reason);
 

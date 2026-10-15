@@ -46,7 +46,6 @@ Deno.serve(async (req) => {
     const forwarded = (req.headers.get("x-forwarded-for") ?? "")
       .split(",").map((part) => part.trim()).filter(Boolean);
     const ip = (req.headers.get("cf-connecting-ip") ?? "").trim()
-      || (req.headers.get("x-real-ip") ?? "").trim()
       || forwarded.at(-1)
       || "unknown";
 

@@ -1116,3 +1116,35 @@ Section A is therefore **PARTIALLY ACCEPTED**: owner scoping, Super Admin worksp
 - **Prepared source fix (not applied to production):** migration `supabase/migrations/20261015193000_schoolpro_access_invitation_role_constraint.sql` aligns the invitation role check with the supported role selector and enum. It is committed on `fix/schoolpro-staff-invite-diagnostics` at commit `83991395062542554c79fa30de4561b17fa0d026`.
 - **Release gate:** migration has not been applied to the live database. Before applying it, review the diff and run the non-production migration/role acceptance checks; then, with explicit approval, apply it and test one account for each supported staff role family plus parent separately. Verify successful invitation linkage and no regression in role assignment. Do not claim the user-facing issue is fixed until the live migration and a real staff-creation retry pass.
 - Existing staff temporary-password requirement remains unchanged: surname is retained as the temporary password, the seven-day first-access window remains, and mandatory password change before record access must be verified separately. No password policy change is part of this fix.
+
+
+### 2026-10-15 production correction — staff invitation role constraint
+
+- **Production migration applied with explicit user approval:** migration `schoolpro_access_invitation_role_constraint` was applied to Supabase project `lnqsroyiybutkfngbyge` using the migration operation.
+- **Post-apply verification:** a read-only query confirmed `public.schoolpro_access_invitations_role_check` now accepts the supported staff role values (administrator, teacher, class_teacher, head_teacher, vice_principal, bursar, accountant, registrar, admissions_officer, exam_officer, librarian, counsellor, nurse, hostel_manager, transport_manager, inventory_officer, hr_officer, receptionist, it_admin) and parent. The constraint reports `convalidated = true`.
+- **Existing-row check before applying:** current invitation rows contained only `parent` and `teacher`; no pre-existing values were found that would conflict with the expanded constraint.
+- **Status:** database constraint correction is **APPLIED — schema verified**. This does not yet prove end-to-end staff creation succeeds for every role. Re-test representative roles (including roles previously rejected), parent invitation separately, role assignment, sign-in/onboarding, allowed/denied operations, and tenant isolation. Keep Section A partially accepted until evidence is recorded.
+- **Source-of-truth alignment:** migration is in `supabase/migrations/20261015193000_schoolpro_access_invitation_role_constraint.sql` on `fix/schoolpro-staff-invite-diagnostics`, commit `83991395062542554c79fa30de4561b17fa0d026`. No merge or Render deployment was performed by this database migration.
+
+### 2026-10-15 newly reported SchoolPro requirements — preserve as additions
+
+These are additional requirements; they do not replace, reduce, or reorder the existing A–J handover.
+
+1. **Custom roles in Role & Permission page — OUTSTANDING.**
+   - Provide an authorized school-level administrator with a UI flow to create, name, edit, and assign custom roles and choose granular permissions.
+   - Preserve built-in roles and their existing assignments. Prevent custom roles from granting permissions beyond the actor's authority or escaping school-level scope.
+   - Review the role storage model, database constraints/enums, authorization helpers, direct route/API/RPC checks, and tenant RLS before implementation. Verify custom role creation/editing, assignment/revocation, refresh persistence, and allowed/denied operations using two test schools.
+2. **Student middle name — OUTSTANDING.**
+   - Add an optional middle-name field to student enrollment and ensure it is persisted and shown in student profile/details and supported list/document flows.
+   - Include it in authorized student-profile editing and validation. Check import/export and relevant result/admission/certificate templates where they map student names. Do not silently make the field mandatory without a separate product decision.
+3. **Parent/guardian name blank in table — OUTSTANDING.**
+   - Trace the parent/guardian table's select/query, joins/foreign keys, profile/name fields, and display mapping; identify why the name cell is blank before changing the UI.
+   - Correctly display existing parent/guardian names and handle missing/incomplete legacy profiles with a safe empty-state label. Verify records from two schools remain isolated.
+4. **Authorized profile corrections across SchoolPro — OUTSTANDING.**
+   - Provide controlled editing of mistaken names, email addresses and phone numbers for student, staff/teacher, parent and guardian profiles, subject to the appropriate school role and field-level permissions.
+   - Student profile corrections must be performed by authorized school personnel, not unrestricted self-service. Define the exact role matrix for editing student identity/contact fields and audit who changed what and when.
+   - Validate formats and duplicate/conflict cases. For email changes, reconcile the profile record with Supabase Auth identity and confirmation/recovery behavior; do not change only the displayed email if the login identity must change. Preserve account ownership, school membership and audit history.
+   - Test allowed and denied edits through both the UI and direct backend/API/RPC routes; verify cross-school denial and ensure edits do not change a user's school or role as a side effect.
+5. **Dependency and sequencing:** these items extend Section A (role model, authorization and identity/profile editing), Section B (student roster/enrollment and middle name), and Section G (parent/guardian and operational portal presentation). Inspect actual current source and schema before choosing implementation paths. Do not skip A's remaining authorization acceptance, and do not remove B/C/D or any E–J workstream. Report-card print/CSS remains deferred.
+
+**Current next action:** perform an authenticated staff-creation retry against the corrected constraint using a supported role that previously failed; record the exact role family and outcome without exposing credentials. Then continue Section A's authorization acceptance. The new UI/profile requirements are registered for source inspection and implementation planning after preserving the main sequence.

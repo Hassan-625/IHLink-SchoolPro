@@ -978,3 +978,55 @@ After every meaningful action, update this same file with:
 - Important release dependency: the new Edge Function must be deployed with JWT verification disabled for this unauthenticated public checker before the migration revokes direct RPC access, and the frontend update must ship in the same coordinated release. Confirm the deployed function setting and execute live rate-limit/valid-result/invalid-result tests before declaring the fix complete. The source-level contract test cannot prove the gateway supplies trustworthy client-IP headers; verify this in the deployed environment. The code uses the last forwarded hop (or Cloudflare's connecting-IP header), with a shared fallback bucket if no client IP is provided.
 - Not yet verified: CI for this code change is pending; no migration was applied, no Edge Function was deployed/updated, no production grants changed, no result PIN or student data was queried, and no merge or Render deployment occurred. Do not call this remediated in production until coordinated deployment and live tests pass.
 - Section A remains PARTIALLY VERIFIED / authenticated tenant-isolation acceptance BLOCKED. This hardening task does not substitute for signed-in two-school testing. Sections B/C remain gated and Section D remains paused.
+
+
+## 2026-10-15 progress and outstanding register — subscription CI re-check
+
+This entry supplements the existing handover. It does not remove, replace, or reorder any previously recorded workstream.
+
+### Verified since the previous checkpoint
+
+- PR #104 latest checked commit: `7c2a9abb60f892bf3a273ade45e98e49fc3a934a`.
+- GitHub Actions `SchoolPro CI` run [38747113134](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113134) completed with **success**.
+- GitHub Actions `Validate payment pages` run [38747113328](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113328) completed with **success**.
+- The reported successful checks apply to this commit and these workflows only. They do not establish production database correctness or complete end-to-end subscription acceptance.
+- Subscription PR: [#104](https://github.com/Hassan-625/IHLink-SchoolPro/pull/104), branch `fix/schoolpro-annual-subscription-demo-upgrades-clean`. Keep it separate from the main A → B → C → D acceptance sequence.
+
+### Subscription requirements — current authoritative decisions
+
+- Demo access is free and annual (12 months from approval/activation). While Demo is active, do not show a payable subscription amount or create/present a payable subscription invoice, even if the proprietor selects a commercial plan. Keep selected commercial plan distinct from active service entitlement.
+- Paid subscriptions are also annual (12 months from effective start date), with annual renewal.
+- After paid expiry, allow a 14-day grace period; suspend service only after the grace period if payment remains unconfirmed, subject to the approved lifecycle rules.
+- After Demo expiry, the proprietor can proceed with the selected paid plan. The invoice must be accessible from the proprietor dashboard and Super Admin Control Center without depending on email delivery.
+- Upgrades are proprietor-requested and Super Admin-reviewed. Finance confirms payment manually from the uploaded receipt. **BillStack is for DataSub only; do not route SchoolPro subscription or school-fee payments through BillStack.**
+- School fees and IHLink subscription invoices remain separate payment/accounting flows.
+
+### Outstanding subscription acceptance gates
+
+1. Review the migration SQL, object dependencies, grants, RLS, function security, idempotency and rollback implications. Automated frontend/contract CI is not a substitute for SQL-level validation.
+2. Run safe non-production database tests for Demo activation/expiry, no-invoice/no-price behavior during Demo, paid annual activation and renewal, 14-day grace and suspension, invoice visibility, receipt upload, Finance approval/rejection, upgrade request/review, and balance invoice generation.
+3. Resolve and document the upgrade commercial rule. Current implementation is described as target annual catalog price minus the existing stored paid annual amount; it is not time-based proration. Do not describe it as prorated. Confirm downgrade behavior and treatment of an already-paid term before production acceptance.
+4. Verify payment state transitions and audit history are consistent across proprietor dashboard and Super Admin Control Center.
+5. Re-run CI on any subsequent commit. Do not merge, deploy, or apply a production migration without the required review and explicit authorization.
+
+### Main handover track — unchanged and not reduced
+
+- **A — Authentication, authorization and tenant isolation:** remains partially verified. Authenticated two-school tests (including forged `school_id`, direct route/API/RPC access, storage and role-denial cases) remain blocked until a suitable signed-in test session is available. Source contracts and green CI are not live acceptance.
+- **B — Academic sessions, student population and class/arm rosters:** gated on acceptance of A.
+- **C — Assessments, calculations/averages, review and publication:** gated on acceptance of A and B.
+- **D — Result Design Studio and four independent custom Excel workbook paths:** resume only after A–C are accepted. Preserve section-specific Nursery, Primary, Junior Secondary and Senior Secondary templates, school-uploaded template mapping, persistence, generated output and tenant isolation.
+- The persistent report-card print/CSS issue remains explicitly deferred as agreed; it must not silently disappear from the register.
+
+### Other outstanding items retained
+
+- Document Studio and generated document security, template mapping and cross-school access tests.
+- Historical data protection, academic-year rollover and progression.
+- Remaining operational modules and student/parent/staff portal acceptance.
+- School fees and receipt workflows, subscription/payment reconciliation and auditability.
+- Release readiness, APK/Render verification, support readiness, platform security, performance and resilience.
+- Public result-PIN throttling remediation: branch implementation was prepared, but coordinated Edge Function + frontend + migration release and live rate-limit/valid/invalid-result tests remain unverified. Do not claim production remediation complete.
+- Review the six RLS-enabled SchoolPro tables previously found without direct policies and the public/authenticated SECURITY DEFINER function inventory on a per-function least-privilege basis; findings were review candidates, not blanket-confirmed vulnerabilities.
+
+### Safety and continuation rule
+
+No merge, production deployment, production migration, or production subscription-data mutation is confirmed by this checkpoint. Continue from the last verified acceptance gate: finish A's remaining authorization/tenant-isolation evidence first, then B, then C, then D. Subscription PR #104 remains parallel and must not be used as a reason to skip or downgrade the main handover.

@@ -1246,3 +1246,13 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 - Read-only production inspection confirms the surname-onboarding database objects exist, including `schoolpro_initial_credentials`, `schoolpro_initial_challenge`, `schoolpro_set_initial_credential`, and `schoolpro_take_login_attempt`. This is schema evidence only, not proof of successful real-account activation or tenant-isolation tests.
 - The new profile/audit and sports migrations are not in the production migration history. They remain branch-only. Do not apply them independently of the matching frontend/Edge Function release.
 - **A remains IN PROGRESS.** Required real-account checks remain: controlled staff invitation retry for `hacademy.staff.01@example.com`; first-login surname challenge/change/expiry/replay rejection; Super Admin and authorized staff roster loading; and cross-school direct API/RPC/storage denial. No temporary password should be written to logs or handover.
+
+
+## My Classes / Form Master role-mapping follow-up — 15 October 2026
+
+- Corrected the My Classes loading path to resolve the signed-in staff member from the authorized `schoolpro_class_staff_directory` RPC response instead of requiring a separate direct `schoolpro_members` lookup. This avoids making class/subject visibility depend on an additional table query that can be blocked by RLS.
+- Form Masters/Class Teachers should see all subject allocations in classes where their `form_teacher_id` matches their school membership; subject teachers should see their own assigned classes and allocations. The class staff directory remains school-scoped.
+- Added an explicit empty state for staff with no current class or subject allocation. It explains that leadership should verify assignment; it does not create or transfer assignments automatically.
+- **HASSAN ACADEMY:** production read-only inspection previously confirmed Pre-Nursery A has a Form Master assignment for Hassan Hassan Isah. Validate that this account now resolves the assignment and can see the class's subject teachers after the branch is released.
+- **IH Academy:** Pre Nursery A has no Form Master assignment. Preserve that state until school leadership chooses to assign one; management view must display “Not assigned,” and no staff user should gain class access merely because another school has a similarly named class.
+- Regression assertions now cover scoped-directory identity resolution, the no-assignment state, and the Form Master subject-allocation scope. Latest head: `1a475afb722384e153e6bb278789071543b67bad`. CI for this exact head must pass before this correction is accepted. No merge, production migration, or Render deployment has been performed.

@@ -26,7 +26,7 @@ Deno.serve(async(req:Request)=>{
   const phone=String(body.phone||'').trim(),email=String(body.email||'').trim().toLowerCase();
   if(!first||!last||first.length>100||middle.length>100||last.length>100)return reply({error:'First name and surname are required and must be 100 characters or fewer.'},400);
   if(phone&&!/^[+0-9() .-]{7,40}$/.test(phone))return reply({error:'Enter a valid phone number.'},400);
-  if(email&&!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))return reply({error:'Enter a valid email address.'},400);
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return reply({error:'Enter a valid email address.'},400);
   const {data:before,error:beforeError}=await admin.from('profiles').select('first_name,middle_name,last_name,email,phone').eq('id',targetUserId).maybeSingle();
   if(beforeError||!before)return reply({error:'The profile could not be found.'},404);
   const emailChangeRequired=Boolean(email&&email!==String(before.email||'').toLowerCase());

@@ -9,7 +9,7 @@ const modules:Record<string,string>={
   'library':'library','staff':'staff','parents':'parents','transport':'transport','hostel':'hostel',
   'inventory':'inventory','discipline':'discipline','medical':'medical','documents':'documents',
   'announcements':'announcements','roles-permissions':'roles','user-permissions':'roles',
-  'settings':'branding','notifications':'notifications','payroll':'payroll','calendar':'calendar',
+  'settings':'branding','notifications':'notifications','payroll':'payroll','calendar':'calendar','sports':'calendar',
   'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations',
 };
 export function permissionForSchoolPath(href:string){

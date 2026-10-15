@@ -1237,3 +1237,12 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 7. **Then resume D:** once A's blocking auth, workspace, roster-access and temporary-password checks are evidenced, return to the four-section saved-template → reload → generate → inspect-output acceptance already listed in Section 6. Preserve the deferred live A4 print issue for later; do not silently close it.
 
 **A status: IN PROGRESS — implementation and static checks exist, but live role/first-login/isolation acceptance is not yet evidenced.**
+
+
+### Follow-up verification note — 15 October 2026, 18:15 UTC
+
+- Latest code/test commit: `3cf16023db7b196d30915d28a2eabf50093555f4`. The profile-correction email validation regex was corrected and a regression assertion was added after review found the previous escaped pattern was wrong.
+- CI for this head: receipt submission migration contract, receipt submission PostgreSQL integration, receipt review access contract, receipt review policy PostgreSQL integration, receipt payment contract, and payment-page validation have reported success. The main `SchoolPro CI` build was still running when this note was written; do not record the head as fully green until it finishes.
+- Read-only production inspection confirms the surname-onboarding database objects exist, including `schoolpro_initial_credentials`, `schoolpro_initial_challenge`, `schoolpro_set_initial_credential`, and `schoolpro_take_login_attempt`. This is schema evidence only, not proof of successful real-account activation or tenant-isolation tests.
+- The new profile/audit and sports migrations are not in the production migration history. They remain branch-only. Do not apply them independently of the matching frontend/Edge Function release.
+- **A remains IN PROGRESS.** Required real-account checks remain: controlled staff invitation retry for `hacademy.staff.01@example.com`; first-login surname challenge/change/expiry/replay rejection; Super Admin and authorized staff roster loading; and cross-school direct API/RPC/storage denial. No temporary password should be written to logs or handover.

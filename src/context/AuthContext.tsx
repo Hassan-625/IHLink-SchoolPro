@@ -72,8 +72,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!supabase) return;
     const client = supabase;
     let active = true;
+    // Ignore stale auth callbacks and profile queries when accounts change quickly.
+    let authEventVersion = 0;
+    let profileRequestVersion = 0;
 
     const loadProfile = async (current: Session | null) => {
+      const requestVersion = ++profileRequestVersion;
       setSession(current);
       if (!current?.user) {
         setProfile(null);
@@ -87,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         client.from("admin_product_access").select("product,can_view,can_edit,can_approve,can_delete,can_manage,can_use_website_builder,can_use_command_center").eq("user_id", current.user.id),
         client.from("customer_service_access").select("product,status,plan_name").eq("user_id", current.user.id),
       ]);
-      if (active) {
+      if (active && requestVersion === profileRequestVersion) {
         setProfile((data as UserProfile | null) || null);
         setAdminAccess((accessRows || []) as AdminProductAccess[]);
         setServiceAccess((serviceRows || []) as CustomerServiceAccess[]);
@@ -101,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // current without repeating profile, membership, activation, or access queries.
         setSession(nextSession);
         if (!nextSession?.user) {
+          authEventVersion++;
+          profileRequestVersion++;
           setProfile(null);
           setAdminAccess([]);
           setServiceAccess([]);
@@ -112,9 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Initial session, actual sign-in, and explicit account/profile changes
         // are the points where account access data should be resolved.
         if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN" && event !== "USER_UPDATED" && event !== "PASSWORD_RECOVERY") return;
+        const eventVersion = ++authEventVersion;
         setLoading(true);
         window.setTimeout(() => {
-          if (active) void loadProfile(nextSession);
+          if (active && eventVersion === authEventVersion) void loadProfile(nextSession);
         }, 0);
       },
     );

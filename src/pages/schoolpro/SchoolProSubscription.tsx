@@ -29,7 +29,8 @@ function SchoolBillingWorkspace(){
    db.from("schoolpro_subscription_catalog").select("*").eq("active",true).order("annual_price"),
    db.from("schoolpro_plan_catalog").select("tier,features"),
    db.from("schoolpro_subscriptions").select("*").eq("school_id",school).maybeSingle(),
-   db.from("schoolpro_subscription_intents").select("*").eq("school_id",school).eq("payer_user_id",user!.id).eq("payment_method","bank_transfer").order("created_at",{ascending:false}),\n   db.from("schoolpro_upgrade_requests").select("*,schoolpro_schools(name)").order("created_at",{ascending:false})
+   db.from("schoolpro_subscription_intents").select("*").eq("school_id",school).eq("payer_user_id",user!.id).eq("payment_method","bank_transfer").order("created_at",{ascending:false}),
+   db.from("schoolpro_upgrade_requests").select("*,schoolpro_schools(name)").order("created_at",{ascending:false})
   ]).then(([p,matrix,s,i,u])=>{
    if(!current)return;
    setPlans((p.data||[]).map(plan=>({...plan,planFeatures:matrix.data?.find(row=>row.tier===plan.code)?.features||{}})));setSub(s.data);setIntents(i.data||[]);setUpgradeRequests((u.data||[]).filter((r:any)=>profile?.role==="super_admin"||r.school_id===school));

@@ -922,3 +922,10 @@ After every meaningful action, update this same file with:
 - Commits: portal query fix `79b38e97cf8f9c9cd5c03033acac31f8cc3983d5`; regression assertions `e97bb67d8ee3c5f0e702df2aba1ec9ef6e3b29a5`.
 - **Verification pending on the new head.** The green CI result above applies to the prior head, not these new commits. Re-check the current head's workflows and inspect full CI results before marking the fix verified.
 - Section A remains **PARTIALLY VERIFIED**: source-level checks do not prove Supabase RLS enforcement. Authenticated two-school tests for forged `school_id`, direct routes/API/RPC, storage access, and role denial remain blocked until a signed-in test session is available. Sections B/C remain unaccepted and Section D remains paused. No production policies/data, merge, or Render deployment was changed/performed.
+
+## 2026-10-15 continuation — portal scoping regression verified
+
+- Re-checked PR #103 head `8a32dee602d43fe3359770b30254c1f639294e7f`. `SchoolPro CI` run `38733926437` completed successfully: dependency install, TypeScript typecheck, all configured SchoolPro regression scripts (including the new selected-school student/guardian assertions), mobile/layout checks, and production build passed.
+- Vercel status for this head also reported success. This validates the build and configured automated checks only; it does not constitute a Render deployment or live tenant-isolation acceptance.
+- PR #103 remains open, draft, and unmerged. GitHub currently reports it mergeable, but the PR is a broad stacked change and Section A live acceptance remains outstanding. No merge or deployment was performed.
+- **Next gate:** perform authenticated two-school acceptance covering owner/staff/Super Admin workspace selection, forged `school_id`, direct routes and API/RPC, storage, and denied roles. Without an authenticated test session and observed results, mark this acceptance BLOCKED. Keep Sections B/C gated and Section D paused.

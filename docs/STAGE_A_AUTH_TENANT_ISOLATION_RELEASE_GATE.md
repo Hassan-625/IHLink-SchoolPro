@@ -32,6 +32,7 @@ The Supabase production project was inspected read-only; no schema changes, migr
   - `20261003000500_schoolpro_guardian_tenant_hardening.sql`
   - `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
 - Added a regression contract for the existing source migration guards and connected it to the already CI-invoked auth-race test script. This is a **source-contract check**, not live authenticated RLS acceptance.
+- Added an isolated, unmerged migration at `supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql`. It checks that a fee-payment receipt belongs to the submitting user and exists in the expected Storage bucket, verifies guardian links against the same school and student, and locks each same-school invoice during allocation validation. This is staged code only; it has **not** been applied to production. The pending-payment/review lifecycle and duplicate invoice allocations still need dedicated transaction-level acceptance tests before merge.
 
 ## What this audit does not yet prove
 

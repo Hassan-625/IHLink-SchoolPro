@@ -585,3 +585,44 @@ No production data/policies changed, no PR merge, and no Render deployment occur
 
 
 - **Trigger inventory completed (read-only):** a direct `pg_trigger` catalog query returned no non-internal triggers on `public.customer_payment_transactions`. Together with the prior empty FK and stored-function-reference checks, there are no declared FKs, ordinary stored-function body references, or user-defined triggers found on this table. This still cannot exclude dynamic SQL or external/operational consumers.
+
+
+## 2026-10-15 continuation — payment regression matrix and deployed-vs-repository mismatch
+
+### Deployed behavior confirmed read-only
+- **Supabase function inventory:** `schoolpro-payment` is ACTIVE at deployed version 14 with `verify_jwt=false`. Its deployed source returns HTTP 410 `bank_transfer_required` for non-OPTIONS requests and instructs users to use the bank-transfer receipt workflow. `schoolpro-subscription` is ACTIVE at version 4 with `verify_jwt=true`, but its deployed source also returns HTTP 410 `bank_transfer_required`. Thus SchoolPro online checkout through these two legacy functions is intentionally unavailable in the currently inspected deployment; do not report Flutterwave/online checkout as working.
+- **Repository mismatch:** the feature branch's `supabase/functions/schoolpro-payment/index.ts` is different from deployed version 14: the checked-in file accepts authenticated requests and supports an `instructions` action, then returns `unsupported_action` for other actions. The deployed function does not contain that logic. This is a code/deployment drift item that needs reconciliation before a function deployment; do not deploy it blindly because its auth, checkout, and payment-finalization behavior has not passed a full review.
+- **Database components present:** read-only catalog queries show `schoolpro_payment_intents`, `schoolpro_fee_payments`, `schoolpro_invoices`, `payment_transactions`, and `webhook_events` schemas, plus a `finalize_schoolpro_payment` SECURITY DEFINER function with execute denied to anon/authenticated and granted to service_role. Their existence does not prove the corresponding provider callback/checkout is live.
+- **Current supported payment posture from deployed function text:** bank transfer and Finance receipt verification for SchoolPro; BillStack's live payment function explicitly restricts virtual accounts to DataSub. Keep SchoolPro and other services on configured bank-transfer workflows unless/until a reviewed online payment implementation is deliberately approved and deployed.
+
+### Payment regression checklist (not yet run as end-to-end acceptance)
+1. **Receipt / bank-transfer workflow**
+   - Owner can submit a receipt only for their own payable invoice; a different user cannot submit or inspect the proof.
+   - Validate allowed MIME types, maximum file size, receiving bank ownership/school scope, amount not above outstanding balance, valid transfer date, unique source/customer reference, and safe storage path.
+   - Receipt submission alone must never mark an invoice paid or activate service.
+   - Finance approval must atomically record the payment, update only the correct invoice/order/subscription, preserve an audit trail, and reject duplicate approvals; rejection must retain evidence and reason.
+2. **Provider webhook / idempotency (DataSub BillStack path)**
+   - Reject invalid/missing signature and malformed/unknown references; record event result without crediting.
+   - Duplicate/replayed successful events must not double-create ledger entries, wallet credits, service fulfilment, or receipts.
+   - Verify owner, platform, provider, currency, exact amount, settlement status and provider reference before crediting.
+   - Out-of-order failure then success, success then duplicate success, and retry after transient DB/provider failure must produce deterministic, recoverable states.
+3. **Settlement and crediting**
+   - Pending/unsettled or amount-mismatched transaction never credits.
+   - One verified settled payment creates exactly one ledger credit and one final payment state.
+   - A failed/rolled-back database transaction cannot leave a wallet balance without its ledger record or vice versa.
+4. **Refunds / failed fulfilment**
+   - Refund request, review, provider execution, final processed state, wallet reversal and ledger entry must be separately auditable.
+   - Duplicate refund callbacks or repeated processing cannot double-refund; partial refunds must respect refundable balance; denied refunds must not change balances.
+   - Failed fulfilment refund queue is reconciled against original purchase and wallet ledger.
+5. **Finance reconciliation**
+   - Reconcile provider settlements against `payment_transactions`, webhook events, wallet ledger, invoices, receipts, refunds and service fulfilment using stable references and amount/currency.
+   - Report unmatched provider credits, unmatched internal credits, duplicates, stale pending transactions, fees/margins, and refund mismatches; export must be reproducible.
+   - SchoolPro payments reconcile against school-owned invoices/accounts and must remain separate from IHLink subscription revenue.
+
+### Controlled rollout and rollback gate
+- Do not apply the legacy-table migration or deploy any Edge Function until a reviewer approves the exact target and scope.
+- Before a production rollout: snapshot/export relevant schema and ACL metadata; record function versions/hashes and active payment configuration; confirm rollback steps; run tests in a disposable local environment with synthetic data; ensure finance can reconcile a known transaction; schedule a low-volume window and establish a payment support contact.
+- Apply the narrowly scoped ACL migration only after confirming the legacy table has no remaining consumers. Immediately re-query RLS, role grants, and service_role effective privileges; smoke-test owner-scoped payment outcomes, BillStack virtual-account creation, webhook verification/settlement, and Finance refund/reconciliation paths.
+- Rollback should restore only the previously captured grants if the approved migration causes an identified legitimate server-side break; do not disable RLS or regrant client roles broadly as a generic fallback. Keep data intact and investigate the failing dependency.
+- **Not yet complete:** the above are test specifications, not evidence that those acceptance tests have passed. Live end-to-end provider transactions/refunds and a production rollout are not authorized or performed in this step.
+- **No production mutation:** this continuation only inspected deployed Edge Function source and database catalogs, then updated this guide. No DDL, rows, grants, function deployments, merge, or Render deployment changed.

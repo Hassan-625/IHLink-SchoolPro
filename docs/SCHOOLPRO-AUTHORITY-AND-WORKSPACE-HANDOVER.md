@@ -108,3 +108,77 @@ This document records the owner's requirements; it is not evidence that all cont
 2. Resume the authorization/workspace isolation review against the rules above, including the prior open authorization/ownership-transfer work. Do not merge or execute an ownership transfer without inspecting its current PR state and risks.
 3. Validate the end-to-end results workflow against the exact role boundaries above.
 4. Continue the remaining SchoolPro handover checklist in priority order, recording evidence and outstanding blockers.
+
+## Current continuation checkpoint — 15 October 2026
+
+### Main handover track (do not skip or reset)
+Continue the acceptance-gated sequence below. Subscription work is a parallel supporting track and does not change the order of the core application work.
+
+- **A — Authentication, authorization and tenant isolation:** partially verified. Keep authenticated two-school isolation tests blocked until signed-in test access is available; do not claim the section is accepted without those checks.
+- **B — Academic sessions, student population and class rosters:** next data-integrity gate after A. Verify session creation/selection, student population, class/arm roster loading and authorized staff visibility.
+- **C — Assessments, class/subject averages, result review and publication:** only proceed after A and B acceptance. Verify the full role-scoped workflow and partial publication behavior.
+- **D — Result Design Studio and custom Excel workbooks:** follow C. Preserve the four independent section templates (Nursery, Primary, Junior Secondary, Senior Secondary), school-uploaded template mapping, persistence, generated output, and tenant isolation.
+- The known report-card print/CSS issue was explicitly deferred by the user. Do not let it block the next handover item; return to it later as agreed.
+
+### Parallel subscription track — PR #104
+- Draft PR: https://github.com/Hassan-625/IHLink-SchoolPro/pull/104
+- Branch: `fix/schoolpro-annual-subscription-demo-upgrades-clean`
+- Latest CI and payment-page validation passed at commit `022c5559e612b51224b4ba73e06ffaa1a608f3c9`. Subsequent Control Center navigation change is committed separately; rerun CI on the latest head before considering the branch validated.
+- Requirements: Demo is free and lasts one year from approval; selected commercial plan remains distinct from active Demo entitlement; no paid price/payable invoice is displayed while Demo is active; paid subscriptions are annual; a 14-day grace period follows paid expiry; invoice remains visible in the dashboard and Control Center without email configuration; email can be enabled later; proprietor may request an annual upgrade; Super Admin reviews and issues a balance invoice; Finance manually verifies uploaded receipt; BillStack is for DataSub only.
+- Proposed upgrade balance currently uses target annual catalog price minus the current stored paid annual subscription amount; downgrade handling and any time-based proration are not implemented. Confirm whether this simple price-difference credit is the intended commercial rule before production use.
+- Migration and workflow still need SQL validation and functional tests. CI currently validates the frontend but does not establish that the migration is safe to apply to the production database.
+- No production migration applied; no production subscription records modified; no merge or deployment performed.
+
+### Next action on return
+1. Re-check PR #104 CI against the latest commit and review the migration/RLS/function dependencies before any merge request.
+2. Record the result of the subscription checks without changing the main A → B → C → D order.
+3. Resume the core handover at the last verified acceptance gate, starting with A's remaining auth/tenant-isolation validation, then B.
+
+
+## Progress and outstanding report — 15 October 2026
+
+### CI status checked against the latest reported PR #104 head
+
+- Commit: `7c2a9abb60f892bf3a273ade45e98e49fc3a934a`.
+- [SchoolPro CI run 38747113134](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113134): completed successfully.
+- [Validate payment pages run 38747113328](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38747113328): completed successfully.
+- These results confirm the configured automated checks passed for the checked commit. They do not prove the subscription migration is safe or the full lifecycle works against a database.
+
+### Current subscription rules (annual for Demo and paid access)
+
+- Demo access is free for 12 months. While Demo remains active, selecting a commercial plan must not expose a payable amount or create/show a payable subscription invoice.
+- Paid access is annual for 12 months from its effective start date and renews annually.
+- A 14-day grace period follows paid expiry; suspension follows only if payment remains unconfirmed.
+- After Demo expires, the selected paid plan can proceed to invoicing. The invoice must be visible in the proprietor dashboard and Super Admin Control Center even before email is configured.
+- Upgrade requests originate with the proprietor and require Super Admin review. Finance manually verifies the uploaded receipt. BillStack is reserved for DataSub; SchoolPro subscription and school-fee payments must not use BillStack.
+- Keep active entitlement, selected commercial plan, invoice state and payment confirmation as separate state concepts.
+
+### Outstanding before PR #104 can be accepted for production
+
+1. SQL-level validation of migration syntax and semantics, dependencies, grants/RLS, function privileges, idempotency, locking/concurrency, and rollback/recovery plan.
+2. Non-production functional tests covering Demo start/expiry and suppression of paid billing during Demo; annual paid start/renewal; expiry + 14-day grace + suspension; invoice availability in both dashboards; receipt upload and Finance approve/reject; upgrade request/review and invoice balance.
+3. Confirm the upgrade calculation. Current behavior is annual target price minus the stored paid annual amount; this is a price-difference calculation, not time-based proration. Downgrade and mid-term credit rules must be explicit before release.
+4. Confirm audit trail and idempotency for duplicate receipt submissions, repeated approvals, repeated invoice generation and lifecycle jobs.
+5. Re-run checks for any later head. Keep PR #104 separate from the main A → B → C → D handover. No merge, deployment, production migration or production subscription-row change is authorized by this report.
+
+### Main handover remains unchanged
+
+The master handover is authoritative for the full project scope. This document is a supporting authority/workspace handover and must not replace or shrink the master checklist. Continue A (authentication/tenant isolation) → B (sessions, student population, class/arm rosters) → C (assessments, calculations, review/publication) → D (Result Design Studio and custom Excel workbooks), with each stage gated on evidence-based acceptance. The known report-card print/CSS issue remains deferred as agreed.
+
+
+### 2026-10-15 continuation — verification result and current gate
+
+- SchoolPro CI run `38748682462` for this handover branch completed **successfully**, including typecheck, school-context/access tests, result workflow/export tests, document/template checks, responsive-layout checks, and `npm run build`. Payment-page validation run `38748682589` also passed.
+- The related master-handover commit's SchoolPro CI run `38748670356` completed successfully. Its receipt/payment integration and contract workflows also passed (runs `38748670532`, `38748669838`, `38748669598`, `38748669386`, `38748669589`, `38748669584`, and `38748670014`). Vercel status checks reported success for both commits.
+- These are automated source/build/contract results, not proof of authenticated production tenant isolation, a completed annual subscription lifecycle, or a production rollout. No production migration was applied and no merge/deployment is confirmed.
+- Section A remains **PARTIALLY VERIFIED / authenticated cross-school acceptance BLOCKED** pending a signed-in test session and observed results. Do not advance to Sections B/C or resume Section D until the A gate is accepted.
+- Preserve the annual Demo/paid subscription rules above. SQL-level migration validation, end-to-end lifecycle tests, upgrade balance verification, idempotency/audit checks, and authorization checks remain outstanding.
+
+
+### 2026-10-15 user acceptance update — Section A
+
+User reports that these live checks are verified: (1) school owner can access only their own school; (2) Super Admin can select and inspect the intended school workspace; (3) cross-school database access is denied; and (4) cross-school storage access is denied.
+
+**Open blocker:** staff creation in another/new school workspace returns `School access could not be created. Please check the details or contact support.` Staff permission acceptance is therefore incomplete. The Edge Function `invite-school-staff` currently catches internal errors and replaces them with a generic response, so the user-facing error does not establish the root cause. Correlate Edge Function/Postgres logs with a safe reproduction and inspect authorization, invitation/credential RPCs, table constraints/grants, and Auth user creation. A log query during this review failed at the backend; root cause remains unknown.
+
+Section A is **partially accepted**, not complete. Preserve the user's verified findings and keep staff creation, complete role-denial tests, and direct-route/API/RPC authorization checks outstanding. Continue A before B/C; D stays paused. Do not relax cross-school controls to work around the staff-creation error.

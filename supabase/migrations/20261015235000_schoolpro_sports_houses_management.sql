@@ -97,9 +97,15 @@ set search_path = ''
 as $$
 declare linked_school uuid;
 begin
- if tg_table_name = 'schoolpro_sports_teams' and new.house_id is not null then
-   select school_id into linked_school from public.schoolpro_sports_houses where id = new.house_id;
-   if linked_school is distinct from new.school_id then raise exception 'Sports house must belong to the same school'; end if;
+ if tg_table_name = 'schoolpro_sports_teams' then
+   if new.house_id is not null then
+     select school_id into linked_school from public.schoolpro_sports_houses where id = new.house_id;
+     if linked_school is distinct from new.school_id then raise exception 'Sports house must belong to the same school'; end if;
+   end if;
+   if new.coach_member_id is not null then
+     select school_id into linked_school from public.schoolpro_members where id = new.coach_member_id;
+     if linked_school is distinct from new.school_id then raise exception 'Coach must be a member of the same school'; end if;
+   end if;
  end if;
  if tg_table_name = 'schoolpro_sports_participants' then
    select school_id into linked_school from public.schoolpro_sports_activities where id = new.activity_id;

@@ -173,3 +173,12 @@ The master handover is authoritative for the full project scope. This document i
 - These are automated source/build/contract results, not proof of authenticated production tenant isolation, a completed annual subscription lifecycle, or a production rollout. No production migration was applied and no merge/deployment is confirmed.
 - Section A remains **PARTIALLY VERIFIED / authenticated cross-school acceptance BLOCKED** pending a signed-in test session and observed results. Do not advance to Sections B/C or resume Section D until the A gate is accepted.
 - Preserve the annual Demo/paid subscription rules above. SQL-level migration validation, end-to-end lifecycle tests, upgrade balance verification, idempotency/audit checks, and authorization checks remain outstanding.
+
+
+### 2026-10-15 user acceptance update — Section A
+
+User reports that these live checks are verified: (1) school owner can access only their own school; (2) Super Admin can select and inspect the intended school workspace; (3) cross-school database access is denied; and (4) cross-school storage access is denied.
+
+**Open blocker:** staff creation in another/new school workspace returns `School access could not be created. Please check the details or contact support.` Staff permission acceptance is therefore incomplete. The Edge Function `invite-school-staff` currently catches internal errors and replaces them with a generic response, so the user-facing error does not establish the root cause. Correlate Edge Function/Postgres logs with a safe reproduction and inspect authorization, invitation/credential RPCs, table constraints/grants, and Auth user creation. A log query during this review failed at the backend; root cause remains unknown.
+
+Section A is **partially accepted**, not complete. Preserve the user's verified findings and keep staff creation, complete role-denial tests, and direct-route/API/RPC authorization checks outstanding. Continue A before B/C; D stays paused. Do not relax cross-school controls to work around the staff-creation error.

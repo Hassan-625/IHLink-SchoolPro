@@ -6,12 +6,19 @@ do $$ declare
   school_id uuid := '20000000-0000-0000-0000-000000000001';
   student_id uuid := '30000000-0000-0000-0000-000000000001';
   invoice_id uuid := '40000000-0000-0000-0000-000000000001';
+  other_student_id uuid := '30000000-0000-0000-0000-000000000002';
+  other_invoice_id uuid := '40000000-0000-0000-0000-000000000002';
+  other_school_id uuid := '20000000-0000-0000-0000-000000000002';
   bank_id uuid := '50000000-0000-0000-0000-000000000001';
   submission_id uuid;
 begin
   insert into public.schoolpro_guardian_links values(school_id,student_id,parent_id,'active');
   insert into public.schoolpro_bank_accounts values(bank_id,school_id,true);
   insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid) values(invoice_id,school_id,student_id,1000,0);
+  insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid) values(other_invoice_id,school_id,other_student_id,1000,0);
+  -- Simulate inconsistent legacy linkage: the student/invoice belong to school A,
+  -- but the guardian link claims school B. This must never authorize payment submission.
+  insert into public.schoolpro_guardian_links values(other_school_id,other_student_id,parent_id,'active');
   insert into storage.objects(bucket_id,name,metadata) values('schoolpro-payment-receipts',parent_id::text||'/receipt.pdf',jsonb_build_object('mimetype','application/pdf','size',1024));
   perform set_config('request.jwt.claim.sub',parent_id::text,false);
 
@@ -77,6 +84,13 @@ begin
   exception when others then
     if sqlerrm='TEST FAILURE: NaN allocation was accepted' then raise; end if;
   end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,10,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',other_invoice_id,'amount',10)));
+    raise exception 'TEST FAILURE: cross-school guardian link authorized invoice payment';
+  exception when others then
+    if sqlerrm='TEST FAILURE: cross-school guardian link authorized invoice payment' then raise; end if;
+  end;
+
   submission_id := public.submit_schoolpro_payment(school_id,bank_id,700,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',700)));
   if not exists(select 1 from public.schoolpro_payment_submissions where id=submission_id and status='pending') then raise exception 'TEST FAILURE: valid submission not pending'; end if;
   begin

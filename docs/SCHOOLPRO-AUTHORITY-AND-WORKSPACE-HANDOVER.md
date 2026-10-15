@@ -164,3 +164,12 @@ Continue the acceptance-gated sequence below. Subscription work is a parallel su
 ### Main handover remains unchanged
 
 The master handover is authoritative for the full project scope. This document is a supporting authority/workspace handover and must not replace or shrink the master checklist. Continue A (authentication/tenant isolation) → B (sessions, student population, class/arm rosters) → C (assessments, calculations, review/publication) → D (Result Design Studio and custom Excel workbooks), with each stage gated on evidence-based acceptance. The known report-card print/CSS issue remains deferred as agreed.
+
+
+### 2026-10-15 continuation — verification result and current gate
+
+- SchoolPro CI run `38748682462` for this handover branch completed **successfully**, including typecheck, school-context/access tests, result workflow/export tests, document/template checks, responsive-layout checks, and `npm run build`. Payment-page validation run `38748682589` also passed.
+- The related master-handover commit's SchoolPro CI run `38748670356` completed successfully. Its receipt/payment integration and contract workflows also passed (runs `38748670532`, `38748669838`, `38748669598`, `38748669386`, `38748669589`, `38748669584`, and `38748670014`). Vercel status checks reported success for both commits.
+- These are automated source/build/contract results, not proof of authenticated production tenant isolation, a completed annual subscription lifecycle, or a production rollout. No production migration was applied and no merge/deployment is confirmed.
+- Section A remains **PARTIALLY VERIFIED / authenticated cross-school acceptance BLOCKED** pending a signed-in test session and observed results. Do not advance to Sections B/C or resume Section D until the A gate is accepted.
+- Preserve the annual Demo/paid subscription rules above. SQL-level migration validation, end-to-end lifecycle tests, upgrade balance verification, idempotency/audit checks, and authorization checks remain outstanding.

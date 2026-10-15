@@ -66,6 +66,12 @@ using (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_i
 -- Subject-teacher membership alone is deliberately insufficient.
 drop policy if exists "School educators insert attendance" on public.schoolpro_attendance;
 drop policy if exists "School educators update attendance" on public.schoolpro_attendance;
+create policy "Form Masters read assigned class attendance" on public.schoolpro_attendance for select to authenticated
+using (exists(select 1 from public.schoolpro_classes c
+ join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
+ where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id
+ and m.user_id=auth.uid() and m.role::text in('teacher','class_teacher')));
+
 create policy "Form Master or management inserts attendance" on public.schoolpro_attendance for insert to authenticated
 with check (private.schoolpro_can_mark_attendance(school_id,class_id) and marked_by=(select auth.uid()));
 create policy "Form Master or management updates attendance" on public.schoolpro_attendance for update to authenticated

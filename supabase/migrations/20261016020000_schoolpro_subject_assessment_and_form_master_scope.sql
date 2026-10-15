@@ -191,14 +191,14 @@ with check (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
  and private.schoolpro_can_author_cbt_scope(t.school_id,t.class_id,t.subject_id,t.session)))));
 create policy "CBT test question scoped update" on public.schoolpro_cbt_test_questions for update to authenticated
 using (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
- and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft'
+ and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft' and t.created_by=(select auth.uid())
  and private.schoolpro_can_author_cbt_scope(t.school_id,t.class_id,t.subject_id,t.session)))))
 with check (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
- and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft'
+ and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft' and t.created_by=(select auth.uid())
  and private.schoolpro_can_author_cbt_scope(t.school_id,t.class_id,t.subject_id,t.session)))));
 create policy "CBT test question scoped delete" on public.schoolpro_cbt_test_questions for delete to authenticated
 using (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
- and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft'
+ and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft' and t.created_by=(select auth.uid())
  and private.schoolpro_can_author_cbt_scope(t.school_id,t.class_id,t.subject_id,t.session)))));
 
 -- The answer-marking RPC must use the same class/subject scope as test authoring.

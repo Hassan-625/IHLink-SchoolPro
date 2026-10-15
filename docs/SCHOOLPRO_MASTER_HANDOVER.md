@@ -889,3 +889,9 @@ After every meaningful action, update this same file with:
 - Re-checked that `scripts/test-school-context-authorization-contract.mjs` source fragments currently match `src/hooks/useSchoolProContext.ts`; this is a static source-contract check, not execution of the test and not proof of database RLS enforcement.
 - Current state remains: Section A partially verified; authenticated two-school tenant-isolation tests blocked without a signed-in browser/session; Sections B/C not accepted; Section D paused. No merge, deployment, production data/policy change, or paid Supabase branch created.
 - Next safe action: inspect the one-commit base delta and determine why PR reports non-mergeable; then obtain an actual run result (GitHub Actions UI or supported workflow-run listing) and execute tests. Do not retarget, rebase, or merge this stacked PR without an explicit safe plan and user approval.
+
+
+### Follow-up: one-commit base delta isolated
+
+- Compared the branch merge base `078a213fb514f32e41b821a30f0148297db152a4` with current base tip `f4b5ce0e0973210cd62f654f50d4fdc06aece018`. The base is exactly **one commit ahead**, and that commit changes only `.github/workflows/ci.yml` (one deletion). The PR branch also edits this same workflow file, making it the first conflict/integration point to inspect. GitHub still reports `mergeable: false`; the connector does not expose the full conflict markers here, so this is a likely conflict area, not a confirmed root cause.
+- Do not merge or blindly rebase. Safe next step is to inspect the exact base commit patch and reconcile the workflow so both the base branch's intended change and the branch's new regression tests/triggers are preserved, then re-check PR mergeability and obtain actual CI logs.

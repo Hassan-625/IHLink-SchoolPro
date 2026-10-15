@@ -108,3 +108,28 @@ This document records the owner's requirements; it is not evidence that all cont
 2. Resume the authorization/workspace isolation review against the rules above, including the prior open authorization/ownership-transfer work. Do not merge or execute an ownership transfer without inspecting its current PR state and risks.
 3. Validate the end-to-end results workflow against the exact role boundaries above.
 4. Continue the remaining SchoolPro handover checklist in priority order, recording evidence and outstanding blockers.
+
+## Current continuation checkpoint — 15 October 2026
+
+### Main handover track (do not skip or reset)
+Continue the acceptance-gated sequence below. Subscription work is a parallel supporting track and does not change the order of the core application work.
+
+- **A — Authentication, authorization and tenant isolation:** partially verified. Keep authenticated two-school isolation tests blocked until signed-in test access is available; do not claim the section is accepted without those checks.
+- **B — Academic sessions, student population and class rosters:** next data-integrity gate after A. Verify session creation/selection, student population, class/arm roster loading and authorized staff visibility.
+- **C — Assessments, class/subject averages, result review and publication:** only proceed after A and B acceptance. Verify the full role-scoped workflow and partial publication behavior.
+- **D — Result Design Studio and custom Excel workbooks:** follow C. Preserve the four independent section templates (Nursery, Primary, Junior Secondary, Senior Secondary), school-uploaded template mapping, persistence, generated output, and tenant isolation.
+- The known report-card print/CSS issue was explicitly deferred by the user. Do not let it block the next handover item; return to it later as agreed.
+
+### Parallel subscription track — PR #104
+- Draft PR: https://github.com/Hassan-625/IHLink-SchoolPro/pull/104
+- Branch: `fix/schoolpro-annual-subscription-demo-upgrades-clean`
+- Latest CI and payment-page validation passed at commit `022c5559e612b51224b4ba73e06ffaa1a608f3c9`. Subsequent Control Center navigation change is committed separately; rerun CI on the latest head before considering the branch validated.
+- Requirements: Demo is free and lasts one year from approval; selected commercial plan remains distinct from active Demo entitlement; no paid price/payable invoice is displayed while Demo is active; paid subscriptions are annual; a 14-day grace period follows paid expiry; invoice remains visible in the dashboard and Control Center without email configuration; email can be enabled later; proprietor may request an annual upgrade; Super Admin reviews and issues a balance invoice; Finance manually verifies uploaded receipt; BillStack is for DataSub only.
+- Proposed upgrade balance currently uses target annual catalog price minus the current stored paid annual subscription amount; downgrade handling and any time-based proration are not implemented. Confirm whether this simple price-difference credit is the intended commercial rule before production use.
+- Migration and workflow still need SQL validation and functional tests. CI currently validates the frontend but does not establish that the migration is safe to apply to the production database.
+- No production migration applied; no production subscription records modified; no merge or deployment performed.
+
+### Next action on return
+1. Re-check PR #104 CI against the latest commit and review the migration/RLS/function dependencies before any merge request.
+2. Record the result of the subscription checks without changing the main A → B → C → D order.
+3. Resume the core handover at the last verified acceptance gate, starting with A's remaining auth/tenant-isolation validation, then B.

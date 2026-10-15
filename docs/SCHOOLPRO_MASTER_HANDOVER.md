@@ -536,3 +536,13 @@ No production data/policies changed, no PR merge, and no Render deployment occur
 - **Verification status:** Migration is prepared on the feature branch only. It has **not** been executed against a database, and no isolated database/test harness was available in this step; therefore SQL execution and payment-flow regression tests are **BLOCKED / pending**, not passed. The source scan is static evidence only and does not prove runtime payment behavior.
 - **Required pre-production regression checks:** Apply only to a disposable/staging database first; verify service-side virtual-account funding, owner-scoped payment outcomes/status, webhook idempotency, refund status, and Finance reconciliation. Confirm service-role access remains intact and anon/authenticated direct SELECT/INSERT/UPDATE/DELETE are denied. Inspect SQL migration history and runtime dependencies before production approval.
 - **Safety boundary:** No production database changes, merges, or Render deployments were made. Keep PR #103 open and unmerged pending review and explicit approval.
+
+
+## 2026-10-15 continuation — staging gate and cost confirmation
+
+- **BLOCKED — isolated test database:** Supabase branch listing returned only the `main` development branch, marked `MIGRATIONS_FAILED`; it is not a verified clean staging target. No separate healthy staging branch is available in the current branch list.
+- **Read-only database check only:** The connected IHLink Platform database reports `public.customer_payment_transactions` exists, RLS is disabled, and 14 client-role grant rows exist for `anon`, `authenticated`, or `PUBLIC`. This is a read-only observation; no grants, RLS settings, rows, or migrations were changed.
+- **Advisor context:** The Supabase security advisor also reports broader existing warnings involving exposed `SECURITY DEFINER` functions and tables with RLS but no policies. These are separate findings and must be triaged individually; this payment-table task does not remediate them.
+- **Cost gate:** Supabase's branch cost estimate for organization `gvtivfhraqixrurjryqz` is **US$0.01344 per hour** while the branch is active (actual billing may depend on provider terms). Creating a new isolated branch requires the user's explicit cost confirmation before proceeding.
+- **Next action pending user approval:** Confirm whether to create a new Supabase development branch at the estimated hourly cost. Until then, keep the migration on the feature branch only. Do not apply it to the connected IHLink Platform database.
+- **Safety boundary reaffirmed:** No production changes, merges, or Render deployments were made.

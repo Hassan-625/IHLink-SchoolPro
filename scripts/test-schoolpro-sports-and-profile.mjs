@@ -12,7 +12,9 @@ const profileMigration = read('../supabase/migrations/20261016001500_schoolpro_s
 const profileCorrection = read('../supabase/functions/schoolpro-profile-correction/index.ts');
 const myClasses = read('../src/pages/schoolpro/SchoolProSubjects.tsx');
 const roleLabels = read('../src/lib/schoolRoles.ts');
-assert.match(myClasses, /supabase\.from\("schoolpro_members"\)\.select\("id,role"\)/);
+assert.match(myClasses, /raw\.find\(m=>m\.user_id===user\?\.id\)\?\.id/);
+assert.doesNotMatch(myClasses, /supabase\.from\("schoolpro_members"\)\.select\("id,role"\)/);
+assert.match(myClasses, /No class is currently assigned to your staff account for this session/);
 assert.match(myClasses, /coordinatedIds/);
 assert.match(myClasses, /visibleAssignments=canManage\?allAssignments:allAssignments\.filter\(x=>coordinatedIds\.has\(x\.class_id\)\|\|x\.teacher_member_id===memberId\)/);
 assert.match(myClasses, /Form Masters can see every subject teacher assigned to their own class/);

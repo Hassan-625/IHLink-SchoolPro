@@ -1353,3 +1353,39 @@ PR #105 remains draft and targets `fix/result-design-section-selection`, not `ma
 - Form Master result-template selection and propagation: **OUTSTANDING**.
 - Section A: **NEAR COMPLETE, NOT CLOSED**; user has verified Parent/Student access and reports no visible cross-tenant leakage, but direct API/RPC/storage denial and role-write-scope tests remain.
 - Production migration, merge and Render deployment: **NOT PERFORMED**.
+
+## Continuation checkpoint — 15 October 2026, latest audit
+
+### User-mandated release order (authoritative)
+- **Section A must be completed, reviewed, and MERGED into the intended production branch before Section B work begins.**
+- Do not mark A complete on the strength of CI alone. A closure requires the authentication/tenant-isolation acceptance gates, review of the exact production release diff, passing direct API/RPC/storage denial tests across two schools and relevant roles, an approved merge target, and confirmation that the merge succeeded.
+- Once A is merged, verify the merged commit and run the required post-merge checks. Only then begin B (academic sessions, student population and class rosters). Do not mix B implementation into the A release.
+- This sequencing rule does not remove or downgrade any existing handover task. Keep the full A–J scope and deferred work intact.
+
+### Latest CI and release-scope audit
+- PR #105 head is now `d7d63bd99f95913d6771dbf9768803b5eb4fcb6b`; the seven reported GitHub Actions workflows completed successfully, including SchoolPro CI and payment/receipt contract and PostgreSQL integration checks.
+- PR #105 remains **OPEN, DRAFT, UNMERGED** and targets `fix/result-design-section-selection`, not `main`. CI success is not merge approval, not proof of tenant/RPC security, and not evidence of a Render deployment.
+- The production reference commit supplied in the handover is `4af35b34e4b70e407b058f9f18af5c18024c1d1d`. Comparing that commit to the current PR branch reports 329 commits ahead and 77 changed files. Comparing `main` to the production reference indicates the production reference is 21 commits ahead of `main`. The current branch therefore cannot be merged or retargeted blindly: prepare an explicit, reviewed release diff from the actual Render production source and separate the A-only release from unrelated accumulated work.
+- No merge, production migration, or Render deployment has been performed in this checkpoint.
+
+### Migration review — static inspection only
+- Migration reviewed: `supabase/migrations/20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql`.
+- It introduces class/subject/session scope helpers for assignment writes, CBT authoring/visibility and question-bank access, and Form Master/management attendance writes; it also drops several legacy broad policies before adding narrower policies.
+- Static review identified a need for runtime verification before release: confirm the full live policy inventory for each affected table, check for any remaining permissive policies that OR with the new policies, verify column/table/function compatibility against the production schema, and execute cross-school/wrong-class/wrong-subject/wrong-session denial tests. The duplicate creation of `Question bank scoped read` is preceded by a drop of that same policy within the migration; this is not, by itself, evidence of a duplicate-policy failure.
+- This was source inspection only. The migration has **not** been applied to production and SQL runtime validation is not claimed.
+
+### Immediate next actions — A first, no B yet
+1. Define and review the exact A-only diff from the Render production reference; identify commits/files that are unrelated to A and keep them out of the A release.
+2. Run authentication and tenant-isolation acceptance against two separate schools, including direct table/RPC/storage attempts by owner, staff, parent/student and Super Admin identities; preserve the intended Super Admin cross-workspace control-center behavior without allowing tenant-data writes outside authorization.
+3. Review the migration chain and live RLS policy inventory, validate the new SQL on a no-additional-cost non-production/static route, and run real role-based write/read-denial tests. Do not apply production migrations during this audit.
+4. Fix all A blockers, obtain passing checks on the exact A release head, and confirm the correct merge target and release contents.
+5. Merge A and verify the resulting commit plus post-merge checks. **Only after this succeeds may B start.**
+6. After A is merged, begin B as a separate workstream. C and D remain later gates; result-template persistence/propagation, the Basic 5 A subject-ID anomaly, assessment end-to-end acceptance and the deferred A4 print overflow remain outstanding and must not be dropped.
+
+### Status at this checkpoint
+- Latest branch CI: **PASS**.
+- A authentication/tenant-isolation gate: **NOT CLOSED**; exact production release diff and direct API/RPC/storage denial acceptance remain required.
+- PR #105: **NOT MERGED**; unsuitable for blind merge due to accumulated scope and non-production base branch.
+- B: **NOT STARTED under the user's required sequence**; do not begin until A has been merged and verified.
+- Production migration / Render deployment: **NOT PERFORMED**.
+

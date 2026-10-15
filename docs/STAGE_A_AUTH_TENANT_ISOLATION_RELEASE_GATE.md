@@ -20,15 +20,24 @@
 
 This is a narrow authentication-race correction only. It is not a declaration that Stage A is complete.
 
-## Tenant-isolation migration inventory found in the production source baseline
+## Read-only production database audit (2026-10-15)
 
-These migration files exist in the source tree at the inspected production commit:
+The Supabase production project was inspected read-only; no schema changes, migrations, or data writes were made.
 
-- `20261002234500_schoolpro_operational_tenant_isolation.sql`
-- `20261003000500_schoolpro_guardian_tenant_hardening.sql`
-- `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
+- **107/107 `schoolpro_%` tables have RLS enabled.** No public-schema table was found with RLS disabled. None of those 107 tables currently has `FORCE ROW LEVEL SECURITY`; this is not automatically a client bypass, but table-owner execution paths and privileged routines still require review.
+- The database reports **873 policies in `public`**, including **293 policies on SchoolPro tables** and **52 restrictive policies** across `public`. Because permissive policies OR together, policy-by-policy review remains mandatory; counts alone do not prove isolation.
+- Live migration history contains tenant-hardening entries under different names than some source migration files, including `fix_schoolpro_guardian_rls_correlations` (`20260923184341`), `enforce_schoolpro_cross_table_tenant_integrity` (`20261003104729`), `enforce_schoolpro_cbt_eligibility_tenant_and_revocation_integrity` (`20261003112317`), `enforce_schoolpro_subject_assignment_tenant_and_teacher_integrity` (`20261003114251`), and `complete_schoolpro_results_assignment_cbt_integrity` (`20261003124002`). The latest migration recorded is `schoolpro_access_invitation_role_constraint` (`20261015161735`).
+- The three source files below are present, but **their exact version/name pairs are not present in the live migration ledger**. Later tenant-hardening migrations exist, so treat this as source/ledger drift to reconcile rather than assuming those exact files ran:
+  - `20261002234500_schoolpro_operational_tenant_isolation.sql`
+  - `20261003000500_schoolpro_guardian_tenant_hardening.sql`
+  - `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
+- Added a regression contract for the existing source migration guards and connected it to the already CI-invoked auth-race test script. This is a **source-contract check**, not live authenticated RLS acceptance.
 
-Their presence in source history does **not** independently prove that each migration was applied successfully to the live Supabase database or that every current table/policy is safe. Confirm applied migration state through an authorized, read-only database inspection before relying on them.
+## What this audit does not yet prove
+
+- Two authenticated school accounts cannot read or mutate each other's rows, related IDs, RPC operations, or Storage objects.
+- All 293 SchoolPro policies and all security-definer RPCs have been proven safe; the live advisor output includes security-definer RPC warnings that require function-by-function authorization review.
+- The production database's actual policies and triggers are identical to the current Git source tree.
 
 ## Required before Stage A can be declared complete
 

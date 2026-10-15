@@ -86,3 +86,20 @@ managed.setCaller('staff');assert.equal((await managed.post({action:'accept',cod
 managed.setCaller('owner');assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,400);assert.equal((await managed.post({action:'list',schoolId:school})).data.invitations.length,0);
 managed.setRateAllowed(false);assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,429);
 console.log('PASS: pending staff persist, leaders-only listing, school-bound regeneration, old-code rejection, bursar acceptance and accepted invitations cannot regenerate');
+
+
+const parentsPage=fs.readFileSync('src/pages/schoolpro/SchoolProParents.tsx','utf8');
+assert.match(parentsPage,/\['Parent','Email','Phone','Student','Relationship','Status',''\]/);
+assert.match(parentsPage,/updatePhone/);
+assert.match(parentsPage,/\.eq\('school_id',schoolId\)/);
+const parentForm=fs.readFileSync('src/components/SchoolAccountForm.tsx','utf8');
+assert.match(parentForm,/required type="tel"/);
+const specialistRoles=fs.readFileSync('src/lib/schoolRoles.ts','utf8');
+assert.match(specialistRoles,/\['discipline_master','Discipline Master'\]/);
+assert.match(specialistRoles,/\['game_master','Game Master'\]/);
+const specialistPermissions=fs.readFileSync('supabase/migrations/20261015223000_schoolpro_specialist_role_permissions.sql','utf8');
+assert.match(specialistPermissions,/when 'discipline_master' then array\['dashboard','discipline','notifications'\]/);
+assert.match(specialistPermissions,/when 'game_master' then array\['dashboard','calendar','notifications'\]/);
+assert.match(specialistPermissions,/discipline authorized access/);
+assert.match(specialistPermissions,/calendar management write/);
+console.log('PASS: parent contact table columns/edit flow and least-privilege specialist-role source contracts');

@@ -22,7 +22,7 @@ Deno.serve(async(req:Request)=>{
   }
   const {schoolId,email,role,relationship='guardian'}=body;
   const normalized=String(email||'').trim().toLowerCase();
-  const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
+  const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim(),guardianPhone=String(body.phone||'').trim();
   stage='authorization_lookups';const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
   if(se||me||pe)throw new Error('lookup');
   if(!school||profile?.status!=='active'||(profile.role!=='super_admin'&&school.owner_id!==user.id&&!['proprietor','administrator'].includes(member?.role||'')))return respond({error:'Only school leaders can add accounts to this school.'},403);
@@ -54,7 +54,7 @@ Deno.serve(async(req:Request)=>{
     if(identity.user?.app_metadata.schoolpro_initial_login===true){
      const {data:renewed,error:renewError}=await admin.from('schoolpro_initial_credentials').update({expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).select('user_id');if(renewError||renewed?.length!==1)throw renewError||new Error('renew');
      const {error:challengeError}=await admin.from('schoolpro_account_challenges').delete().eq('user_id',existing.id);if(challengeError)throw challengeError;
-     stage='invitation_insert_existing_initial';const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
+     stage='invitation_insert_existing_initial';const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,guardian_phone:role==='parent'?guardianPhone:null,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
      stage='invitation_link_rpc';const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:existing.id,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
      return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }

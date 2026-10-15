@@ -1299,3 +1299,6 @@ PR #105 remains draft and targets `fix/result-design-section-selection`, not `ma
 
 
 **Production-schema compatibility note:** read-only inspection of the live database found that CBT question tenant integrity is currently enforced by the shared `private.enforce_schoolpro_tenant_relations()` trigger function, not the legacy trigger name in one source migration. The new migration therefore adds a separate `private.schoolpro_validate_cbt_question_scope()` trigger for subject/class matching and leaves the existing shared tenant-integrity trigger untouched. This compatibility adjustment is draft-only and has not been applied to production.
+
+
+**Latest read-only production class check:** HASSAN ACADEMY → Pre-Nursery A has a `class_teacher` membership assigned as Form Master. The latest subject-allocation session found for that class is `2025/2026`, with one recorded allocation (Mathematics). IH Academy → Pre Nursery A has no Form Master and no subject allocations. The UI should display the data that exists; additional subject teachers/allocations must be entered through the school’s authorized allocation workflow rather than fabricated by this correction.

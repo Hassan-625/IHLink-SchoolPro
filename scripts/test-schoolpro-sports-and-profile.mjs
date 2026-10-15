@@ -26,12 +26,17 @@ for (const table of ['schoolpro_sports_houses','schoolpro_sports_teams','schoolp
  assert.match(migration, new RegExp('create policy '+table+'_access'));
 }
 assert.match(migration, /schoolpro_validate_sports_school_scope/);
+assert.match(migration, /Coach must be a member of the same school/);
 assert.match(students, /middle_name/);
 assert.match(students, /async function editStudent/);
+assert.match(students, /schoolpro_correct_student_profile/);
+assert.doesNotMatch(students, /Profile saved, but the audit entry could not be recorded/);
 assert.match(students, /schoolpro_student_profile_audit/);
 assert.match(profileMigration, /changed_fields text\[\]/);
 assert.match(profileCorrection, /schoolpro_members/);
 assert.match(profileCorrection, /schoolpro_guardian_links/);
+assert.match(profileCorrection, /schoolpro_correct_member_profile_atomic/);
+assert.match(profileCorrection, /No partial update was committed/);
 assert.match(profileCorrection, /schoolpro_profile_change_audit/);
 assert.doesNotMatch(profileCorrection, /auth\.admin\.updateUserById/);
 console.log('SchoolPro sports and student-profile contract checks passed.');

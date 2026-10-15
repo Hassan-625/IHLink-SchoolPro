@@ -21,6 +21,7 @@ declare
   a jsonb;
   inv public.schoolpro_invoices%rowtype;
   sum_alloc numeric:=0;
+  reserved_pending numeric:=0;
   v_user uuid:=auth.uid();
 begin
   if v_user is null then
@@ -88,9 +89,14 @@ begin
       raise exception 'Student is not linked to this parent';
     end if;
 
+    select coalesce(sum(pa.amount),0) into reserved_pending
+    from public.schoolpro_payment_allocations pa
+    join public.schoolpro_payment_submissions ps on ps.id=pa.submission_id
+    where pa.school_id=p_school and pa.invoice_id=inv.id and ps.status='pending';
+
     if coalesce((a->>'amount')::numeric,0)<=0
-       or (a->>'amount')::numeric>inv.amount_due-inv.amount_paid then
-      raise exception 'Invalid allocation amount';
+       or (a->>'amount')::numeric>inv.amount_due-inv.amount_paid-reserved_pending then
+      raise exception 'Invalid allocation amount: the invoice balance is already paid or reserved by a pending payment';
     end if;
     sum_alloc:=sum_alloc+(a->>'amount')::numeric;
   end loop;

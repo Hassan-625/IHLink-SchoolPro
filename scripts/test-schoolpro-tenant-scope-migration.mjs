@@ -23,6 +23,8 @@ files.push(['supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant
   'where id=(a->>\'invoice_id\')::uuid and school_id=p_school',
   'for update',
   'g.school_id=p_school and g.student_id=inv.student_id',
+  'Each invoice may appear only once in a payment',
+  'Payment allocations must be a list',
   'revoke all on function public.submit_schoolpro_payment'
 ]]);
 for(const [path,needles] of files){

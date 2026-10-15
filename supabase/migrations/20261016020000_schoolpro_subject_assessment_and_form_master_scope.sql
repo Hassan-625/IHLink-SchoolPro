@@ -38,7 +38,7 @@ returns boolean language sql stable security definer set search_path='' as $$
  and private.schoolpro_operationally_active(p_school)
  and private.schoolpro_module_allowed(p_school,'attendance')
  and (
-   private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
+   private.has_school_access(p_school,array['proprietor','administrator','head_teacher','vice_principal']::public.school_member_role[])
    or private.is_admin(array['super_admin']::public.user_role[])
    or exists(
      select 1 from public.schoolpro_classes c
@@ -55,17 +55,21 @@ grant execute on function private.schoolpro_can_mark_attendance(uuid,uuid) to au
 -- Form Masters can still read the class-wide assignment list through the existing targeted-read policy.
 drop policy if exists "assignment authorized manage" on public.schoolpro_assignments;
 create policy "assignment scoped insert" on public.schoolpro_assignments for insert to authenticated
-with check (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid()));
+with check (private.schoolpro_can_manage_assignment_scope(school_id) or (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid())));
 create policy "assignment scoped update" on public.schoolpro_assignments for update to authenticated
-using (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid()))
-with check (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid()));
+using (private.schoolpro_can_manage_assignment_scope(school_id) or (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid())))
+with check (private.schoolpro_can_manage_assignment_scope(school_id) or (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid())));
 create policy "assignment scoped delete" on public.schoolpro_assignments for delete to authenticated
-using (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid()));
+using (private.schoolpro_can_manage_assignment_scope(school_id) or (private.schoolpro_can_write_assignment_scope(school_id,class_id,subject_id,session) and created_by=(select auth.uid())));
 
 -- Attendance is writable by school management or the Form Master assigned to that exact class.
 -- Subject-teacher membership alone is deliberately insufficient.
 drop policy if exists "School educators insert attendance" on public.schoolpro_attendance;
 drop policy if exists "School educators update attendance" on public.schoolpro_attendance;
+-- These legacy FOR ALL policies would OR with the new scoped write policies and bypass them.
+-- Keep the separate school/student/guardian SELECT policies, but remove legacy all-command access.
+drop policy if exists "Scoped attendance records" on public.schoolpro_attendance;
+drop policy if exists "schoolpro_module_permission" on public.schoolpro_attendance;
 create policy "Form Masters read assigned class attendance" on public.schoolpro_attendance for select to authenticated
 using (exists(select 1 from public.schoolpro_classes c
  join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
@@ -149,6 +153,8 @@ drop policy if exists "cbt authors delete drafts" on public.schoolpro_cbt_tests;
 drop policy if exists "cbt authors edit drafts" on public.schoolpro_cbt_tests;
 drop policy if exists "cbt authors read tests" on public.schoolpro_cbt_tests;
 drop policy if exists "cbt managers manage tests" on public.schoolpro_cbt_tests;
+-- The generic plan policy is FOR ALL and would otherwise bypass class/subject/session scoping.
+drop policy if exists "schoolpro_plan_access" on public.schoolpro_cbt_tests;
 create policy "CBT tests scoped read" on public.schoolpro_cbt_tests for select to authenticated
 using (private.schoolpro_can_read_cbt_test_scope(school_id,class_id,subject_id,session));
 create policy "CBT tests scoped insert" on public.schoolpro_cbt_tests for insert to authenticated
@@ -166,6 +172,8 @@ using (public.schoolpro_can_manage_cbt(school_id) or (status='draft' and created
 
 drop policy if exists "school question manage" on public.schoolpro_question_bank;
 drop policy if exists "question bank authorized read" on public.schoolpro_question_bank;
+-- Question-bank writes must be governed by the subject/class-specific policies below.
+drop policy if exists "schoolpro_plan_access" on public.schoolpro_question_bank;
 create policy "Question bank scoped read" on public.schoolpro_question_bank for select to authenticated
 using (private.schoolpro_can_manage_question_scope(school_id,class_id,subject_id));
 create policy "Question bank scoped manage" on public.schoolpro_question_bank for all to authenticated
@@ -179,7 +187,7 @@ using (exists(select 1 from public.schoolpro_cbt_tests t
  where t.id=test_id and private.schoolpro_can_read_cbt_test_scope(t.school_id,t.class_id,t.subject_id,t.session)));
 create policy "CBT test question scoped insert" on public.schoolpro_cbt_test_questions for insert to authenticated
 with check (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
- and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft'
+ and (public.schoolpro_can_manage_cbt(t.school_id) or (t.status='draft' and t.created_by=(select auth.uid())
  and private.schoolpro_can_author_cbt_scope(t.school_id,t.class_id,t.subject_id,t.session)))));
 create policy "CBT test question scoped update" on public.schoolpro_cbt_test_questions for update to authenticated
 using (exists(select 1 from public.schoolpro_cbt_tests t where t.id=test_id
@@ -287,6 +295,7 @@ $$;
 revoke all on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid,uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid,uuid) to authenticated;
 drop policy if exists "Question bank scoped read" on public.schoolpro_question_bank;
+drop policy if exists "schoolpro_plan_access" on public.schoolpro_cbt_eligibility;
 create policy "Question bank scoped read" on public.schoolpro_question_bank for select to authenticated
 using (private.schoolpro_can_read_question_scope(school_id,id,class_id,subject_id));
 

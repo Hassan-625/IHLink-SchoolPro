@@ -1395,3 +1395,9 @@ PR #105 remains draft and targets `fix/result-design-section-selection`, not `ma
 - `scripts/schoolpro-account-access-test.mjs` uses a local in-memory mocked Supabase/query harness for its assertions. Useful for application logic regression, but it is not a live authenticated two-school RLS/RPC/storage acceptance test.
 - Therefore these scripts are useful CI evidence but do **not** close A. A still needs a safe authenticated test route that exercises real database authorization boundaries with separate school identities, including direct API/RPC/storage attempts and negative cases. Do not use or expose production credentials in scripts/logs, and do not create a paid Supabase branch to obtain this evidence.
 
+### Follow-up action — PR #105 release gate recorded
+- Inspected the full PR #105 patch: it spans 32 changed files and includes staff/invitation work, sports/house management, profile correction functions/audit tables, attendance, assignments, CBT/question-bank scoping, and academic result changes. This is broader than a clean A-only release.
+- The GitHub account linked to this session is the PR author, so GitHub rejected a formal `REQUEST_CHANGES` review on its own PR. A release-gate comment was therefore added to the PR conversation instead: [PR #105 discussion](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105#issuecomment-6203096124).
+- The comment records the required A-only diff, authenticated two-school direct API/RPC/storage denial evidence, full RLS/migration compatibility review, correct merge target, and post-merge verification. It explicitly says not to merge PR #105 as-is and does not authorize a production migration or Render deployment.
+- No source-code release was merged, no database migration was applied, and no Render deployment was triggered.
+

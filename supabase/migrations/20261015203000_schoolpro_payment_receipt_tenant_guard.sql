@@ -35,6 +35,7 @@ begin
        select 1 from storage.objects o
        where o.bucket_id='schoolpro-payment-receipts'
          and o.name=p_receipt_path
+         and coalesce(o.owner_id,o.owner::text)=v_user::text
      ) then
     raise exception 'Receipt upload is missing or does not belong to this account';
   end if;

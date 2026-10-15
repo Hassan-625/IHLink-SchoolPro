@@ -10,6 +10,7 @@ const migration = read('../supabase/migrations/20261015235000_schoolpro_sports_h
 const students = read('../src/pages/schoolpro/SchoolProStudents.tsx');
 const profileMigration = read('../supabase/migrations/20261016001500_schoolpro_student_profile_corrections.sql');
 const profileCorrection = read('../supabase/functions/schoolpro-profile-correction/index.ts');
+const staffPage = read('../src/pages/schoolpro/SchoolProStaff.tsx');
 const atomicProfileMigration = read('../supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql');
 assert.match(app, /path="\/schoolpro\/sports".*SchoolProSports/);
 assert.match(sports, /schoolpro_sports_houses/);

@@ -31,7 +31,7 @@ assert.match(students, /middle_name/);
 assert.match(students, /async function editStudent/);
 assert.match(students, /schoolpro_correct_student_profile/);
 assert.doesNotMatch(students, /Profile saved, but the audit entry could not be recorded/);
-assert.match(students, /schoolpro_student_profile_audit/);
+assert.match(profileMigration, /schoolpro_student_profile_audit/);
 assert.match(profileMigration, /changed_fields text\[\]/);
 assert.match(profileCorrection, /schoolpro_members/);
 assert.match(profileCorrection, /schoolpro_guardian_links/);

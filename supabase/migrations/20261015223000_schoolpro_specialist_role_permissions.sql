@@ -118,3 +118,41 @@ with check (
     ]
   )
 );
+
+
+-- Game Masters can create and maintain school calendar events used for
+-- games/competition scheduling. No finance, student-results, or staff access
+-- is granted by this policy.
+drop policy if exists "calendar management write" on public.schoolpro_calendar_events;
+create policy "calendar management write"
+on public.schoolpro_calendar_events
+for all
+to authenticated
+using (
+  private.schoolpro_module_allowed(school_id, 'calendar'::text)
+  and private.has_school_access(
+    school_id,
+    array[
+      'proprietor'::public.school_member_role,
+      'administrator'::public.school_member_role,
+      'head_teacher'::public.school_member_role,
+      'vice_principal'::public.school_member_role,
+      'registrar'::public.school_member_role,
+      'game_master'::public.school_member_role
+    ]
+  )
+)
+with check (
+  private.schoolpro_module_allowed(school_id, 'calendar'::text)
+  and private.has_school_access(
+    school_id,
+    array[
+      'proprietor'::public.school_member_role,
+      'administrator'::public.school_member_role,
+      'head_teacher'::public.school_member_role,
+      'vice_principal'::public.school_member_role,
+      'registrar'::public.school_member_role,
+      'game_master'::public.school_member_role
+    ]
+  )
+);

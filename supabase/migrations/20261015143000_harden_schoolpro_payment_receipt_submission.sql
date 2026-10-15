@@ -22,7 +22,7 @@ declare
   inv public.schoolpro_invoices%rowtype;
   sum_alloc numeric := 0;
   pending_alloc numeric := 0;
-  receipt public.storage.objects%rowtype;
+  receipt storage.objects%rowtype;
 begin
   if auth.uid() is null then
     raise exception 'Authentication required';

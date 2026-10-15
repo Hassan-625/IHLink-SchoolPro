@@ -76,7 +76,7 @@ function SchoolBillingWorkspace(){
  }
  const unavailable=Boolean(error);
  const inGrace=sub?.status==='active'&&Number(sub?.amount)>0&&sub?.billing_cycle==='annual'&&new Date(sub.renews_at).getTime()<=Date.now()&&Date.now()<new Date(sub.renews_at).getTime()+14*86400000;
- const demoExpired=sub?.status==='active'&&Number(sub?.amount)===0&&Boolean(sub?.renews_at)&&new Date(sub.renews_at).getTime()<=Date.now();
+ const demoExpired=Number(sub?.amount)===0&&Boolean(sub?.renews_at)&&new Date(sub.renews_at).getTime()<=Date.now();
  const isDemo=sub?.status==='active' && Number(sub?.amount)===0 && Boolean(sub?.renews_at) && new Date(sub.renews_at).getTime()>Date.now();
  return <ModulePage product="schoolpro" sections={[]} title="SchoolPro Subscription" description="IHLink service subscription only. Student fees and school charges use the school's own bank accounts." userName={profile?.first_name||"School Administrator"} userRole="School Management" primaryAction="Bank transfer subscription" metrics={[
   {label:"Current plan",value:loading?"…":unavailable?"Unavailable":isDemo?`Demo · ${sub.tier}`:sub?.tier||"None"},

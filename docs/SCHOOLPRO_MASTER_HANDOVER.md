@@ -1311,3 +1311,45 @@ PR #105 remains draft and targets `fix/result-design-section-selection`, not `ma
 - **CI:** Run `38810950008` on the preceding latest head reached the production-build step; the exact newest head must finish CI again before acceptance. Static tests were extended to cover incremental score preservation and the broad-policy drops. Static assertions are not a substitute for database policy tests.
 - **Template selection — OUTSTANDING:** Read-only schema inspection shows `schoolpro_result_templates` is currently one row per school with four nested section templates, and there is no persisted per-class/term/session template selection. IH Academy has a school-owned template with four section configurations; HASSAN ACADEMY currently has no custom result-template row. A Form Master selection must be persisted for the class/term/session and consumed by review and Exam Officer generation; merely adding a dropdown or exposing the designer would not satisfy this requirement. The Form Master must view scores/grading and preview the chosen output but must not receive Result Design Studio or mapping-edit permissions. The Exam Officer and authorised school admins retain design control; Head of Section mapping permissions must be explicitly checked against the role matrix.
 - **Release scope — BLOCKED from merge/deploy:** Current PR #105 head compares as 303 commits ahead of the last known Render production commit and changes a broad accumulated set of files/migrations. Its base is a feature branch, not `main`. Do not merge the accumulated PR or run its migrations directly on Render. Prepare an explicit release diff through the intended PR chain, verify migration order and direct API denial, then deploy only after all release gates pass.
+
+
+## Continuation update — 15 October 2026, 22:50 WAT
+
+### Latest verified GitHub state
+- PR [#105](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105) is **OPEN, DRAFT, UNMERGED**. Head branch: `fix/schoolpro-staff-invite-diagnostics`; head commit: `f24042c3ce0ef588b002eaed125dbacb261e0f9a`. Base branch remains `fix/result-design-section-selection`, not `main`.
+- Exact-head workflows completed successfully: [SchoolPro CI #957](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38811286008), receipt submission PostgreSQL integration #163, receipt submission migration contract #167, receipt payment contract #172, receipt review access contract #149, receipt review policy PostgreSQL integration #145, and payment-page validation #683. GitHub combined status also reports Vercel success. **This is branch CI/preview evidence only, not a Render deployment or production database migration.**
+- PR currently reports 32 changed files, 126 commits, 1,441 additions and 78 deletions. The release-scope warning remains: this is an accumulated feature branch and must not be merged or retargeted blindly.
+
+### Latest requested assessment-entry correction
+- **Incremental score entry — IMPLEMENTED IN BRANCH; CI PASS, end-to-end acceptance pending.** Teacher selects a single component (for example a particular assignment, CA/test, or examination), selects a student, enters that student's score and saves independently. The selected component is merged into the existing assessment-score payload so saving one component does not overwrite other components or mark unentered work as zero. The teacher can continue to the next student and return later to enter a different component; all components do not have to be ready together.
+- Acceptance still must confirm this flow against the real assessment scheme and authorization rules, including that a teacher can only enter marks for their assigned subject/class/session and that approval, publication and locked-result restrictions remain enforced.
+- The ecosystem rule remains: this is shared product behavior for every subscribing tenant, not a one-school-only fix. School-specific data must remain tenant-scoped.
+
+### Result-template selection — still outstanding
+- A Form Master/Class Teacher must be able to select an available school-approved template for their own class and applicable term/session, preview the template with the class results, scores and grading, and submit the result for review.
+- The selected template must persist through Form Master submission, Head of Section review/forwarding and Exam Officer generation/publication. The Form Master can view/preview but cannot edit marks through the template or access the Result Design Studio/mapping editor.
+- Exam Officer and authorized school administrators retain Result Design Studio/template-design permissions. Head of Section mapping permission must follow the approved role matrix and remain limited to the assigned section.
+- Current schema inspection noted earlier in this handover found school-level section template configuration but no persisted per-class/term/session template selection. Do not mark this complete until persistence and end-to-end propagation are implemented and tested.
+
+### Section ownership and workflow clarification
+- **B:** academic sessions, current and historical rosters, class/arm assignments, subject allocations, and the existing Form Master/class roster relationships.
+- **C:** assessment-component setup, incremental score entry, grading, averages, positions, review and publication. Subject Teachers create/mark only their allocated subjects; Form Masters review/compile class results without editing another teacher's marks by virtue of class-wide visibility; Section Heads handle only their assigned section; Exam Officer publishes class-by-class.
+- **G:** attendance operational workflow. Only the assigned Form Master (plus authorized management/Super Admin) may write attendance for the class; Subject Teacher status alone does not grant attendance-write permission.
+- Historical Form Master/student/class relationships must be resolved by academic session. Do not replace historical assignments with current assignments.
+
+### Required next actions; no production changes made
+1. Inspect the exact-head diff and SQL migration `20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql` against production schema and all existing permissive policies. Validate migration compatibility in a non-production/no-additional-cost route; do not apply it to production during review.
+2. Run/complete real two-school, two-role acceptance for Subject Teacher, Form Master and authorized management: incremental marks; assignments; CBT authoring and Form Master class-wide visibility; attendance; direct API/RPC denial for wrong subject, class, session and school.
+3. Implement persisted per-class/term/session result-template choice and propagate it through Form Master → Head of Section → Exam Officer → generated output; verify Form Master has preview-only access.
+4. Trace the Basic 5 A First Term 2025/2026 subject-ID anomaly and confirm calculations before any production data correction.
+5. Reconcile PR #105's accumulated base/head with the actual Render production source and prepare a deliberately scoped release PR/diff. Do not merge the current draft as-is.
+6. Only after the release diff, database policies/migrations, role tests and rollback plan are approved, merge through the correct chain and perform a controlled Render deployment. Verify live commit, health and the critical flows afterward.
+7. Preserve all previously listed A–J work, pricing/subscription/payment/security items, APK certification and deferred live A4 print overflow. Do not delete or overwrite this handover's older outstanding items.
+
+### Current status snapshot
+- PR #105 CI: **PASS for exact head**.
+- Incremental score-entry code: **IMPLEMENTED; authenticated/end-to-end acceptance pending**.
+- My Classes/Form Master/Subject Teacher changes and attendance/assignment/CBT policy migration: **IMPLEMENTED IN BRANCH; database-policy and real-role verification pending**.
+- Form Master result-template selection and propagation: **OUTSTANDING**.
+- Section A: **NEAR COMPLETE, NOT CLOSED**; user has verified Parent/Student access and reports no visible cross-tenant leakage, but direct API/RPC/storage denial and role-write-scope tests remain.
+- Production migration, merge and Render deployment: **NOT PERFORMED**.

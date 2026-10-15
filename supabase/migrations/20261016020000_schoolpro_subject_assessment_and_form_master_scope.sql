@@ -309,3 +309,24 @@ with check (
      or (student_id is not null and class_id is null and exists(select 1 from public.schoolpro_students s
        where s.id=student_id and s.school_id=t.school_id and s.class_id=t.class_id))))
 );
+
+
+-- Keep tenant integrity and also prevent a teacher from attaching another subject's
+-- or another class's questions to a subject-scoped CBT test.
+create or replace function private.validate_schoolpro_cbt_question_tenant()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare test_row public.schoolpro_cbt_tests; question_row public.schoolpro_question_bank;
+begin
+ select * into test_row from public.schoolpro_cbt_tests where id=new.test_id;
+ select * into question_row from public.schoolpro_question_bank where id=new.question_id;
+ if test_row.id is null or question_row.id is null then raise exception 'CBT test or question not found'; end if;
+ if test_row.school_id<>question_row.school_id then raise exception 'CBT question belongs to another school'; end if;
+ if test_row.subject_id is not null and question_row.subject_id is distinct from test_row.subject_id then
+   raise exception 'CBT question must match the test subject';
+ end if;
+ if question_row.class_id is not null and question_row.class_id is distinct from test_row.class_id then
+   raise exception 'Class-specific CBT question must match the test class';
+ end if;
+ return new;
+end $$;
+revoke all on function private.validate_schoolpro_cbt_question_tenant() from public,anon,authenticated;

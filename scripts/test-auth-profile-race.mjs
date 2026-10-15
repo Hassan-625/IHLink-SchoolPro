@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import './test-schoolpro-tenant-scope-migration.mjs';
 
 const source=readFileSync('src/context/AuthContext.tsx','utf8');
 assert.match(source,/let authEventVersion\s*=\s*0/,'auth events need a monotonic generation');

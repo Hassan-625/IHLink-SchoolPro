@@ -37,6 +37,8 @@ assert.match(profileMigration, /changed_fields text\[\]/);
 assert.match(profileCorrection, /schoolpro_members/);
 assert.match(atomicProfileMigration, /schoolpro_guardian_links/);
 assert.match(profileCorrection, /schoolpro_correct_member_profile_atomic/);
+assert.match(profileCorrection, /\\s@\]/);
+assert.doesNotMatch(profileCorrection, /\\\\s/);
 assert.match(atomicProfileMigration, /schoolpro_correct_member_profile_atomic/);
 assert.match(atomicProfileMigration, /schoolpro_correct_student_profile/);
 assert.match(profileCorrection, /No partial update was committed/);

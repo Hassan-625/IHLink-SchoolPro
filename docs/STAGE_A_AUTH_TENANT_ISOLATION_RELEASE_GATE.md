@@ -53,6 +53,7 @@ These checks ran in short SQL transactions as the authenticated database role wi
 - Cross-school student update attempts in both directions returned 0 updated rows; both transactions were rolled back.
 - Cross-school result-template Storage object lookup as School A proprietor returned 0 visible objects for a School B template.
 - Cross-school broadsheet RPC attempts in both directions were denied with `Module permission denied`.
+- A cross-school `schoolpro_current_academic_period` RPC call was denied with `School access required`; `schoolpro_can_view_result_output` returned `false` for a foreign-school student.
 - A broad Storage bucket inventory query hit statement timeout in a recursive report-media policy; retrying with one exact Storage object ID succeeded and returned 0 visible rows. This is a performance/policy-composition concern to review, not evidence of an access leak.
 
 These results establish useful positive/negative database-role evidence for core school tables, one write path, one RPC and one Storage object. They do not yet cover all 293 SchoolPro policies, every exposed SECURITY DEFINER RPC, payment receipt upload/read, invitations/first-login, or real HTTP/JWT request paths.

@@ -34,6 +34,15 @@ The Supabase production project was inspected read-only; no schema changes, migr
 - Added a regression contract for the existing source migration guards and connected it to the already CI-invoked auth-race test script. This is a **source-contract check**, not live authenticated RLS acceptance.
 - Added an isolated, unmerged migration at `supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql`. It checks that a fee-payment receipt belongs to the submitting user and exists in the expected Storage bucket, verifies guardian links against the same school and student, and locks each same-school invoice during allocation validation. This is staged code only; it has **not** been applied to production. The pending-payment/review lifecycle and duplicate invoice allocations still need dedicated transaction-level acceptance tests before merge.
 
+
+## Additional live security-advisor findings (2026-10-15)
+
+- Supabase's security advisor reports 7 RLS-enabled tables with no direct policies: schoolpro_access_invitations, schoolpro_account_challenges, schoolpro_initial_credentials, schoolpro_login_attempts, schoolpro_student_activation_challenges, schoolpro_transcript_issues, and datasub_pin_recovery_attempts. This is fail-closed for direct client queries, but each SchoolPro table must be classified as intentionally RPC/trigger-only or given an appropriately scoped policy. Do not add broad policies just to silence the advisor.
+- The advisor reports 9 anonymous-callable SECURITY DEFINER RPCs. Several are intentionally public token workflows (admission offer, public application, result PIN/code verification, candidate CBT). Their public exposure is not automatically a defect, but token entropy/expiry, rate limiting, replay behavior, information disclosure, and school scoping must be tested. Candidate CBT RPCs validate access tokens and attempt state in their definitions; end-to-end negative tests are still required.
+- The advisor reports 154 SECURITY DEFINER functions executable by authenticated users. This is not a blanket reason to revoke grants: review each exposed function's purpose, auth.uid() checks, role/module checks, tenant scope, search_path, and whether it returns or mutates cross-school data. Revoke only where the RPC is not part of the supported application contract.
+- Storage policies inspected include caller-UID-prefixed upload/read rules for schoolpro-payment-receipts and school-scoped result-template access. Verify these using two authenticated identities; policy text alone is not runtime acceptance evidence.
+- The payment-submission migration now subtracts amounts reserved by other pending submissions when validating an invoice allocation, in addition to row locking. This reduces duplicate pending claims on the same invoice, but review/reject/cancel transitions and parallel transaction behavior still require integration tests.
+
 ## What this audit does not yet prove
 
 - Two authenticated school accounts cannot read or mutate each other's rows, related IDs, RPC operations, or Storage objects.

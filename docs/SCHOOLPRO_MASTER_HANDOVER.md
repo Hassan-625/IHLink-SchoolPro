@@ -32,6 +32,14 @@ Other relevant commits:
 
 **Next action in the original sequence:** test whether all four result designs remain independent when saved, reloaded and used to generate workbooks. Automated checks currently exercise the resolver and fixtures; authenticated end-to-end acceptance is still outstanding. Do not skip straight to merge/deploy.
 
+## 2A. Corrections added during the 15 October release-blocker review
+
+- Student profile editing now calls `schoolpro_correct_student_profile`, which updates the student row and inserts its audit row inside one PostgreSQL transaction. If either fails, both roll back.
+- Staff/parent profile correction Edge Function now delegates profile, guardian phone and audit writes to `schoolpro_correct_member_profile_atomic` in one database transaction. The database function rechecks school ownership/admin authority and school membership; only the service role can execute it. Email changes remain verification-gated and are not applied.
+- Sports team scope trigger now validates both the linked house and coach membership belong to the same school; existing triggers validate participant activity/student/team and fixture teams.
+- New migration: `supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql`.
+- **Status:** implementation committed to the draft work branch; migration/function are NOT applied/deployed to production. CI still needs to run on the final head, SQL needs validation against the live schema without applying it, and end-to-end role/school isolation tests remain required. No production merge or Render deployment is implied.
+
 ## 3. Master workstream register
 
 ### A. Core application, authentication and role access

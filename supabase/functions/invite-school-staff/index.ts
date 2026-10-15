@@ -40,6 +40,7 @@ Deno.serve(async(req:Request)=>{
   if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'discipline_master', 'game_master', 'parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
   if(role==='parent'){
+   if(!/^[+0-9() .-]{7,40}$/.test(guardianPhone))return respond({error:'Enter a valid parent or guardian phone number.'},400);
    if(!studentIds.length||studentIds.length>50||!['mother','father','guardian','sponsor'].includes(relationship))return respond({error:'Choose at least one enrolled child and a relationship.'},400);
    const {data:students,error}=await admin.from('schoolpro_students').select('id').in('id',studentIds).eq('school_id',schoolId).eq('status','active');if(error)throw error;
    if(students?.length!==studentIds.length)return respond({error:'Choose enrolled children from this school.'},400);
@@ -59,7 +60,7 @@ Deno.serve(async(req:Request)=>{
      return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }
    }
-   stage='invitation_insert_existing_user';const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
+   stage='invitation_insert_existing_user';const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,guardian_phone:role==='parent'?guardianPhone:null,token_hash:tokenHash,created_by:user.id});if(error)throw error;
    return respond({ok:true,schoolCode:school.code,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
   }
   // A random inaccessible Auth password and ban prevent surname sessions or OAuth bypass.

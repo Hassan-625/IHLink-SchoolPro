@@ -10,6 +10,7 @@ const migration = read('../supabase/migrations/20261015235000_schoolpro_sports_h
 const students = read('../src/pages/schoolpro/SchoolProStudents.tsx');
 const profileMigration = read('../supabase/migrations/20261016001500_schoolpro_student_profile_corrections.sql');
 const profileCorrection = read('../supabase/functions/schoolpro-profile-correction/index.ts');
+const atomicProfileMigration = read('../supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql');
 assert.match(app, /path="\/schoolpro\/sports".*SchoolProSports/);
 assert.match(sports, /schoolpro_sports_houses/);
 assert.match(sports, /schoolpro_sports_teams/);
@@ -34,9 +35,11 @@ assert.doesNotMatch(students, /Profile saved, but the audit entry could not be r
 assert.match(profileMigration, /schoolpro_student_profile_audit/);
 assert.match(profileMigration, /changed_fields text\[\]/);
 assert.match(profileCorrection, /schoolpro_members/);
-assert.match(profileCorrection, /schoolpro_guardian_links/);
+assert.match(atomicProfileMigration, /schoolpro_guardian_links/);
 assert.match(profileCorrection, /schoolpro_correct_member_profile_atomic/);
+assert.match(atomicProfileMigration, /schoolpro_correct_member_profile_atomic/);
+assert.match(atomicProfileMigration, /schoolpro_correct_student_profile/);
 assert.match(profileCorrection, /No partial update was committed/);
-assert.match(profileCorrection, /schoolpro_profile_change_audit/);
+assert.match(atomicProfileMigration, /schoolpro_profile_change_audit/);
 assert.doesNotMatch(profileCorrection, /auth\.admin\.updateUserById/);
 console.log('SchoolPro sports and student-profile contract checks passed.');

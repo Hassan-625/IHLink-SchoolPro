@@ -126,3 +126,5 @@ drop trigger if exists schoolpro_sports_participants_scope_check on public.schoo
 create trigger schoolpro_sports_participants_scope_check before insert or update on public.schoolpro_sports_participants for each row execute function public.schoolpro_validate_sports_school_scope();
 drop trigger if exists schoolpro_sports_fixtures_scope_check on public.schoolpro_sports_fixtures;
 create trigger schoolpro_sports_fixtures_scope_check before insert or update on public.schoolpro_sports_fixtures for each row execute function public.schoolpro_validate_sports_school_scope();
+
+grant select, insert, update, delete on public.schoolpro_sports_houses, public.schoolpro_sports_teams, public.schoolpro_sports_activities, public.schoolpro_sports_participants, public.schoolpro_sports_fixtures to authenticated;

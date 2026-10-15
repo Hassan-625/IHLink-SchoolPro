@@ -16,9 +16,18 @@ const files=[
     'member_school<>new.school_id'
   ]]
 ];
+files.push(['supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql',[
+  "split_part(p_receipt_path,'/',1)<>v_user::text",
+  "o.bucket_id='schoolpro-payment-receipts'",
+  'and o.name=p_receipt_path',
+  'where id=(a->>\'invoice_id\')::uuid and school_id=p_school',
+  'for update',
+  'g.school_id=p_school and g.student_id=inv.student_id',
+  'revoke all on function public.submit_schoolpro_payment'
+]]);
 for(const [path,needles] of files){
  const sql=readFileSync(path,'utf8');
  for(const needle of needles) assert.ok(sql.toLowerCase().includes(needle.toLowerCase()),path+' missing tenant guard: '+needle);
  assert.doesNotMatch(sql,/\b(drop table|truncate|delete from)\b/i,path+' must not delete production records or tables');
 }
-console.log('PASS: baseline SchoolPro tenant migrations retain operational RLS, same-school guardian links, and CBT/member relationship integrity guards.');
+console.log('PASS: SchoolPro tenant migration contracts cover operational RLS, same-school guardian/CBT relationships, receipt-object ownership and locked same-school invoice allocations.');

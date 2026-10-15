@@ -86,3 +86,43 @@ drop policy if exists schoolpro_sports_fixtures_access on public.schoolpro_sport
 create policy schoolpro_sports_fixtures_access on public.schoolpro_sports_fixtures for all to authenticated
 using (private.schoolpro_module_allowed(school_id, 'calendar') and private.has_school_access(school_id, array['proprietor'::public.school_member_role,'administrator'::public.school_member_role,'vice_principal'::public.school_member_role,'head_teacher'::public.school_member_role,'game_master'::public.school_member_role]))
 with check (private.schoolpro_module_allowed(school_id, 'calendar') and private.has_school_access(school_id, array['proprietor'::public.school_member_role,'administrator'::public.school_member_role,'vice_principal'::public.school_member_role,'head_teacher'::public.school_member_role,'game_master'::public.school_member_role]));
+
+-- Validate that all linked sports records belong to the same school; RLS on
+-- each row alone is not enough to prevent cross-school foreign-key references.
+create or replace function public.schoolpro_validate_sports_school_scope()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+declare linked_school uuid;
+begin
+ if tg_table_name = 'schoolpro_sports_teams' and new.house_id is not null then
+   select school_id into linked_school from public.schoolpro_sports_houses where id = new.house_id;
+   if linked_school is distinct from new.school_id then raise exception 'Sports house must belong to the same school'; end if;
+ end if;
+ if tg_table_name = 'schoolpro_sports_participants' then
+   select school_id into linked_school from public.schoolpro_sports_activities where id = new.activity_id;
+   if linked_school is distinct from new.school_id then raise exception 'Sports activity must belong to the same school'; end if;
+   select school_id into linked_school from public.schoolpro_students where id = new.student_id;
+   if linked_school is distinct from new.school_id then raise exception 'Student must belong to the same school'; end if;
+   if new.team_id is not null then
+     select school_id into linked_school from public.schoolpro_sports_teams where id = new.team_id;
+     if linked_school is distinct from new.school_id then raise exception 'Sports team must belong to the same school'; end if;
+   end if;
+ end if;
+ if tg_table_name = 'schoolpro_sports_fixtures' then
+   select school_id into linked_school from public.schoolpro_sports_teams where id = new.home_team_id;
+   if linked_school is distinct from new.school_id then raise exception 'Home team must belong to the same school'; end if;
+   select school_id into linked_school from public.schoolpro_sports_teams where id = new.away_team_id;
+   if linked_school is distinct from new.school_id then raise exception 'Away team must belong to the same school'; end if;
+ end if;
+ return new;
+end;
+$$;
+drop trigger if exists schoolpro_sports_teams_scope_check on public.schoolpro_sports_teams;
+create trigger schoolpro_sports_teams_scope_check before insert or update on public.schoolpro_sports_teams for each row execute function public.schoolpro_validate_sports_school_scope();
+drop trigger if exists schoolpro_sports_participants_scope_check on public.schoolpro_sports_participants;
+create trigger schoolpro_sports_participants_scope_check before insert or update on public.schoolpro_sports_participants for each row execute function public.schoolpro_validate_sports_school_scope();
+drop trigger if exists schoolpro_sports_fixtures_scope_check on public.schoolpro_sports_fixtures;
+create trigger schoolpro_sports_fixtures_scope_check before insert or update on public.schoolpro_sports_fixtures for each row execute function public.schoolpro_validate_sports_school_scope();

@@ -1296,3 +1296,6 @@ The user reports successful Parent/Student sign-in and feature access, and repor
 ### Merge/deployment caution
 
 PR #105 remains draft and targets `fix/result-design-section-selection`, not `main`. The parent feature branch itself is substantially ahead of `main`; merging PR #105 as-is would not deploy it to Render, and retargeting the accumulated branch directly to `main` would bring a much larger diff than the PR's current 27-file view. Do not merge or retarget this accumulated branch blindly. Prepare/review an explicit release diff against the intended production source after CI and scope acceptance. Vercel preview success is not Render production deployment.
+
+
+**Production-schema compatibility note:** read-only inspection of the live database found that CBT question tenant integrity is currently enforced by the shared `private.enforce_schoolpro_tenant_relations()` trigger function, not the legacy trigger name in one source migration. The new migration therefore adds a separate `private.schoolpro_validate_cbt_question_scope()` trigger for subject/class matching and leaves the existing shared tenant-integrity trigger untouched. This compatibility adjustment is draft-only and has not been applied to production.

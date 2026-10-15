@@ -40,6 +40,8 @@ assert.match(academicScopeMigration, /Form Masters read assigned class attendanc
 assert.match(questionBankPage, /schoolpro_class_staff_directory/);
 assert.match(questionBankPage, /Create or edit questions only for your own assigned subject and class/);
 assert.match(questionBankPage, /authorSubjects\.map/);
+assert.match(questionBankPage, /disabled={!canEditQuestion\(x\)}/);
+assert.match(academicScopeMigration, /schoolpro_can_read_question_scope\(school_id,id,class_id,subject_id\)/);
 assert.match(academicScopeMigration, /drop policy if exists "School educators insert attendance"/);
 assert.match(academicScopeMigration, /private\.schoolpro_can_mark_attendance\(school_id,class_id\)/);
 assert.match(academicScopeMigration, /assignment scoped insert/);

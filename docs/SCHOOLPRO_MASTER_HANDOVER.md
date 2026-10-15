@@ -1265,7 +1265,7 @@ The user reports successful Parent/Student sign-in and feature access, and repor
 ### Role contract to preserve
 
 - Subject Teachers can create assignments, tests and CBT questions/tests only for their allocated subject, class and active academic session; they can enter marks for their own subject scope. They must not be able to write another teacher's subject records by editing requests directly.
-- A Form Master/Class Teacher can see the complete roster for the assigned class and all CBT tests/assignments belonging to that class, including items created by other subject teachers. Class-wide visibility is read scope, not automatic authority to edit another teacher's test, question bank, assignment or marks.
+- A Form Master/Class Teacher can see the complete roster for the assigned class and all CBT tests/assignments belonging to that class, including items created by other subject teachers. Class-wide visibility does not grant authority to edit another teacher's CBT test, question bank or assignment. Section C result-entry/review permissions remain governed by the established workflow, including the Form Master review stage before Exam Officer publication.
 - Attendance entry belongs to the Form Master assigned to the selected class. Subject Teacher status alone is not sufficient to create/update attendance. Authorized school management and platform Super Admin retain their management access.
 - Historical class/student relationships remain session-scoped. Do not infer a historical roster from a student's current class, and do not change a school's Form Master assignment to make a page appear populated.
 

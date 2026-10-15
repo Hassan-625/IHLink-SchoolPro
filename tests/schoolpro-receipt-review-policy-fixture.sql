@@ -1,3 +1,8 @@
+do $$ begin
+  if not exists(select 1 from pg_type t join pg_namespace n on n.oid=t.typnamespace where n.nspname='public' and t.typname='school_member_role') then
+    create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar','teacher');
+  end if;
+end $$;
 create schema if not exists private;
 create or replace function private.schoolpro_module_allowed(target_school uuid, required_permission text)
 returns boolean language sql stable as $$

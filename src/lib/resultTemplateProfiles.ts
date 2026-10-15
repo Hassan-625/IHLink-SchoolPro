@@ -1,7 +1,8 @@
-export type ReportSection='nursery'|'primary';
+export type ReportSection='nursery'|'primary'|'junior_secondary'|'senior_secondary';
 export const resultTemplateProfile=(section:ReportSection)=>{
  const end=section==='nursery'?24:27,summary=end+3,remark=end+20;
- return {name:section==='nursery'?'Nursery report':'Primary report',sheet_name:'Sheet1',start_row:13,
+ const sectionLabel=section==='junior_secondary'?'Junior secondary':section==='senior_secondary'?'Senior secondary':section==='nursery'?'Nursery':'Primary';
+ return {name:sectionLabel+' report',sheet_name:'Sheet1',start_row:13,
  field_cells:{school_name:'',student_name:'C8:J8',admission_number:'C9:E9',class_name:'J9:L9',term:'E7',session:'J7:K7',term_ending:'C10:D10',next_term_begins:'L10:M10',class_population:`C${summary}`,class_position:`C${summary+1}`},
  columns:{subject:'B',total:'G',grade:'K',status:'',first_term:'H',second_term:'I',subject_average:'J',subject_position:'L',subject_class_average:'M',subject_remark:'N'},
  component_columns:{__layout:{section,last_subject_row:end,preserve_subject_labels:true,grade_thresholds:[75,65,55,45,40]}},
@@ -22,4 +23,29 @@ export function subjectClassSummary(rows:Array<{student_id:string;subject_id:str
  if(population<1||marks.size!==population||[...marks.values()].some(scores=>scores.size!==terms.length))return null;
  const averages=new Map([...marks].map(([id,scores])=>[id,[...scores.values()].reduce((a,b)=>a+b,0)/terms.length]));const score=averages.get(studentId);if(score===undefined)return null;
  return {position:1+[...averages.values()].filter(value=>value>score).length,classAverage:[...averages.values()].reduce((a,b)=>a+b,0)/averages.size};
+}
+export function assessmentMaximumForResults(results:Array<{assessment_scheme_id?:string|null}>,schemes:Array<{id:string;components:Array<{maxScore:number|string}>}>):number|null{
+ if(!results.length)return null;
+ let maximum=0;
+ for(const result of results){
+  if(!result.assessment_scheme_id)return null;
+  const scheme=schemes.find(item=>item.id===result.assessment_scheme_id);
+  if(!scheme?.components?.length)return null;
+  let subjectMaximum=0;
+  for(const component of scheme.components){
+   const value=Number(component.maxScore);
+   if(!Number.isFinite(value)||value<=0)return null;
+   subjectMaximum+=value;
+  }
+  maximum+=subjectMaximum;
+ }
+ return maximum>0?maximum:null;
+}
+
+/** Sum saved per-subject totals for one term; null means no valid rows are available. */
+export function sumResultTotals(rows:Array<{total_score:number|string}>):number|null{
+ if(!rows.length)return null;
+ let total=0;
+ for(const row of rows){const value=Number(row.total_score);if(!Number.isFinite(value))return null;total+=value;}
+ return total;
 }

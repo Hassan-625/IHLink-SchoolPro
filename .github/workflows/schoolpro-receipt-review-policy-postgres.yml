@@ -1,0 +1,21 @@
+name: SchoolPro receipt review policy PostgreSQL integration
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install and start local PostgreSQL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql postgresql-client
+          sudo service postgresql start
+          sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+          sudo -u postgres createdb schoolpro_test
+      - name: Exercise receipt Storage policy in isolated PostgreSQL
+        env:
+          PGPASSWORD: postgres
+        run: psql -h localhost -U postgres -d schoolpro_test -f tests/test-schoolpro-receipt-review-policy.sql

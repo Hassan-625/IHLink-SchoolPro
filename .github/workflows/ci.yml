@@ -1,7 +1,7 @@
 name: SchoolPro CI
 on:
   push:
-    branches: [main]
+    branches: [main, fix/result-design-section-selection]
   pull_request:
 jobs:
   validate:
@@ -15,7 +15,9 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: node scripts/test-startup-diagnostic.mjs
+      - run: node scripts/test-auth-profile-race.mjs
       - run: node scripts/test-school-context-refresh.mjs
+      - run: node scripts/test-school-context-authorization-contract.mjs
       - run: node scripts/test-school-access-cache.mjs
       - run: node scripts/test-school-dashboard-roles.mjs
       - run: node scripts/test-school-context-relationships.mjs
@@ -30,6 +32,7 @@ jobs:
       - run: node scripts/test-app-idle-lock.mjs
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
+      - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
       - run: node scripts/school-document-design-test.mjs
       - run: node scripts/school-email-signin-test.mjs
       - run: node scripts/test-template-preview.mjs

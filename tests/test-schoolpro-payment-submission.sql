@@ -1,0 +1,103 @@
+\set ON_ERROR_STOP on
+\ir schoolpro-payment-submission-fixture.sql
+\ir ../supabase/migrations/20261015143000_harden_schoolpro_payment_receipt_submission.sql
+do $$ declare
+  parent_id uuid := '10000000-0000-0000-0000-000000000001';
+  school_id uuid := '20000000-0000-0000-0000-000000000001';
+  student_id uuid := '30000000-0000-0000-0000-000000000001';
+  invoice_id uuid := '40000000-0000-0000-0000-000000000001';
+  other_student_id uuid := '30000000-0000-0000-0000-000000000002';
+  other_invoice_id uuid := '40000000-0000-0000-0000-000000000002';
+  other_school_id uuid := '20000000-0000-0000-0000-000000000002';
+  bank_id uuid := '50000000-0000-0000-0000-000000000001';
+  submission_id uuid;
+begin
+  insert into public.schoolpro_guardian_links values(school_id,student_id,parent_id,'active');
+  insert into public.schoolpro_bank_accounts values(bank_id,school_id,true);
+  insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid) values(invoice_id,school_id,student_id,1000,0);
+  insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid) values(other_invoice_id,school_id,other_student_id,1000,0);
+  -- Simulate inconsistent legacy linkage: the student/invoice belong to school A,
+  -- but the guardian link claims school B. This must never authorize payment submission.
+  insert into public.schoolpro_guardian_links values(other_school_id,other_student_id,parent_id,'active');
+  insert into storage.objects(bucket_id,name,metadata) values('schoolpro-payment-receipts',parent_id::text||'/receipt.pdf',jsonb_build_object('mimetype','application/pdf','size',1024));
+  perform set_config('request.jwt.claim.sub',parent_id::text,false);
+
+  perform set_config('request.jwt.claim.sub','',false);
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: unauthenticated submission was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: unauthenticated submission was accepted' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub',parent_id::text,false);
+
+  insert into storage.objects(bucket_id,name,metadata) values('schoolpro-payment-receipts',parent_id::text||'/large.pdf',jsonb_build_object('mimetype','application/pdf','size',5242881));
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/large.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: oversized receipt was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: oversized receipt was accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,'60000000-0000-0000-0000-000000000001'::uuid,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: invalid bank account was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: invalid bank account was accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',50),jsonb_build_object('invoice_id',invoice_id,'amount',50)));
+    raise exception 'TEST FAILURE: duplicate invoice allocations were accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: duplicate invoice allocations were accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,'90000000-0000-0000-0000-000000000001/forged.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: forged path was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: forged path was accepted' then raise; end if;
+  end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/missing.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: missing object was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: missing object was accepted' then raise; end if;
+  end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','image/png',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: MIME mismatch was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: MIME mismatch was accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,'NaN'::numeric,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: NaN total was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: NaN total was accepted' then raise; end if;
+  end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount','NaN')));
+    raise exception 'TEST FAILURE: NaN allocation was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: NaN allocation was accepted' then raise; end if;
+  end;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,10,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',other_invoice_id,'amount',10)));
+    raise exception 'TEST FAILURE: cross-school guardian link authorized invoice payment';
+  exception when others then
+    if sqlerrm='TEST FAILURE: cross-school guardian link authorized invoice payment' then raise; end if;
+  end;
+
+  submission_id := public.submit_schoolpro_payment(school_id,bank_id,700,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',700)));
+  if not exists(select 1 from public.schoolpro_payment_submissions where id=submission_id and status='pending') then raise exception 'TEST FAILURE: valid submission not pending'; end if;
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,400,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',400)));
+    raise exception 'TEST FAILURE: over-allocation against pending submission accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: over-allocation against pending submission accepted' then raise; end if;
+  end;
+  raise notice 'PASS: forged path, missing object, MIME mismatch, valid submission, and pending-balance reservation';
+end $$;

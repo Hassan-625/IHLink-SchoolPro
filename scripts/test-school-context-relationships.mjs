@@ -8,4 +8,4 @@ for(const table of ['schoolpro_students','schoolpro_guardian_links','schoolpro_m
  assert.equal(response.status,200,table+' relationship failed: '+JSON.stringify(body));
  assert.deepEqual(body,[],'Schema validation must not disclose any records');
 }
-console.log('PASS: student, parent and staff school embeddings resolve unambiguously in production.');
+console.log('PASS: configured Supabase API relationship smoke test passed; this does not verify authenticated tenant RLS isolation.');

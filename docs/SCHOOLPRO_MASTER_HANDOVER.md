@@ -815,3 +815,46 @@ No production data, production policies, payment rows, subscription prices, merg
 - This audit was recorded in documentation commit [0f8ac916](https://github.com/Hassan-625/IHLink-SchoolPro/commit/0f8ac916c9a725a673c31934852fc8e80f0bd558). The handover file was re-fetched from the branch and the new reconciliation section was verified present.
 - No new workflow run was returned for the documentation-only commit. The code head immediately before the documentation update (`b820c74a...`) had the passing SchoolPro CI and payment-validation runs recorded above; do not assume those runs executed against the new documentation SHA.
 - After the documentation commit, GitHub reports PR #103 as open/draft/unmerged but `mergeable: false`. This is a release/integration blocker to inspect later; no merge was attempted. Check the exact PR/base conflict or mergeability reason before any integration. No Render deployment or production change occurred.
+
+
+## 2026-10-15 continuation — user-confirmed A–C verification gate before Section D
+
+The user has explicitly reset the immediate execution order: **do not proceed with Section D acceptance yet**. First re-test, strengthen, and evidence Sections A, B and C. This instruction supersedes the earlier “Exact continuation point” ordering above where it says to start with D; retain that historical checkpoint, but follow this newer gate from now on.
+
+### Non-negotiable tenant-isolation acceptance criterion
+
+Each registered school workspace must own and see only its own data across every module: students, staff, parents, admissions, academic sessions/terms, classes/arms, enrolments, subjects, assessments, marks, results, CBT question banks and attempts, invoices/fees, documents, storage objects, and reports. School A must not access School B data by changing a URL, query parameter, client/browser state, school ID in a payload, direct API/RPC call, or storage object path. A correct school name in the UI is not sufficient evidence.
+
+Required verification layers:
+- **Identity/session:** authenticate users; establish the correct school workspace on sign-in, refresh, navigation, and switching workspace; prevent stale school context from carrying over between sessions.
+- **Authorization:** test every relevant role and both permitted and denied operations; do not rely on hidden UI controls as authorization.
+- **Database/API:** verify school ownership predicates and RLS for reads, inserts, updates, deletes, joins, RPCs and exports. Reject forged or missing tenant identifiers and cross-school references.
+- **Storage/output:** test uploads, signed URLs, generated XLSX/PDF files and document previews for cross-school access.
+- **Regression:** use two distinct test schools with deliberately different records and prove both positive access to own records and negative access to the other school's records.
+
+Do not claim tenant isolation is fully functional until the tests run against the intended authenticated application/backend with evidence recorded. Static tests and disposable PostgreSQL checks are useful but must be labelled as such. Do not alter production data, policies or deploy as part of testing without an approved remediation plan.
+
+### Required order and acceptance gates
+
+1. **A — Core application, authentication and role access:** verify sign-in/session persistence, logout and school switching, Super Admin explicit workspace selection, school-admin boundaries, staff roles/permissions, direct API/RPC denial, and stale-context prevention. Verify Super Admin's intended global administrative capability without granting ordinary school users cross-school access.
+2. **B — Academic session, student population and class roster:** with Super Admin and authorized roles (especially Exam Officer), verify academic session/term selection, school context, class/arm, active enrolments, student counts, subject assignments and result-roster joins. Exercise empty/populated states, refresh, navigation, paging and errors. Revisit the previously fixed Results session/roster issue; do not infer all academic routes are fixed from one route passing.
+3. **C — Assessment, class/subject averages, review and publication:** verify entry/edit, score validation and grading, totals/averages/positions, broadsheets and exports; test the required teacher → form master → assigned section head → Exam Officer review/publication sequence, class-by-class and partial publication, late submissions, corrections/republication and audit history. Verify role/section boundaries and source record relationships. Investigate the Basic 5 A First Term 2025/2026 anomaly (40 active students, 400 published results, 37 reportedly associated with Basic 4 A subject IDs) read-only first; do not edit production rows until the cause and remediation are proven.
+4. **Gate to D:** proceed only after A–C have recorded test environment, exact commit, roles used, test cases, evidence links, outcomes, and known limitations. If a live authenticated check cannot be run from the available tools, mark it **BLOCKED — requires user/browser or Render access**, not PASS. Do not represent automated CI alone as “perfect” or “fully functional”.
+5. **D — Result Design Studio and four custom Excel workbook sections:** only after the A–C gate, resume save/reload/replace/generate/inspect acceptance for Nursery, Primary, Junior Secondary and Senior Secondary.
+6. **Deployment:** Render is the target. Vercel preview/checks do not count as deployment verification. No merge or Render deploy without the existing approval and release gates.
+
+### Handover reporting standard from this checkpoint
+
+After every meaningful action, update this same file with:
+- date and action performed;
+- repository, branch and exact commit;
+- environment (unit/CI, disposable PostgreSQL, authenticated preview, or Render production);
+- roles and school tenants tested;
+- specific positive and negative cases;
+- evidence links/logs/artifacts;
+- status using the existing vocabulary: **PASS — evidenced**, **IMPLEMENTED — verification pending**, **OUTSTANDING**, **DEFERRED — preserve**, or **BLOCKED**;
+- remaining limitations and the exact next action.
+
+“Fully functional”, “outstanding” or “complete” may be used only for a defined scope whose acceptance cases have passed. Keep partial results explicit. No production database or policy changes, paid Supabase branch, merge, or Render deployment is authorized by this checkpoint.
+
+**Immediate next action:** start with Section A and inspect the relevant auth/workspace/role code and tests, then run the strongest available non-production regression checks before proceeding to B. Keep D paused until A, B and C pass their evidence gates.

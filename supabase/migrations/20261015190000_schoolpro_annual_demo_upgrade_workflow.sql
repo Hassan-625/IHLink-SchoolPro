@@ -66,11 +66,11 @@ alter table public.schoolpro_subscription_intents add constraint schoolpro_subsc
 create or replace function public.request_schoolpro_plan_upgrade(p_school uuid,p_catalog uuid)
 returns jsonb language plpgsql security definer set search_path='' as $$
 declare s public.schoolpro_subscriptions%rowtype; c public.schoolpro_subscription_catalog%rowtype;
- current_plan public.schoolpro_subscription_catalog%rowtype; r public.schoolpro_upgrade_requests%rowtype; owner_id uuid; balance numeric;
+ current_plan public.schoolpro_subscription_catalog%rowtype; r public.schoolpro_upgrade_requests%rowtype; school_owner uuid; balance numeric;
 begin
  if auth.uid() is null or not coalesce(private.is_active_account(),false) then raise exception 'Active account required'; end if;
- select owner_id into owner_id from public.schoolpro_schools where id=p_school;
- if owner_id is null or (owner_id is distinct from auth.uid() and not private.has_school_access(p_school,array['proprietor']::public.school_member_role[])) then
+ select sc.owner_id into school_owner from public.schoolpro_schools sc where sc.id=p_school;
+ if school_owner is null or (school_owner is distinct from auth.uid() and not private.has_school_access(p_school,array['proprietor']::public.school_member_role[])) then
   raise exception 'Only the school proprietor can request an upgrade';
  end if;
  if exists(select 1 from public.schoolpro_demo_requests d where d.school_id=p_school and d.activated_at is not null and d.free_access_ends_at>now()) then
@@ -89,9 +89,9 @@ begin
  if exists(select 1 from public.schoolpro_upgrade_requests where school_id=p_school and status in('pending','approved','invoiced')) then
   raise exception 'An upgrade request is already in progress';
  end if;
- balance:=round(c.annual_price-current_plan.annual_price,2);
+ balance:=round(c.annual_price-s.amount,2);
  insert into public.schoolpro_upgrade_requests(school_id,requested_by,current_subscription_id,from_plan,to_catalog_id,from_annual_price,target_annual_price,balance_due)
- values(p_school,auth.uid(),s.id,s.tier,c.id,current_plan.annual_price,c.annual_price,balance) returning * into r;
+ values(p_school,auth.uid(),s.id,s.tier,c.id,s.amount,c.annual_price,balance) returning * into r;
  return to_jsonb(r);
 end $$;
 revoke all on function public.request_schoolpro_plan_upgrade(uuid,uuid) from public,anon;

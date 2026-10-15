@@ -55,7 +55,7 @@ assert.match(atomicProfileMigration, /schoolpro_correct_student_profile/);
 assert.match(profileCorrection, /No partial update was committed/);
 assert.match(atomicProfileMigration, /schoolpro_profile_change_audit/);
 assert.doesNotMatch(profileCorrection, /auth\.admin\.updateUserById/);
-const staffPage = read('../src/pages/schoolpro/SchoolProStaff.tsx');
+
 assert.match(staffPage, /temporary first-time password/);
 assert.match(staffPage, /within seven days/);
 assert.doesNotMatch(staffPage, /choose their own password at first sign-in/i);

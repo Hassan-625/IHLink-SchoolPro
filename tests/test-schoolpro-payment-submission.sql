@@ -1,6 +1,6 @@
 \set ON_ERROR_STOP on
-\ir /workspace/tests/schoolpro-payment-submission-fixture.sql
-\ir /workspace/supabase/migrations/20261015143000_harden_schoolpro_payment_receipt_submission.sql
+\ir schoolpro-payment-submission-fixture.sql
+\ir ../supabase/migrations/20261015143000_harden_schoolpro_payment_receipt_submission.sql
 do $$ declare
   parent_id uuid := '10000000-0000-0000-0000-000000000001';
   school_id uuid := '20000000-0000-0000-0000-000000000001';
@@ -21,14 +21,12 @@ begin
   exception when others then
     if sqlerrm='TEST FAILURE: forged path was accepted' then raise; end if;
   end;
-
   begin
     perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/missing.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
     raise exception 'TEST FAILURE: missing object was accepted';
   exception when others then
     if sqlerrm='TEST FAILURE: missing object was accepted' then raise; end if;
   end;
-
   begin
     perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','image/png',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
     raise exception 'TEST FAILURE: MIME mismatch was accepted';
@@ -38,13 +36,11 @@ begin
 
   submission_id := public.submit_schoolpro_payment(school_id,bank_id,700,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',700)));
   if not exists(select 1 from public.schoolpro_payment_submissions where id=submission_id and status='pending') then raise exception 'TEST FAILURE: valid submission not pending'; end if;
-
   begin
     perform public.submit_schoolpro_payment(school_id,bank_id,400,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',400)));
     raise exception 'TEST FAILURE: over-allocation against pending submission accepted';
   exception when others then
     if sqlerrm='TEST FAILURE: over-allocation against pending submission accepted' then raise; end if;
   end;
-
   raise notice 'PASS: forged path, missing object, MIME mismatch, valid submission, and pending-balance reservation';
 end $$;

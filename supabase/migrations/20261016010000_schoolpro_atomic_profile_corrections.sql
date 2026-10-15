@@ -21,6 +21,9 @@ begin
  values(p_school_id,p_student_id,auth.uid(),changed,old_row,new_row);
  return jsonb_build_object('changed',true,'fields',changed);
 end $$;
+-- Audit entries must only be created by the atomic correction function, never forged directly by clients.
+drop policy if exists schoolpro_student_profile_audit_insert on public.schoolpro_student_profile_audit;
+revoke insert on public.schoolpro_student_profile_audit from authenticated, anon, public;
 revoke all on function public.schoolpro_correct_student_profile(uuid,uuid,jsonb) from public, anon;
 grant execute on function public.schoolpro_correct_student_profile(uuid,uuid,jsonb) to authenticated;
 

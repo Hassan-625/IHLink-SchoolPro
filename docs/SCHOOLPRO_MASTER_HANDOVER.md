@@ -35,6 +35,7 @@ Other relevant commits:
 ## 2A. Corrections added during the 15 October release-blocker review
 
 - Student profile editing now calls `schoolpro_correct_student_profile`, which updates the student row and inserts its audit row inside one PostgreSQL transaction. If either fails, both roll back.
+- Direct client inserts into `schoolpro_student_profile_audit` are revoked in the atomic-correction migration; audit rows must be produced by the transactional correction function.
 - Staff/parent profile correction Edge Function now delegates profile, guardian phone and audit writes to `schoolpro_correct_member_profile_atomic` in one database transaction. The database function rechecks school ownership/admin authority and school membership; only the service role can execute it. Email changes remain verification-gated and are not applied.
 - Sports team scope trigger now validates both the linked house and coach membership belong to the same school; existing triggers validate participant activity/student/team and fixture teams.
 - New migration: `supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql`.

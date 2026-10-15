@@ -43,6 +43,20 @@ The Supabase production project was inspected read-only; no schema changes, migr
 - Storage policies inspected include caller-UID-prefixed upload/read rules for schoolpro-payment-receipts and school-scoped result-template access. Verify these using two authenticated identities; policy text alone is not runtime acceptance evidence.
 - The payment-submission migration now subtracts amounts reserved by other pending submissions when validating an invoice allocation, in addition to row locking. This reduces duplicate pending claims on the same invoice, but review/reject/cancel transitions and parallel transaction behavior still require integration tests.
 
+
+## Read-only transaction-scoped tenant checks (2026-10-15)
+
+These checks ran in short SQL transactions as the authenticated database role with each selected active user's JWT subject claim set locally. Every transaction was rolled back; no application data was changed. They are database-policy acceptance checks, not browser/API requests with actual signed JWTs.
+
+- School A proprietor: own-school student query returned 2 rows; queries for School B students, members, invoices and results each returned 0 rows.
+- School B proprietor: own-school student query returned 1,212 rows; queries for School A students, members, invoices and results each returned 0 rows.
+- Cross-school student update attempts in both directions returned 0 updated rows; both transactions were rolled back.
+- Cross-school result-template Storage object lookup as School A proprietor returned 0 visible objects for a School B template.
+- Cross-school broadsheet RPC attempts in both directions were denied with `Module permission denied`.
+- A broad Storage bucket inventory query hit statement timeout in a recursive report-media policy; retrying with one exact Storage object ID succeeded and returned 0 visible rows. This is a performance/policy-composition concern to review, not evidence of an access leak.
+
+These results establish useful positive/negative database-role evidence for core school tables, one write path, one RPC and one Storage object. They do not yet cover all 293 SchoolPro policies, every exposed SECURITY DEFINER RPC, payment receipt upload/read, invitations/first-login, or real HTTP/JWT request paths.
+
 ## What this audit does not yet prove
 
 - Two authenticated school accounts cannot read or mutate each other's rows, related IDs, RPC operations, or Storage objects.

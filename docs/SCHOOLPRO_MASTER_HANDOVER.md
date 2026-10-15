@@ -1056,3 +1056,11 @@ User-reported live acceptance evidence:
 Code-level triage note (not yet a confirmed root cause): `supabase/functions/invite-school-staff/index.ts` catches all internal exceptions and returns the same generic HTTP 400 response. This masks whether failure originates from caller/school membership authorization, the invitation/credential RPCs, table constraints or grants, or Auth user creation. Diagnose using timestamp-correlated Edge Function/Postgres logs and a safe reproduction; do not weaken authorization or reveal internal exception details to the browser. The log query attempted during this review returned a backend error, so no runtime root cause has been established.
 
 Section A is therefore **PARTIALLY ACCEPTED**: owner scoping, Super Admin workspace selection, and the user's database/storage denial tests are accepted as user-reported evidence; staff creation and full role/direct endpoint acceptance remain open. Continue debugging the staff creation path first, preserving tenant isolation. Sections B/C remain gated and Section D remains paused. Do not mark all of A complete yet.
+
+
+## Section A follow-up — staff-access failure diagnostics (15 October 2026)
+
+- The deployed `invite-school-staff` Edge Function was inspected (active version 15). Its generic catch response masked the failing operation; read-only unified-log queries returned a backend error, so no runtime root cause has been established.
+- A diagnostic-only change is staged in [PR #105](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105) on `fix/schoolpro-staff-invite-diagnostics`. It adds a request correlation ID and logs a bounded error summary plus operation stage, without logging the request payload or bearer token. The client-facing error remains generic.
+- **Not deployed:** wait for checks and owner authorization. Once approved and deployed, reproduce one staff-creation failure, capture the returned request ID, correlate it with Edge Function logs, and fix the identified operation. Re-test creation, sign-in/role assignment, and cross-school denial.
+- Do not weaken school tenant isolation to work around this. Section A remains partially accepted; B/C remain gated and D remains paused. Report-card printing/CSS remains deferred.

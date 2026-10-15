@@ -1041,3 +1041,18 @@ No merge, production deployment, production migration, or production subscriptio
 - Static source-contract checks passing do **not** close Section A. Authenticated two-school acceptance is still **BLOCKED** because no signed-in test session and observed cross-school results are available. Do not infer live tenant isolation from source checks alone.
 - PR #103 (result-design branch) and PR #104 (annual Demo/upgrade branch) remain open, draft, and unmerged as of this check. No production migration, direct database change, or production rollout was performed.
 - **Next action remains Section A:** obtain/use a signed-in test session with two controlled school workspaces and execute owner/staff/Super Admin selection, forged `school_id`, direct route/API/RPC, storage, and role-denial tests. Keep Sections B/C gated and Section D paused until acceptance evidence is recorded.
+
+
+### 2026-10-15 user acceptance update — Section A
+
+User-reported live acceptance evidence:
+- **Verified:** school owner is restricted to their own school.
+- **Verified:** Super Admin can select and inspect the intended school workspace.
+- **Verified:** cross-school database access was tested and denied.
+- **Verified:** cross-school storage access was tested and denied.
+- **Blocked / defect to investigate:** staff creation in another/new school workspace fails with the generic message: `School access could not be created. Please check the details or contact support.`
+- **Still unverified:** complete staff role enforcement across allowed and denied operations, and direct-route/API/RPC authorization cases.
+
+Code-level triage note (not yet a confirmed root cause): `supabase/functions/invite-school-staff/index.ts` catches all internal exceptions and returns the same generic HTTP 400 response. This masks whether failure originates from caller/school membership authorization, the invitation/credential RPCs, table constraints or grants, or Auth user creation. Diagnose using timestamp-correlated Edge Function/Postgres logs and a safe reproduction; do not weaken authorization or reveal internal exception details to the browser. The log query attempted during this review returned a backend error, so no runtime root cause has been established.
+
+Section A is therefore **PARTIALLY ACCEPTED**: owner scoping, Super Admin workspace selection, and the user's database/storage denial tests are accepted as user-reported evidence; staff creation and full role/direct endpoint acceptance remain open. Continue debugging the staff creation path first, preserving tenant isolation. Sections B/C remain gated and Section D remains paused. Do not mark all of A complete yet.

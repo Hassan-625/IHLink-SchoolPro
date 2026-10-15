@@ -81,3 +81,40 @@ begin
   );
 end;
 $function$;
+
+
+-- Discipline Masters may review and manage discipline records, but this does
+-- not grant access to results, finance, or other school modules.
+drop policy if exists "discipline authorized access" on public.schoolpro_discipline_records;
+create policy "discipline authorized access"
+on public.schoolpro_discipline_records
+for all
+to authenticated
+using (
+  private.schoolpro_module_allowed(school_id, 'discipline'::text)
+  and private.has_school_access(
+    school_id,
+    array[
+      'proprietor'::public.school_member_role,
+      'administrator'::public.school_member_role,
+      'vice_principal'::public.school_member_role,
+      'head_teacher'::public.school_member_role,
+      'counsellor'::public.school_member_role,
+      'discipline_master'::public.school_member_role
+    ]
+  )
+)
+with check (
+  private.schoolpro_module_allowed(school_id, 'discipline'::text)
+  and private.has_school_access(
+    school_id,
+    array[
+      'proprietor'::public.school_member_role,
+      'administrator'::public.school_member_role,
+      'vice_principal'::public.school_member_role,
+      'head_teacher'::public.school_member_role,
+      'counsellor'::public.school_member_role,
+      'discipline_master'::public.school_member_role
+    ]
+  )
+);

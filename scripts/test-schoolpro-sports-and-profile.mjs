@@ -10,6 +10,16 @@ const migration = read('../supabase/migrations/20261015235000_schoolpro_sports_h
 const students = read('../src/pages/schoolpro/SchoolProStudents.tsx');
 const profileMigration = read('../supabase/migrations/20261016001500_schoolpro_student_profile_corrections.sql');
 const profileCorrection = read('../supabase/functions/schoolpro-profile-correction/index.ts');
+const myClasses = read('../src/pages/schoolpro/SchoolProSubjects.tsx');
+const roleLabels = read('../src/lib/schoolRoles.ts');
+assert.match(myClasses, /supabase\.from\("schoolpro_members"\)\.select\("id,role"\)/);
+assert.match(myClasses, /coordinatedIds/);
+assert.match(myClasses, /visibleAssignments=canManage\?allAssignments:allAssignments\.filter\(x=>coordinatedIds\.has\(x\.class_id\)\|\|x\.teacher_member_id===memberId\)/);
+assert.match(myClasses, /Form Masters can see every subject teacher assigned to their own class/);
+assert.match(myClasses, /schoolRoleLabel\(x\.role\)/);
+assert.match(roleLabels, /\['class_teacher','Class Teacher \/ Form Master'\]/);
+assert.match(roleLabels, /export function schoolTeachingResponsibility/);
+console.log('PASS: My Classes scopes class and subject records to the signed-in staff member and exposes subject teachers to their Form Master.');
 const staffPage = read('../src/pages/schoolpro/SchoolProStaff.tsx');
 const atomicProfileMigration = read('../supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql');
 assert.match(app, /path="\/schoolpro\/sports".*SchoolProSports/);

@@ -24,8 +24,4 @@ jobs:
       - name: Apply migration and exercise receipt submission
         env:
           PGPASSWORD: postgres
-        run: |
-          mkdir -p /workspace/tests /workspace/supabase/migrations
-          cp tests/schoolpro-payment-submission-fixture.sql /workspace/tests/
-          cp supabase/migrations/20261015143000_harden_schoolpro_payment_receipt_submission.sql /workspace/supabase/migrations/
-          psql -h localhost -U postgres -d schoolpro_test -f tests/test-schoolpro-payment-submission.sql
+        run: psql -h localhost -U postgres -d schoolpro_test -f tests/test-schoolpro-payment-submission.sql

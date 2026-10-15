@@ -258,7 +258,7 @@ using (
 
 -- Form Masters can inspect the question content attached to CBT tests in their assigned class,
 -- but cannot edit another subject teacher's question bank or test.
-create or replace function private.schoolpro_can_read_question_scope(p_school uuid,p_class uuid,p_subject uuid)
+create or replace function private.schoolpro_can_read_question_scope(p_school uuid,p_question uuid,p_class uuid,p_subject uuid)
 returns boolean language sql stable security definer set search_path='' as $$
  select auth.uid() is not null and private.is_active_account()
  and private.schoolpro_operationally_active(p_school)
@@ -271,17 +271,17 @@ returns boolean language sql stable security definer set search_path='' as $$
      join public.schoolpro_cbt_tests t on t.id=tq.test_id
      join public.schoolpro_classes c on c.id=t.class_id and c.school_id=t.school_id
      join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
-     where tq.question_id in(select q.id from public.schoolpro_question_bank q where q.school_id=p_school and q.subject_id=p_subject and (p_class is null or q.class_id=p_class))
+     where tq.question_id=p_question
        and t.school_id=p_school and t.class_id is not null
        and m.user_id=auth.uid() and m.role::text in('teacher','class_teacher')
    )
  )
 $$;
-revoke all on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid) from public,anon;
+revoke all on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid,uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_question_scope(uuid,uuid,uuid) to authenticated;
 drop policy if exists "Question bank scoped read" on public.schoolpro_question_bank;
 create policy "Question bank scoped read" on public.schoolpro_question_bank for select to authenticated
-using (private.schoolpro_can_read_question_scope(school_id,class_id,subject_id));
+using (private.schoolpro_can_read_question_scope(school_id,id,class_id,subject_id));
 
 -- Subject teachers can configure eligibility only for the test they authored and its assigned class.
 -- Management retains the existing school-wide eligibility control.

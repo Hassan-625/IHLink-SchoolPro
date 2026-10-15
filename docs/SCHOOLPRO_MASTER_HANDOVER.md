@@ -1148,3 +1148,14 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 5. **Dependency and sequencing:** these items extend Section A (role model, authorization and identity/profile editing), Section B (student roster/enrollment and middle name), and Section G (parent/guardian and operational portal presentation). Inspect actual current source and schema before choosing implementation paths. Do not skip A's remaining authorization acceptance, and do not remove B/C/D or any E–J workstream. Report-card print/CSS remains deferred.
 
 **Current next action:** perform an authenticated staff-creation retry against the corrected constraint using a supported role that previously failed; record the exact role family and outcome without exposing credentials. Then continue Section A's authorization acceptance. The new UI/profile requirements are registered for source inspection and implementation planning after preserving the main sequence.
+
+
+### 2026-10-15 user-requested staff roles — Discipline Master and Game Master
+
+- **Requirement added before the next staff-creation retry:** include **Discipline Master** and **Game Master** in the staff creation role selector and in Role & Permission/access-role handling.
+- Canonical role keys proposed for consistent UI, database and authorization use: `discipline_master` and `game_master`.
+- Prepared source migration: `supabase/migrations/20261015203000_schoolpro_discipline_game_master_roles.sql`, commit `2f18809e248d60834d62ffb2a84671ad0e0097a2` on `fix/schoolpro-staff-invite-diagnostics`. It adds both labels to `public.school_member_role` and expands `schoolpro_access_invitations_role_check` to accept them.
+- **Production status: NOT APPLIED.** The earlier approval covered only the prior invitation constraint migration, not this new enum/role migration. Review and test this migration, and obtain explicit approval before applying it to live Supabase.
+- **UI/authorization status: OUTSTANDING.** The database migration alone does not add the options to the staff form, Role & Permission page, permission checks, navigation/feature gating, or role-specific access. Inspect and update all role registries, labels, validation schemas, invitation acceptance logic, authorization matrices and tests so both roles behave consistently.
+- Suggested initial least-privilege intent to validate with the product owner/role matrix: Discipline Master is for authorized discipline/behaviour records and related workflows; Game Master is for sports/games activities and related workflows. Do not infer unrestricted access to student profiles, results, finance, or administration from these titles.
+- **Retry gate:** do not ask the user to retry with either new role until the production migration is approved/applied and the staff UI/authorization changes are deployed to the environment being tested. The earlier roles supported by the already-applied constraint can be retried separately if desired.

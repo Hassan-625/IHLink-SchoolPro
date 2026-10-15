@@ -54,12 +54,12 @@ Deno.serve(async(req:Request)=>{
     if(identity.user?.app_metadata.schoolpro_initial_login===true){
      const {data:renewed,error:renewError}=await admin.from('schoolpro_initial_credentials').update({expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).select('user_id');if(renewError||renewed?.length!==1)throw renewError||new Error('renew');
      const {error:challengeError}=await admin.from('schoolpro_account_challenges').delete().eq('user_id',existing.id);if(challengeError)throw challengeError;
-     const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
+     stage='invitation_insert_existing_initial';const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
      stage='invitation_link_rpc';const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:existing.id,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
      return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }
    }
-   const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
+   stage='invitation_insert_existing_user';const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
    return respond({ok:true,schoolCode:school.code,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
   }
   // A random inaccessible Auth password and ban prevent surname sessions or OAuth bypass.
@@ -70,7 +70,7 @@ Deno.serve(async(req:Request)=>{
    stage='profile_update';const {error:profileError}=await admin.from('profiles').update({first_name:firstName,middle_name:middleName,last_name:surname}).eq('id',uid);if(profileError)throw profileError;
    stage='initial_credential_rpc';const {error:credentialError}=await admin.rpc('schoolpro_set_initial_credential',{p_user:uid,p_school:schoolId,p_surname:surname});if(credentialError)throw credentialError;
    stage='invitation_insert';const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(inviteError)throw inviteError;
-   const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:uid,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
+   stage='invitation_link_rpc';const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:uid,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
   }catch(error){await admin.auth.admin.deleteUser(uid);throw error;}
   return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',expiresInDays:7});
  }catch(error){const e=error as {name?:string;code?:string;message?:string};const safeMessage=String(e?.message||'').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,'[email]').replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi,'[id]').slice(0,240);console.error(JSON.stringify({event:'schoolpro_staff_access_failure',requestId,stage,errorName:e?.name||'Error',errorCode:e?.code||null,errorMessage:safeMessage||'unknown'}));return respond({error:'School access could not be created. Please check the details or contact support.',requestId},400);}

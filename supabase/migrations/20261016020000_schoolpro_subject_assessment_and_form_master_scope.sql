@@ -311,9 +311,10 @@ with check (
 );
 
 
--- Keep tenant integrity and also prevent a teacher from attaching another subject's
--- or another class's questions to a subject-scoped CBT test.
-create or replace function private.validate_schoolpro_cbt_question_tenant()
+-- Keep the live tenant-integrity trigger intact and add an independent guard for subject/class scope.
+-- Production currently uses enforce_schoolpro_tenant_relations for tenant integrity, so this
+-- dedicated trigger does not assume that a source-only legacy trigger name exists.
+create or replace function private.schoolpro_validate_cbt_question_scope()
 returns trigger language plpgsql security definer set search_path='' as $$
 declare test_row public.schoolpro_cbt_tests; question_row public.schoolpro_question_bank;
 begin
@@ -329,4 +330,8 @@ begin
  end if;
  return new;
 end $$;
-revoke all on function private.validate_schoolpro_cbt_question_tenant() from public,anon,authenticated;
+revoke all on function private.schoolpro_validate_cbt_question_scope() from public,anon,authenticated;
+drop trigger if exists schoolpro_validate_cbt_question_scope on public.schoolpro_cbt_test_questions;
+create trigger schoolpro_validate_cbt_question_scope
+before insert or update of test_id,question_id on public.schoolpro_cbt_test_questions
+for each row execute function private.schoolpro_validate_cbt_question_scope();

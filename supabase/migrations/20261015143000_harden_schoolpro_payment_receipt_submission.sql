@@ -123,6 +123,7 @@ begin
       select 1
       from public.schoolpro_guardian_links g
       where g.student_id = inv.student_id
+        and g.school_id = inv.school_id
         and g.guardian_user_id = auth.uid()
         and g.status = 'active'
     ) then

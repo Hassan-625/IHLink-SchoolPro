@@ -1256,3 +1256,43 @@ These are additional requirements; they do not replace, reduce, or reorder the e
 - **HASSAN ACADEMY:** production read-only inspection previously confirmed Pre-Nursery A has a Form Master assignment for Hassan Hassan Isah. Validate that this account now resolves the assignment and can see the class's subject teachers after the branch is released.
 - **IH Academy:** Pre Nursery A has no Form Master assignment. Preserve that state until school leadership chooses to assign one; management view must display “Not assigned,” and no staff user should gain class access merely because another school has a similarly named class.
 - Regression assertions now cover scoped-directory identity resolution, the no-assignment state, and the Form Master subject-allocation scope. Latest head: `1a475afb722384e153e6bb278789071543b67bad`. CI for this exact head must pass before this correction is accepted. No merge, production migration, or Render deployment has been performed.
+
+
+## Section B/C/G follow-up — subject ownership, CBT visibility and Form Master attendance (15 October 2026)
+
+The user reports successful Parent/Student sign-in and feature access, and reports no cross-tenant data leakage when switching between HASSAN ACADEMY and IH Academy. Treat this as valuable user-verified evidence; Section A remains **near complete but not yet closed** until the remaining role/write-scope acceptance checks below pass.
+
+### Role contract to preserve
+
+- Subject Teachers can create assignments, tests and CBT questions/tests only for their allocated subject, class and active academic session; they can enter marks for their own subject scope. They must not be able to write another teacher's subject records by editing requests directly.
+- A Form Master/Class Teacher can see the complete roster for the assigned class and all CBT tests/assignments belonging to that class, including items created by other subject teachers. Class-wide visibility is read scope, not automatic authority to edit another teacher's test, question bank, assignment or marks.
+- Attendance entry belongs to the Form Master assigned to the selected class. Subject Teacher status alone is not sufficient to create/update attendance. Authorized school management and platform Super Admin retain their management access.
+- Historical class/student relationships remain session-scoped. Do not infer a historical roster from a student's current class, and do not change a school's Form Master assignment to make a page appear populated.
+
+### Code and migration changes on the draft continuation branch
+
+- My Classes derives staff identity through the authorized school-scoped `schoolpro_class_staff_directory` RPC; its database function now explicitly admits `class_teacher` members while limiting returned staff to the caller, management, and staff linked to readable classes.
+- Attendance UI filters non-management users to classes where their member ID is the class's `form_teacher_id`; it displays an explicit empty state when no Form Master assignment exists.
+- Migration `20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql`:
+  - removes the broad teacher attendance write policies and restricts insert/update to the assigned Form Master of that class or authorized school management;
+  - adds Form Master attendance read scope;
+  - scopes assignment insert/update/delete to the subject/class/session allocation for the author, with management access retained;
+  - adds a `session` field to CBT tests, requires class/subject/session for new tests, scopes test authoring and marking to the assigned class/subject/session, and lets Form Masters read CBT tests for their assigned class without inheriting author permissions;
+  - scopes question-bank writes to assigned subject/class and lets Form Masters read question content attached to tests in their own class;
+  - permits subject teachers to configure eligibility only for their own authored test and its class/students;
+  - scopes subject-allocation reads and fixes the class staff directory's `class_teacher` role admission.
+- CBT Builder and Question Bank UIs now derive authorable class/subject options from the current session's subject allocations; test rows carry class, subject and session. The test builder disables edit controls when a Form Master is inspecting another teacher's test.
+- Regression assertions were added to `scripts/test-schoolpro-sports-and-profile.mjs` for the attendance, CBT, question bank, allocation and My Classes scopes.
+- **Validation status:** these are draft source/migration changes only. CI for the latest head must pass; static contract checks do not replace a real two-role/two-school acceptance run. The migration has NOT been applied to Supabase production and no Render deploy has occurred.
+
+### Required acceptance before merge/release
+
+1. Subject Teacher: create a question, draft assignment and CBT test only for an allocated subject/class/session; enter own-subject marks; direct API writes for an unassigned subject/class/session must be denied.
+2. Form Master: load assigned class and its historical roster; see all class subject teachers, assignments and CBT tests; cannot edit another teacher's test/question bank/assignment or mark their test unless separately assigned that subject.
+3. Attendance: assigned Form Master can read/mark/update own class attendance; a subject-only teacher is denied insert/update for that class; managers retain intended access; cross-school and wrong-class requests are denied.
+4. IH Academy Pre Nursery A remains unassigned until leadership chooses a Form Master; HASSAN ACADEMY Pre-Nursery A keeps the existing Hassan Hassan Isah assignment.
+5. Re-run CI on the exact release head, review all migrations in timestamp order and verify production schema compatibility without applying this draft migration to production during validation.
+
+### Merge/deployment caution
+
+PR #105 remains draft and targets `fix/result-design-section-selection`, not `main`. The parent feature branch itself is substantially ahead of `main`; merging PR #105 as-is would not deploy it to Render, and retargeting the accumulated branch directly to `main` would bring a much larger diff than the PR's current 27-file view. Do not merge or retarget this accumulated branch blindly. Prepare/review an explicit release diff against the intended production source after CI and scope acceptance. Vercel preview success is not Render production deployment.

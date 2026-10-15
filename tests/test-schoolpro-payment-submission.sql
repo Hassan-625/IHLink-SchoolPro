@@ -15,6 +15,37 @@ begin
   insert into storage.objects(bucket_id,name,metadata) values('schoolpro-payment-receipts',parent_id::text||'/receipt.pdf',jsonb_build_object('mimetype','application/pdf','size',1024));
   perform set_config('request.jwt.claim.sub',parent_id::text,false);
 
+  perform set_config('request.jwt.claim.sub','',false);
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: unauthenticated submission was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: unauthenticated submission was accepted' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub',parent_id::text,false);
+
+  insert into storage.objects(bucket_id,name,metadata) values('schoolpro-payment-receipts',parent_id::text||'/large.pdf',jsonb_build_object('mimetype','application/pdf','size',5242881));
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/large.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: oversized receipt was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: oversized receipt was accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,'60000000-0000-0000-0000-000000000001'::uuid,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
+    raise exception 'TEST FAILURE: invalid bank account was accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: invalid bank account was accepted' then raise; end if;
+  end;
+
+  begin
+    perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,parent_id::text||'/receipt.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',50),jsonb_build_object('invoice_id',invoice_id,'amount',50)));
+    raise exception 'TEST FAILURE: duplicate invoice allocations were accepted';
+  exception when others then
+    if sqlerrm='TEST FAILURE: duplicate invoice allocations were accepted' then raise; end if;
+  end;
+
   begin
     perform public.submit_schoolpro_payment(school_id,bank_id,100,'2026-10-15','Parent',null,'90000000-0000-0000-0000-000000000001/forged.pdf','application/pdf',jsonb_build_array(jsonb_build_object('invoice_id',invoice_id,'amount',100)));
     raise exception 'TEST FAILURE: forged path was accepted';

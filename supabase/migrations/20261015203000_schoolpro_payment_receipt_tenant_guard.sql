@@ -38,10 +38,20 @@ begin
     raise exception 'Receipt upload is missing or does not belong to this account';
   end if;
 
-  if p_total is null or p_total<=0
-     or coalesce(jsonb_typeof(p_allocations),'')<>'array'
-     or jsonb_array_length(p_allocations)=0 then
+  if p_total is null or p_total<=0 then
     raise exception 'Payment amount and allocations are required';
+  end if;
+  if coalesce(jsonb_typeof(p_allocations),'')<>'array' then
+    raise exception 'Payment allocations must be a list';
+  end if;
+  if jsonb_array_length(p_allocations)=0 then
+    raise exception 'Payment amount and allocations are required';
+  end if;
+  if exists (
+    select 1 from jsonb_array_elements(p_allocations) x
+    group by x->>'invoice_id' having count(*)>1
+  ) then
+    raise exception 'Each invoice may appear only once in a payment';
   end if;
 
   if not exists (

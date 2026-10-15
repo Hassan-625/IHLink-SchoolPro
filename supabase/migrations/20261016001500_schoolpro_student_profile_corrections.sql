@@ -18,3 +18,5 @@ using (private.has_school_access(school_id,array['proprietor'::public.school_mem
 drop policy if exists schoolpro_student_profile_audit_insert on public.schoolpro_student_profile_audit;
 create policy schoolpro_student_profile_audit_insert on public.schoolpro_student_profile_audit for insert to authenticated
 with check (changed_by=auth.uid() and private.has_school_access(school_id,array['proprietor'::public.school_member_role,'administrator'::public.school_member_role,'vice_principal'::public.school_member_role,'head_teacher'::public.school_member_role,'registrar'::public.school_member_role]));
+
+grant select, insert on public.schoolpro_student_profile_audit to authenticated;

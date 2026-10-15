@@ -32,6 +32,15 @@ Other relevant commits:
 
 **Next action in the original sequence:** test whether all four result designs remain independent when saved, reloaded and used to generate workbooks. Automated checks currently exercise the resolver and fixtures; authenticated end-to-end acceptance is still outstanding. Do not skip straight to merge/deploy.
 
+## 2A. Corrections added during the 15 October release-blocker review
+
+- Student profile editing now calls `schoolpro_correct_student_profile`, which updates the student row and inserts its audit row inside one PostgreSQL transaction. If either fails, both roll back.
+- Direct client inserts into `schoolpro_student_profile_audit` are revoked in the atomic-correction migration; audit rows must be produced by the transactional correction function.
+- Staff/parent profile correction Edge Function now delegates profile, guardian phone and audit writes to `schoolpro_correct_member_profile_atomic` in one database transaction. The database function rechecks school ownership/admin authority and school membership; only the service role can execute it. Email changes remain verification-gated and are not applied.
+- Sports team scope trigger now validates both the linked house and coach membership belong to the same school; existing triggers validate participant activity/student/team and fixture teams.
+- New migration: `supabase/migrations/20261016010000_schoolpro_atomic_profile_corrections.sql`.
+- **Status:** implementation committed to the draft work branch; migration/function are NOT applied/deployed to production. CI still needs to run on the final head, SQL needs validation against the live schema without applying it, and end-to-end role/school isolation tests remain required. No production merge or Render deployment is implied.
+
 ## 3. Master workstream register
 
 ### A. Core application, authentication and role access
@@ -1056,3 +1065,339 @@ User-reported live acceptance evidence:
 Code-level triage note (not yet a confirmed root cause): `supabase/functions/invite-school-staff/index.ts` catches all internal exceptions and returns the same generic HTTP 400 response. This masks whether failure originates from caller/school membership authorization, the invitation/credential RPCs, table constraints or grants, or Auth user creation. Diagnose using timestamp-correlated Edge Function/Postgres logs and a safe reproduction; do not weaken authorization or reveal internal exception details to the browser. The log query attempted during this review returned a backend error, so no runtime root cause has been established.
 
 Section A is therefore **PARTIALLY ACCEPTED**: owner scoping, Super Admin workspace selection, and the user's database/storage denial tests are accepted as user-reported evidence; staff creation and full role/direct endpoint acceptance remain open. Continue debugging the staff creation path first, preserving tenant isolation. Sections B/C remain gated and Section D remains paused. Do not mark all of A complete yet.
+
+
+## Section A follow-up — staff-access failure diagnostics (15 October 2026)
+
+- The deployed `invite-school-staff` Edge Function was inspected (active version 15). Its generic catch response masked the failing operation; read-only unified-log queries returned a backend error, so no runtime root cause has been established.
+- A diagnostic-only change is staged in [PR #105](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105) on `fix/schoolpro-staff-invite-diagnostics`. It adds a request correlation ID and logs a bounded error summary plus operation stage, without logging the request payload or bearer token. The client-facing error remains generic.
+- **Deployed after all seven CI workflows passed:** Supabase Edge Function `invite-school-staff` is now active at version 16 in project `lnqsroyiybutkfngbyge`. Deployment preserves the existing `verify_jwt=false` setting because the function validates the bearer token itself. The deployment was verified by fetching the active function metadata/source.
+- A read-only log query after deployment returned unrelated DataSub traffic and no staff-creation failure, because a new authenticated reproduction has not yet been submitted. Reproduce one staff-creation failure, capture the returned `requestId`, correlate it with Edge Function logs, and fix the identified operation. Re-test creation, sign-in/role assignment, and cross-school denial.
+- Do not weaken school tenant isolation to work around this. Section A remains partially accepted; B/C remain gated and D remains paused. Report-card printing/CSS remains deferred.
+
+### 2026-10-15 user-reported retest — staff account creation
+
+- **User-reported PASS:** staff creation/sign-in worked for the intended account `coesaabu@gmail.com`. The earlier failed test used the example address `hacademy.staff.01@example.com`; the user suspects that test address was the cause. This is a plausible explanation, not a proven diagnosis of the earlier failure.
+- The account's onboarding message states that the user can sign in using their surname as the initial password, must choose a new password before opening school records, and first-time access expires after seven days.
+- This successful real-account test supersedes the prior status of “staff creation failure reproduced” for this particular attempt. It does **not** establish that every valid staff email/role/workspace combination works, nor does it prove the diagnostic logging identified a root cause.
+- **Security follow-up:** surname-based initial passwords are predictable. Prefer a unique, randomly generated temporary credential or password-setup link, single-use/short-lived where feasible, while retaining the mandatory password change before school-record access and the seven-day onboarding expiry. Do not record or expose any actual password in logs or this handover.
+- **Section A status:** staff creation/sign-in has one user-reported successful acceptance case. Still verify the resulting account's assigned role and permitted/denied actions, direct-route/API/RPC authorization, and cross-school denial using a controlled test account. Existing user-reported owner scoping, Super Admin workspace selection, and cross-school database/storage denial remain recorded above. Do not mark Section A fully complete yet.
+- **Next action in the original sequence:** continue the remaining Section A role/authorization acceptance; then proceed to B, C and D in order. Preserve all E–J and other outstanding workstreams. The Result Design Studio authenticated save/reload/generate checks remain outstanding; report-card print/CSS remains deferred.
+
+### 2026-10-15 user-reported retest — permissions for existing staff
+
+- **User-reported PASS:** changing/restricting the role permissions of an already-created staff account works as intended in the user's test.
+- This adds evidence for existing-staff role restriction behavior. It does not by itself prove every role/action combination, direct-route/API/RPC enforcement, or two-school isolation for all staff operations.
+- Section A remains **partially accepted**, with the following focused checks remaining: verify the created staff account's actual assigned role and representative allowed/denied actions; test direct-route/API/RPC authorization rather than relying only on hidden UI controls; confirm school-boundary denials for staff reads/writes and storage; and ensure the Super Admin can administer roles without expanding an ordinary staff member's scope.
+- Continue with B (academic sessions, student population and class/arm rosters) only after the remaining A checks are accepted. Then C (assessment/calculation/review/publication), then D (Result Design Studio and four independent custom workbook paths). Do not remove the document-security, historical data/rollover, operational modules, fees/subscriptions/reconciliation, Render/release, or platform security/resilience workstreams. The report-card print/CSS issue remains deferred.
+
+
+### 2026-10-15 continuation — staff onboarding source review
+
+- Read-only inspection of `supabase/functions/invite-school-staff/index.ts` on `fix/schoolpro-staff-invite-diagnostics` confirms the new-account path creates an Auth user with a random inaccessible password, then calls `schoolpro_set_initial_credential` with the surname and returns `initialPassword: 'surname'` to the client. The existing-initial-credential path likewise returns the surname. This confirms the predictable initial-password concern is present in the branch implementation; it is not merely a UI wording concern.
+- The same function performs server-side checks for active caller profile, school ownership or permitted leadership membership, valid staff role, and same-school active student links for parent invitations. This is useful source evidence, but it is not proof that every table/RPC/storage route enforces the same permissions.
+- The existing source-contract test for `useSchoolProContext` checks workspace-resolution patterns and explicitly notes it does not verify authenticated tenant RLS isolation. It is not a substitute for role-by-role direct-route/API/RPC tests.
+- **Action:** treat replacement of surname-based initial credentials with a unique, short-lived, single-use setup mechanism as a security follow-up to design and test before production rollout. Do not change the live credential flow blindly; first trace the database RPC, onboarding UI and mandatory password-change gate together.
+- **No production action:** this was read-only source inspection. No merge, deployment, migration, database mutation, or change to user accounts occurred.
+- **Section A remains partially accepted.** The remaining live acceptance still requires the actual created staff account's role and allowed/denied actions, direct-route/API/RPC checks, and staff cross-school read/write/storage denials. Continue with Section A; B/C remain gated and D remains paused. Preserve all E–J workstreams and the deferred report-card printing/CSS issue.
+
+### 2026-10-15 user-confirmed decision — retain surname as temporary password
+
+- **Decision confirmed by the user:** retain the staff member's surname as the temporary initial password. This is an explicit product requirement and supersedes the preceding source-review recommendation to replace it with a unique temporary credential/setup link. That replacement is **not approved work** and must not be treated as the next action.
+- Preserve the existing requirements that the first-time onboarding window expires after seven days and the staff member must change the temporary password before accessing school records. After a successful password change, the surname must no longer authenticate that account.
+- Verify enforcement end-to-end: database/RPC credential state, login/onboarding UI, protected page loads, and direct API/RPC attempts must all block record access until the password is changed. A UI notice alone is insufficient. Verify expiry and the post-change rejection of the surname without logging or recording actual passwords.
+- Role/permission changes remain independent of the temporary-password rule and must continue to restrict existing staff accounts correctly.
+- **No implementation or production change is authorized by this clarification.** Section A remains partially accepted until the outstanding role/action, direct-route/API/RPC, and cross-school read/write/storage checks are evidenced. Keep B/C gated until A acceptance; retain D and every E–J workstream and the deferred report-card printing/CSS issue.
+
+### 2026-10-15 user-confirmed temporary-password decision — authoritative clarification
+
+- **Confirmed requirement:** retain the staff member's surname as the temporary initial password. This explicit user decision supersedes the preceding source-review suggestion to replace it with a unique temporary credential or setup link. That replacement is not approved and must not be treated as the next implementation task.
+- Keep the seven-day first-time onboarding window and mandatory password change before any school records can be accessed. After the password is changed, the surname must no longer authenticate the account.
+- Section A acceptance must verify this end-to-end across credential state, login/onboarding UI, protected page loads, and direct API/RPC attempts. A UI message alone is insufficient. Verify expiry and post-change rejection without recording or logging actual passwords.
+- Role changes and permission restrictions remain independent of the temporary-password rule. Do not loosen existing authorization to accommodate onboarding.
+- This is a requirements/handover clarification only; it does not authorize code changes, database mutations, merge, or deployment. Section A remains partially accepted pending role/action, direct-route/API/RPC, and cross-school read/write/storage evidence. B and C remain gated; retain D–J and the deferred report-card printing/CSS work.
+
+### 2026-10-15 production staff-creation failure — root cause confirmed
+
+- **User-reported failure:** Add a staff member returns the generic message “School access could not be created. Please check the details or contact support.”
+- **Read-only production evidence:** Supabase Edge Function logs for `invite-school-staff` version 16 contain repeated SQLSTATE `23514` errors at `invitation_insert` and `invitation_insert_existing_user`. The database error identifies the check constraint `schoolpro_access_invitations_role_check`.
+- **Database inspection confirmed the mismatch:** that constraint allowed only `administrator`, `teacher`, `accountant`, and `parent`, while the live function/UI and `school_member_role` enum support additional staff roles such as `bursar`, `registrar`, `exam_officer`, `class_teacher`, and others. Selecting one of those roles fails during invitation insertion. This is a database constraint mismatch, not evidence that the email address itself is invalid.
+- **Prepared source fix (not applied to production):** migration `supabase/migrations/20261015193000_schoolpro_access_invitation_role_constraint.sql` aligns the invitation role check with the supported role selector and enum. It is committed on `fix/schoolpro-staff-invite-diagnostics` at commit `83991395062542554c79fa30de4561b17fa0d026`.
+- **Release gate:** migration has not been applied to the live database. Before applying it, review the diff and run the non-production migration/role acceptance checks; then, with explicit approval, apply it and test one account for each supported staff role family plus parent separately. Verify successful invitation linkage and no regression in role assignment. Do not claim the user-facing issue is fixed until the live migration and a real staff-creation retry pass.
+- Existing staff temporary-password requirement remains unchanged: surname is retained as the temporary password, the seven-day first-access window remains, and mandatory password change before record access must be verified separately. No password policy change is part of this fix.
+
+
+### 2026-10-15 production correction — staff invitation role constraint
+
+- **Production migration applied with explicit user approval:** migration `schoolpro_access_invitation_role_constraint` was applied to Supabase project `lnqsroyiybutkfngbyge` using the migration operation.
+- **Post-apply verification:** a read-only query confirmed `public.schoolpro_access_invitations_role_check` now accepts the supported staff role values (administrator, teacher, class_teacher, head_teacher, vice_principal, bursar, accountant, registrar, admissions_officer, exam_officer, librarian, counsellor, nurse, hostel_manager, transport_manager, inventory_officer, hr_officer, receptionist, it_admin) and parent. The constraint reports `convalidated = true`.
+- **Existing-row check before applying:** current invitation rows contained only `parent` and `teacher`; no pre-existing values were found that would conflict with the expanded constraint.
+- **Status:** database constraint correction is **APPLIED — schema verified**. This does not yet prove end-to-end staff creation succeeds for every role. Re-test representative roles (including roles previously rejected), parent invitation separately, role assignment, sign-in/onboarding, allowed/denied operations, and tenant isolation. Keep Section A partially accepted until evidence is recorded.
+- **Source-of-truth alignment:** migration is in `supabase/migrations/20261015193000_schoolpro_access_invitation_role_constraint.sql` on `fix/schoolpro-staff-invite-diagnostics`, commit `83991395062542554c79fa30de4561b17fa0d026`. No merge or Render deployment was performed by this database migration.
+
+### 2026-10-15 newly reported SchoolPro requirements — preserve as additions
+
+These are additional requirements; they do not replace, reduce, or reorder the existing A–J handover.
+
+1. **Custom roles in Role & Permission page — OUTSTANDING.**
+   - Provide an authorized school-level administrator with a UI flow to create, name, edit, and assign custom roles and choose granular permissions.
+   - Preserve built-in roles and their existing assignments. Prevent custom roles from granting permissions beyond the actor's authority or escaping school-level scope.
+   - Review the role storage model, database constraints/enums, authorization helpers, direct route/API/RPC checks, and tenant RLS before implementation. Verify custom role creation/editing, assignment/revocation, refresh persistence, and allowed/denied operations using two test schools.
+2. **Student middle name — OUTSTANDING.**
+   - Add an optional middle-name field to student enrollment and ensure it is persisted and shown in student profile/details and supported list/document flows.
+   - Include it in authorized student-profile editing and validation. Check import/export and relevant result/admission/certificate templates where they map student names. Do not silently make the field mandatory without a separate product decision.
+3. **Parent/guardian name blank in table — OUTSTANDING.**
+   - Trace the parent/guardian table's select/query, joins/foreign keys, profile/name fields, and display mapping; identify why the name cell is blank before changing the UI.
+   - Correctly display existing parent/guardian names and handle missing/incomplete legacy profiles with a safe empty-state label. Verify records from two schools remain isolated.
+4. **Authorized profile corrections across SchoolPro — OUTSTANDING.**
+   - Provide controlled editing of mistaken names, email addresses and phone numbers for student, staff/teacher, parent and guardian profiles, subject to the appropriate school role and field-level permissions.
+   - Student profile corrections must be performed by authorized school personnel, not unrestricted self-service. Define the exact role matrix for editing student identity/contact fields and audit who changed what and when.
+   - Validate formats and duplicate/conflict cases. For email changes, reconcile the profile record with Supabase Auth identity and confirmation/recovery behavior; do not change only the displayed email if the login identity must change. Preserve account ownership, school membership and audit history.
+   - Test allowed and denied edits through both the UI and direct backend/API/RPC routes; verify cross-school denial and ensure edits do not change a user's school or role as a side effect.
+5. **Dependency and sequencing:** these items extend Section A (role model, authorization and identity/profile editing), Section B (student roster/enrollment and middle name), and Section G (parent/guardian and operational portal presentation). Inspect actual current source and schema before choosing implementation paths. Do not skip A's remaining authorization acceptance, and do not remove B/C/D or any E–J workstream. Report-card print/CSS remains deferred.
+
+**Current next action:** perform an authenticated staff-creation retry against the corrected constraint using a supported role that previously failed; record the exact role family and outcome without exposing credentials. Then continue Section A's authorization acceptance. The new UI/profile requirements are registered for source inspection and implementation planning after preserving the main sequence.
+
+
+### 2026-10-15 user-requested staff roles — Discipline Master and Game Master
+
+- **Requirement added before the next staff-creation retry:** include **Discipline Master** and **Game Master** in the staff creation role selector and in Role & Permission/access-role handling.
+- Canonical role keys proposed for consistent UI, database and authorization use: `discipline_master` and `game_master`.
+- Prepared source migration: `supabase/migrations/20261015203000_schoolpro_discipline_game_master_roles.sql`, commit `2f18809e248d60834d62ffb2a84671ad0e0097a2` on `fix/schoolpro-staff-invite-diagnostics`. It adds both labels to `public.school_member_role` and expands `schoolpro_access_invitations_role_check` to accept them.
+- **Production status: NOT APPLIED.** The earlier approval covered only the prior invitation constraint migration, not this new enum/role migration. Review and test this migration, and obtain explicit approval before applying it to live Supabase.
+- **UI/authorization status: OUTSTANDING.** The database migration alone does not add the options to the staff form, Role & Permission page, permission checks, navigation/feature gating, or role-specific access. Inspect and update all role registries, labels, validation schemas, invitation acceptance logic, authorization matrices and tests so both roles behave consistently.
+- Suggested initial least-privilege intent to validate with the product owner/role matrix: Discipline Master is for authorized discipline/behaviour records and related workflows; Game Master is for sports/games activities and related workflows. Do not infer unrestricted access to student profiles, results, finance, or administration from these titles.
+- **Retry gate:** do not ask the user to retry with either new role until the production migration is approved/applied and the staff UI/authorization changes are deployed to the environment being tested. The earlier roles supported by the already-applied constraint can be retried separately if desired.
+
+
+### 2026-10-15 continuation — Discipline Master / Game Master source wiring
+
+- **Source changes committed on the existing diagnostic branch; not merged or deployed:**
+  - `src/lib/schoolRoles.ts`: adds canonical role codes and labels to the shared role catalogue used by the Role & Permission catalogue, with least-privilege descriptions.
+  - `src/pages/schoolpro/SchoolProStaff.tsx`: includes both specialist roles in the staff list's Operations filter.
+  - `supabase/functions/invite-school-staff/index.ts`: allows both role codes through the staff-invitation request validator.
+- Commits: `42b8fc1e4e05ab8261920ae69adb079b13ddf7ce`, `c183472d079b13f5a235cfa6bab8a107f1a28d6b`, `76b8bcec77f97a322452dce1b23042f47513f69b`.
+- The staff form's role options are derived from the shared role catalogue, so both labels should appear there after this branch is built. The Role & Permission page also consumes that catalogue.
+- **Not yet complete / release blocked:** no CI/typecheck or end-to-end test has been run for these edits; the new enum/check-constraint migration is still not applied to production; the invitation Edge Function has not been deployed; and role-specific backend authorization, route/module gating, and RLS for discipline and sports/games records have not been established by this change. The descriptive catalogue text is not itself an authorization control.
+- **Next required work:** trace the real role-to-permission enforcement (frontend route guards, backend RPC/Edge Function authorization and RLS), define least-privilege permissions for these two roles, add focused tests, run CI, then obtain explicit approval before applying the new-role migration and deploying the related source. Only after that should the user retry staff creation with either new role.
+
+
+- **Additional routing safeguard:** `src/lib/schoolAccess.ts` now recognizes both specialist roles as school operational roles so they resolve to the school operational dashboard rather than falling through to the public SchoolPro landing page. Commit: `dc426c211117caea2af52135f59913066d15e50c`.
+- **Current branch/PR verification:** PR #105 remains **open and draft**, not merged. Its head now points to `dc426c211117caea2af52135f59913066d15e50c`. The latest reported Vercel status for that commit is **pending**; no successful build or test result is claimed.
+- **Permission boundary:** recognizing these roles for workspace routing does not grant them module access. The actual `schoolpro_user_permissions` role defaults/overrides and database authorization/RLS must be inspected and tested before assigning discipline or sports/games access. Keep both roles blocked from privileged data by default.
+
+
+### 2026-10-15 continuation — Parent / Guardian table contact details and specialist-role permissions
+
+**Parent / Guardian contact-detail issue confirmed and addressed in source:**
+- The live schema already stores the relationship on `schoolpro_guardian_links.relationship`, and the table query selected it, but the table did not have a separate Email or Phone column and its narrow minimum width made the information difficult to inspect.
+- Read-only aggregate check against the live database found **842 guardian links**, with **0 blank relationship values**, **0 records where both parent name fields were blank**, and **842 linked profiles with no phone number recorded**. No personal contact values were retrieved for this check.
+- `src/pages/schoolpro/SchoolProParents.tsx`: added explicit Email and Phone columns; retains Parent name, Student, Relationship, and Status; includes phone in search; shows a clear “Not recorded” state and an authorized school-leader Edit action for the school-specific contact number.
+- `src/components/SchoolAccountForm.tsx`: adds a required parent/guardian phone field when creating or linking a parent.
+- `supabase/functions/invite-school-staff/index.ts`: validates and saves the supplied number on all three invitation-insert paths.
+- New migration `supabase/migrations/20261015220000_schoolpro_guardian_contact_phone.sql`: adds school-scoped `phone` to guardian links and `guardian_phone` to invitations; updates invitation acceptance to persist the number for each linked child without overwriting an existing number with null. **Not applied to production.**
+- Existing guardian records have no stored phone number to display yet; a school leader must enter/correct those numbers in the table after the migration and UI are deployed. Email/name data is present in the live profile join according to the aggregate check; re-test the rendered table after deployment. Relationship data is present and now receives its own visible column.
+
+**Discipline Master / Game Master authorization source changes:**
+- `src/pages/schoolpro/SchoolProDiscipline.tsx`: Discipline Master is included in the role list permitted to review/follow up discipline concerns.
+- `src/lib/schoolOperationalRoles.ts`: Game Master is permitted to manage school calendar events for games/competition scheduling.
+- New migration `supabase/migrations/20261015223000_schoolpro_specialist_role_permissions.sql`: adds least-privilege defaults in `schoolpro_user_permissions` (Discipline Master: dashboard/discipline/notifications; Game Master: dashboard/calendar/notifications) and extends the database RLS policies for school-scoped discipline records and calendar event management.
+- A dedicated sports team, fixtures, and competition-results module does not yet exist in the current routes/schema. Game Master is therefore currently scoped to calendar-based event scheduling; do not describe a full games-management module as complete.
+- The enum/invitation migration `20261015203000_schoolpro_discipline_game_master_roles.sql`, guardian-contact migration, and specialist-permissions migration are all source-only and **not applied to production**. Apply in chronological order only after review and approval. Then deploy the frontend and `invite-school-staff` Edge Function together.
+- Validation is still in progress. PR #105 remains open/draft and unmerged; latest Vercel status observed was pending and relevant GitHub Actions workflows were still running. No successful build, E2E result, production migration, or deployment is claimed.
+
+### 2026-10-15 continuation — dedicated Sports & Houses and profile correction source
+
+- **Sports & Houses workspace added to the branch, source-only:** route `/schoolpro/sports`, navigation link, role-aware access and `SchoolProSports.tsx`.
+- Areas implemented in source: school houses; sports teams linked to houses; training, tryouts, house competitions, inter-school activities and fitness events; participant registration; fixtures, scores and result notes.
+- New migration `20261015235000_schoolpro_sports_houses_management.sql` creates school-scoped houses, teams, activities, participants and fixtures tables; enables RLS and role-gates access to the Game Master / authorized school leadership. A trigger checks linked teams, activities, students and houses are in the same school. **Not applied to production.** Sports is currently permission-gated through the existing calendar permission until a dedicated `sports` permission is introduced; Game Master has calendar permission in the prepared role migration.
+- Student profile correction source: optional `middle_name` added to the enrolment form and student display; authorized school leaders can correct first/middle/last names and guardian name/phone from the student table. New migration `20261016001500_schoolpro_student_profile_corrections.sql` adds the column and a school-scoped audit table. **Not applied to production.**
+- Staff and parent/guardian profile correction UI now calls `schoolpro-profile-correction`, intended to update first/middle/last names, phone and sign-in email (with email verification pending), reconcile the Supabase Auth identity with the profile, and write an audit record. New function `supabase/functions/schoolpro-profile-correction/index.ts` and migration `20261016003000_schoolpro_profile_correction_audit.sql` are **source-only, not deployed/applied**. Must test role checks, email-confirmation behaviour, partial-failure handling and audit integrity before release.
+- New CI contract script `scripts/test-schoolpro-sports-and-profile.mjs` is registered in `.github/workflows/ci.yml`.
+- Previously completed CI run `38771387496` passed all 30 steps including typecheck and production build on commit `091a7ded03d41934809bd9f9b208438cfb8b76ee`. That result predates the sports/profile commits. A newer run `38775856458` was still in progress at the mobile-layout checks when this note was authored; refresh its result after the latest commits.
+- **Not released:** PR #105 remains open/draft/unmerged; no Render deployment, no profile-correction Edge Function deployment, and none of the new sports/profile migrations has been applied to live Supabase. The sports and profile flows are not accepted as production-complete until the new CI run passes and live authorization/tenant-isolation checks are performed.
+- Existing A–J handover, sequence and report-card CSS deferral remain intact. Outstanding custom roles, auth-email verification, staff invitation end-to-end, A–J functional verification, Result Design Studio authenticated save/reload/generation, historical rollover/anomaly, SchoolPro annual subscriptions and Render release certification remain tracked.
+### 2026-10-15 safety clarification — profile email changes
+
+- Supabase Auth Admin `updateUserById` applies email changes directly without a confirmation flow. The profile-correction Edge Function therefore deliberately does **not** mutate `auth.users.email` or `profiles.email` when a school leader enters a different email. It can save/audit names and phone, and it reports that the email change remains outstanding until a verified email-change delivery flow is implemented and tested.
+- Do not mark email correction complete. Profile editor forms expose the intended email field, but currently a different email is not saved. This is intentional fail-safe behaviour; the user's existing sign-in email remains unchanged.
+- A school-scoped hardening pass also adds explicit active-school filters to student deletion, parent-link removal and staff-membership removal calls.
+- CI was re-triggered for the sports/profile source and security assertions. The latest run must pass typecheck, the new `test-schoolpro-sports-and-profile.mjs` contract test, mobile/layout checks and build before source validation is accepted. No production migrations/functions have been deployed.
+
+### A-priority continuation checkpoint — 15 October 2026
+
+**Do not lose this position:** before resuming the older D (Result Design Studio) checklist, continue the still-open A authentication/authorization work that was under active correction. A is not marked complete by the profile/sports changes or by green CI.
+
+1. **Current branch/PR work:** draft PR #105, branch `fix/schoolpro-staff-invite-diagnostics`. Latest commit at this checkpoint: `21de41537aaaba7dc356fc66f41dc7a68eb2ea`. CI is running on this head; wait for final results before calling it verified.
+2. **Staff/parent profile correction:** a read-only inspection of the live schema found that `schoolpro_guardian_links` has no `phone` column. The atomic member-profile migration was corrected to write phone only to `profiles.phone` and no longer attempt to update a nonexistent guardian-link phone field. This was a concrete SQL/schema mismatch discovered before deployment.
+3. **Staff invite and first-login gate — still outstanding:** preserve the agreed temporary password rule: the staff member's surname is the temporary initial password, valid for the seven-day first-access window; force password change before any school records can be accessed; after change, the surname must no longer authenticate. Test invite creation, first login, forced change, expiry, and rejection of the old surname against protected pages and direct API/RPC calls. Never log or disclose the temporary password.
+4. **Role and school scope — still outstanding:** prove the Super Admin can enter/select the intended school workspace and view the intended records; prove authorized roles (including Exam Officer where relevant) can load the expected class/session/roster data; prove unauthorized roles and a second school cannot read or mutate those records through UI, direct routes, RPCs, or storage. Distinguish an empty/missing roster query from an authorization error and record actual evidence.
+5. **Staff invitation diagnostics — still outstanding:** retry the previously failing test invitation `hacademy.staff.01@example.com` only in a controlled test flow; do not assume email formatting or provider delivery is the cause. Compare the invite response, membership row, auth/profile linkage, initial-credential state and first-login route without logging credentials.
+6. **Release safety:** no production migration has been applied and no Render deployment has been made from this branch. Validate migration SQL and authorization behavior first; do not merge/deploy without the handover gates and explicit approval.
+7. **Then resume D:** once A's blocking auth, workspace, roster-access and temporary-password checks are evidenced, return to the four-section saved-template → reload → generate → inspect-output acceptance already listed in Section 6. Preserve the deferred live A4 print issue for later; do not silently close it.
+
+**A status: IN PROGRESS — implementation and static checks exist, but live role/first-login/isolation acceptance is not yet evidenced.**
+
+
+### Follow-up verification note — 15 October 2026, 18:15 UTC
+
+- Latest code/test commit: `3cf16023db7b196d30915d28a2eabf50093555f4`. The profile-correction email validation regex was corrected and a regression assertion was added after review found the previous escaped pattern was wrong.
+- CI for this head: receipt submission migration contract, receipt submission PostgreSQL integration, receipt review access contract, receipt review policy PostgreSQL integration, receipt payment contract, and payment-page validation have reported success. The main `SchoolPro CI` build was still running when this note was written; do not record the head as fully green until it finishes.
+- Read-only production inspection confirms the surname-onboarding database objects exist, including `schoolpro_initial_credentials`, `schoolpro_initial_challenge`, `schoolpro_set_initial_credential`, and `schoolpro_take_login_attempt`. This is schema evidence only, not proof of successful real-account activation or tenant-isolation tests.
+- The new profile/audit and sports migrations are not in the production migration history. They remain branch-only. Do not apply them independently of the matching frontend/Edge Function release.
+- **A remains IN PROGRESS.** Required real-account checks remain: controlled staff invitation retry for `hacademy.staff.01@example.com`; first-login surname challenge/change/expiry/replay rejection; Super Admin and authorized staff roster loading; and cross-school direct API/RPC/storage denial. No temporary password should be written to logs or handover.
+
+
+## My Classes / Form Master role-mapping follow-up — 15 October 2026
+
+- Corrected the My Classes loading path to resolve the signed-in staff member from the authorized `schoolpro_class_staff_directory` RPC response instead of requiring a separate direct `schoolpro_members` lookup. This avoids making class/subject visibility depend on an additional table query that can be blocked by RLS.
+- Form Masters/Class Teachers should see all subject allocations in classes where their `form_teacher_id` matches their school membership; subject teachers should see their own assigned classes and allocations. The class staff directory remains school-scoped.
+- Added an explicit empty state for staff with no current class or subject allocation. It explains that leadership should verify assignment; it does not create or transfer assignments automatically.
+- **HASSAN ACADEMY:** production read-only inspection previously confirmed Pre-Nursery A has a Form Master assignment for Hassan Hassan Isah. Validate that this account now resolves the assignment and can see the class's subject teachers after the branch is released.
+- **IH Academy:** Pre Nursery A has no Form Master assignment. Preserve that state until school leadership chooses to assign one; management view must display “Not assigned,” and no staff user should gain class access merely because another school has a similarly named class.
+- Regression assertions now cover scoped-directory identity resolution, the no-assignment state, and the Form Master subject-allocation scope. Latest head: `1a475afb722384e153e6bb278789071543b67bad`. CI for this exact head must pass before this correction is accepted. No merge, production migration, or Render deployment has been performed.
+
+
+## Section B/C/G follow-up — subject ownership, CBT visibility and Form Master attendance (15 October 2026)
+
+The user reports successful Parent/Student sign-in and feature access, and reports no cross-tenant data leakage when switching between HASSAN ACADEMY and IH Academy. Treat this as valuable user-verified evidence; Section A remains **near complete but not yet closed** until the remaining role/write-scope acceptance checks below pass.
+
+### Role contract to preserve
+
+- Subject Teachers can create assignments, tests and CBT questions/tests only for their allocated subject, class and active academic session; they can enter marks for their own subject scope. They must not be able to write another teacher's subject records by editing requests directly.
+- A Form Master/Class Teacher can see the complete roster for the assigned class and all CBT tests/assignments belonging to that class, including items created by other subject teachers. Class-wide visibility does not grant authority to edit another teacher's CBT test, question bank or assignment. Section C result-entry/review permissions remain governed by the established workflow, including the Form Master review stage before Exam Officer publication.
+- Attendance entry belongs to the Form Master assigned to the selected class. Subject Teacher status alone is not sufficient to create/update attendance. Authorized school management and platform Super Admin retain their management access.
+- Historical class/student relationships remain session-scoped. Do not infer a historical roster from a student's current class, and do not change a school's Form Master assignment to make a page appear populated.
+
+### Code and migration changes on the draft continuation branch
+
+- My Classes derives staff identity through the authorized school-scoped `schoolpro_class_staff_directory` RPC; its database function now explicitly admits `class_teacher` members while limiting returned staff to the caller, management, and staff linked to readable classes.
+- Attendance UI filters non-management users to classes where their member ID is the class's `form_teacher_id`; it displays an explicit empty state when no Form Master assignment exists.
+- Migration `20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql`:
+  - removes the broad teacher attendance write policies and restricts insert/update to the assigned Form Master of that class or authorized school management;
+  - adds Form Master attendance read scope;
+  - scopes assignment insert/update/delete to the subject/class/session allocation for the author, with management access retained;
+  - adds a `session` field to CBT tests, requires class/subject/session for new tests, scopes test authoring and marking to the assigned class/subject/session, and lets Form Masters read CBT tests for their assigned class without inheriting author permissions;
+  - scopes question-bank writes to assigned subject/class and lets Form Masters read question content attached to tests in their own class;
+  - permits subject teachers to configure eligibility only for their own authored test and its class/students;
+  - scopes subject-allocation reads and fixes the class staff directory's `class_teacher` role admission.
+- CBT Builder and Question Bank UIs now derive authorable class/subject options from the current session's subject allocations; test rows carry class, subject and session. The test builder disables edit controls when a Form Master is inspecting another teacher's test.
+- Regression assertions were added to `scripts/test-schoolpro-sports-and-profile.mjs` for the attendance, CBT, question bank, allocation and My Classes scopes.
+- **Validation status:** these are draft source/migration changes only. CI for the latest head must pass; static contract checks do not replace a real two-role/two-school acceptance run. The migration has NOT been applied to Supabase production and no Render deploy has occurred.
+
+### Required acceptance before merge/release
+
+1. Subject Teacher: create a question, draft assignment and CBT test only for an allocated subject/class/session; enter own-subject marks; direct API writes for an unassigned subject/class/session must be denied.
+2. Form Master: load assigned class and its historical roster; see all class subject teachers, assignments and CBT tests; cannot edit another teacher's test/question bank/assignment or mark their test unless separately assigned that subject.
+3. Attendance: assigned Form Master can read/mark/update own class attendance; a subject-only teacher is denied insert/update for that class; managers retain intended access; cross-school and wrong-class requests are denied.
+4. IH Academy Pre Nursery A remains unassigned until leadership chooses a Form Master; HASSAN ACADEMY Pre-Nursery A keeps the existing Hassan Hassan Isah assignment.
+5. Re-run CI on the exact release head, review all migrations in timestamp order and verify production schema compatibility without applying this draft migration to production during validation.
+
+### Merge/deployment caution
+
+PR #105 remains draft and targets `fix/result-design-section-selection`, not `main`. The parent feature branch itself is substantially ahead of `main`; merging PR #105 as-is would not deploy it to Render, and retargeting the accumulated branch directly to `main` would bring a much larger diff than the PR's current 27-file view. Do not merge or retarget this accumulated branch blindly. Prepare/review an explicit release diff against the intended production source after CI and scope acceptance. Vercel preview success is not Render production deployment.
+
+
+**Production-schema compatibility note:** read-only inspection of the live database found that CBT question tenant integrity is currently enforced by the shared `private.enforce_schoolpro_tenant_relations()` trigger function, not the legacy trigger name in one source migration. The new migration therefore adds a separate `private.schoolpro_validate_cbt_question_scope()` trigger for subject/class matching and leaves the existing shared tenant-integrity trigger untouched. This compatibility adjustment is draft-only and has not been applied to production.
+
+
+**Latest read-only production class check:** HASSAN ACADEMY → Pre-Nursery A has a `class_teacher` membership assigned as Form Master. The latest subject-allocation session found for that class is `2025/2026`, with one recorded allocation (Mathematics). IH Academy → Pre Nursery A has no Form Master and no subject allocations. The UI should display the data that exists; additional subject teachers/allocations must be entered through the school’s authorized allocation workflow rather than fabricated by this correction.
+
+
+## 2B. 15 October continuation — incremental score entry and role-policy review
+
+- **Incremental score entry — IMPLEMENTED on draft branch, CI pending:** Results entry now selects one assessment component (for example Assignment 1, CA/Test, or Examination), then a student, and saves that one score. The save merges that component into the existing `assessment_scores` JSON instead of replacing unentered components with zero. The next student can be selected while keeping the same subject, term, session, scheme, and component. Existing approval/published/locked-result guards remain in place.
+- **Assessment-policy migration review — corrected in draft, SQL runtime validation pending:** Read-only production policy inspection found permissive legacy `FOR ALL` policies on attendance, CBT tests, question bank and CBT eligibility that could OR with new scoped policies. The draft migration now drops the identified broad write-policy bypasses while retaining separate read paths, allows school management to manage assignments, and requires the test author or authorised CBT management for edits to test questions. These changes are not applied to production.
+- **CI:** Run `38810950008` on the preceding latest head reached the production-build step; the exact newest head must finish CI again before acceptance. Static tests were extended to cover incremental score preservation and the broad-policy drops. Static assertions are not a substitute for database policy tests.
+- **Template selection — OUTSTANDING:** Read-only schema inspection shows `schoolpro_result_templates` is currently one row per school with four nested section templates, and there is no persisted per-class/term/session template selection. IH Academy has a school-owned template with four section configurations; HASSAN ACADEMY currently has no custom result-template row. A Form Master selection must be persisted for the class/term/session and consumed by review and Exam Officer generation; merely adding a dropdown or exposing the designer would not satisfy this requirement. The Form Master must view scores/grading and preview the chosen output but must not receive Result Design Studio or mapping-edit permissions. The Exam Officer and authorised school admins retain design control; Head of Section mapping permissions must be explicitly checked against the role matrix.
+- **Release scope — BLOCKED from merge/deploy:** Current PR #105 head compares as 303 commits ahead of the last known Render production commit and changes a broad accumulated set of files/migrations. Its base is a feature branch, not `main`. Do not merge the accumulated PR or run its migrations directly on Render. Prepare an explicit release diff through the intended PR chain, verify migration order and direct API denial, then deploy only after all release gates pass.
+
+
+## Continuation update — 15 October 2026, 22:50 WAT
+
+### Latest verified GitHub state
+- PR [#105](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105) is **OPEN, DRAFT, UNMERGED**. Head branch: `fix/schoolpro-staff-invite-diagnostics`; head commit: `f24042c3ce0ef588b002eaed125dbacb261e0f9a`. Base branch remains `fix/result-design-section-selection`, not `main`.
+- Exact-head workflows completed successfully: [SchoolPro CI #957](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38811286008), receipt submission PostgreSQL integration #163, receipt submission migration contract #167, receipt payment contract #172, receipt review access contract #149, receipt review policy PostgreSQL integration #145, and payment-page validation #683. GitHub combined status also reports Vercel success. **This is branch CI/preview evidence only, not a Render deployment or production database migration.**
+- PR currently reports 32 changed files, 126 commits, 1,441 additions and 78 deletions. The release-scope warning remains: this is an accumulated feature branch and must not be merged or retargeted blindly.
+
+### Latest requested assessment-entry correction
+- **Incremental score entry — IMPLEMENTED IN BRANCH; CI PASS, end-to-end acceptance pending.** Teacher selects a single component (for example a particular assignment, CA/test, or examination), selects a student, enters that student's score and saves independently. The selected component is merged into the existing assessment-score payload so saving one component does not overwrite other components or mark unentered work as zero. The teacher can continue to the next student and return later to enter a different component; all components do not have to be ready together.
+- Acceptance still must confirm this flow against the real assessment scheme and authorization rules, including that a teacher can only enter marks for their assigned subject/class/session and that approval, publication and locked-result restrictions remain enforced.
+- The ecosystem rule remains: this is shared product behavior for every subscribing tenant, not a one-school-only fix. School-specific data must remain tenant-scoped.
+
+### Result-template selection — still outstanding
+- A Form Master/Class Teacher must be able to select an available school-approved template for their own class and applicable term/session, preview the template with the class results, scores and grading, and submit the result for review.
+- The selected template must persist through Form Master submission, Head of Section review/forwarding and Exam Officer generation/publication. The Form Master can view/preview but cannot edit marks through the template or access the Result Design Studio/mapping editor.
+- Exam Officer and authorized school administrators retain Result Design Studio/template-design permissions. Head of Section mapping permission must follow the approved role matrix and remain limited to the assigned section.
+- Current schema inspection noted earlier in this handover found school-level section template configuration but no persisted per-class/term/session template selection. Do not mark this complete until persistence and end-to-end propagation are implemented and tested.
+
+### Section ownership and workflow clarification
+- **B:** academic sessions, current and historical rosters, class/arm assignments, subject allocations, and the existing Form Master/class roster relationships.
+- **C:** assessment-component setup, incremental score entry, grading, averages, positions, review and publication. Subject Teachers create/mark only their allocated subjects; Form Masters review/compile class results without editing another teacher's marks by virtue of class-wide visibility; Section Heads handle only their assigned section; Exam Officer publishes class-by-class.
+- **G:** attendance operational workflow. Only the assigned Form Master (plus authorized management/Super Admin) may write attendance for the class; Subject Teacher status alone does not grant attendance-write permission.
+- Historical Form Master/student/class relationships must be resolved by academic session. Do not replace historical assignments with current assignments.
+
+### Required next actions; no production changes made
+1. Inspect the exact-head diff and SQL migration `20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql` against production schema and all existing permissive policies. Validate migration compatibility in a non-production/no-additional-cost route; do not apply it to production during review.
+2. Run/complete real two-school, two-role acceptance for Subject Teacher, Form Master and authorized management: incremental marks; assignments; CBT authoring and Form Master class-wide visibility; attendance; direct API/RPC denial for wrong subject, class, session and school.
+3. Implement persisted per-class/term/session result-template choice and propagate it through Form Master → Head of Section → Exam Officer → generated output; verify Form Master has preview-only access.
+4. Trace the Basic 5 A First Term 2025/2026 subject-ID anomaly and confirm calculations before any production data correction.
+5. Reconcile PR #105's accumulated base/head with the actual Render production source and prepare a deliberately scoped release PR/diff. Do not merge the current draft as-is.
+6. Only after the release diff, database policies/migrations, role tests and rollback plan are approved, merge through the correct chain and perform a controlled Render deployment. Verify live commit, health and the critical flows afterward.
+7. Preserve all previously listed A–J work, pricing/subscription/payment/security items, APK certification and deferred live A4 print overflow. Do not delete or overwrite this handover's older outstanding items.
+
+### Current status snapshot
+- PR #105 CI: **PASS for exact head**.
+- Incremental score-entry code: **IMPLEMENTED; authenticated/end-to-end acceptance pending**.
+- My Classes/Form Master/Subject Teacher changes and attendance/assignment/CBT policy migration: **IMPLEMENTED IN BRANCH; database-policy and real-role verification pending**.
+- Form Master result-template selection and propagation: **OUTSTANDING**.
+- Section A: **NEAR COMPLETE, NOT CLOSED**; user has verified Parent/Student access and reports no visible cross-tenant leakage, but direct API/RPC/storage denial and role-write-scope tests remain.
+- Production migration, merge and Render deployment: **NOT PERFORMED**.
+
+## Continuation checkpoint — 15 October 2026, latest audit
+
+### User-mandated release order (authoritative)
+- **Section A must be completed, reviewed, and MERGED into the intended production branch before Section B work begins.**
+- Do not mark A complete on the strength of CI alone. A closure requires the authentication/tenant-isolation acceptance gates, review of the exact production release diff, passing direct API/RPC/storage denial tests across two schools and relevant roles, an approved merge target, and confirmation that the merge succeeded.
+- Once A is merged, verify the merged commit and run the required post-merge checks. Only then begin B (academic sessions, student population and class rosters). Do not mix B implementation into the A release.
+- This sequencing rule does not remove or downgrade any existing handover task. Keep the full A–J scope and deferred work intact.
+
+### Latest CI and release-scope audit
+- PR #105 head is now `d7d63bd99f95913d6771dbf9768803b5eb4fcb6b`; the seven reported GitHub Actions workflows completed successfully, including SchoolPro CI and payment/receipt contract and PostgreSQL integration checks.
+- PR #105 remains **OPEN, DRAFT, UNMERGED** and targets `fix/result-design-section-selection`, not `main`. CI success is not merge approval, not proof of tenant/RPC security, and not evidence of a Render deployment.
+- The production reference commit supplied in the handover is `4af35b34e4b70e407b058f9f18af5c18024c1d1d`. Comparing that commit to the current PR branch reports 329 commits ahead and 77 changed files. Comparing `main` to the production reference indicates the production reference is 21 commits ahead of `main`. The current branch therefore cannot be merged or retargeted blindly: prepare an explicit, reviewed release diff from the actual Render production source and separate the A-only release from unrelated accumulated work.
+- No merge, production migration, or Render deployment has been performed in this checkpoint.
+
+### Migration review — static inspection only
+- Migration reviewed: `supabase/migrations/20261016020000_schoolpro_subject_assessment_and_form_master_scope.sql`.
+- It introduces class/subject/session scope helpers for assignment writes, CBT authoring/visibility and question-bank access, and Form Master/management attendance writes; it also drops several legacy broad policies before adding narrower policies.
+- Static review identified a need for runtime verification before release: confirm the full live policy inventory for each affected table, check for any remaining permissive policies that OR with the new policies, verify column/table/function compatibility against the production schema, and execute cross-school/wrong-class/wrong-subject/wrong-session denial tests. The duplicate creation of `Question bank scoped read` is preceded by a drop of that same policy within the migration; this is not, by itself, evidence of a duplicate-policy failure.
+- This was source inspection only. The migration has **not** been applied to production and SQL runtime validation is not claimed.
+
+### Immediate next actions — A first, no B yet
+1. Define and review the exact A-only diff from the Render production reference; identify commits/files that are unrelated to A and keep them out of the A release.
+2. Run authentication and tenant-isolation acceptance against two separate schools, including direct table/RPC/storage attempts by owner, staff, parent/student and Super Admin identities; preserve the intended Super Admin cross-workspace control-center behavior without allowing tenant-data writes outside authorization.
+3. Review the migration chain and live RLS policy inventory, validate the new SQL on a no-additional-cost non-production/static route, and run real role-based write/read-denial tests. Do not apply production migrations during this audit.
+4. Fix all A blockers, obtain passing checks on the exact A release head, and confirm the correct merge target and release contents.
+5. Merge A and verify the resulting commit plus post-merge checks. **Only after this succeeds may B start.**
+6. After A is merged, begin B as a separate workstream. C and D remain later gates; result-template persistence/propagation, the Basic 5 A subject-ID anomaly, assessment end-to-end acceptance and the deferred A4 print overflow remain outstanding and must not be dropped.
+
+### Status at this checkpoint
+- Latest branch CI: **PASS**.
+- A authentication/tenant-isolation gate: **NOT CLOSED**; exact production release diff and direct API/RPC/storage denial acceptance remain required.
+- PR #105: **NOT MERGED**; unsuitable for blind merge due to accumulated scope and non-production base branch.
+- B: **NOT STARTED under the user's required sequence**; do not begin until A has been merged and verified.
+- Production migration / Render deployment: **NOT PERFORMED**.
+
+### A acceptance audit — test coverage limitation found
+- `scripts/test-school-context-authorization-contract.mjs` is a **source-contract/static assertion** over the frontend context hook. It verifies selected authorization-related source fragments but does not execute Supabase RLS or prove cross-tenant denial.
+- `scripts/test-school-context-relationships.mjs` is an unauthenticated schema/relationship smoke test with a publishable API key and a zero-row query. Its own output explicitly states it does not verify authenticated tenant RLS isolation.
+- `scripts/schoolpro-account-access-test.mjs` uses a local in-memory mocked Supabase/query harness for its assertions. Useful for application logic regression, but it is not a live authenticated two-school RLS/RPC/storage acceptance test.
+- Therefore these scripts are useful CI evidence but do **not** close A. A still needs a safe authenticated test route that exercises real database authorization boundaries with separate school identities, including direct API/RPC/storage attempts and negative cases. Do not use or expose production credentials in scripts/logs, and do not create a paid Supabase branch to obtain this evidence.
+
+### Follow-up action — PR #105 release gate recorded
+- Inspected the full PR #105 patch: it spans 32 changed files and includes staff/invitation work, sports/house management, profile correction functions/audit tables, attendance, assignments, CBT/question-bank scoping, and academic result changes. This is broader than a clean A-only release.
+- The GitHub account linked to this session is the PR author, so GitHub rejected a formal `REQUEST_CHANGES` review on its own PR. A release-gate comment was therefore added to the PR conversation instead: [PR #105 discussion](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105#issuecomment-6203096124).
+- The comment records the required A-only diff, authenticated two-school direct API/RPC/storage denial evidence, full RLS/migration compatibility review, correct merge target, and post-merge verification. It explicitly says not to merge PR #105 as-is and does not authorize a production migration or Render deployment.
+- No source-code release was merged, no database migration was applied, and no Render deployment was triggered.
+

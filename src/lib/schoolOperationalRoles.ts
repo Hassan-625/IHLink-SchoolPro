@@ -1,6 +1,6 @@
 const managers:Record<string,readonly string[]>={
  library:['librarian'],transport:['transport_manager'],hostel:['hostel_manager'],inventory:['inventory_officer'],
- promotions:['registrar','head_teacher','vice_principal'],calendar:['registrar','head_teacher','vice_principal'],
+ promotions:['registrar','head_teacher','vice_principal'],calendar:['registrar','head_teacher','vice_principal','game_master'],sports:['game_master','head_teacher','vice_principal'],
  payroll:['accountant','bursar'],medical:['nurse','counsellor','head_teacher'],leave:['hr_officer'],
 };
 export function canManageSchoolOperation(kind:string,role:string){

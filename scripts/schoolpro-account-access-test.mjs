@@ -24,7 +24,7 @@ async function harness(path){
   if(name==='schoolpro_set_initial_credential'){tables.schoolpro_initial_credentials.push({user_id:args.p_user,school_id:args.p_school,surname:args.p_surname.toLowerCase(),consumed_at:null,expires_at:new Date(Date.now()+86400000).toISOString()});return {error:null};}
   if(name==='schoolpro_initial_challenge'){const row=tables.schoolpro_initial_credentials.find(x=>x.user_id===args.p_user&&x.surname===args.p_surname.trim().toLowerCase()&&x.consumed_at===null);if(row)tables.schoolpro_account_challenges.push({user_id:args.p_user,token_hash:args.p_hash});return {data:!!row,error:null};}
   if(name==='schoolpro_consume_account_challenge'){const row=tables.schoolpro_initial_credentials.find(x=>x.user_id===args.p_user&&x.consumed_at===null);const challenge=tables.schoolpro_account_challenges.find(x=>x.user_id===args.p_user&&x.token_hash===args.p_hash);const valid=!!row&&!!challenge&&args.p_password.length>=10&&args.p_password.trim().toLowerCase()!==row.surname;if(valid){row.consumed_at='consumed';tables.schoolpro_account_challenges=[];}return {data:valid,error:null};}
-  if(name==='schoolpro_accept_access_invitation'){const profile=tables.profiles.find(x=>x.id===args.p_user);const invite=tables.schoolpro_access_invitations.find(x=>x.token_hash===args.p_hash&&x.email===profile?.email&&!x.accepted_at);if(!invite)return {data:false,error:null};if(invite.role==='parent'){for(const id of invite.student_ids){tables.schoolpro_guardian_links.push({school_id:invite.school_id,student_id:id,guardian_user_id:args.p_user});}}else if(!tables.schoolpro_members.some(x=>x.school_id===invite.school_id&&x.user_id===args.p_user)){tables.schoolpro_members.push({school_id:invite.school_id,user_id:args.p_user,role:invite.role});}invite.accepted_at='accepted';return {data:true,error:null};}
+  if(name==='schoolpro_accept_access_invitation'){const profile=tables.profiles.find(x=>x.id===args.p_user);const invite=tables.schoolpro_access_invitations.find(x=>x.token_hash===args.p_hash&&x.email===profile?.email&&!x.accepted_at);if(!invite)return {data:false,error:null};if(invite.role==='parent'){for(const id of invite.student_ids){tables.schoolpro_guardian_links.push({school_id:invite.school_id,student_id:id,guardian_user_id:args.p_user,relationship:invite.relationship,phone:invite.guardian_phone||null});}}else if(!tables.schoolpro_members.some(x=>x.school_id===invite.school_id&&x.user_id===args.p_user)){tables.schoolpro_members.push({school_id:invite.school_id,user_id:args.p_user,role:invite.role});}invite.accepted_at='accepted';return {data:true,error:null};}
 
   const found=tables.schoolpro_student_activation_challenges.find(r=>r.token_hash===args.p_hash);
   if(found)tables.schoolpro_student_activation_challenges=tables.schoolpro_student_activation_challenges.filter(r=>r.student_id!==found.student_id);
@@ -51,11 +51,11 @@ login.tables.schoolpro_students.push({...login.tables.schoolpro_students[0],id:'
 const invite=await harness('supabase/functions/invite-school-staff/index.ts');
 const names={firstName:'Fixture',middleName:'Middle',surname:'Adu'};
 assert.equal((await invite.post({schoolId:school,email:'parent@example.test',role:'parent',studentId:'foreign-student',...names})).status,400);assert.equal(invite.counts().invites,0);
-response=await invite.post({schoolId:school,email:'parent@example.test',role:'parent',studentId,relationship:'mother',...names});assert.equal(response.status,200);assert.equal(response.data.requiresAcceptance,true);assert.equal(invite.tables.schoolpro_guardian_links.length,0);
+assert.equal((await invite.post({schoolId:school,email:'parent@example.test',role:'parent',studentId,relationship:'mother',...names})).status,400);assert.equal(invite.counts().invites,0);response=await invite.post({schoolId:school,email:'parent@example.test',role:'parent',studentId,relationship:'mother',phone:'+2348012345678',...names});assert.equal(response.status,200);assert.equal(response.data.requiresAcceptance,true);assert.equal(invite.tables.schoolpro_guardian_links.length,0);
 const joiningCode=response.data.joiningCode;
 invite.setCaller('uninvited');assert.equal((await invite.post({schoolId:school,email:'teacher@example.test',role:'teacher',...names})).status,403);assert.equal(invite.counts().creates,0);
 assert.equal((await invite.post({action:'accept',code:joiningCode})).status,400);
-invite.setCaller('parent');assert.equal((await invite.post({action:'accept',code:joiningCode})).status,200);assert.equal(invite.tables.schoolpro_guardian_links[0].student_id,studentId);assert.equal((await invite.post({action:'accept',code:joiningCode})).status,400);
+invite.setCaller('parent');assert.equal((await invite.post({action:'accept',code:joiningCode})).status,200);assert.equal(invite.tables.schoolpro_guardian_links[0].student_id,studentId);assert.equal(invite.tables.schoolpro_guardian_links[0].relationship,'mother');assert.equal(invite.tables.schoolpro_guardian_links[0].phone,'+2348012345678');assert.equal((await invite.post({action:'accept',code:joiningCode})).status,400);
 invite.setCaller('owner');invite.tables.schoolpro_members.push({school_id:school,user_id:'parent',role:'accountant'});response=await invite.post({schoolId:school,email:'parent@example.test',role:'teacher',...names});assert.equal(response.data.requiresAcceptance,true);assert.equal(invite.tables.schoolpro_members[0].role,'accountant');
 response=await invite.post({schoolId:school,email:'new-staff@example.test',role:'teacher',...names});assert.equal(response.status,200);assert.equal(response.data.created,true);assert.equal(invite.counts().invites,0);assert.equal(invite.counts().creates,1);assert.notEqual(invite.accounts.get('created').password,names.surname);assert.equal(invite.accounts.get('created').ban_duration,'876000h');assert.equal(invite.tables.schoolpro_members.find(x=>x.user_id==='created').role,'teacher');
 invite.setRateAllowed(false);assert.equal((await invite.post({schoolId:school,email:'another-staff@example.test',role:'teacher',...names})).status,429);assert.equal(invite.counts().creates,1);
@@ -86,3 +86,20 @@ managed.setCaller('staff');assert.equal((await managed.post({action:'accept',cod
 managed.setCaller('owner');assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,400);assert.equal((await managed.post({action:'list',schoolId:school})).data.invitations.length,0);
 managed.setRateAllowed(false);assert.equal((await managed.post({action:'regenerate',schoolId:school,invitationId:id})).status,429);
 console.log('PASS: pending staff persist, leaders-only listing, school-bound regeneration, old-code rejection, bursar acceptance and accepted invitations cannot regenerate');
+
+
+const parentsPage=fs.readFileSync('src/pages/schoolpro/SchoolProParents.tsx','utf8');
+assert.match(parentsPage,/\['Parent','Email','Phone','Student','Relationship','Status',''\]/);
+assert.match(parentsPage,/updatePhone/);
+assert.match(parentsPage,/\.eq\('school_id',schoolId\)/);
+const parentForm=fs.readFileSync('src/components/SchoolAccountForm.tsx','utf8');
+assert.match(parentForm,/required type="tel"/);
+const specialistRoles=fs.readFileSync('src/lib/schoolRoles.ts','utf8');
+assert.match(specialistRoles,/\['discipline_master','Discipline Master'\]/);
+assert.match(specialistRoles,/\['game_master','Game Master'\]/);
+const specialistPermissions=fs.readFileSync('supabase/migrations/20261015223000_schoolpro_specialist_role_permissions.sql','utf8');
+assert.match(specialistPermissions,/when 'discipline_master' then array\['dashboard','discipline','notifications'\]/);
+assert.match(specialistPermissions,/when 'game_master' then array\['dashboard','calendar','notifications'\]/);
+assert.match(specialistPermissions,/discipline authorized access/);
+assert.match(specialistPermissions,/calendar management write/);
+console.log('PASS: parent contact table columns/edit flow and least-privilege specialist-role source contracts');

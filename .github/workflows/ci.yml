@@ -3,7 +3,6 @@ on:
   push:
     branches: [main, fix/result-design-section-selection]
   pull_request:
-    branches: [main, fix/report-card-assessment-term-history]
 jobs:
   validate:
     runs-on: ubuntu-latest

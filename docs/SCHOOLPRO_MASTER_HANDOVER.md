@@ -1030,3 +1030,14 @@ This entry supplements the existing handover. It does not remove, replace, or re
 ### Safety and continuation rule
 
 No merge, production deployment, production migration, or production subscription-data mutation is confirmed by this checkpoint. Continue from the last verified acceptance gate: finish A's remaining authorization/tenant-isolation evidence first, then B, then C, then D. Subscription PR #104 remains parallel and must not be used as a reason to skip or downgrade the main handover.
+
+
+### 2026-10-15 continuation — handover-document CI completed
+
+- CI run `38748670356` for commit `9dcdc3293dd8c5c065e07e4bde4f9a8b12728916` completed **successfully**. The job passed dependency installation, TypeScript typecheck, authentication-profile race checks, school-context authorization contract checks, school access/context tests, result workflow/export tests, operational-role checks, result-PIN throttle contract checks, document/template tests, mobile/customer layout checks, and `npm run build`.
+- Payment-focused workflows on this commit also completed successfully: receipt submission PostgreSQL integration `38748670532`, payment-page validation `38748669838`, legacy payment migration ACL `38748669598`, receipt review policy PostgreSQL integration `38748669386`, receipt review access contract `38748669589`, receipt submission migration contract `38748669584`, and receipt payment contract `38748670014`.
+- CI run `38748682462` for authority/workspace handover commit `048135d2712d3af79385244ae766f024dc792529` also completed **successfully**, including typecheck, workspace/access/result/document checks, responsive-layout checks, and `npm run build`. Payment-page validation run `38748682589` completed successfully.
+- Vercel status checks reported success for both documentation commits. This is a status-check result only; it does not prove an intended production deployment or migration occurred.
+- Static source-contract checks passing do **not** close Section A. Authenticated two-school acceptance is still **BLOCKED** because no signed-in test session and observed cross-school results are available. Do not infer live tenant isolation from source checks alone.
+- PR #103 (result-design branch) and PR #104 (annual Demo/upgrade branch) remain open, draft, and unmerged as of this check. No production migration, direct database change, or production rollout was performed.
+- **Next action remains Section A:** obtain/use a signed-in test session with two controlled school workspaces and execute owner/staff/Super Admin selection, forged `school_id`, direct route/API/RPC, storage, and role-denial tests. Keep Sections B/C gated and Section D paused until acceptance evidence is recorded.

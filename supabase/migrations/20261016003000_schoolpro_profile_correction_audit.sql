@@ -15,3 +15,5 @@ alter table public.schoolpro_profile_change_audit enable row level security;
 drop policy if exists schoolpro_profile_change_audit_select on public.schoolpro_profile_change_audit;
 create policy schoolpro_profile_change_audit_select on public.schoolpro_profile_change_audit for select to authenticated
 using (private.has_school_access(school_id,array['proprietor'::public.school_member_role,'administrator'::public.school_member_role]));
+
+grant select on public.schoolpro_profile_change_audit to authenticated;

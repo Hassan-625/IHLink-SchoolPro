@@ -36,6 +36,7 @@ assert.match(cbtPage, /bank\.filter\(q=>\(!test\?\.subject_id\|\|q\.subject_id==
 assert.match(cbtPage, /canMarkSelected/);
 assert.match(academicScopeMigration, /CBT question must match the test subject/);
 assert.match(academicScopeMigration, /Class-specific CBT question must match the test class/);
+assert.match(academicScopeMigration, /create trigger schoolpro_validate_cbt_question_scope/);
 assert.match(academicScopeMigration, /Form Masters read assigned class attendance/);
 assert.match(questionBankPage, /schoolpro_class_staff_directory/);
 assert.match(questionBankPage, /Create or edit questions only for your own assigned subject and class/);

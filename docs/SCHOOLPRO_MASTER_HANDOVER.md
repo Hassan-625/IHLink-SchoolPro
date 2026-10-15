@@ -949,3 +949,9 @@ After every meaningful action, update this same file with:
 - Current PR head at the time of the latest check: `afc702ccc30057a61e4dda11f13e17a27d2fefb9`. All seven payment-focused workflows passed and Vercel status reported success; SchoolPro CI also completed successfully on this head. This remains automated code/build evidence, not authenticated live two-school acceptance.
 - **No production DDL, policies, grants, rows, or auth settings were changed.** No migration was applied. PR #103 remains draft and unmerged.
 - Section A remains **PARTIALLY VERIFIED / live tenant isolation BLOCKED** pending signed-in two-school testing. Next action: perform a targeted per-function security review and verify the intended access model for public token workflows, then complete authenticated cross-school acceptance. Sections B/C remain gated; Section D stays paused.
+
+### Targeted follow-up: public result-PIN RPC
+
+- Read the live definition of `public.check_schoolpro_result_pin(text,text,text,text)` without invoking it. It finds a student by admission number, checks the supplied PIN hash, and returns published subject scores when allowed. The function body itself does not record failed PIN attempts, apply a per-student/IP cooldown, or increment a failed-attempt counter; the related `schoolpro_result_access_pins` table has `last_used_at` but no failure counter.
+- This is a **hardening gap to validate**, not yet a confirmed exploitable vulnerability: infrastructure-level rate limits may exist outside the database function and have not been verified. Because the RPC is callable by `anon`, the next security action is to check whether direct PostgREST calls are rate-limited and, if not, design a database-enforced throttle with tests before any deployment.
+- No RPC was called, no student result was queried through the public endpoint, and no production data/schema/policies were changed.

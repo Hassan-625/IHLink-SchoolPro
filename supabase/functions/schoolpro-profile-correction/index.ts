@@ -45,8 +45,8 @@ Deno.serve(async(req:Request)=>{
   }
   const {error:updateError}=await admin.from('profiles').update(next).eq('id',targetUserId);
   if(updateError)throw updateError;
-  if(guardian&&phone){
-   const {error:phoneError}=await admin.from('schoolpro_guardian_links').update({phone}).eq('school_id',schoolId).eq('guardian_user_id',targetUserId);
+  if(guardian){
+   const {error:phoneError}=await admin.from('schoolpro_guardian_links').update({phone:phone||null}).eq('school_id',schoolId).eq('guardian_user_id',targetUserId);
    if(phoneError)throw phoneError;
   }
   const {error:auditError}=await admin.from('schoolpro_profile_change_audit').insert({school_id:schoolId,target_user_id:targetUserId,changed_by:actor.id,changed_fields:fields,before_values:before,after_values:next});

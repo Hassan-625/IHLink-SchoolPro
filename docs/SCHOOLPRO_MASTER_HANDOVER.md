@@ -1099,3 +1099,11 @@ Section A is therefore **PARTIALLY ACCEPTED**: owner scoping, Super Admin worksp
 - Verify enforcement end-to-end: database/RPC credential state, login/onboarding UI, protected page loads, and direct API/RPC attempts must all block record access until the password is changed. A UI notice alone is insufficient. Verify expiry and the post-change rejection of the surname without logging or recording actual passwords.
 - Role/permission changes remain independent of the temporary-password rule and must continue to restrict existing staff accounts correctly.
 - **No implementation or production change is authorized by this clarification.** Section A remains partially accepted until the outstanding role/action, direct-route/API/RPC, and cross-school read/write/storage checks are evidenced. Keep B/C gated until A acceptance; retain D and every E–J workstream and the deferred report-card printing/CSS issue.
+
+### 2026-10-15 user-confirmed temporary-password decision — authoritative clarification
+
+- **Confirmed requirement:** retain the staff member's surname as the temporary initial password. This explicit user decision supersedes the preceding source-review suggestion to replace it with a unique temporary credential or setup link. That replacement is not approved and must not be treated as the next implementation task.
+- Keep the seven-day first-time onboarding window and mandatory password change before any school records can be accessed. After the password is changed, the surname must no longer authenticate the account.
+- Section A acceptance must verify this end-to-end across credential state, login/onboarding UI, protected page loads, and direct API/RPC attempts. A UI message alone is insufficient. Verify expiry and post-change rejection without recording or logging actual passwords.
+- Role changes and permission restrictions remain independent of the temporary-password rule. Do not loosen existing authorization to accommodate onboarding.
+- This is a requirements/handover clarification only; it does not authorize code changes, database mutations, merge, or deployment. Section A remains partially accepted pending role/action, direct-route/API/RPC, and cross-school read/write/storage evidence. B and C remain gated; retain D–J and the deferred report-card printing/CSS work.

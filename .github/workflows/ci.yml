@@ -49,3 +49,27 @@ jobs:
           name: mobile-layout-checks
           path: mobile-ui-evidence/
       - run: npm run build
+
+  tenant-acceptance:
+    if: ${{ vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SCHOOL_A_EMAIL: ${{ secrets.SCHOOL_A_EMAIL }}
+      SCHOOL_A_PASSWORD: ${{ secrets.SCHOOL_A_PASSWORD }}
+      SCHOOL_A_ID: ${{ secrets.SCHOOL_A_ID }}
+      SCHOOL_B_EMAIL: ${{ secrets.SCHOOL_B_EMAIL }}
+      SCHOOL_B_PASSWORD: ${{ secrets.SCHOOL_B_PASSWORD }}
+      SCHOOL_B_ID: ${{ secrets.SCHOOL_B_ID }}
+      TENANT_TEST_TERM: ${{ vars.TENANT_TEST_TERM }}
+      TENANT_TEST_SESSION: ${{ vars.TENANT_TEST_SESSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run read-only two-school acceptance checks
+        run: node scripts/test-schoolpro-tenant-isolation-live.mjs

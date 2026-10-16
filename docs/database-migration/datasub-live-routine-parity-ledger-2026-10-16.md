@@ -75,3 +75,7 @@ Exact catalog signature: `public.datasub_transfer_wallet(uuid,numeric,text,uuid)
 2. P1 hardening review: address unauthenticated datasub-provider-webhook event injection/noise without making this endpoint authoritative for financial state.
 3. P1 authorization tests: prove direct customer writes to wallet, ledger, transaction, routing-event and provider-attempt tables are denied under real anon/authenticated JWT roles despite table grants.
 4. Continue source provenance recovery for the missing wallet refund hardening migration. Do not apply speculative production changes.
+
+## Follow-up tracking — 2026-10-16
+
+Created DataSub issue [#47 — Security review: harden public provider webhook event ingestion](https://github.com/Hassan-625/IHLink-DataSub/issues/47). It records the observed behavior, acceptance criteria, and the requirement to confirm the actual provider authentication contract before choosing a signature or secret scheme. This issue is a tracking artifact only; no code or deployed configuration was changed.

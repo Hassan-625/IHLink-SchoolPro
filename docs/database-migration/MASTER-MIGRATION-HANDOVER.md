@@ -555,3 +555,8 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - Required correction: under the callback's transaction-row lock, check for the exact canonical refund ledger row before success handling; if present, retain/restore failed + REFUNDED and record the event as late-after-refund rather than marking success. Add assertions for both status and wallet/ledger consistency, then rerun the full disposable suite.
 - Attempted to apply the corrective SQL patch through the connected GitHub file-update action, but the action blocked the write. No patch was applied; this remains an open blocker, and should not be represented as fixed. DataSub validation #342 was still running at last check: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
 - SchoolPro master handover updated on this branch to retain the finding. No production database changes, deployment, merge or cutover.
+
+
+### DataSub validation #342 final result (2026-10-16)
+- DataSub validation #342 completed successfully, including app tests, typecheck, native/browser security checks, PIN recovery, mobile layout checks, and build: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
+- This passing app validation does not override the separate failing SQL race regression #24. The late-success-after-refund defect remains open until a corrective SQL change and passing PostgreSQL regression are available.

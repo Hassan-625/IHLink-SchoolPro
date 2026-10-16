@@ -85,13 +85,12 @@ The retry did not solve the Storage timeout. Next investigation should isolate t
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Code/test-fix commit: `9b3b3513f0f27da878099f4749e252c8f1dcf537`; latest branch head before this documentation refresh: `063750d8d545c58312e50bc5d8a3be299c8fd38d`.
-- SchoolPro CI run #1007: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38892010470 — live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path; general `validate` was still running at the time of the last status check.
-- Run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — general `validate` passed, including the static family-media policy regression test; live acceptance failed on the missing fixture.
-- Earlier runs #1000–#1002: general validation passed, but the old folder-listing check failed with Storage status 544 / database timeout. Run #1003 switched to the RLS-protected template row and exact-object download; it exposed the missing School B fixture instead of falsely treating a timeout as a denial.
-- Payment-page validation run #731 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749307.
-- Live DB/RPC assertions continue to pass for both real authenticated accounts: own-school student access, foreign-school reads blocked for students/members/invoices/results, own-school academic-period RPC allowed, foreign-school period denied, and foreign-student result-output RPC returns false.
-- Payment receipt Storage checks remain skipped because no existing receipt paths are configured. Do not upload dummy production receipts.
+- Tested code commit: `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`.
+- SchoolPro CI run #1025: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771 — **`tenant-acceptance` passed**. General `validate` was still running at the last status check; the full workflow is not yet confirmed green.
+- Authenticated two-account checks passed for both schools: own-school student access; foreign-school student/member/invoice/result reads blocked; own-school academic-period RPC allowed; foreign-school period RPC denied; and foreign-student result-output RPC returned false.
+- Storage positive/negative check passed: School A downloaded its existing result-template workbook; School B received HTTP 400 for that exact foreign object. The test now uses raw HTTP status for the negative assertion because the Supabase JS Storage wrapper returned `StorageUnknownError` with no exposed status for an empty/non-JSON denial body.
+- Payment-page validation run #751: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225604 — queued at the last status check.
+- Payment-receipt Storage checks remain skipped because no existing receipt paths are configured. Do not upload dummy production receipts.
 
 ### Confirmed Storage-list timeout root cause
 
@@ -99,23 +98,31 @@ Supabase logs for the earlier timeout show SQLSTATE `57014`, Storage API status 
 
 `Families read their report images` → `private.schoolpro_family_report_media(name)` → `public.schoolpro_can_view_result_output` → `private.schoolpro_result_access` → `public.schoolpro_can_read_student` / `public.schoolpro_operationally_active`.
 
-That permissive policy is attached to the same private `school-result-templates` bucket as .xlsx workbooks. Its original function scans published/locked result rows before matching a specific photo/signature/logo path, so Storage's object-search query can invoke expensive authorization work while listing workbook objects. This is a policy/query-performance defect confirmed by database logs, not merely a transient client/network timeout.
+That policy is attached to the same private `school-result-templates` bucket as .xlsx workbooks. The original function joins broad student/result sets and then matches a specific photo/signature/logo path. This caused Storage's folder-list query to invoke expensive report-authorization work for workbook objects. The timeout is a policy/query-performance defect, not merely a client/network issue.
 
-### Draft fix prepared, not applied
+### Draft remediation — not applied to production
 
-Migration source added to the PR branch: `supabase/migrations/20261016110500_schoolpro_optimize_family_report_media_storage_policy.sql`.
+Migration: `supabase/migrations/20261016110500_schoolpro_optimize_family_report_media_storage_policy.sql`.
 
-It:
-- adds partial indexes for exact student-photo, principal-signature, form-teacher-signature and logo paths;
-- changes the family-media function to match each exact path before checking relevant published/locked results;
-- uses a `CASE` policy branch to avoid invoking the expensive function for non-media paths such as .xlsx workbooks;
-- retains authenticated access and the existing result-visibility function rather than granting broad bucket access.
+It adds partial exact-path indexes, separates media path checks, and uses `CASE` branches so non-media paths such as .xlsx workbooks do not invoke the expensive family-media function. Static regression test: `scripts/test-schoolpro-family-report-media-policy.mjs`.
 
-A static regression test was added at `scripts/test-schoolpro-family-report-media-policy.mjs` and wired into `.github/workflows/ci.yml`. The migration has **not** been applied to production and has not yet been performance-verified against a non-production database. Review SQL and CI before considering deployment.
+The exact-object tenant acceptance now passes, but that does **not** prove the folder-listing performance defect is fixed. Review the policy's path shapes and semantics, then validate the migration in a non-production database if available. It has not been applied or performance-tested in production.
 
-### Existing-fixture constraint
+### Result-PIN attempt cooldown — draft only
 
-A read-only production inventory found eight objects in `school-result-templates`, all IHLink Academy workbooks, and one `schoolpro_result_templates` row, also for IHLink Academy. School B's configured test workspace has no existing template row/object. The live test must not create dummy production objects. The positive own-school Storage assertion therefore remains blocked until an authorized existing fixture is available; a foreign-school denial alone is not a complete Storage acceptance pass.
+Migration: `supabase/migrations/20261016122000_schoolpro_result_pin_attempt_rate_limit.sql`.
+
+The draft adds an eight-failure / 15-minute window with a 15-minute cooldown and stores only a one-way attempt key based on normalized admission identifier plus request network context. The attempt table is private and revoked from API roles. Static regression test: `scripts/test-schoolpro-result-pin-rate-limit.mjs`.
+
+This migration has not been applied or runtime-tested. Before any production rollout, review whether the deployed gateway reliably provides the chosen client-IP headers, confirm fallback behavior, define cleanup/retention, and test concurrent failures/cooldown reset. Do not apply based on static tests alone.
+
+### Existing fixtures and migration-source drift
+
+- The live bucket has eight existing IHLink Academy workbooks and one template row. No production object or application row was created by the test.
+- The authenticated Storage acceptance test uses School A's existing template, confirms School A can download it, and confirms School B receives an HTTP 400 for that exact object.
+- Source migration files `20261002234500_schoolpro_operational_tenant_isolation.sql`, `20261003000500_schoolpro_guardian_tenant_hardening.sql`, and `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql` exist on repository branches but have no matching version/name entries in the live migration ledger. Live DB has later tenant-integrity policies/triggers with different names; this suggests related hardening exists but does not prove the source files are equivalent.
+- Ledger version `20260924112325` records `schoolpro_secure_public_result_checker`, but that migration source was not recovered from current branches/history. Do not reconstruct it from a partial live function snapshot or repair migration history by guesswork.
+- The payment-receipt ownership/locking migration remains staged only. Payment review/reject/cancel lifecycle and concurrent transaction behavior still require dedicated tests.
 
 ## What this audit does not yet prove
 
@@ -125,7 +132,7 @@ A read-only production inventory found eight objects in `school-result-templates
 
 ## Required before Stage A can be declared complete
 
-- [ ] Exact-head general CI validation is awaiting completion after the policy-fix draft; [ ] live tenant-acceptance still fails because the School B own-school Storage fixture is absent. The earlier timeout root cause is confirmed and a draft migration is awaiting review/testing.
+- [ ] Exact-head general CI validation is still running for code commit `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`; [x] live authenticated two-school DB/RPC and exact-object Storage acceptance passed in run #1025; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

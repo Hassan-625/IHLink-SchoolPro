@@ -66,23 +66,29 @@ Code/test-fix commit: `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`; PR remains ope
 - The live bucket contains eight existing IHLink Academy workbook objects and one template row. No production data was written by acceptance tests.
 - Migration source/ledger drift remains unresolved. The source for `20260924112325_schoolpro_secure_public_result_checker` was not found in current repository branches/history. Do not reconstruct it from a partial live function snapshot or repair the production ledger by guesswork.
 
-### Authenticated two-school checks that passed before the Storage timeout
+### Live authenticated two-school acceptance passed (exact-object Storage test)
 
-The workflow successfully signed into two distinct real Supabase password-authenticated test accounts and reported:
+SchoolPro CI run #1025 (code commit `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`) passed both the `validate` and `tenant-acceptance` jobs:
+https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771
+
+- The workflow signed into two distinct real Supabase password-authenticated test accounts.
 - School A and School B could read their own student fixture.
 - Both directions returned zero foreign-school rows for `schoolpro_students`, `schoolpro_members`, `schoolpro_invoices`, and `schoolpro_results`.
 - Both accounts could call `schoolpro_current_academic_period` for their own school; foreign-school calls were denied.
 - Both accounts received `false` from `schoolpro_can_view_result_output` for a foreign-school student.
+- School A downloaded its existing result-template workbook; School B received HTTP 400 for that exact foreign object. The negative assertion now checks raw HTTP status, avoiding a client-wrapper error being misclassified as a denial.
 
 ### What did not pass or remains unverified
 
-- Storage list of the existing School B object in `school-result-templates` timed out three times. Because the positive fixture lookup did not finish, the paired foreign-school Storage denial assertion did not run. This is a failed acceptance check, not evidence of a tenant leak.
-- Payment receipt Storage tests were skipped because no existing `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` values are configured. The production bucket was previously found to have no existing objects. **Do not upload dummy production receipts just to satisfy CI.**
+- The earlier broad Storage folder listing timed out three times because the existing family-report-media policy triggered an expensive report-access scan. The exact-object acceptance now passes, but that does **not** establish that folder listing is performant or that the proposed policy migration is correct. The migration is draft-only and not applied to production.
+- Payment receipt Storage tests were skipped because no existing `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` values are configured. Do not upload dummy production receipts.
+- The database-level result-PIN cooldown is a draft migration and static-test-only; gateway IP header behavior, cleanup/retention, cooldown reset and concurrent attempts have not been runtime-tested.
+- General CI run #1027 for the documentation-updated branch head `a34b23cdbb288e2a4b67d8261fe572cb010663f8` was still in progress at the last check. Run #1025 passed both jobs for the code commit above.
 - No production database writes, migration, merge, or Render deployment was performed as part of this work.
 
 ### Immediate next Stage A action
 
-Root cause has been identified in Supabase logs: the permissive family-report-media policy on the shared template bucket runs an expensive report-access scan for workbook objects. A draft migration narrows the policy to known media paths and adds exact-path indexes. Next: finish exact-head CI, review the SQL carefully, then validate the migration and policy behavior in a non-production environment if available before any production rollout. Keep live tests read-only; no own-school fixture exists for School B, so do not upload dummy production files. Storage acceptance cannot be marked passed until both an authorized positive fixture and the foreign-school denial are verified.
+Finish exact-head CI for the updated documentation commit. Then review the Storage policy and PIN cooldown SQL and validate them in a non-production environment if available; do not apply either migration to production from static tests alone. Reconcile migration source/ledger drift using reviewed live-object/source comparisons. Complete payment lifecycle/concurrency tests and obtain existing receipt fixtures before claiming the remaining gates passed.
 
 ## 4. Remaining Stage A release blockers
 
@@ -90,10 +96,10 @@ Root cause has been identified in Supabase logs: the permissive family-report-me
    - `20261002234500_schoolpro_operational_tenant_isolation.sql`
    - `20261003000500_schoolpro_guardian_tenant_hardening.sql`
    - `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
-   Later related hardening migrations exist, but that does not prove exact equivalence. Reconcile by reviewed SQL/source evidence; do not apply migrations just to align names.
-2. **Missing migration source.** The live ledger contains `20260924112325_schoolpro_secure_public_result_checker`, but the corresponding source migration file was absent from main and the release branch. Do not reconstruct it from a partial live-function snapshot. Recover authoritative source or establish a carefully reviewed baseline.
-3. **Public result PIN brute-force protection.** The live `check_schoolpro_result_pin` SECURITY DEFINER function has no database-level attempt counter/cooldown. Implement a reviewed rate-limit approach before release; frontend-only throttling is insufficient.
-4. **Storage acceptance.** Fix/understand the result-template listing timeout and pass the cross-school Storage test. Receipt download isolation remains untested until real, already-existing receipt fixtures are available.
+   Later live policies/triggers provide related tenant controls under different names, but exact equivalence has not been proven. Reconcile using reviewed SQL/source evidence; do not apply migrations just to align names.
+2. **Missing migration source.** The live ledger contains `20260924112325_schoolpro_secure_public_result_checker`, but the corresponding source migration file was not found in main, the release branch, the checked audit branches, or current repository history. Do not reconstruct it from a partial live-function snapshot. Recover authoritative source or establish a carefully reviewed baseline.
+3. **Public result PIN brute-force protection.** A draft database-level attempt counter/cooldown migration is prepared. It is not applied or runtime-tested; review client-IP header trust, retention/cleanup, cooldown reset and concurrency behavior before release. Frontend-only throttling remains insufficient.
+4. **Storage policy performance.** Exact-object cross-school acceptance passed. The earlier folder-list timeout root cause is confirmed, but the proposed policy migration is not applied or performance-tested; receipt download isolation remains untested until real, already-existing receipt fixtures are available.
 5. **Payment lifecycle.** Pending/review/reject/cancel transitions, duplicate invoice allocations and concurrent receipt-submission behavior require dedicated transaction-level acceptance tests. The staged migration `20261015203000_schoolpro_payment_receipt_tenant_guard.sql` has not been applied to production.
 6. **Broader authorization review.** Review exposed SECURITY DEFINER RPCs individually. Do not blanket-revoke public/authenticated execution because some guest/token workflows are intentional. Confirm Super Admin platform access without widening school-scoped actions.
 7. **Post-merge production verification.** Only after explicit approval and every gate passing: verify merge SHA, Render deployment SHA/status, login and authorized/unauthorized workflows, and re-run relevant checks. No merge/deploy is currently authorized by this handover.

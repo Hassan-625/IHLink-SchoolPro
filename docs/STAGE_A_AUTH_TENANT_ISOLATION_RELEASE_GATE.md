@@ -187,3 +187,15 @@ This migration has not been applied or runtime-tested. Before any production rol
 - The first integration attempt on intermediate commit `0be081adc98b2db3263a302e20a48c49edd0549c` failed because the function delimiter was malformed. It was corrected and then the full integration job passed; no production state was touched.
 - Remaining gates include full-schema/trigger-order review, migration source/ledger reconciliation, Storage folder-list performance, result-PIN cooldown runtime semantics, payment lifecycle/concurrency, and receipt Storage acceptance where valid existing fixtures are available.
 - Stage A remains **NOT MERGE-READY**. Do not start B until A is approved, merged and verified after merge. No production migration, write, Render deployment, or merge has been performed.
+
+
+## Payment RLS policy semantics corrected — 2026-10-16
+
+**Verified application/test head:** `c599758d0a3fa92ec773ea3b63bb7c23f3e435fd`. Subsequent documentation-only commits do not change the tested SQL or test scripts. PR #106 remains draft/open/unmerged.
+
+- SchoolPro CI #1128 passed all three jobs: `validate`, live two-school `tenant-acceptance`, and disposable PostgreSQL tenant-integrity integration: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38923106615.
+- Payment-page validation #855 passed on the same code/test head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38923106841.
+- Review corrected a policy-type assumption: `schoolpro_module_permission` is a **restrictive** RLS policy and does not grant access by itself. The draft no longer treats dropping it as equivalent to removing a permissive broad-write policy. The four module policies are explicitly recreated with separate `USING` and `WITH CHECK` scopes. Guardian-owned submissions/proofs and submitter allocation reads remain scoped; Super Admin receives explicit SELECT-only inspection policies; the fee ledger’s broad Super Admin ALL policy is removed and the restrictive write check denies Super Admin direct writes.
+- The static regression test initially failed because the refactor had omitted three Super Admin SELECT policies. Those policies were restored; the subsequent exact-head CI passed. This test failure/fix was confined to the unmerged branch.
+- The payment RLS checks are source-level/static contracts plus existing CI; no live RLS policy was applied or tested by writing to production. Full disposable PostgreSQL RLS-role tests and payment lifecycle/concurrency tests remain outstanding.
+- Stage A remains **NOT MERGE-READY** due the remaining full-schema/trigger, migration-provenance, Storage performance, PIN cooldown, payment lifecycle/concurrency, and receipt-Storage gates. No production migration, row write, Render deploy, or merge occurred.

@@ -915,3 +915,10 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Payment-page validation run [#38948907506](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907506) completed successfully on that commit.
 - SchoolPro CI run [#38948907551](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907551) was still in progress at the time of this update. Its disposable PostgreSQL tenant-integrity/gateway-disablement job had passed; the main validation and live tenant acceptance jobs had not yet completed. Do not treat this as a full green run until the run reaches a final successful conclusion.
 - Receipt submission RPC tests remain a separate gap: current CI does not provision the complete SchoolPro invoice/guardian/storage/auth fixture needed to exercise the RPC's success and rejection paths against PostgreSQL. Existing source assertions are not substitutes for those behavioral tests.
+
+
+## Final CI confirmation for receipt-storage cleanup — 2026-10-16
+
+- SchoolPro CI run [#38948907551](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907551) completed successfully on Stage A commit `bf75637fb3f40785b5a54b1707dfc64c5eed2ee8`. All jobs passed: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance`.
+- Payment-page validation run [#38948907506](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907506) also completed successfully on the same commit.
+- This is CI evidence for the Stage A branch commit only. It does not mean the changes are merged, deployed, or applied to production. Receipt RPC behavior under the full production-equivalent schema and effective Storage bucket settings still needs separate verification.

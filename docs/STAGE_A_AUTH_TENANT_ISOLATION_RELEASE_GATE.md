@@ -199,3 +199,16 @@ This migration has not been applied or runtime-tested. Before any production rol
 - The static regression test initially failed because the refactor had omitted three Super Admin SELECT policies. Those policies were restored; the subsequent exact-head CI passed. This test failure/fix was confined to the unmerged branch.
 - The payment RLS checks are source-level/static contracts plus existing CI; no live RLS policy was applied or tested by writing to production. Full disposable PostgreSQL RLS-role tests and payment lifecycle/concurrency tests remain outstanding.
 - Stage A remains **NOT MERGE-READY** due the remaining full-schema/trigger, migration-provenance, Storage performance, PIN cooldown, payment lifecycle/concurrency, and receipt-Storage gates. No production migration, row write, Render deploy, or merge occurred.
+
+
+## Result PIN concurrency guard added — 2026-10-16
+
+**Verified application/test head:** `8ff7f389b651248675f6a5b15e1c834d7fa78c2d`. The current branch head may include later documentation-only commits.
+
+- SchoolPro CI #1140 passed all three jobs — `validate`, live two-school `tenant-acceptance`, and disposable PostgreSQL tenant-integrity integration: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38924654001.
+- Payment-page validation #867 passed on the same exact code/test head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38924655181.
+- The draft result-PIN checker now takes a PostgreSQL transaction advisory lock derived from the hashed admission/network attempt key before reading the cooldown row. This serializes concurrent checks for the same key and closes the identified check-before-increment race at source level. The static regression test asserts the lock occurs before cooldown and student lookup.
+- This is **not yet a runtime concurrency pass**. The disposable PostgreSQL integration job covers the operational tenant-integrity migration, not a full execution of the result-PIN checker. A dedicated result-PIN integration/concurrency test remains required.
+- Trusted network-context semantics are still open: verify that the gateway-provided headers used for the key cannot be spoofed/rotated by callers before relying on them as a security boundary. The current implementation still prefers `x-forwarded-for`; do not claim IP trust is verified.
+- A read-only aggregate check found 1,214 student rows and no duplicate normalized admission numbers across schools or within a school at the audit time. This reduces current ambiguity but does not guarantee future global uniqueness; the public result checker should eventually include a school discriminator or otherwise fail closed if an admission number becomes ambiguous.
+- Stage A remains **NOT MERGE-READY**. No production migration, row write, Render deployment or merge occurred.

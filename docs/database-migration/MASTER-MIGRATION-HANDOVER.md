@@ -798,3 +798,19 @@ Reviewed the current Stage A branch's `src/App.tsx`, `src/pages/schoolpro/School
 - Attempt to fetch `supabase/config.toml` on this branch returned 404; therefore no function deployment configuration was confirmed by that path. Do not infer that the function is or is not deployed from this result.
 
 Corrected current decision: no online payment gateway is a SchoolPro requirement. Receipt-based school fee and subscription workflows remain in scope. Next, complete repository-wide call/reference search, inspect function deployment configuration and production reachability using approved evidence, then prepare a forward non-destructive cleanup if the gateway code is unused. Preserve historical migration files and any data; no production cleanup has been applied.
+
+
+### Receipt-only payment scope — forward disablement prepared (2026-10-16)
+Following the explicit product correction, a **draft-branch code change** now disables the legacy online/card finalizer without deleting its historical migration or payment-intent records.
+
+- Stage A branch: `release/stage-a-auth-tenant-isolation`.
+- Forward migration added: `supabase/migrations/20261016170000_schoolpro_disable_online_payment_gateway.sql`.
+- Migration commit: `d788b345701c893d7ec1fa96976721fd55c78e31`.
+- Regression check added: `scripts/test-schoolpro-no-online-gateway.mjs`, commit `f6b615ce5bf22de536a555c0c59d8ac2428e8159`.
+- CI invokes the regression check in `.github/workflows/ci.yml`, commit `d555fcb967d2126d8fd684eaef371f7ddd3dacd6`.
+- Forward migration replaces `public.finalize_schoolpro_payment(...)` with a fail-closed exception and revokes execute from PUBLIC, anon, authenticated, and service_role. The legacy intent table and original migration remain intact. This is deliberately non-destructive; no payment-intent data is deleted.
+- Regression check asserts the forward disablement and that school subscription and school-fee receipt workflows remain in source. It is a static source test, not runtime PostgreSQL proof.
+
+**Verification state:** files and CI insertion were re-fetched from GitHub and confirmed present. No CI result for these latest commits has yet been observed, and the migration has not been applied to any database. Therefore this is a proposed forward fix on the draft Stage A branch, not a production fix or proof of deployed behavior. Production Render/Supabase were not changed; no PR was merged or deployed.
+
+**Next:** confirm the new CI run for the latest Stage A head, correct any failing assertions, then validate the forward migration against a disposable PostgreSQL instance with the relevant schema and roles. Independently finish tracing whether the old Edge Function is deployed/reachable; its inspected body only returns bank-transfer instructions and does not perform card checkout. Do not delete that function until deployment and caller status are established.

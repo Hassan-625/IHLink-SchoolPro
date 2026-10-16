@@ -28,7 +28,7 @@
 
 ## 2A. Full master roadmap — A through J (scope preserved)
 
-**Scope correction:** The approved SchoolPro roadmap contains **A–J (ten stages)**. A–D is the immediate gated sequence, not the whole project. The workstream names below are preserved from the prior master-handover summaries. The exact original E–J acceptance checklists have not yet been recovered from the source document; the summaries below are scope reminders, not a substitute for the original approved checklist. Do not mark E–J complete, remove them, or silently redefine them.
+**Scope correction:** The approved SchoolPro roadmap contains **A–J (ten stages)**. A–D is the immediate gated sequence, not the whole project. The workstream names and acceptance-focus summaries below are restored from the prior master-handover summaries. The exact original E–J checklist wording has not yet been verified against the original source document; these summaries preserve scope and must not be represented as verbatim source text. Do not mark E–J complete, remove them, or silently redefine them.
 
 | Stage | Workstream retained in the master roadmap | Acceptance focus preserved in prior handover summaries |
 |---|---|---|
@@ -36,12 +36,12 @@
 | **B** | Academic sessions, student population, class arms and rosters | Verify session continuity, school-scoped student population, class/arm assignment, roster integrity and the agreed seeded demo data without copying operational records into new schools. |
 | **C** | Assessment entry, averages, review and publication | Verify independent component saves, calculations and class-subject averages, form-master review/edit before exam-officer publication, correction requests after publication, historical integrity and role enforcement. |
 | **D** | Result Design Studio and custom Excel workbooks | Support section-specific Nursery/Primary/JSS/SS standards, school-specific workbook upload/mapping/preview, logo/signatory placement and isolated template replacement. Revisit the deferred A4 print issue. |
-| **E** | Document Studio and document security | Preserve the document/template mapping, generated-document security and cross-school access review. **Recover the exact original checklist before execution sign-off.** |
-| **F** | Historical data, rollover and progression | Preserve historical records and verify academic-year rollover/progression. **Recover the exact original checklist before execution sign-off.** |
-| **G** | Operational modules and portals | Verify student, parent, staff and operational workflows. **Recover the exact original checklist before execution sign-off.** |
-| **H** | Fees, subscriptions and payment reconciliation | Verify SQL/payment behavior, annual billing, receipts, invoices, balances and grace/suspension rules, with BillStack limited to DataSub. **Recover the exact original checklist before execution sign-off.** |
-| **I** | Release readiness, Android APK, Render deployment and support | Verify release artifacts, Android delivery, authorized Render deployment and support readiness. **Recover the exact original checklist before execution sign-off.** |
-| **J** | Platform security, performance and resilience | Verify security, performance and recovery/resilience. **Recover the exact original checklist before execution sign-off.** |
+| **E** | Document Studio, storage, RLS and cross-school document isolation | Validate school-specific template/document mapping, generated-document access, Storage object ownership, RLS/RPC authorization, cross-school denial and no global template overwrite. **Exact original checklist still requires source verification.** |
+| **F** | Historical data, academic-year rollover and progression | Preserve historical records; verify session continuity, rollover, promotion preview/publish behavior, graduated/transfer-out handling, transcript-by-level and historical-result integrity. **Exact original checklist still requires source verification.** |
+| **G** | Admissions, attendance, assignments, CBT and operational portals | Validate admissions and attendance, assignment/assessment workflows, CBT permissions, student/parent/staff experiences and each operational portal's role boundaries. **Exact original checklist still requires source verification.** |
+| **H** | School fees, annual subscriptions and payment reconciliation | Verify annual Demo/paid billing, receipt upload and admin verification, school-side fee receipts, invoices/balances, duplicate/concurrent payment handling, two-week grace/suspension and no BillStack use outside DataSub. **Exact original checklist still requires source verification.** |
+| **I** | Android APK, release readiness, Render deployment, rollback and support | Verify APK build/delivery and mobile-only passcode/fingerprint/wallet-PIN expectations, release artifacts, authorized Render deploy SHA/status, rollback procedure and support handover. **Exact original checklist still requires source verification.** |
+| **J** | Platform security, performance, backups and resilience | Verify least-privilege/RLS/RPC/Storage security, load/query performance, migration/source parity, backup/restore evidence, recovery procedures, monitoring and resilience under failure. **Exact original checklist still requires source verification.** |
 
 **Execution order and completion rule**
 - Continue from the Stage A blockers below. Do not start B until A is complete, reviewed and merged into the intended production branch with the user's explicit authorization, then verified after merge.

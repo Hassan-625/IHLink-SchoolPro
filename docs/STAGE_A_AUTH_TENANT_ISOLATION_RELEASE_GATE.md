@@ -83,14 +83,38 @@ CI evidence:
 
 The retry did not solve the Storage timeout. Next investigation should isolate the Storage listing request/policy/database path and test an exact known object (without weakening the negative assertion). Do not add longer unbounded retries or skip the Storage check.
 
-## Latest exact-head CI status (2026-10-16, branch head `3760e1f0c93c08f45f8d1fe471c37e66b706ccc6`)
+## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Run #1001: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589735 — general `validate` passed; `tenant-acceptance` failed.
-- Run #1000: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38889434119 — general `validate` passed; `tenant-acceptance` failed.
-- Both live runs passed authenticated own-school/foreign-school DB reads and the academic-period/result-output RPC positive/negative assertions. Both then timed out at the existing School B object lookup in `school-result-templates`, after the initial attempt plus two bounded retries.
-- The last error in each run was `The connection to the database timed out`. The positive Storage fixture lookup did not complete, so the corresponding foreign-school Storage denial assertion did not run. The Storage acceptance gate remains **failed/unverified**.
-- Payment page validation run #727 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589626.
-- Payment-receipt Storage checks remain skipped because no existing receipt paths are configured. Do not upload dummy production receipts.
+- Exact current branch head before this documentation update: `9b3b3513f0f27da878099f4749e252c8f1dcf537`.
+- SchoolPro CI run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — general `validate` was still running at the time of this note; live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path.
+- Earlier runs #1000–#1002: general validation passed, but the old folder-listing check failed with Storage status 544 / database timeout. Run #1003 switched to the RLS-protected template row and exact-object download; it exposed the missing School B fixture instead of falsely treating a timeout as a denial.
+- Payment-page validation run #731 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749307.
+- Live DB/RPC assertions continue to pass for both real authenticated accounts: own-school student access, foreign-school reads blocked for students/members/invoices/results, own-school academic-period RPC allowed, foreign-school period denied, and foreign-student result-output RPC returns false.
+- Payment receipt Storage checks remain skipped because no existing receipt paths are configured. Do not upload dummy production receipts.
+
+### Confirmed Storage-list timeout root cause
+
+Supabase logs for the earlier timeout show SQLSTATE `57014`, Storage API status `544`, and the policy/function chain:
+
+`Families read their report images` → `private.schoolpro_family_report_media(name)` → `public.schoolpro_can_view_result_output` → `private.schoolpro_result_access` → `public.schoolpro_can_read_student` / `public.schoolpro_operationally_active`.
+
+That permissive policy is attached to the same private `school-result-templates` bucket as .xlsx workbooks. Its original function scans published/locked result rows before matching a specific photo/signature/logo path, so Storage's object-search query can invoke expensive authorization work while listing workbook objects. This is a policy/query-performance defect confirmed by database logs, not merely a transient client/network timeout.
+
+### Draft fix prepared, not applied
+
+Migration source added to the PR branch: `supabase/migrations/20261016110500_schoolpro_optimize_family_report_media_storage_policy.sql`.
+
+It:
+- adds partial indexes for exact student-photo, principal-signature, form-teacher-signature and logo paths;
+- changes the family-media function to match each exact path before checking relevant published/locked results;
+- uses a `CASE` policy branch to avoid invoking the expensive function for non-media paths such as .xlsx workbooks;
+- retains authenticated access and the existing result-visibility function rather than granting broad bucket access.
+
+A static regression test was added at `scripts/test-schoolpro-family-report-media-policy.mjs` and wired into `.github/workflows/ci.yml`. The migration has **not** been applied to production and has not yet been performance-verified against a non-production database. Review SQL and CI before considering deployment.
+
+### Existing-fixture constraint
+
+A read-only production inventory found eight objects in `school-result-templates`, all IHLink Academy workbooks, and one `schoolpro_result_templates` row, also for IHLink Academy. School B's configured test workspace has no existing template row/object. The live test must not create dummy production objects. The positive own-school Storage assertion therefore remains blocked until an authorized existing fixture is available; a foreign-school denial alone is not a complete Storage acceptance pass.
 
 ## What this audit does not yet prove
 
@@ -100,7 +124,7 @@ The retry did not solve the Storage timeout. Next investigation should isolate t
 
 ## Required before Stage A can be declared complete
 
-- [x] General CI validate job passed on runs #1000 and #1001; [ ] live tenant-acceptance job still fails at result-template Storage listing timeout.
+- [ ] Exact-head general CI validation is awaiting completion after the policy-fix draft; [ ] live tenant-acceptance still fails because the School B own-school Storage fixture is absent. The earlier timeout root cause is confirmed and a draft migration is awaiting review/testing.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

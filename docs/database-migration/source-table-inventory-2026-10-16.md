@@ -149,3 +149,50 @@ Generated from the live Supabase public-schema table metadata on 2026-10-16. Row
 - Do not blindly migrate every `schoolpro_*` table. Each table needs ownership, lifecycle, retention, source-of-truth and feature-use mapping.
 - Row counts must be refreshed with exact count queries at the start of any authorized migration rehearsal.
 - DataSub and other IHLink platform tables are out of scope for the SchoolPro MySQL database unless a shared integration boundary is explicitly documented.
+
+
+## Second-pass database behavior inventory — 2026-10-16
+
+Read-only catalog inspection was performed against the existing Supabase project. It found:
+
+- **212 routines** matching the targeted name filter across `public` and `private` (names containing SchoolPro, result, student or school). This is a targeted filter, not the count of every database routine.
+- **358 trigger event rows** on `public.schoolpro_%` tables. Because a trigger can fire for multiple events, this count represents information-schema trigger/event rows and should not be interpreted as 358 distinct trigger objects.
+- **293 RLS policy rows** on `public.schoolpro_%` tables.
+- These totals confirm that table-only schema translation would omit substantial application behavior. They are catalog counts; the full definitions and dependency graph still need to be captured and reviewed.
+
+### High-priority routine behavior to map before API implementation
+
+The read-only routine sample includes the following critical logic. The replacement API must preserve each rule in code and tests, or document an approved alternative:
+
+| Existing routine / behavior | Migration concern |
+|---|---|
+| `private.enforce_schoolpro_tenant_relations` | Same-school validation across related student, subject, class and result records |
+| `private.schoolpro_operationally_active` | School subscription/operational availability gate |
+| `private.schoolpro_can_read_student`, `private.schoolpro_can_read_class` | Role- and relationship-scoped student/class access |
+| `private.schoolpro_can_write_result`, `private.schoolpro_can_review_class` | Assessment entry and review permissions |
+| `private.calculate_result_total` | Assessment component validation and total calculation |
+| `private.enforce_result_workflow`, `private.log_schoolpro_result_lifecycle` | Published-result lock and lifecycle audit trail |
+| `private.schoolpro_result_access`, `private.schoolpro_family_report_media` | Result access and family report file authorization |
+| `private.schoolpro_bulk_academic_action`, `private.schoolpro_archive_progression` | Promotion/archive workflow and historical session integrity |
+| `private.schoolpro_issue_transcript`, `private.schoolpro_revoke_transcript` | Transcript issue/revoke lifecycle |
+| `private.schoolpro_auto_fee_invoices` | Fee invoice creation and schedule immutability constraints |
+| `private.enforce_schoolpro_subscription_expiry` | Demo/annual renewal, grace period and suspension |
+| `private.manage_schoolpro_subscription_invoice`, `private.review_school_subscription_transfer` | Subscription invoice/payment review and audit |
+
+This list is illustrative, not a complete function inventory. Full function definitions, trigger-to-function links, grants, RPC callers and transaction semantics remain to be exported and mapped.
+
+### RLS and trigger mapping status
+
+- RLS policies currently define direct authenticated-client access in Supabase. In the MySQL target, the API must replace those guarantees with server-side authorization; merely translating policy names into endpoint names is insufficient.
+- Trigger logic currently handles validation, result totals/status, notifications, fee invoicing, operational-write restrictions, document lifecycle and other side effects. Each trigger must be classified as (a) domain invariant, (b) audit event, (c) derived/calculated field, (d) notification/queue side effect, or (e) legacy/redundant behavior before moving it.
+- The first schema CI proves only that the draft's current foreign keys reject the tested cross-school enrollment. It does not yet prove endpoint authorization, RLS equivalence, routine parity, result calculations, file access or complete data parity.
+
+### Required next source artifacts
+
+1. Full ordered list of public/private routine signatures and definitions, including dependencies and execute grants.
+2. Full trigger list with trigger function definitions and event ordering.
+3. Full RLS policy definitions including `USING` and `WITH CHECK`, grouped by domain and role.
+4. Views/materialized views and dependent functions.
+5. Storage buckets, policies, object path conventions, signed URL generation and upload/download call sites.
+6. Scheduled jobs, Edge Functions and frontend `supabase.from`, `supabase.rpc`, `supabase.storage` call sites.
+7. A source-to-target behavior matrix linking every artifact to MySQL schema, API handler and automated positive/negative test.

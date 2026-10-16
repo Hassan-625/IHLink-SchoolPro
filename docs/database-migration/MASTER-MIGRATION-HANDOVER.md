@@ -546,3 +546,12 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - The callback SQL success path checks pending status but does not first check whether the canonical refund ledger entry already exists. A late success callback in that gap may cause status/balance disagreement. This is a code-review finding, not a confirmed production incident.
 - Added disposable test tests/postgres/24_late_success_after_refund_credit.sql and workflow step. Regression #24 and validation #342 are running: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498680 and https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
 - Next fix should make an existing canonical refund ledger row authoritative over late success, then verify callback event audit and retry behavior. No production changes, deployment, merge, or cutover.
+
+
+### Confirmed DataSub late-success/refund split-state defect in draft regression (2026-10-16)
+- Disposable PostgreSQL regression #24 failed as intended and confirmed the race: after the canonical refund RPC credited the wallet, a late success callback left transaction status=success and routing_state=SETTLED while the refund ledger row still existed and the wallet balance was restored. This is a confirmed defect in the draft SQL path under test, not evidence of a production incident.
+- Evidence: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498680. The failure was exactly: status success, routing SETTLED, balance 70, refunds 1.
+- Root cause: refund wallet credit and Edge Function transaction finalization are separate requests; callback success does not check for the canonical refund ledger row before settling.
+- Required correction: under the callback's transaction-row lock, check for the exact canonical refund ledger row before success handling; if present, retain/restore failed + REFUNDED and record the event as late-after-refund rather than marking success. Add assertions for both status and wallet/ledger consistency, then rerun the full disposable suite.
+- Attempted to apply the corrective SQL patch through the connected GitHub file-update action, but the action blocked the write. No patch was applied; this remains an open blocker, and should not be represented as fixed. DataSub validation #342 was still running at last check: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
+- SchoolPro master handover updated on this branch to retain the finding. No production database changes, deployment, merge or cutover.

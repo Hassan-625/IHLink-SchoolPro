@@ -483,3 +483,10 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - Live migration ledger reports `20260920144207`, while the checked-in source migration is named `20260920170000_datasub_provider_operations.sql`. Treat this as a provenance/timestamp discrepancy to reconcile against the deployed migration body/hash, not proof that the routine is absent or that the migration failed.
 - These catalog checks were read-only. No production function, table, policy, wallet, transaction, migration, or deployment was changed.
 - Current evidence remains bounded: SchoolPro MySQL schema validation is a draft-schema CI check, not a migration/cutover; DataSub refund regressions use a minimal disposable PostgreSQL fixture, not a full clone of the live production schema. PR #107 and DataSub PR #49 remain draft/unmerged.
+
+
+### Additional DataSub concurrency coverage in progress (2026-10-16)
+- Expanded the disposable PostgreSQL regression to exercise two independent sessions attempting the same canonical wallet reservation concurrently. The expected invariant is one debit and one `reserve` ledger row, with the retry returning idempotently after it acquires the transaction lock.
+- New setup file: `tests/postgres/21_concurrent_reserve_setup.sql`; workflow update adds the simultaneous reservation race before the existing concurrent refund race.
+- Fresh checks are queued: [DataSub PostgreSQL regression #17](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38931700923) and [DataSub validation #335](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38931700943). Do not count the new race assertion as passed until #17 completes.
+- The latest SchoolPro checks noted above passed, including the disposable MySQL schema/tenant foreign-key tests and payment-page build. The master handover change itself will trigger another CI cycle; the MySQL foundation remains a partial draft, not a complete port.

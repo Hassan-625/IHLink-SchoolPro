@@ -80,3 +80,4 @@ jobs:
           assert_fk_rejection tests/mysql/cross_tenant_enrollment_session_must_fail.sql fk_enrollment_session
           assert_fk_rejection tests/mysql/cross_tenant_enrollment_class_must_fail.sql fk_enrollment_class
           assert_fk_rejection tests/mysql/cross_tenant_result_term_must_fail.sql fk_result_term_session
+          assert_fk_rejection tests/mysql/result_score_component_term_must_match.sql fk_result_scores_component

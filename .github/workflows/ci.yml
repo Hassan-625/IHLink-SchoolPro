@@ -32,6 +32,7 @@ jobs:
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
       - run: node scripts/test-auth-profile-race.mjs
+      - run: node --check scripts/test-schoolpro-tenant-isolation-live.mjs
       - run: node scripts/school-document-design-test.mjs
       - run: node scripts/school-email-signin-test.mjs
       - run: node scripts/test-template-preview.mjs

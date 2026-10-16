@@ -32,10 +32,24 @@ function clientFor(email, password) {
   })();
 }
 
-async function countRows(client, table, schoolId) {
-  const {count, error} = await client.from(table).select('*', {count: 'exact', head: true}).eq('school_id', schoolId);
-  assert.ifError(error);
-  return count ?? 0;
+async function countRows(client, table, schoolId, maxAttempts = 3) {
+  let result;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    result = await client.from(table).select('*', {count: 'exact', head: true}).eq('school_id', schoolId);
+    if (!result.error) return result.count ?? 0;
+
+    const message = String(result.error.message || result.error);
+    const status = Number(result.error.statusCode || result.error.status || 0);
+    const transient = /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT|502|503|504|429/i.test(message)
+      || [429, 502, 503, 504].includes(status);
+    if (!transient || attempt === maxAttempts) {
+      throw new Error('Read-only tenant count failed for ' + table + ' (attempt ' + attempt + '/' + maxAttempts + ', status ' + status + '): ' + message);
+    }
+    const delayMs = 1000 * attempt;
+    console.warn('WARN', table, 'transient count error on attempt', attempt + '/' + maxAttempts, '- retrying in', delayMs + 'ms');
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  throw new Error('Read-only tenant count failed for ' + table + ': no result');
 }
 
 async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId) {

@@ -176,12 +176,12 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 | Production migration / deployment | **Not performed in this work** | Requires completed release gate and explicit approval |
 
 
-### Current exact-head verification — 2026-10-16
+### Verified application/test head — 2026-10-16
 
-**Current Stage A branch head:** `68c2d84130ba68b4d71970df9279bb729b44443e`. PR #106 remains open, draft and unmerged.
+**Verified application/test head:** `68c2d84130ba68b4d71970df9279bb729b44443e` (subsequent commits only refresh this handover/release-gate documentation). PR #106 remains open, draft and unmerged.
 
-- SchoolPro CI run #1067 passed `validate`, live two-school `tenant-acceptance`, and the new disposable PostgreSQL integration job: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621711.
-- Payment-page validation passed on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621712.
+- SchoolPro CI run #1073 passed `validate`, live two-school `tenant-acceptance`, and the new disposable PostgreSQL integration job: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621711.
+- Payment-page validation run #799 passed on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621712.
 - The disposable PostgreSQL 16 integration job applied the draft migration to an ephemeral database and passed 13 cross-tenant rejection checks, including unsafe parent-row school reassignment. This verifies trigger syntax and behavior in a minimal PostgreSQL fixture; it does not prove full-schema compatibility or justify applying the migration to production.
 - An earlier intermediate commit failed the new integration test because of a malformed function delimiter; that was corrected, and the subsequent exact-head CI passed. The failure and fix were confined to source/test work.
 - Production Supabase was only inspected read-only. No production migration, row write, Render deploy, or PR merge occurred.

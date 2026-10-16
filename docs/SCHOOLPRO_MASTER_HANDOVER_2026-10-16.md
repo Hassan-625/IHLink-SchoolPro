@@ -87,16 +87,16 @@ https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410
 
 ### Immediate next Stage A action
 
-Finish exact-head CI for the updated documentation commit. Then review the Storage policy and PIN cooldown SQL and validate them in a non-production environment if available; do not apply either migration to production from static tests alone. Reconcile migration source/ledger drift using reviewed live-object/source comparisons. Complete payment lifecycle/concurrency tests and obtain existing receipt fixtures before claiming the remaining gates passed.
+Exact-head SchoolPro CI #1049 and payment-page validation #775 both passed on `b235e87a01abd53fd274895e4e7c560c6681d1d5` (2026-10-16). The next priority is a forward-only, non-production-tested repair for the confirmed cross-tenant relational-integrity gaps on lesson notes, result approvals, promotions and member permissions. Continue migration source/ledger reconciliation, review the Storage and result-PIN draft migrations, finish payment lifecycle/concurrency tests, and obtain valid existing receipt fixtures. Do not apply draft migrations to production from static tests alone.
 
 ## 4. Remaining Stage A release blockers
 
 1. **Payment review write-boundary validation.** The new migration `20261016143000_schoolpro_payment_review_write_controls.sql` is draft-only. It needs reviewed runtime evidence that guardian submissions, school finance reads, Super Admin inspection and RPC-based confirmation/rejection still work while direct status/amount/allocation mutations are denied. Do not apply it to production on static CI alone.
-2. **Migration source/ledger drift.** Production ledger records 476 migrations and ends at version `20261015161735`. Three existing source filenames are not recorded under the same version/name pairs:
+2. **Migration source/ledger drift.** The production ledger contains 476 rows and ends at `20261015161735`. A read-only inventory of the current release branch found 127 migration SQL files: 79 exact version/name pairs, 24 files whose migration name exists in the ledger under a different version, and 24 source names with no matching ledger name. Conversely, 373 ledger names are not represented by same-named SQL files in this branch's migration directory. These counts describe repository/ledger correspondence, not proof that every unmatched migration is unapplied; renamed, historical and previously squashed sources must be traced before any repair. The three known tenant-hardening files below are not recorded under their source version/name pairs:
    - `20261002234500_schoolpro_operational_tenant_isolation.sql`
    - `20261003000500_schoolpro_guardian_tenant_hardening.sql`
    - `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
-   Later live policies/triggers provide related tenant controls under different names, but exact equivalence has not been proven. Reconcile using reviewed SQL/source evidence; do not apply migrations just to align names.
+   Never align names or repair the migration ledger by guesswork.
 3. **Missing migration source.** The live ledger contains `20260924112325_schoolpro_secure_public_result_checker`, but the corresponding source migration file was not found in main, the release branch, the checked audit branches, or current repository history. Do not reconstruct it from a partial live-function snapshot. Recover authoritative source or establish a carefully reviewed baseline.
 4. **Public result PIN brute-force protection.** A draft database-level attempt counter/cooldown migration is prepared. It is not applied or runtime-tested; review client-IP header trust, retention/cleanup, cooldown reset and concurrency behavior before release. Frontend-only throttling remains insufficient.
 5. **Storage policy performance.** Exact-object cross-school acceptance passed. The earlier folder-list timeout root cause is confirmed, but the proposed policy migration is not applied or performance-tested; receipt download isolation remains untested until real, already-existing receipt fixtures are available.
@@ -105,6 +105,14 @@ Finish exact-head CI for the updated documentation commit. Then review the Stora
 8. **Post-merge production verification.** Only after explicit approval and every gate passing: verify merge SHA, Render deployment SHA/status, login and authorized/unauthorized workflows, and re-run relevant checks. No merge/deploy is currently authorized by this handover.
 
 The detailed current checklist and evidence are in [Stage A release gate](https://github.com/Hassan-625/IHLink-SchoolPro/blob/release/stage-a-auth-tenant-isolation/docs/STAGE_A_AUTH_TENANT_ISOLATION_RELEASE_GATE.md).
+
+### New read-only production integrity finding — 2026-10-16
+
+The production catalog was inspected without inserting or changing data. Several later trigger implementations provide equivalent protection for some historical migration effects under different names: guardian links use `private.schoolpro_guardian_school_scope`; CBT test-question and eligibility relations use `private.enforce_schoolpro_tenant_relations` / `private.validate_schoolpro_cbt_eligibility`; result rows use `private.enforce_schoolpro_tenant_relations` and `trg_validate_schoolpro_result_tenant`; document issues use `private.enforce_schoolpro_tenant_relations`.
+
+**A material relational-integrity gap remains confirmed by catalog inspection:** the current production database has no cross-table tenant guard trigger on `schoolpro_lesson_notes`, `schoolpro_result_approvals`, or `schoolpro_promotions`, and the historical function `private.schoolpro_validate_operational_tenant()` is absent. The `schoolpro_member_permissions` table also has no tenant-pair guard trigger or composite tenant/member constraint. Its separate foreign keys validate that the school exists and that the member exists, but do not enforce that the member belongs to the row's `school_id`. This is a structural cross-tenant integrity risk; no exploit or production row mutation was attempted.
+
+Next: prepare a forward-only repair from reviewed source, add static regression coverage for mismatched school/member and cross-school foreign IDs, and validate the behavior in a no-additional-cost non-production environment if one is available. Do not replay the historical migrations wholesale, change the production ledger, or apply a repair to production without explicit approval.
 
 ## 5. Application requirements to preserve
 
@@ -161,7 +169,7 @@ The detailed current checklist and evidence are in [Stage A release gate](https:
 
 | Track | Status | Next gate |
 |---|---|---|
-| A — Auth and tenant isolation | **In progress; not merge-ready** | Diagnose Storage timeout; resolve migration drift and PIN rate limit; complete payment lifecycle tests; rerun authenticated acceptance |
+| A — Auth and tenant isolation | **In progress; not merge-ready** | Repair confirmed relational-integrity gaps; review Storage/PIN draft SQL; reconcile migration source/ledger; complete payment lifecycle and receipt tests |
 | B — Sessions, population, rosters | **Not started in this release sequence** | Wait for A merged and post-merge verified |
 | C — Assessments and results | **Re-verify after A/B gates** | Independent calculations, per-component saves, permissions, review/publication and history |
 | D — Result Design Studio / custom Excel | **Deferred until A/B/C are re-verified** | Section templates, mapping, preview, tenant isolation and A4 output |

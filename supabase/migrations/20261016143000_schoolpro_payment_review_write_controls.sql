@@ -59,6 +59,21 @@ create policy "schoolpro_module_permission"
     )
   );
 
+drop policy if exists "Super admin read payment submissions" on public.schoolpro_payment_submissions;
+create policy "Super admin read payment submissions"
+  on public.schoolpro_payment_submissions for select to authenticated
+  using (private.is_admin(ARRAY['super_admin']::public.user_role[]));
+
+drop policy if exists "Super admin read payment allocations" on public.schoolpro_payment_allocations;
+create policy "Super admin read payment allocations"
+  on public.schoolpro_payment_allocations for select to authenticated
+  using (private.is_admin(ARRAY['super_admin']::public.user_role[]));
+
+drop policy if exists "Super admin read payment proofs" on public.schoolpro_payment_proofs;
+create policy "Super admin read payment proofs"
+  on public.schoolpro_payment_proofs for select to authenticated
+  using (private.is_admin(ARRAY['super_admin']::public.user_role[]));
+
 -- Fee payment ledger entries remain readable by authorized school/guardian roles and Super Admin.
 -- Finance can INSERT through the explicit "School finance records payments" policy.
 -- Replace both broad ALL policies with Super Admin SELECT-only access so payment records

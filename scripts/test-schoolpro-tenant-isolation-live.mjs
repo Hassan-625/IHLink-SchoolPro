@@ -115,31 +115,68 @@ async function main() {
     console.log('PASS', name, 'foreign-student result-output RPC denied');
   }
 
-  // Resolve an already-existing template through School B's own RLS-protected row,
-  // then test exact-object download. Listing a folder timed out repeatedly in CI;
-  // an exact path avoids scanning/listing unrelated Storage objects.
-  const {data: schoolBTemplate, error: schoolBTemplateError} = await b.client
+  // Use an already-existing template row belonging to either configured test school.
+  // Production has a real IHLink Academy template but School B may not own one.
+  // This remains a strict two-account positive/negative check: the account whose
+  // own RLS-protected row supplies the fixture must download it; the other must be denied.
+  const schoolATemplateResult = await a.client
+    .from('schoolpro_result_templates')
+    .select('storage_path')
+    .eq('school_id', process.env.SCHOOL_A_ID)
+    .limit(1)
+    .maybeSingle();
+  assert.ifError(schoolATemplateResult.error);
+
+  const schoolBTemplateResult = await b.client
     .from('schoolpro_result_templates')
     .select('storage_path')
     .eq('school_id', process.env.SCHOOL_B_ID)
+    .limit(1)
     .maybeSingle();
-  assert.ifError(schoolBTemplateError);
-  assert.ok(schoolBTemplate?.storage_path, 'School B must have an existing result-template row with a Storage path');
+  assert.ifError(schoolBTemplateResult.error);
+
+  const templateFixture = schoolATemplateResult.data?.storage_path
+    ? {
+        ownerName: 'School A',
+        ownerClient: a.client,
+        ownerSchoolId: process.env.SCHOOL_A_ID,
+        foreignName: 'School B',
+        foreignClient: b.client,
+        storagePath: schoolATemplateResult.data.storage_path,
+      }
+    : schoolBTemplateResult.data?.storage_path
+      ? {
+          ownerName: 'School B',
+          ownerClient: b.client,
+          ownerSchoolId: process.env.SCHOOL_B_ID,
+          foreignName: 'School A',
+          foreignClient: a.client,
+          storagePath: schoolBTemplateResult.data.storage_path,
+        }
+      : null;
+
   assert.ok(
-    schoolBTemplate.storage_path.startsWith(process.env.SCHOOL_B_ID + '/'),
-    'School B template Storage path must be rooted under School B ID',
+    templateFixture,
+    'At least one configured test school must own an existing result-template row; do not create a production fixture to satisfy this test',
+  );
+  assert.ok(
+    templateFixture.storagePath.startsWith(templateFixture.ownerSchoolId + '/'),
+    templateFixture.ownerName + ' template Storage path must be rooted under its own school ID',
   );
 
   const {data: ownTemplateObject, error: ownTemplateDownloadError} = await downloadStorageWithRetry(
-    b.client, 'school-result-templates', schoolBTemplate.storage_path, 'School B own-school template fixture',
+    templateFixture.ownerClient,
+    'school-result-templates',
+    templateFixture.storagePath,
+    templateFixture.ownerName + ' own-school template fixture',
   );
   assert.ifError(ownTemplateDownloadError);
-  assert.ok(ownTemplateObject, 'School B must download its own existing result-template object');
+  assert.ok(ownTemplateObject, templateFixture.ownerName + ' must download its own existing result-template object');
 
-  const {data: foreignTemplateObject, error: foreignTemplateDownloadError} = await a.client
-    .storage.from('school-result-templates').download(schoolBTemplate.storage_path);
-  assert.ok(foreignTemplateDownloadError, 'School A must be denied downloading School B result-template object');
-  assert.equal(foreignTemplateObject, null, 'School A must receive no foreign-school template object');
+  const {data: foreignTemplateObject, error: foreignTemplateDownloadError} = await templateFixture.foreignClient
+    .storage.from('school-result-templates').download(templateFixture.storagePath);
+  assert.ok(foreignTemplateDownloadError, templateFixture.foreignName + ' must be denied downloading ' + templateFixture.ownerName + ' result-template object');
+  assert.equal(foreignTemplateObject, null, 'Foreign school must receive no result-template object');
   const foreignStorageMessage = String(foreignTemplateDownloadError.message || foreignTemplateDownloadError);
   const foreignStorageStatus = Number(foreignTemplateDownloadError.statusCode || foreignTemplateDownloadError.status || 0);
   assert.ok(
@@ -152,8 +189,7 @@ async function main() {
     /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT/i,
     'A Storage timeout or network failure must not count as a tenant-denial pass',
   );
-  console.log('PASS School B can download its own template; School A is denied the exact foreign object');
-
+  console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName, 'is denied the exact foreign object');
   if (process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH) {
     for (const [name, client, foreignPath] of [
       ['School A', a.client, process.env.SCHOOL_B_RECEIPT_PATH],

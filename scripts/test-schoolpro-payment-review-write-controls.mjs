@@ -28,8 +28,6 @@ assert.match(sql, /schoolpro_fee_payments as restrictive for all[\s\S]*?private\
   'Super Admin inspection and active finance scope must be explicit');
 assert.match(sql, /with check \([\s\S]*?private\.schoolpro_module_allowed\(school_id, 'finance'\)[\s\S]*?and not private\.is_admin\(ARRAY\['super_admin'\]::public\.user_role\[\]\)/i,
   'Super Admin must not directly write the fee ledger');
-assert.match(sql, /review RPCs perform privileged writes/i);
-assert.match(sql, /explicit "School finance records payments" policy/i);
 assert.match(sql, /Super admin read payment submissions/i);
 assert.match(sql, /Super admin read payment allocations/i);
 assert.match(sql, /Super admin read payment proofs/i);

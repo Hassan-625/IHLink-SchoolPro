@@ -705,3 +705,30 @@ Created [mysql-schoolpro-schema-gap-audit-2026-10-16.md](./mysql-schoolpro-schem
 
 #### Update protocol carried forward
 Keep every previous detailed requirement in this handover. For every next step, append concrete evidence, exact branch/commit and workflow URL, outcomes and remaining limitations. Do not replace a comprehensive checklist with a short summary or check off an item based only on static inspection or a schema-only CI pass.
+
+
+### Continuation session — payment-RLS harness feasibility review (2026-10-16, next step)
+This entry supplements the previous continuation; no previous checklist or roadmap items are removed.
+
+#### Files and wiring inspected
+- Re-read `docs/security/stage-a-payment-rls-review-2026-10-16.md` on `release/stage-a-auth-tenant-isolation`.
+- Re-read the payment write-control migration `supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql`.
+- Re-read the receipt and allocation guard migration `supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql`.
+- Re-read `.github/workflows/ci.yml` and the existing disposable trigger fixture `scripts/test-schoolpro-operational-tenant-integrity.integration.sql`.
+- The existing PostgreSQL 16 CI service is wired only to the operational tenant-integrity SQL fixture. The payment RLS test in the normal CI job is still `node scripts/test-schoolpro-payment-review-write-controls.mjs`, a source-text assertion. There is no current payment-specific PostgreSQL integration job in the inspected workflow.
+- The existing trigger fixture creates simplified synthetic tables and applies only the operational trigger migration. It cannot be treated as evidence for payment RLS, because it does not install the production-equivalent payment tables, all existing permissive/restrictive policies, effective grants, JWT claim context, and payment RPCs.
+- The receipt guard function was inspected. It checks that a receipt path is non-empty, starts with the authenticated user's UUID, and matches an object in the expected receipt bucket owned by that user; it checks guardian linkage, validates the optional bank account, rejects repeated invoice IDs, locks invoice rows in UUID order, reserves pending allocations, validates the total, and inserts the submission and allocations. This is source inspection only: transaction behavior, actual grants, RLS interaction, concurrency and storage-owner representation have not been runtime-verified here.
+
+#### Findings and decisions
+1. Do **not** repurpose the existing simplified trigger fixture as a payment RLS test; that would create false confidence.
+2. Before building the payment runtime fixture, inventory the actual schema and policy provenance for the four payment tables, their table/sequence privileges, all applicable policies (including policies created in earlier migrations), relevant functions and EXECUTE grants. The migration's restrictive policies alone do not show effective command access.
+3. The disposable test must use a faithful schema/policy setup and actual PostgreSQL roles. Supabase JWT claims such as `auth.uid()` must be supplied through the same supported test pattern as the repository's local Supabase/Postgres environment; do not invent claim behavior or rely on a superuser session that bypasses RLS.
+4. Keep separate tests for INSERT, SELECT, UPDATE and DELETE. Specifically test guardian attempts to alter `status`, reviewed/approved amounts, invoice and allocation links, `school_id`, `student_id`, `submitted_by`, and `receipt_path`; test Super Admin direct writes; test finance-role fee-ledger insert versus direct update/delete; and test intended RPC execution with correct grants.
+5. Exercise concurrent allocation in two independent transactions against the same invoice and verify that the invoice lock and pending reservation prevent over-allocation. Include invalid receipt owner/path, foreign-school invoice/bank account, inactive guardian link, duplicate invoice allocation, total mismatch and invalid status-transition cases.
+6. No policy correction was committed in this step because the exact effective permissive-policy/grant baseline has not yet been established. A guessed policy replacement could break legitimate guardian submission or school-finance workflows. No disposable database was available to execute the runtime assertions during this step; therefore no runtime test pass is claimed.
+
+#### Updated work status
+- **Completed this step:** source and workflow feasibility review; confirmed that the current PostgreSQL CI service can host a new disposable payment integration job, but the existing trigger fixture is not sufficient.
+- **Still blocked:** real-role payment RLS integration test and full effective-policy/grant inventory.
+- **Next action:** inspect the complete migration history and policy/function definitions for the four payment tables; assemble a disposable fixture from the real relevant schema/policy/function definitions; then add a dedicated PostgreSQL CI job and run it before making any policy change.
+- **Safety:** no production database access or writes were performed in this step; no merge, Render deployment, or production migration was performed.

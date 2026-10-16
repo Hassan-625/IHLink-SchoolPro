@@ -521,3 +521,13 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - Confirmed latest DataSub validation #337 passed, including app tests, typecheck, security checks, mobile layout checks and build: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062470
 - SchoolPro MySQL schema draft #118 and payment-page validation #899 passed; SchoolPro CI #1172 was still in progress at last poll. These checks validate the migration draft and existing app, not a production migration.
 - No production changes, deploy, merge or cutover. DataSub remains Supabase; SchoolPro MySQL remains draft-only.
+
+
+### Stale reconciliation regression: first run failed due to fixture setup; corrected and rerunning (2026-10-16)
+- DataSub validation #339 passed fully: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932488193
+- PostgreSQL regression #21 failed at the new stale-reconciliation test. Log review identified a test-fixture defect, not evidence of a production-code defect: the test inserted the transaction in `RECONCILING` before calling `reserve_datasub_wallet`, but the hardened reservation contract correctly requires `ROUTING`. Reservation therefore returned false and the test's expected balance invariant was invalid.
+- Corrected `tests/postgres/23_stale_reconciliation_after_callback.sql` to reserve while in `ROUTING`, then move the test transaction to `RECONCILING` before applying the success callback. Rerun triggered from DataSub commit `3487014ef724e57c232fa63851575f8f3a0bd736`; pending result must be verified before claiming pass.
+- SchoolPro MySQL schema draft #120 passed disposable schema application and cross-school FK rejection checks: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38932526151
+- SchoolPro payment-page validation #901 passed typecheck/build: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38932526173
+- SchoolPro CI #1174 remained in progress at last poll; app tests had passed, layout check/build pending: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38932526176
+- No production changes, deployment, merge, or cutover.

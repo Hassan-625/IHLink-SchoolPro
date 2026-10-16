@@ -504,3 +504,11 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - New setup file: `tests/postgres/22_callback_race_setup.sql`; workflow step races two separate psql sessions. Results are pending: [DataSub PostgreSQL regression #19](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062420) and [DataSub validation #337](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062470).
 - Previous SchoolPro handover-triggered checks #116, #1170, #897 were still running at last inspection; schema draft and payment-page validation steps had passed, while full SchoolPro CI was finishing layout/build. Recheck before marking the cycle green.
 - No production changes. DataSub tests use disposable PostgreSQL with a minimal fixture; the callback/reconciliation race coverage remains targeted and is not full production-schema parity.
+
+
+### Provider callback terminal-state race regression passed (2026-10-16)
+- DataSub PostgreSQL regression #19 passed, including the new simultaneous success-versus-reversed callback race plus concurrent reserve and refund retry tests: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062420
+- The callback race assertion accepts only coherent lock-order outcomes: either success/SETTLED with one reservation debit and no refund, or reversed/REFUNDED with exactly one refund ledger row and restored balance. The test passed against the disposable PostgreSQL fixture.
+- DataSub validation #337 was still in progress after unit/type/security checks passed; layout/build remain pending at this timestamp. Recheck before final green status: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062470
+- SchoolPro CI #1170 completed successfully, including application tests and build. New handover-triggered checks #1172/#118/#899 are running; the earlier #1170 run passed before the latest documentation-only update.
+- This does not yet test every callback-versus-reconciliation implementation or use a full clone of production schema. No live database changes, deployment, or merge.

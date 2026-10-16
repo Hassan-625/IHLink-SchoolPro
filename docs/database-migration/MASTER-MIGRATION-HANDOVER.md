@@ -27,7 +27,7 @@
 - Repo migration counts do not have to match the live project's global ledger: several platform repos share the same database, and some migrations/functions may be deployed from a different repository or historical workflow.
 
 ## 3. Repository inventory started
-A recursive tree check was completed for the following 14 repositories. Each listed platform repository exposes a `src/lib/supabase.ts` file; its exact URL/project reference, runtime call sites, deployed URL and secret/config names still need to be extracted and compared before classifying it as fully inventoried.
+A recursive tree check and direct src/lib/supabase.ts read were completed for the following 14 repositories. All 14 files currently default to the same URL https://lnqsroyiybutkfngbyge.supabase.co and use VITE_SUPABASE_URL plus a publishable/anon browser key fallback. This confirms the same project is wired into these 14 codebases at source level; it does not prove every production deployment uses the current branch/config, and it does not complete runtime call-site or deployed-function parity.
 
 | Repository | Initial evidence | Remaining audit |
 |---|---|---|
@@ -138,3 +138,12 @@ This is a starter inventory, not a claim that every IHLink repository has been d
 5. Update checkboxes, evidence links, commit SHAs, outstanding risks and session log here; update PR description to match.
 6. Report: **done**, **verified**, **blocked**, and **next** separately.
 7. Keep production unchanged unless the user explicitly authorizes a clearly scoped operation after reviewing the evidence.
+
+
+## 8. Follow-up verification — shared project references
+- **2026-10-16:** Directly read src/lib/supabase.ts on each of the 14 repositories listed above. All 14 currently default to https://lnqsroyiybutkfngbyge.supabase.co and use Vite environment variables for URL and publishable/anon browser key configuration.
+- The publishable/anon browser key is intended to be public; it is not a service-role secret. Never copy or expose service-role keys, database passwords, provider credentials or other server secrets into this handover.
+- This confirms source-level coupling to one shared Supabase project across the inspected repositories. It increases migration coordination risk: a global source cutover would affect multiple products. Keep each product on its existing project until its own backend/API and acceptance tests are ready.
+- **Important design constraint:** the existing client code uses Supabase directly. A MySQL transition cannot be achieved by changing only the URL or swapping the client library. A server-side API/auth layer and explicit authorization contracts must be implemented and tested before client requests are redirected. Do not begin broad frontend replacement before mapping all .from(...), .rpc(...), Auth, Storage and Edge Function calls.
+- Remaining unknowns: actual live URLs/deployments, production env values (inspect names/config only; never reveal secret values), each repository's current deployed commit, all Supabase call sites, and whether any repository has alternate project references outside src/lib/supabase.ts.
+- Current migration branch head after the master handover commit is 4497586856a29e5252584c26963350c6075db2d4. At the latest check, its MySQL schema run #9, SchoolPro CI #1063 and payment validation #789 were still in progress. Refresh before reporting results.

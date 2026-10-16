@@ -567,3 +567,9 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - Updated `.github/workflows/postgres-refund-regression.yml` to apply this forward migration after the draft hardening migration and before running the disposable PostgreSQL regression suite.
 - This is draft branch code only. The prior regression #24 demonstrated the bug (`success / SETTLED` while one refund ledger row existed); the new correction is not considered validated until the rerun passes. No production migration or deployment.
 - DataSub validation #342 passed independently: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684. Keep the SQL regression result separate from application CI status.
+
+
+### Draft corrective migration follow-up: provider-event enum constraint (2026-10-16)
+- The first rerun after adding `20261016193000_datasub_late_refund_callback_guard.sql` reached the new guard, but the regression failed because `late_after_refund` is not an allowed value for `datasub_provider_events.processing_result` (CHECK constraint). This is a compatibility defect in the patch, not a failure of the refund-state guard itself.
+- Added `20261016200000_datasub_late_refund_event_status_compat.sql`, which retains the late-refund protection but records the ignored late callback using the already-supported `duplicate` processing result. Updated the disposable workflow to apply it after the prior draft migrations.
+- Next validation is pending on the new commit; do not call the correction complete until regression #24 and the full remaining SQL suite pass. No production migration or deployment.

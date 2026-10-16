@@ -35,6 +35,7 @@ jobs:
       - run: node --check scripts/test-schoolpro-tenant-isolation-live.mjs
       - run: node scripts/test-schoolpro-family-report-media-policy.mjs
       - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
+      - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
       - run: node scripts/school-document-design-test.mjs
       - run: node scripts/school-email-signin-test.mjs
       - run: node scripts/test-template-preview.mjs

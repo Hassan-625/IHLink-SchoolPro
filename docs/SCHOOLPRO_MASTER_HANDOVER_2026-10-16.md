@@ -68,8 +68,8 @@ Code/test-fix commit: `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`; PR remains ope
 
 ### Live authenticated two-school acceptance passed (exact-object Storage test)
 
-SchoolPro CI run #1025 (code commit `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`) passed both the `validate` and `tenant-acceptance` jobs:
-https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771
+SchoolPro CI run #1030 (branch head `38c8cc1fb4258bfca5f7686c8a51ea14f2653b0c`) passed both the `validate` and `tenant-acceptance` jobs:
+https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894803166
 
 - The workflow signed into two distinct real Supabase password-authenticated test accounts.
 - School A and School B could read their own student fixture.
@@ -83,7 +83,7 @@ https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771
 - The earlier broad Storage folder listing timed out three times because the existing family-report-media policy triggered an expensive report-access scan. The exact-object acceptance now passes, but that does **not** establish that folder listing is performant or that the proposed policy migration is correct. The migration is draft-only and not applied to production.
 - Payment receipt Storage tests were skipped because no existing `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` values are configured. Do not upload dummy production receipts.
 - The database-level result-PIN cooldown is a draft migration and static-test-only; gateway IP header behavior, cleanup/retention, cooldown reset and concurrent attempts have not been runtime-tested.
-- General CI run #1027 for the documentation-updated branch head `a34b23cdbb288e2a4b67d8261fe572cb010663f8` was still in progress at the last check. Run #1025 passed both jobs for the code commit above.
+- General CI run #1030 passed both jobs on the latest fully green branch head. A further documentation-only refresh may trigger another validation run; no application code or production state was changed by the handover edits.
 - No production database writes, migration, merge, or Render deployment was performed as part of this work.
 
 ### Immediate next Stage A action

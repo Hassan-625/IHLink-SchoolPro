@@ -120,3 +120,17 @@ Source mapping notes:
 2. Find the authoritative deployed/source version for the API-purchase and wallet PIN routines; retain definition hashes and ACLs.
 3. Build disposable PostgreSQL tests for direct-table write denial, duplicate purchase idempotency, transfer concurrency, refund/callback races and rollback injection. The tests have not yet been executed.
 4. Keep the public provider webhook concern tracked in DataSub issue #47; no production change is authorized by this audit.
+
+
+## Supplemental trigger-to-source mapping — 2026-10-16
+
+The following candidate source files were located in the DataSub repository at `Hassan-625/IHLink-DataSub@main` (tree SHA observed during this pass: `e74ec21907aa89a9a7a50a94d59bef290e793f12`). This improves provenance but is not a byte-for-byte deployment-parity claim.
+
+| Live trigger function | Live definition MD5 | Candidate source | Observed behavior / open check |
+|---|---|---|---|
+| `private.record_datasub_reseller_commission()` | `802a5256bcb8c21f0a24989f6a2fff79` | `supabase/migrations/20260920161000_datasub_reseller_commissions.sql` | Runs after transaction status update; only acts on transition into success; resolves active reseller/tier and product margin or tier discount; unique transaction commission plus `ON CONFLICT DO NOTHING` protects duplicate commission rows; aggregates update only when insert succeeds. Verify live/source semantic parity and concurrent status transition behavior. |
+| `private.datasub_attempt_network_availability()` | `c9995ed44e3adc8c1627e9123a8a4ac9` | `supabase/migrations/20261008221800_network_outage_events.sql` | On a failed, non-ambiguous provider attempt with no provider reference, recognizes known network-unavailable phrases and marks the matching DataSub network unavailable. Verify phrase matching, false-positive risk, and that provider response text is sanitized before it reaches this trigger. |
+| `private.queue_datasub_api_callback()` | `743bd57fbc794aa7cbd138e161766725` | `supabase/migrations/20261010160508_datasub_api_access_callbacks.sql` | Queues only API-source transaction success/failure events, with unique `(webhook_id, transaction_id, event_type)` idempotency. Delivery secrets are read from private storage by the service worker. Verify retry exhaustion, disable/re-enable semantics, and event payload minimization. |
+| `private.queue_ihlink_notification_email()` | `a443b01923aa68be07b26931363605c2` | Not located in DataSub main, the inspected Design System main tree, or the initial Admin search. | Likely shared notification/email infrastructure; source ownership and deployed consumer contract remain unknown. Do not replace or port based on the name alone. |
+
+All four live trigger functions were observed owned by `postgres`, SECURITY DEFINER, with empty `search_path`. The triggers are attached to `datasub_transactions` (API callback queue, email queue, reseller commission) and `datasub_provider_attempts` (network availability). The function owner/configuration is metadata evidence, not proof of authorization safety. Exact source equivalence and failure/rollback tests remain open.

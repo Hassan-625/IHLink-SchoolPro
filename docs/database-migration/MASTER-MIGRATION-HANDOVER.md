@@ -573,3 +573,9 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - The first rerun after adding `20261016193000_datasub_late_refund_callback_guard.sql` reached the new guard, but the regression failed because `late_after_refund` is not an allowed value for `datasub_provider_events.processing_result` (CHECK constraint). This is a compatibility defect in the patch, not a failure of the refund-state guard itself.
 - Added `20261016200000_datasub_late_refund_event_status_compat.sql`, which retains the late-refund protection but records the ignored late callback using the already-supported `duplicate` processing result. Updated the disposable workflow to apply it after the prior draft migrations.
 - Next validation is pending on the new commit; do not call the correction complete until regression #24 and the full remaining SQL suite pass. No production migration or deployment.
+
+
+### DataSub regression #28 passed (2026-10-16)
+- Disposable PostgreSQL refund/callback regression #28 passed: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38934448071. The late-success-after-refund test and the other SQL regression steps passed.
+- The first guard draft used an unsupported provider-event result value. The follow-up draft migration now uses the existing allowed `duplicate` value. Regression confirms the refunded transaction is not settled as successful and wallet/ledger state remains consistent.
+- DataSub application validation #346 was still in progress at last poll: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38934447658. Draft-only; no production migration or deployment.

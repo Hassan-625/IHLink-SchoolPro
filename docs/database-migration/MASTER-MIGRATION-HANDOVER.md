@@ -896,3 +896,6 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The initial storage-migration static test failed because the new test regex was over-escaped; the PostgreSQL integration job and two-school tenant-acceptance job both passed in that run. This was a test assertion defect, not evidence that the migration itself failed.
 - Corrected the regex assertions in `scripts/test-schoolpro-no-online-gateway.mjs` in commit `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2`.
 - CI for the corrected head is running: [run 38948315236](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315236). Do not mark the corrected test as passing until this run completes successfully.
+
+
+- Follow-up: the corrected static `validate` workflow completed successfully on `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2` ([run 38948315236](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315236)). The parallel tenant-integration/acceptance run for the same head was still in progress at handover update time ([run 38948315276](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315276)); wait for its final status before reporting all CI green for this head.

@@ -83,3 +83,40 @@ Created DataSub issue [#47 — Security review: harden public provider webhook e
 ## Isolated verification plan
 
 The test matrix is now documented in [DataSub isolated financial-path security test plan](datasub-isolated-security-test-plan-2026-10-16.md). It is a specification only: direct writes, duplicate purchase retries, wallet-transfer concurrency, refund/reconciliation races, and webhook abuse have **not** been executed against a disposable database yet. Production is explicitly excluded as a test target.
+
+
+## Supplemental live ACL, routine-hash and trigger inventory — 2026-10-16
+
+Read-only catalog snapshot. Definition hashes identify the live routine version observed during this audit; they do not prove source parity or correctness.
+
+| Routine | Live identity signature | MD5 of `pg_get_functiondef` | Owner / security / search_path | Observed EXECUTE ACL |
+|---|---|---|---|---|
+| `reserve_datasub_wallet` | `(p_user uuid, p_transaction uuid, p_amount numeric, p_reference text)` | `2c4137bc9bffeea279f16e28599e9ebe` | postgres / DEFINER / empty | postgres, service_role |
+| `refund_datasub_wallet` | `(p_user uuid, p_transaction uuid, p_amount numeric, p_reference text)` | `05665ee774b88b9ada5469d4371dd54f` | postgres / DEFINER / empty | postgres, service_role |
+| `datasub_transfer_wallet` | `(p_account_id uuid, p_amount numeric, p_pin text, p_request_id uuid)` | `ecfc51ef872d2c4816d13b4e52fe18d6` | postgres / DEFINER / empty | postgres, authenticated, service_role |
+| `create_datasub_api_credential` | `(p_label text, p_mode text)` | `4e02d1e66e7659aa1e3a5600cde88654` | postgres / DEFINER / empty | postgres, authenticated, service_role |
+| `create_datasub_api_purchase` | `(p_user_id uuid, p_credential_id uuid, p_product_code text, p_recipient text, p_reference text)` | `fd8d12b78c2237a1684806281c3bef34` | postgres / DEFINER / `pg_catalog, public` | postgres, service_role |
+| `process_datasub_provider_callback` | `(p_provider_code text, p_external_event_id text, p_transaction_reference text, p_status text, p_provider_reference text, p_available_balance numeric, p_response_ms integer, p_payload jsonb)` | `6647d6b5d9bf25df13745dbfbaa2ad93` | postgres / DEFINER / empty | postgres, service_role |
+| `review_finance_refund` | `(p_refund uuid, p_decision text, p_note text)` | `a2835fe9c181d16c72eb7cb4bad0e659` | postgres / DEFINER / empty | postgres, authenticated, service_role |
+| `set_datasub_transaction_pin` | `(p_pin text, p_current_pin text)` | `8c1e445a9ec7e5a3231f61bb2210ade3` | postgres / DEFINER / empty | postgres, authenticated, service_role |
+| `claim_datasub_pin_recovery` | `(p_user uuid)` | `5ba8eac86836e216e5218c4704698c00` | postgres / INVOKER / empty | postgres, service_role |
+
+Source mapping notes:
+- `create_datasub_api_credential` has a plausible checked-in candidate in DataSub `supabase/migrations/20261010160508_datasub_api_access_callbacks.sql`; it includes active-account checks, explicit reseller API approval, active DataSub access, profile-row locking before the five-key cap, and a 32-byte random secret stored by hash. Still compare full live/source definitions and grants before marking exact parity.
+- `claim_datasub_pin_recovery` and `recover_datasub_transaction_pin` have a checked-in candidate in `supabase/migrations/20261009153414_datasub_pin_recovery.sql`. The active Edge Function `datasub-pin-recovery` calls them through a service-role client only after bearer-token validation, active-profile validation, MFA AAL2 when MFA is enrolled, rate-limit claim, and password re-verification. Unit tests cover handler behavior; production-runtime tests have not been run.
+- `datasub_transfer_wallet` candidate exists in `docs/sql/datasub-wallet-transfer.sql`, but that document is not an authoritative applied migration. Treat it as a source candidate only; live hash and the documented stricter deployed behavior remain authoritative until a semantic diff proves parity.
+- The original source for live wallet reservation/refund hardening and exact source mapping for `create_datasub_api_purchase`, `process_datasub_provider_callback`, `review_finance_refund`, and `set_datasub_transaction_pin` remain unresolved. Do not port the weaker candidate or reconstruct the missing historical migration by guesswork.
+
+### Direct table privilege vs RLS snapshot
+
+- `datasub_pin_recovery_attempts`: RLS enabled; zero direct policies; anon/authenticated have no SELECT/INSERT/UPDATE/DELETE grants. Service-role-only access is consistent with the PIN recovery Edge Function caller reviewed above.
+- `datasub_api_credentials`: RLS enabled; anon/authenticated have no direct table privileges. The owner/admin SELECT policy does not itself grant SQL privileges; function/service access still needs to be mapped.
+- `datasub_wallets`, `datasub_transactions`, and `datasub_provider_events`: RLS enabled, but underlying anon/authenticated table privileges report SELECT/INSERT/UPDATE/DELETE. Current policy snapshot shows ordinary authenticated policies are SELECT-only, plus Super Admin `ALL` policies; no ordinary anon policy was found. This is **not a demonstrated bypass**, because RLS applies, but direct anon/authenticated negative tests against a disposable clone are still mandatory. Do not test writes against production.
+- Read-only trigger inventory: `datasub_provider_attempts` → `private.datasub_attempt_network_availability` (DEFINER, empty search_path, hash `c9995ed44e3adc8c1627e9123a8a4ac9`); `datasub_transactions` → `private.queue_datasub_api_callback` (hash `743bd57fbc794aa7cbd138e161766725`), `private.queue_ihlink_notification_email` (hash `a443b01923aa68be07b26931363605c2`), and `private.record_datasub_reseller_commission` (hash `802a5256bcb8c21f0a24989f6a2fff79`). Each observed trigger function is owned by postgres, SECURITY DEFINER, with empty search_path. Exact source parity, trigger ordering/side effects, and error/rollback tests remain open.
+
+### Next controlled audit
+
+1. Compare the four transaction-status triggers to their authoritative source and map each consumer of their side effects.
+2. Find the authoritative deployed/source version for the API-purchase and wallet PIN routines; retain definition hashes and ACLs.
+3. Build disposable PostgreSQL tests for direct-table write denial, duplicate purchase idempotency, transfer concurrency, refund/callback races and rollback injection. The tests have not yet been executed.
+4. Keep the public provider webhook concern tracked in DataSub issue #47; no production change is authorized by this audit.

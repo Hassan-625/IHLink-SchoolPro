@@ -531,3 +531,11 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - SchoolPro payment-page validation #901 passed typecheck/build: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38932526173
 - SchoolPro CI #1174 remained in progress at last poll; app tests had passed, layout check/build pending: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38932526176
 - No production changes, deployment, merge, or cutover.
+
+
+### Corrected stale reconciliation regression passed (2026-10-16)
+- DataSub PostgreSQL regression #22 passed all steps, including hardened SQL migration application, callback/refund safety assertions, stale reconciliation write rejection after callback settlement, concurrent success-versus-reversed callbacks, and simultaneous reservation/refund retries: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932887542
+- This validates the corrected test fixture and conditional-write invariant on the disposable minimal PostgreSQL schema. It does not constitute full production-schema parity or an end-to-end test of a running scheduled worker.
+- DataSub validation #340 remains in progress; tests, typecheck and security checks passed, with mobile layout and build steps still running: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932887787
+- SchoolPro CI #1174, MySQL schema draft #120, and payment-page validation #901 all passed. This validates the app checks and draft schema only; migration/cutover remains unapproved.
+- No production database changes, deployment, merge, or cutover.

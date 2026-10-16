@@ -176,13 +176,14 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 | Production migration / deployment | **Not performed in this work** | Requires completed release gate and explicit approval |
 
 
-### Verified application/test head — 2026-10-16
+### Current verified application/test head — 2026-10-16
 
-**Verified application/test head:** `68c2d84130ba68b4d71970df9279bb729b44443e` (subsequent commits only refresh this handover/release-gate documentation). PR #106 remains open, draft and unmerged.
+**Verified code/test head:** `6828de94852ac0de3e0cd7cc816c190b02be1d16`. Subsequent commits may refresh this handover and the Stage A release gate only. PR #106 remains open, draft and unmerged.
 
-- SchoolPro CI run #1073 passed `validate`, live two-school `tenant-acceptance`, and the new disposable PostgreSQL integration job: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621711.
-- Payment-page validation run #799 passed on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621712.
-- The disposable PostgreSQL 16 integration job applied the draft migration to an ephemeral database and passed 13 cross-tenant rejection checks, including unsafe parent-row school reassignment. This verifies trigger syntax and behavior in a minimal PostgreSQL fixture; it does not prove full-schema compatibility or justify applying the migration to production.
-- An earlier intermediate commit failed the new integration test because of a malformed function delimiter; that was corrected, and the subsequent exact-head CI passed. The failure and fix were confined to source/test work.
-- Production Supabase was only inspected read-only. No production migration, row write, Render deploy, or PR merge occurred.
-- **Stage A remains in progress and not merge-ready.** Continue the remaining Stage A blockers: full-schema/trigger review, migration source/ledger reconciliation, Storage policy performance, result-PIN cooldown review, payment review/lifecycle/concurrency, and real receipt Storage acceptance where existing fixtures are available. Do not create dummy production data or a paid Supabase branch. Keep B, C, D and E–J in their existing order and scope.
+- SchoolPro CI run #1077 passed `validate`, live two-school `tenant-acceptance`, and disposable PostgreSQL integration: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38918517117.
+- Payment-page validation run #803 passed on the same code/test head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38918516989.
+- The disposable PostgreSQL 16 job applied the draft migration to an ephemeral database and passed 13 negative tenant-integrity checks. It verifies trigger execution in a minimal fixture; it does not establish full Supabase/production-schema compatibility or authorize a production migration.
+- The migration now takes shared locks while validating referenced parent rows and makes tenant ownership immutable for subjects, classes, students, results and members. This prevents later school reassignment from invalidating child relationships beyond the initially identified tables. Production catalog inspection was read-only and confirmed the named columns/relations; existing trigger ordering still requires full review.
+- An intermediate integration run failed on a malformed function delimiter; the delimiter was corrected, then the full integration and exact-head CI passed. No production state was touched.
+- **Stage A remains in progress and not merge-ready.** Continue the remaining Stage A blockers: full-schema/trigger review, migration source/ledger reconciliation, Storage policy performance, result-PIN cooldown review, payment review/lifecycle/concurrency, and receipt Storage tests where existing fixtures are available. Do not create dummy production data or a paid Supabase branch.
+- Preserve the complete A–J roadmap. B waits for A; C and D remain gated in order; E–J remain open in the master handover. No production migration, row write, Render deployment or merge has been performed.

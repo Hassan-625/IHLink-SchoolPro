@@ -350,3 +350,20 @@ This is a starter inventory, not a claim that every IHLink repository has been d
 
 ### Safety status
 No production schema/data change, production RPC call, wallet mutation, Render/Vercel deployment, environment change, live data copy, or PR merge was performed during this continuation. BillStack remains DataSub-only. SchoolPro production remains on Render.
+
+
+## Session continuation — 2026-10-16 (CI refresh and DataSub callback provenance)
+
+### SchoolPro migration pilot — exact-head CI refreshed
+- PR #107 head at the prior session checkpoint was `0f2fd2147440badbd95951d4b595f6c70d916799`; PR remains open, draft and unmerged: https://github.com/Hassan-625/IHLink-SchoolPro/pull/107.
+- MySQL schema draft #99 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925934224. Its disposable MySQL job applied the draft schema, inserted valid isolated fixtures, and verified cross-school enrollment relationships fail on expected foreign keys.
+- Payment validation #880 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925934159.
+- SchoolPro CI #1153 has now completed successfully: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925933945. Its job passed typecheck, app test scripts (including school context, access cache, roles, result workflow, export, templates and billing visibility), layout checks and build.
+- These results are for the inspected prior code/test head, not for this subsequent handover-only update. No one workflow establishes full product parity or re-verifies all Stage A/B/C acceptance criteria.
+
+### DataSub provider callback — migration/deployment provenance refinement
+- Read-only live catalog query against shared project `lnqsroyiybutkfngbyge` confirms `public.process_datasub_provider_callback` exists, is owned by `postgres`, is SECURITY DEFINER, and has EXECUTE ACL only for `postgres` and `service_role` (no PUBLIC/anon/authenticated grant in the current catalog result).
+- The live migration ledger records `20260920144207 datasub_provider_operations`; the inspected DataSub repository file is `supabase/migrations/20260920170000_datasub_provider_operations.sql`. These timestamps differ. Do not assume they are identical source/deployed migration records: compare migration contents and actual live definition hashes, and locate the deployment source/provenance.
+- Repository source review of `supabase/functions/datasub-provider-webhook/index.ts` shows it records a routing event and returns HTTP 202; it does not call the legacy callback RPC. The shared refund path in `supabase/functions/_shared/refunds.ts` claims `REFUND_PENDING`, calls `refund_datasub_wallet` with idempotency reference `REFUND:<transaction reference>`, and only then marks the transaction refunded. Existing `tests/payment-refund.test.ts` tests the application orchestration with a mock database; it is not a PostgreSQL transaction/ledger regression test.
+- **Execution limitation:** the available working runtime has Node.js but no `psql`, `postgres`, or `docker` binary, so a genuine disposable PostgreSQL database test was not executed in this session. No production RPC invocation was attempted. The correct next engineering task is to add/run a dedicated CI job using an isolated PostgreSQL/Supabase-compatible fixture, including the minimum real schema/functions and assertions for duplicate event IDs, provider mismatch, failure/reversal ledger entries, transaction rollback and reconciliation idempotency. A mock-only unit test must not be presented as database evidence.
+- Until a complete caller/deployment provenance review and regression test are available, treat the legacy RPC as a high-priority unverified legacy path, not a confirmed reachable production exploit. Do not port it into MySQL/API as-is, revoke its live grant, or change production data/schema during this pilot.

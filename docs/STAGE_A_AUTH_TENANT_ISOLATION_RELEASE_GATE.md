@@ -174,3 +174,11 @@ This migration has not been applied or runtime-tested. Before any production rol
 ## Mandatory sequence gate
 
 **Do not start Stage B (sessions, student population and class rosters) until Stage A is complete, merged, and verified after merge.** Do not apply a production migration or trigger a production deployment as part of this draft. Live authenticated two-school RLS/RPC and exact-object Storage acceptance passed on 2026-10-16; exact-head CI #1049 and payment validation #775 passed on `b235e87a01abd53fd274895e4e7c560c6681d1d5`. The broader folder-list performance fix remains draft/unverified, payment-receipt Storage remains untested, and the tenant-integrity repair is source-only pending CI and non-production runtime validation. Stage A remains NOT MERGE-READY.
+
+
+## Follow-up source review — exact head `7cf775eb319b571a36d09a62fe6e6581428f525d` (2026-10-16)
+
+- Exact-head SchoolPro CI run #1064 passed both `tenant-acceptance` and `validate`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38915779846. Payment-page validation run #1064 passed on the same head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38915779618.
+- Read-only schema review confirmed that the draft's referenced table names, columns and foreign-key relationships match the live catalog for lesson notes, result approvals, promotions and member permissions.
+- The review found that later parent-row `school_id` changes could invalidate child relationships. The migration draft now rejects unsafe parent reassignment and locks referenced parent rows while validating child writes. A disposable PostgreSQL integration job is added to CI to execute positive and negative relationship cases against an ephemeral database.
+- These controls remain source-only until revised exact-head CI and PostgreSQL integration tests pass. No production migration, write, merge or deployment has occurred.

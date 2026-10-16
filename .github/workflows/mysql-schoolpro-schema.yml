@@ -52,13 +52,22 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
-      - name: Confirm cross-school relationship is rejected
+      - name: Confirm cross-school relationship is rejected for the expected FK reason
         env:
           MYSQL_PWD: root-test-password
+        shell: bash
         run: |
-          if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/cross_tenant_enrollment_must_fail.sql; then
+          set -euo pipefail
+          output_file="$(mktemp)"
+          if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/cross_tenant_enrollment_must_fail.sql >"$output_file" 2>&1; then
+            cat "$output_file"
             echo 'FAIL: cross-school student relationship was accepted' >&2
             exit 1
+          fi
+          cat "$output_file"
+          if grep -Eq 'ERROR 1452 .*CONSTRAINT' "$output_file"; then
+            echo 'PASS: invalid cross-school relationship was rejected by the expected foreign-key constraint'
           else
-            echo 'PASS: invalid cross-school relationship was rejected'
+            echo 'FAIL: SQL failed, but not with the expected foreign-key violation (ERROR 1452)' >&2
+            exit 1
           fi

@@ -539,3 +539,10 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - DataSub validation #340 remains in progress; tests, typecheck and security checks passed, with mobile layout and build steps still running: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932887787
 - SchoolPro CI #1174, MySQL schema draft #120, and payment-page validation #901 all passed. This validates the app checks and draft schema only; migration/cutover remains unapproved.
 - No production database changes, deployment, merge, or cutover.
+
+
+### DataSub callback/refund ordering review — 2026-10-16
+- The refund helper claims REFUND_PENDING, invokes a wallet-refund RPC, then makes a separate request to mark the transaction failed/refunded. This creates a timing gap after wallet credit commits but before transaction finalization.
+- The callback SQL success path checks pending status but does not first check whether the canonical refund ledger entry already exists. A late success callback in that gap may cause status/balance disagreement. This is a code-review finding, not a confirmed production incident.
+- Added disposable test tests/postgres/24_late_success_after_refund_credit.sql and workflow step. Regression #24 and validation #342 are running: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498680 and https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
+- Next fix should make an existing canonical refund ledger row authoritative over late success, then verify callback event audit and retry behavior. No production changes, deployment, merge, or cutover.

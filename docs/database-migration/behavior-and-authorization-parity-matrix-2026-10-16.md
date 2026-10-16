@@ -7,7 +7,7 @@
 
 - Source catalog snapshot in [source-table-inventory-2026-10-16.md](./source-table-inventory-2026-10-16.md): 212 routines matching a targeted name filter, 358 trigger/event rows, and 293 RLS policy rows on SchoolPro-prefixed tables.
 - Draft target schema: [database/mysql/001_schoolpro_core.sql](../../database/mysql/001_schoolpro_core.sql).
-- Existing schema CI tests cover nine negative relational assertions and an additional assessment-to-class-subject-assignment assertion; the latter must be confirmed from the latest workflow logs before marking it passed.
+- Disposable MySQL 8.4 schema workflow #86 explicitly passed ten negative relational assertions, including the assessment-to-class-subject-assignment assertion. Each rejection was required to show MySQL ERROR 1452 and the expected named foreign key. This is structural integrity evidence only, not API authorization or semantic parity.
 - This matrix translates known invariants into target responsibilities and required tests. It is not a substitute for exporting source definitions and tracing callers.
 
 ## Critical behavior matrix

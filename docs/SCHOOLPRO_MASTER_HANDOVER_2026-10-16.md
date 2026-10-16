@@ -53,15 +53,16 @@
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-Latest branch head at this refresh: `5d1ecffddb2424b0bdf7eb9333254fac63fb7103`; PR remains open, draft and unmerged.
+Latest branch head at this refresh: `4624d8c508a90ef04fb739d1334e4bcc43fa5069`; PR remains open, draft and unmerged.
 
-- SchoolPro CI run #1038: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895816281 — live `tenant-acceptance` passed; general `validate` was still running at the last check.
-- Latest fully green code/security commit: `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`; SchoolPro CI run #1036 passed both `validate` and `tenant-acceptance`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410.
-- Run #1036 passed the static regression tests for family-media Storage policy performance, database-side result-PIN cooldown, and payment-review write boundaries.
-- Payment-page validation run #764 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895816329.
+- SchoolPro CI run #1041 passed both `validate` and live `tenant-acceptance` on head `7c58c21d221ae6d26d63350f9851512a6ccf38af`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896381743.
+- Payment-page validation run #768 passed on head `494f0edfced9511f4a2e9ad52ab8c3933fc36465`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896569096.
+- The current branch head's CI run #1044 is queued: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896740619. Run #1043 is running against the immediately preceding handover commit: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896683073.
+- Payment-page validation run #770 is also queued for the current head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896740660.
+- The recovered A–J roadmap is reconciled against the canonical historical guide at commit `1989a8e14d2bab69d758a231b532b7989857c40c`. Current table preserves the original stage titles and detailed acceptance focus while incorporating later approved requirements.
 - The authenticated two-school Storage test passed using an existing workbook: School A downloaded its own object; School B received HTTP 400 for that exact foreign object. The earlier folder-list timeout still has a separate policy/query-performance cause; the proposed Storage migration remains draft-only.
 - Payment receipt Storage tests remain skipped because `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` are not configured and no existing receipt fixtures are available. Do not upload dummy production receipts.
-- Three source tenant-hardening migrations still lack matching ledger version/name pairs; the source for `20260924112325_schoolpro_secure_public_result_checker` was not recovered from checked branches/history. Do not reconstruct it from a partial live function or repair migration history by guesswork.
+- Three source tenant-hardening migrations still lack matching ledger version/name pairs; the source for `20260924112325_schoolpro_secure_public_result_checker` was not found in the checked branches/history. Do not reconstruct it from a partial live function or repair migration history by guesswork.
 - The Storage-policy, result-PIN cooldown and payment-review write-boundary migrations are draft-only. None has been applied to production; runtime behavior still requires review and safe testing.
 
 ### Live authenticated two-school acceptance passed (exact-object Storage test)

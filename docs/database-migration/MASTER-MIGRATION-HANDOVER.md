@@ -512,3 +512,12 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - DataSub validation #337 was still in progress after unit/type/security checks passed; layout/build remain pending at this timestamp. Recheck before final green status: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062470
 - SchoolPro CI #1170 completed successfully, including application tests and build. New handover-triggered checks #1172/#118/#899 are running; the earlier #1170 run passed before the latest documentation-only update.
 - This does not yet test every callback-versus-reconciliation implementation or use a full clone of production schema. No live database changes, deployment, or merge.
+
+
+### Reconciliation caller review and stale-write regression (2026-10-16)
+- Inspected DataSub's actual `datasub-reconcile` edge function, shared `finalizeRefund`, provider status normalizer and webhook receiver. Reconciliation reads pending `RECONCILING`/`REFUND_PENDING` rows, then uses conditional state updates; failed outcomes funnel through canonical `refund_datasub_wallet`. Provider webhook currently records receipt and intentionally defers state changes to authenticated reconciliation/provider lookup.
+- Added `tests/postgres/23_stale_reconciliation_after_callback.sql`: a provider success callback settles a reserved transaction, then a stale reconciliation failure write using its old `status=pending, routing_state=RECONCILING` snapshot must update zero rows, leave balance debited once, and create no refund ledger entry.
+- Added this test to the disposable PostgreSQL workflow. New regression run is pending: Regression workflow run is triggered by the new test commit; check the branch's Actions runs for its actual run ID.
+- Confirmed latest DataSub validation #337 passed, including app tests, typecheck, security checks, mobile layout checks and build: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38932062470
+- SchoolPro MySQL schema draft #118 and payment-page validation #899 passed; SchoolPro CI #1172 was still in progress at last poll. These checks validate the migration draft and existing app, not a production migration.
+- No production changes, deploy, merge or cutover. DataSub remains Supabase; SchoolPro MySQL remains draft-only.

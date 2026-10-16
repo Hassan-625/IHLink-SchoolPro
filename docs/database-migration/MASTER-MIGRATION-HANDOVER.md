@@ -907,3 +907,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - **Confirmed CI:** GitHub Actions run [#38948315276](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315276), head `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2`, completed with overall conclusion `success`. All three jobs passed: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance`. This verifies the prior commit only; the follow-up cleanup commit `bf75637...` still requires its own CI run.
 - **Scope limitation:** These CI results do not establish that the Storage migration has been applied to production or that the effective production bucket configuration is correct. The migration remains unmerged/unapplied pending explicit approval and deployment checks. MIME allowlisting/size limits are Storage API configuration, not malware scanning or byte-level file-content validation.
 - **Payment model remains:** SchoolPro has no online gateway checkout. SchoolPro subscriptions are paid by receipt upload and IHLink admin verification; school fees are recorded/receipted by the school. BillStack is DataSub-only. Keep the legacy gateway finalizer disabled by the Stage A migration; do not remove historical migrations or payment records without dependency/deployment evidence.
+
+
+## Follow-up CI for receipt-storage comment cleanup — 2026-10-16
+
+- Cleanup commit: `bf75637fb3f40785b5a54b1707dfc64c5eed2ee8` on `release/stage-a-auth-tenant-isolation`.
+- Payment-page validation run [#38948907506](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907506) completed successfully on that commit.
+- SchoolPro CI run [#38948907551](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948907551) was still in progress at the time of this update. Its disposable PostgreSQL tenant-integrity/gateway-disablement job had passed; the main validation and live tenant acceptance jobs had not yet completed. Do not treat this as a full green run until the run reaches a final successful conclusion.
+- Receipt submission RPC tests remain a separate gap: current CI does not provision the complete SchoolPro invoice/guardian/storage/auth fixture needed to exercise the RPC's success and rejection paths against PostgreSQL. Existing source assertions are not substitutes for those behavioral tests.

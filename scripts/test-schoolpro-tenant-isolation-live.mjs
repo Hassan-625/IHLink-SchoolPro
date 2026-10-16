@@ -33,7 +33,7 @@ function clientFor(email, password) {
 }
 
 async function countRows(client, table, schoolId) {
-  const {count, error} = await client.from(table).select('id', {count: 'exact', head: true}).eq('school_id', schoolId);
+  const {count, error} = await client.from(table).select('*', {count: 'exact', head: true}).eq('school_id', schoolId);
   assert.ifError(error);
   return count ?? 0;
 }

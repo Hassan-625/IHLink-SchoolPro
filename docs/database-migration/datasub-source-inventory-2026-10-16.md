@@ -78,3 +78,14 @@ For each SQL migration, table, view, RPC, trigger, Edge Function and scheduled t
 ## Next action
 
 Continue by comparing all 51 repository migrations and 11 Edge Function folders against the live Supabase project's applied migration ledger, deployed functions, relevant table/RLS metadata and scheduled jobs. Then build the DataSub source-to-target matrix before designing the DataSub MySQL schema. Do not use the SchoolPro core schema as the DataSub schema.
+
+
+## Confirmed project reference and deployment documentation note
+
+The DataSub repository's `src/lib/supabase.ts` hard-codes the shared public Supabase URL `https://lnqsroyiybutkfngbyge.supabase.co` as a fallback. This resolves to the same project reference used by the SchoolPro migration audit: `lnqsroyiybutkfngbyge`. The browser publishable key in that file is public client configuration, not a service-role secret.
+
+The DataSub README currently describes deployment through Vercel. This is a repository documentation observation, not a deployment verification. Do not assume DataSub is on Render just because SchoolPro is; verify each platform's actual live deployment before making hosting changes. The shared database project is confirmed for DataSub and SchoolPro, but the other platform repositories still need the same project-reference audit.
+
+## DataSub source-of-truth caution
+
+The 51 checked-in SQL migrations and 11 named Edge Function folders are repository evidence only. Before migrating, retrieve the live project's applied migration ledger and deployed function list, then compare them to this repository. A source file existing in Git does not prove it is deployed, and a deployed object may be absent from the current repository branch.

@@ -490,3 +490,9 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - New setup file: `tests/postgres/21_concurrent_reserve_setup.sql`; workflow update adds the simultaneous reservation race before the existing concurrent refund race.
 - Fresh checks are queued: [DataSub PostgreSQL regression #17](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38931700923) and [DataSub validation #335](https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38931700943). Do not count the new race assertion as passed until #17 completes.
 - The latest SchoolPro checks noted above passed, including the disposable MySQL schema/tenant foreign-key tests and payment-page build. The master handover change itself will trigger another CI cycle; the MySQL foundation remains a partial draft, not a complete port.
+
+
+### Concurrent reservation regression result (2026-10-16)
+- DataSub PostgreSQL regression #17 passed with both new race paths: two simultaneous reservations of one transaction produced a single wallet debit and single reserve ledger row; two simultaneous refunds produced a single wallet credit and single refund ledger row. All migration application and contract assertions in the disposable fixture also passed: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38931700923
+- DataSub validation #335 was still running at the time of this update; the test/type/security steps passed, with layout and build steps pending. Recheck final conclusion before treating the whole validation workflow as green.
+- This is specific concurrency evidence for duplicate reservation/refund retries, not proof for all interleavings with provider callback and reconciliation workers. The live project remains unchanged.

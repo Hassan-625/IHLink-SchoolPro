@@ -30,12 +30,12 @@ assert.match(schoolFeeUi, /submit_schoolpro_payment/,
 assert.match(onlineMigration, /gateway text not null default 'flutterwave'/i,
   'The original migration is retained as historical provenance');
 
-assert.match(receiptStorageMigration, /'schoolpro-payment-receipts'[\\s\\S]*false[\\s\\S]*10485760/i,
+assert.match(receiptStorageMigration, /'schoolpro-payment-receipts'[\s\S]*false[\s\S]*10485760/i,
   'Payment receipt storage must remain private and capped at 10 MiB');
 for (const mime of ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']) {
   assert.ok(receiptStorageMigration.includes(mime), `Receipt storage must allow ${mime}`);
 }
-assert.match(receiptStorageMigration, /on conflict \\(id\\) do update[\\s\\S]*allowed_mime_types = excluded\\.allowed_mime_types/i,
+assert.match(receiptStorageMigration, /on conflict \(id\) do update[\s\S]*allowed_mime_types = excluded\.allowed_mime_types/i,
   'Existing receipt bucket settings must be brought into compliance by the forward migration');
 
 console.log('PASS: legacy online finalizer is disabled in the forward migration and receipt-based SchoolPro workflows remain present (static source checks only).');

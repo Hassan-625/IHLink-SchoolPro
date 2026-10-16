@@ -95,7 +95,7 @@ The current release branch has since advanced; see the latest Stage A CI block b
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Latest completed live evidence: SchoolPro CI run #1041 passed both `validate` and `tenant-acceptance` on `7c58c21d221ae6d26d63350f9851512a6ccf38af`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896381743.
+- Latest verified exact-head evidence at this update: SchoolPro CI run #1047 passed both `validate` and live `tenant-acceptance` on `a622e28a0e9b209f7f7d5c02dc4ec25a459d16be`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896946134. Payment-page validation run #773 passed on the same head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896946151. The master handover has since received a documentation-only verification update, so recheck CI for the newest SHA before claiming exact-head green.
 - Run #1036 passed the static payment-review write-boundary regression test, family-media policy test and result-PIN cooldown test: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410.
 - Current branch head before this gate-document update was `0944a609edecee528841ee454743ba1ec780ef24`; run #1044 was queued for the immediately preceding head `4624d8c508a90ef04fb739d1334e4bcc43fa5069`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896740619. Recheck CI on the newest documentation commit before claiming exact-head green.
 - Authenticated two-account checks passed for both schools: own-school student access; foreign-school student/member/invoice/result reads blocked; own-school academic-period RPC allowed; foreign-school period RPC denied; and foreign-student result-output RPC returned false.
@@ -151,7 +151,7 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 ## Required before Stage A can be declared complete
 
-- [x] Run #1041 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `7c58c21d221ae6d26d63350f9851512a6ccf38af`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The latest handover and release-gate commits are documentation-only; their exact-head CI must be checked before calling that newest SHA green.
+- [x] Run #1047 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `a622e28a0e9b209f7f7d5c02dc4ec25a459d16be`; payment-page validation #773 also passed on that same SHA. [ ] Receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. Subsequent handover/release-gate documentation commits require their own exact-head CI verification.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

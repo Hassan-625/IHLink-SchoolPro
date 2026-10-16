@@ -89,3 +89,23 @@ Cut over one platform at a time with an explicit maintenance/read-only window or
 - Do not disable RLS or assume MySQL foreign keys alone replace authorization.
 - Do not merge PR #107 or deploy anything as part of this planning document.
 - Preserve the existing SchoolPro acceptance gates: A authentication + tenant isolation; B academic sessions/student population/class rosters; C assessments/calculations/review/publication; D Result Design Studio + custom Excel workbooks.
+
+
+## Live shared Supabase evidence — read-only inspection on 2026-10-16
+
+The current Supabase project reference `lnqsroyiybutkfngbyge` is demonstrably a shared backend, not a SchoolPro-only database:
+- The live migration ledger reports **476 applied migrations**, latest recorded migration `20261015161735 schoolpro_access_invitation_role_constraint).
+- Public schema metadata reports **308 tables**.
+- Prefix counts in that table metadata: `schoolpro_` 107, `datasub_` 49, `host_` 18, `consult_` 21, `engineering_` 19, `business_` 11. These are catalog counts and do not include every shared/core table.
+- The live project lists **41 ACTIVE Edge Functions**. The deployed set spans DataSub, SchoolPro, BillStack, Hosting, Consult, Engineering, Print, Business/Innovation, Academy and shared identity/email/account workflows. Examples include `datasub-purchase`, `datasub-reconcile`, `schoolpro-payment`, `schoolpro-subscription`, `host-payment`, `consult-payment`, `engineering-payment`, `print-payment`, `business-payment`, `academy-render-certificate` and `auth-handoff`.
+
+This confirms that a global migration must inventory shared backend dependencies as well as platform-prefixed tables. It also confirms why we should not remove or replace the shared project as one step. These are current metadata/catalog snapshots, not a full data export or proof that every repository migration equals the live deployment.
+
+### Revised target topology recommendation
+
+Treat the existing shared Supabase project as a set of platform domains plus shared services. Target topology must be chosen after mapping cross-platform foreign keys and call paths:
+- Shared identity/account and cross-platform entitlement should become an explicit shared service/database boundary only where needed.
+- SchoolPro, DataSub, Hosting, Consult, Engineering, Business/Corporate and other platform domains should have isolated database ownership/credentials and independent acceptance gates.
+- DataSub wallet/ledger and provider transaction processing deserves a separately tested service/database boundary; it must not be coupled to SchoolPro schema release cadence.
+- Shared payment orchestration, notification/email, central finance/audit and account-deletion workflows need explicit ownership and service contracts before they can be split.
+- A shared MySQL server with multiple database namespaces may be a cost-conscious staging option only if host quotas, connection/resource isolation, backup/restore scope and SaaS terms permit it. It is not automatically the right production target.

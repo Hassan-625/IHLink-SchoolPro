@@ -89,3 +89,14 @@ The DataSub README currently describes deployment through Vercel. This is a repo
 ## DataSub source-of-truth caution
 
 The 51 checked-in SQL migrations and 11 named Edge Function folders are repository evidence only. Before migrating, retrieve the live project's applied migration ledger and deployed function list, then compare them to this repository. A source file existing in Git does not prove it is deployed, and a deployed object may be absent from the current repository branch.
+
+
+## Live project comparison — read-only inspection on 2026-10-16
+
+The DataSub fallback URL confirms it uses the same Supabase project reference as SchoolPro: `lnqsroyiybutkfngbyge`. The live project currently reports:
+- 476 applied migrations across the shared ecosystem (latest: `20261015161735 schoolpro_access_invitation_role_constraint)).
+- 41 ACTIVE Edge Functions across multiple platforms, not just DataSub.
+- 49 public tables whose names start with `datasub_` in current table metadata; additional shared tables such as `profiles`, `customer_service_access`, `audit_logs` and finance/notification/security tables may be dependencies.
+- The repository contains 51 DataSub-named or relevant migration files, but this number is not expected to equal the whole shared project's 476 migration ledger. Some repository migration filenames differ from the applied ledger versions/names, so a migration-by-migration comparison is required.
+
+Deployed DataSub-related functions seen in the live project include `datasub-api` (v29), `datasub-purchase` (v38), `datasub-reconcile` (v23), `datasub-provider-health` (v38), `datasub-catalog-sync` (v19), `datasub-provider-webhook` (v12), `datasub-payment` (v13), `datasub-pin-recovery` (v1), `datasub-api-callbacks` (v1), `legitdataway-webhook` (v7), and `legitdataway-catalog-sync` (v2). Treat deployed function versions as source-audit targets; repository presence alone does not establish code parity with these deployed versions.

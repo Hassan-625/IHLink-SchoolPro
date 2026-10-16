@@ -899,3 +899,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 
 
 - Follow-up: the corrected static `validate` workflow completed successfully on `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2` ([run 38948315236](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315236)). The parallel tenant-integration/acceptance run for the same head was still in progress at handover update time ([run 38948315276](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315276)); wait for its final status before reporting all CI green for this head.
+
+
+## 2026-10-16 continuation — receipt storage restrictions and CI confirmation
+
+- **Receipt-storage migration source cleanup:** On Stage A branch `release/stage-a-auth-tenant-isolation`, commit `bf75637fb3f40785b5a54b1707dfc64c5eed2ee8` removes an unnecessary `COMMENT ON TABLE storage.buckets` statement. This avoids changing a global Supabase system-table comment; the targeted upsert for the `schoolpro-payment-receipts` bucket remains unchanged (private bucket, 10 MiB maximum, JPEG/PNG/WebP/PDF MIME allowlist).
+- **Confirmed CI:** GitHub Actions run [#38948315276](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315276), head `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2`, completed with overall conclusion `success`. All three jobs passed: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance`. This verifies the prior commit only; the follow-up cleanup commit `bf75637...` still requires its own CI run.
+- **Scope limitation:** These CI results do not establish that the Storage migration has been applied to production or that the effective production bucket configuration is correct. The migration remains unmerged/unapplied pending explicit approval and deployment checks. MIME allowlisting/size limits are Storage API configuration, not malware scanning or byte-level file-content validation.
+- **Payment model remains:** SchoolPro has no online gateway checkout. SchoolPro subscriptions are paid by receipt upload and IHLink admin verification; school fees are recorded/receipted by the school. BillStack is DataSub-only. Keep the legacy gateway finalizer disabled by the Stage A migration; do not remove historical migrations or payment records without dependency/deployment evidence.

@@ -62,6 +62,8 @@ jobs:
       SCHOOL_B_EMAIL: ${{ secrets.SCHOOL_B_EMAIL }}
       SCHOOL_B_PASSWORD: ${{ secrets.SCHOOL_B_PASSWORD }}
       SCHOOL_B_ID: ${{ secrets.SCHOOL_B_ID }}
+      SCHOOL_A_RECEIPT_PATH: ${{ secrets.SCHOOL_A_RECEIPT_PATH }}
+      SCHOOL_B_RECEIPT_PATH: ${{ secrets.SCHOOL_B_RECEIPT_PATH }}
       TENANT_TEST_TERM: ${{ vars.TENANT_TEST_TERM }}
       TENANT_TEST_SESSION: ${{ vars.TENANT_TEST_SESSION }}
     steps:

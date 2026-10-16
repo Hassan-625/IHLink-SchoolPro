@@ -85,8 +85,9 @@ The retry did not solve the Storage timeout. Next investigation should isolate t
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Exact current branch head before this documentation update: `9b3b3513f0f27da878099f4749e252c8f1dcf537`.
-- SchoolPro CI run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — general `validate` was still running at the time of this note; live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path.
+- Code/test-fix commit: `9b3b3513f0f27da878099f4749e252c8f1dcf537`; latest branch head before this documentation refresh: `063750d8d545c58312e50bc5d8a3be299c8fd38d`.
+- SchoolPro CI run #1007: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38892010470 — live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path; general `validate` was still running at the time of the last status check.
+- Run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — general `validate` passed, including the static family-media policy regression test; live acceptance failed on the missing fixture.
 - Earlier runs #1000–#1002: general validation passed, but the old folder-listing check failed with Storage status 544 / database timeout. Run #1003 switched to the RLS-protected template row and exact-object download; it exposed the missing School B fixture instead of falsely treating a timeout as a denial.
 - Payment-page validation run #731 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749307.
 - Live DB/RPC assertions continue to pass for both real authenticated accounts: own-school student access, foreign-school reads blocked for students/members/invoices/results, own-school academic-period RPC allowed, foreign-school period denied, and foreign-student result-output RPC returns false.

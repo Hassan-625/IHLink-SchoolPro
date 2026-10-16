@@ -877,3 +877,9 @@ The payment-review migration uses restrictive RLS policies to preserve the finan
 
 ### Product rule reaffirmed
 SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use uploaded payment evidence and IHLink Super Admin verification; school fees are recorded and receipted through the school-managed finance workflow. BillStack remains DataSub-only. Historical gateway code/migrations and records are not to be blindly deleted; trace callers, deployed function reachability, and migration history before any cleanup. No production migration, deployment, or PR merge was performed by this CI verification.
+
+
+### Additional receipt-upload validation gap found during source review (2026-10-16)
+- The guardian UI advertises JPEG, PNG, WebP, and PDF, but the `submit_schoolpro_payment` RPC checks the receipt object's path and owner only; it does not independently validate the object's stored MIME metadata or byte size against the UI's accepted formats.
+- A browser `accept` attribute is only a user-interface hint, not a security boundary. Before closing this item, verify the effective `schoolpro-payment-receipts` bucket configuration (allowed MIME types and file-size limit) in both repository migrations/configuration and the target Supabase project. If those server-side bucket restrictions are not demonstrably configured, add a forward migration and test the enforcement. Also consider comparing the uploaded object's stored MIME metadata to `p_receipt_mime`; do not trust the RPC argument by itself.
+- This is a **source-review finding / verification task**, not proof that arbitrary file types currently pass in production. Production bucket configuration was not changed or queried in this step.

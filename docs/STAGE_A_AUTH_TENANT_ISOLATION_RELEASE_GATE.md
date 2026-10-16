@@ -91,12 +91,13 @@ https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771
 - School A downloaded its own existing result-template workbook; School B received HTTP 400 when requesting that exact foreign object.
 - Payment receipt Storage checks were skipped because no existing receipt paths are configured.
 
-The latest documentation-updated branch head is `a34b23cdbb288e2a4b67d8261fe572cb010663f8`; exact-head CI run #1027 is still in progress at the last check. Run #1025 is complete and green for the code commit listed above. No production schema/data writes, migrations, merge, or Render deployment occurred.
+The current release branch has since advanced; see the latest Stage A CI block below. This older entry is retained as historical evidence for the earlier code commit. No production schema/data writes, migrations, merge, or Render deployment occurred.
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Latest exact-head CI: branch head `3c080c1208ce2960880bd6a8bebe1302239c5b12`; SchoolPro CI run #1039: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896036201 — **both `validate` and live `tenant-acceptance` passed**.
+- Latest completed live evidence: SchoolPro CI run #1041 passed both `validate` and `tenant-acceptance` on `7c58c21d221ae6d26d63350f9851512a6ccf38af`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896381743.
 - Run #1036 passed the static payment-review write-boundary regression test, family-media policy test and result-PIN cooldown test: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410.
+- Current branch head before this gate-document update was `0944a609edecee528841ee454743ba1ec780ef24`; run #1044 was queued for the immediately preceding head `4624d8c508a90ef04fb739d1334e4bcc43fa5069`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896740619. Recheck CI on the newest documentation commit before claiming exact-head green.
 - Authenticated two-account checks passed for both schools: own-school student access; foreign-school student/member/invoice/result reads blocked; own-school academic-period RPC allowed; foreign-school period RPC denied; and foreign-student result-output RPC returned false.
 - Storage positive/negative check passed: School A downloaded its existing result-template workbook; School B received HTTP 400 for that exact foreign object. The test now uses raw HTTP status for the negative assertion because the Supabase JS Storage wrapper returned `StorageUnknownError` with no exposed status for an empty/non-JSON denial body.
 - Payment-page validation run #751: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225604 — queued at the last status check.
@@ -150,7 +151,7 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 ## Required before Stage A can be declared complete
 
-- [x] Run #1039 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `3c080c1208ce2960880bd6a8bebe1302239c5b12`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The handover refresh itself is documentation-only and will trigger another CI run.
+- [x] Run #1041 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `7c58c21d221ae6d26d63350f9851512a6ccf38af`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The latest handover and release-gate commits are documentation-only; their exact-head CI must be checked before calling that newest SHA green.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

@@ -890,3 +890,9 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Extended `scripts/test-schoolpro-no-online-gateway.mjs` (commit `fbde78dce38e40d1a8feb879f2862fc04d09da5c`) so CI statically checks that the forward migration retains privacy, size limit and accepted MIME types.
 - This is a source change on the unmerged Stage A branch. The static test does not execute Supabase Storage itself or inspect the actual production bucket. Wait for CI and verify effective bucket settings after an approved deployment before claiming runtime enforcement.
 - Scope note: MIME allow-lists validate the upload's declared content type at the Storage API; they are not malware scanning or cryptographic file-content sniffing. Receipt-path ownership and real RLS/RPC runtime coverage remain open as recorded above.
+
+
+### CI follow-up for receipt storage assertion (2026-10-16)
+- The initial storage-migration static test failed because the new test regex was over-escaped; the PostgreSQL integration job and two-school tenant-acceptance job both passed in that run. This was a test assertion defect, not evidence that the migration itself failed.
+- Corrected the regex assertions in `scripts/test-schoolpro-no-online-gateway.mjs` in commit `c0adc5f0d0ec20c701ae40cbd9fc0bdb7ce1c3d2`.
+- CI for the corrected head is running: [run 38948315236](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38948315236). Do not mark the corrected test as passing until this run completes successfully.

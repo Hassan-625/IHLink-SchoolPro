@@ -579,3 +579,8 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 - Disposable PostgreSQL refund/callback regression #28 passed: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38934448071. The late-success-after-refund test and the other SQL regression steps passed.
 - The first guard draft used an unsupported provider-event result value. The follow-up draft migration now uses the existing allowed `duplicate` value. Regression confirms the refunded transaction is not settled as successful and wallet/ledger state remains consistent.
 - DataSub application validation #346 was still in progress at last poll: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38934447658. Draft-only; no production migration or deployment.
+
+
+### DataSub application validation #346 passed (2026-10-16)
+- DataSub validation #346 passed: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38934447658. Application tests, typecheck, security checks, mobile layout checks and build passed.
+- Current draft status: PostgreSQL regression #28 passed and application validation #346 passed. The new callback guard and compatibility migration are on the audit branch only; production remains unchanged and owner review is still required before merge/deploy.

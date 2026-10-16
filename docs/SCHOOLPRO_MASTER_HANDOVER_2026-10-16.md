@@ -187,3 +187,13 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 - An intermediate integration run failed on a malformed function delimiter; the delimiter was corrected, then the full integration and exact-head CI passed. No production state was touched.
 - **Stage A remains in progress and not merge-ready.** Continue the remaining Stage A blockers: full-schema/trigger review, migration source/ledger reconciliation, Storage policy performance, result-PIN cooldown review, payment review/lifecycle/concurrency, and receipt Storage tests where existing fixtures are available. Do not create dummy production data or a paid Supabase branch.
 - Preserve the complete A–J roadmap. B waits for A; C and D remain gated in order; E–J remain open in the master handover. No production migration, row write, Render deployment or merge has been performed.
+
+
+### Payment RLS policy semantics corrected — 2026-10-16
+
+- Verified code/test head: `c599758d0a3fa92ec773ea3b63bb7c23f3e435fd`; subsequent commits in this branch are documentation-only.
+- SchoolPro CI #1128 passed `validate`, live two-school tenant acceptance and disposable PostgreSQL tenant-integrity integration; payment validation #855 passed on the same code/test head.
+- A read-only production policy audit showed `schoolpro_module_permission` is restrictive, not permissive. The unmerged payment-review migration was corrected so it does not treat dropping that policy as removal of a write grant. It explicitly recreates restrictive scopes for all four payment tables; preserves linked-guardian submission/proof checks and submitter-scoped allocation reads; adds explicit Super Admin SELECT-only inspection; removes the broad Super Admin ALL policy on fee payments; and denies Super Admin direct fee-ledger writes through the restrictive check.
+- A first static regression run caught that three Super Admin SELECT policies were missing after the refactor. They were restored and the subsequent exact-head CI passed. This was branch-only; no production SQL was applied.
+- Remaining caveat: no live production write test was attempted. Payment RLS checks are static/source contracts plus CI; a dedicated disposable PostgreSQL RLS-role integration test and payment lifecycle/concurrency tests are still required.
+- Stage A remains not merge-ready. Full-schema/trigger review, migration provenance reconciliation, Storage performance, result-PIN cooldown, payment lifecycle/concurrency, and receipt-Storage acceptance remain open. No production migration, row write, Render deployment or merge occurred.

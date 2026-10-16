@@ -59,11 +59,8 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
   assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
   console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied');
 
-  const {data: foreignTemplateObjects, error: storageError} = await client
-    .storage.from('school-result-templates').list(otherSchoolId, {limit: 1});
-  assert.ifError(storageError);
-  assert.equal(foreignTemplateObjects?.length ?? 0, 0, accountName + ' must not list another school\'s result templates');
-  console.log('PASS', accountName, 'foreign-school result-template Storage listing blocked');
+  // The positive/negative Storage fixture check runs in main against an existing template object.
+
 }
 
 async function main() {
@@ -95,14 +92,27 @@ async function main() {
     console.log('PASS', name, 'foreign-student result-output RPC denied');
   }
 
-  for (const [name, client, foreignUserId] of [
-    ['School A', a.client, b.user.id],
-    ['School B', b.client, a.user.id],
-  ]) {
-    const {data, error} = await client.storage.from('schoolpro-payment-receipts').list(foreignUserId, {limit: 1});
-    assert.ifError(error);
-    assert.equal(data?.length ?? 0, 0, name + ' must not list another user\'s payment receipts');
-    console.log('PASS', name, 'foreign-user payment-receipt Storage listing blocked');
+  const {data: knownSchoolTemplates, error: knownTemplatesError} = await b.client
+    .storage.from('school-result-templates').list(process.env.SCHOOL_B_ID, {limit: 1});
+  assert.ifError(knownTemplatesError);
+  assert.ok(knownSchoolTemplates?.length, 'School B fixture must have a real result-template object for a meaningful negative test');
+  const {data: foreignTemplates, error: foreignTemplatesError} = await a.client
+    .storage.from('school-result-templates').list(process.env.SCHOOL_B_ID, {limit: 1});
+  assert.ifError(foreignTemplatesError);
+  assert.equal(foreignTemplates?.length ?? 0, 0, 'School A must not list School B result-template objects');
+  console.log('PASS School A cannot list a verified existing School B result-template object');
+
+  if (process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH) {
+    for (const [name, client, foreignPath] of [
+      ['School A', a.client, process.env.SCHOOL_B_RECEIPT_PATH],
+      ['School B', b.client, process.env.SCHOOL_A_RECEIPT_PATH],
+    ]) {
+      const {data, error} = await client.storage.from('schoolpro-payment-receipts').download(foreignPath);
+      assert.ok(error || !data, name + ' must not download another account\'s payment receipt');
+      console.log('PASS', name, 'foreign-user payment receipt download denied');
+    }
+  } else {
+    console.log('SKIP payment-receipt Storage download test: provide two existing test receipt paths; do not create production fixtures just for this test');
   }
 
   console.log('PASS: authenticated two-school tenant read/RPC/Storage acceptance checks completed.');

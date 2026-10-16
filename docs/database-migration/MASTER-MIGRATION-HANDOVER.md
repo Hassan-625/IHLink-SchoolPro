@@ -740,3 +740,24 @@ This entry supplements the previous continuation; no previous checklist or roadm
 - These earlier migrations demonstrate why the runtime fixture must load the effective policy state in migration order. Testing only the new restrictive policy or writing a reduced hand-crafted approximation would miss permissive policies that combine with it.
 - The online card gateway finalizer is not a substitute for SchoolPro's manual receipt-review workflow. Keep the workflows separate in test cases and preserve the rule that BillStack is DataSub-only.
 - No source changes were made to payment policy SQL in this step. The next implementation remains a dedicated disposable PostgreSQL job that loads the real migration/policy history (or a reviewed, complete snapshot of the relevant effective schema), runs distinct authenticated role tests and concurrency tests, and records the exact CI run. Until that executes, the payment RLS gate remains blocked.
+
+
+#### Payment audit continuation — legacy fee-ledger grants and RPC boundary (2026-10-16)
+Additional files reviewed on `release/stage-a-auth-tenant-isolation`:
+- `supabase/migrations/20260920152000_schoolpro_finance_and_result_access.sql` (blob `3231b11feac2cd972dbd03e56b09e8c55f160521`)
+- `supabase/migrations/20260927170000_schoolpro_explicit_fee_exceptions.sql`
+- `supabase/migrations/20261002123000_schoolpro_super_admin_action_access_and_document_rls_fix.sql`
+- `supabase/migrations/20261002234500_schoolpro_operational_tenant_isolation.sql`
+
+Specific source findings:
+1. The initial fee-ledger table grant gives `authenticated` SELECT and INSERT, while the initial permissive `School finance records payments` policy authorizes INSERT when the caller has a qualifying school role and `recorded_by=auth.uid()`. The new migration adds a restrictive finance-module gate and disallows Super Admin writes through that policy layer. The effective policy set and role grants still need runtime confirmation.
+2. The earlier `public.record_schoolpro_payment(uuid,numeric,text,text,text)` function is not SECURITY DEFINER. It locks the target invoice, checks finance-role access, amount and method, inserts a payment ledger row and updates invoice balance in the same transaction. It is granted to authenticated callers. This is distinct from the guardian receipt-submission function and the service-role-only online card finalizer.
+3. The earlier ledger INSERT policy's visible check verifies role/school access and caller identity, but does not itself visibly cross-check that the supplied `invoice_id`, `student_id`, and `school_id` all identify the same tenant/child, nor does a bare INSERT policy update the invoice balance. This is a **source-level integrity question requiring a full trigger/constraint/RPC and effective-policy check**, not a confirmed exploitable vulnerability. Do not remove legitimate direct insert behavior without proving whether the application depends on it.
+4. The operational tenant-isolation migration uses permissive policies alongside restrictive policies on some modules; therefore the same rule applies to payments: inspect all permissive policies, restrictive policies, table grants, function grants, triggers, and actual caller paths together.
+
+Next concrete test additions:
+- Under an authenticated finance role, attempt a direct fee-ledger insert with (a) invoice from another school, (b) student from another school, (c) mismatched student and invoice within one school, and (d) valid same-school data; capture whether each insert is rejected and whether invoice balance consistency remains intact.
+- Test the intended `record_schoolpro_payment` RPC with the same invalid cross-links and valid data, including two concurrent transactions targeting one invoice.
+- Check whether a constraint/trigger elsewhere already blocks these mismatches before deciding on a code change.
+- Keep manual receipt review, direct finance ledger entry, and online card finalization as separate test suites.
+No policy or application code was changed in this audit step. No PostgreSQL runtime result is claimed. This continuation preserves the existing roadmap and does not mark Stage A complete.

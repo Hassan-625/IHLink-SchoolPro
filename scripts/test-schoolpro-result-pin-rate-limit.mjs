@@ -11,6 +11,12 @@ assert.match(sql, /failed_attempts \+ 1 >= 8/i, 'Eight failures must trigger coo
 assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 15 minutes');
 assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
 assert.ok(sql.includes("current_setting('request.headers', true)"), 'Rate-limit key should include request network context to reduce admission-only lockout abuse');
+const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
+const blockedAt = sql.indexOf('select a.blocked_until');
+const studentLookupAt = sql.indexOf('from public.schoolpro_students st');
+assert.ok(lockAt >= 0, 'Same attempt key must serialize concurrent checks');
+assert.ok(blockedAt > lockAt, 'Cooldown must be checked after acquiring the per-key transaction lock');
+assert.ok(studentLookupAt > blockedAt, 'Blocked attempts must be rejected before student lookup');
 assert.ok(sql.includes('perform private.record_schoolpro_result_pin_failure(v_attempt_key)'), 'Unknown admission and incorrect PIN paths must both count failures');
 assert.match(sql, /delete from private\.schoolpro_result_pin_attempts\s+where attempt_key = v_attempt_key/i, 'Successful published-result access must clear the failure counter');
 assert.match(sql, /revoke all on table private\.schoolpro_result_pin_attempts from public, anon, authenticated/i, 'Attempt table must not be directly accessible from API roles');

@@ -37,6 +37,7 @@ jobs:
       - run: node scripts/test-schoolpro-operational-tenant-integrity.mjs
       - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
       - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
+      - run: node scripts/test-schoolpro-receipt-submission-guards.mjs
       - run: node scripts/test-schoolpro-no-online-gateway.mjs
       - run: node scripts/school-document-design-test.mjs
       - run: node scripts/school-email-signin-test.mjs

@@ -1,7 +1,8 @@
 -- Database-level rate limiting for the public result-PIN checker.
--- Store only a one-way digest of the normalized admission number, never the raw identifier.
+-- Store only a digest of the normalized admission number plus request network identifier.
+-- This avoids locking every user out of a student's result based only on the admission number.
 create table if not exists private.schoolpro_result_pin_attempts (
-  admission_key text primary key,
+  attempt_key text primary key,
   window_started_at timestamptz not null default now(),
   failed_attempts integer not null default 0 check (failed_attempts >= 0),
   blocked_until timestamptz,
@@ -10,21 +11,17 @@ create table if not exists private.schoolpro_result_pin_attempts (
 
 revoke all on table private.schoolpro_result_pin_attempts from public, anon, authenticated;
 
-create or replace function private.record_schoolpro_result_pin_failure(p_admission text)
+create or replace function private.record_schoolpro_result_pin_failure(p_attempt_key text)
 returns void
 language plpgsql
 security definer
 set search_path to ''
 as $function$
-declare
-  v_key text;
 begin
-  v_key := encode(extensions.digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
-
   insert into private.schoolpro_result_pin_attempts (
-    admission_key, window_started_at, failed_attempts, blocked_until, updated_at
-  ) values (v_key, now(), 1, null, now())
-  on conflict (admission_key) do update
+    attempt_key, window_started_at, failed_attempts, blocked_until, updated_at
+  ) values (p_attempt_key, now(), 1, null, now())
+  on conflict (attempt_key) do update
   set
     window_started_at = case
       when private.schoolpro_result_pin_attempts.window_started_at <= now() - interval '15 minutes'
@@ -73,15 +70,34 @@ declare
   held boolean;
   outstanding numeric;
   payload jsonb;
-  v_admission_key text;
+  v_attempt_key text;
   v_blocked_until timestamptz;
+  v_headers jsonb;
+  v_client_ip text;
 begin
-  v_admission_key := encode(extensions.digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
+  v_headers := nullif(current_setting('request.headers', true), '')::jsonb;
+  v_client_ip := split_part(
+    coalesce(
+      v_headers ->> 'x-forwarded-for',
+      v_headers ->> 'cf-connecting-ip',
+      v_headers ->> 'x-real-ip',
+      ''
+    ),
+    ',',
+    1
+  );
+  v_attempt_key := encode(
+    extensions.digest(
+      lower(trim(coalesce(p_admission, ''))) || '|' || coalesce(nullif(trim(v_client_ip), ''), 'unknown'),
+      'sha256'
+    ),
+    'hex'
+  );
 
   select a.blocked_until
     into v_blocked_until
   from private.schoolpro_result_pin_attempts a
-  where a.admission_key = v_admission_key;
+  where a.attempt_key = v_attempt_key;
 
   if v_blocked_until is not null and v_blocked_until > now() then
     return jsonb_build_object('ok', false, 'message', 'Too many attempts. Please try again later.');
@@ -98,7 +114,7 @@ begin
   limit 1;
 
   if s.id is null then
-    perform private.record_schoolpro_result_pin_failure(p_admission);
+    perform private.record_schoolpro_result_pin_failure(v_attempt_key);
     return jsonb_build_object('ok', false, 'message', 'Result details or access PIN are invalid.');
   end if;
 
@@ -114,7 +130,7 @@ begin
   limit 1;
 
   if pinrow.id is null then
-    perform private.record_schoolpro_result_pin_failure(p_admission);
+    perform private.record_schoolpro_result_pin_failure(v_attempt_key);
     return jsonb_build_object('ok', false, 'message', 'Result details or access PIN are invalid.');
   end if;
 
@@ -170,7 +186,7 @@ begin
   end if;
 
   delete from private.schoolpro_result_pin_attempts
-  where admission_key = v_admission_key;
+  where attempt_key = v_attempt_key;
 
   update public.schoolpro_result_access_pins
   set last_used_at = now()
@@ -192,4 +208,4 @@ end
 $function$;
 
 comment on table private.schoolpro_result_pin_attempts is
-  'Stores hashed admission identifiers and failure windows for rate limiting public result-PIN checks; no raw admission number or PIN is stored.';
+  'Stores one-way attempt keys and failure windows for rate limiting public result-PIN checks; no raw admission number or PIN is stored.';

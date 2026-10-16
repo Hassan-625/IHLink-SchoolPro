@@ -2,9 +2,9 @@
 -- Run from repository root against a dedicated throwaway database only.
 do $$
 begin
-  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
-  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
-  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'anon') then execute 'create role anon nologin'; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then execute 'create role authenticated nologin'; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then execute 'create role service_role nologin'; end if;
 end $$;
 
 \i supabase/migrations/20261016170000_schoolpro_disable_online_payment_gateway.sql

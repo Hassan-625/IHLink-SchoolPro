@@ -841,3 +841,39 @@ Following the explicit product correction, a **draft-branch code change** now di
 - A small follow-up test-fixture edit on `cdb96ae787aea9e99beb2f40044620681efe4a43` changed conditional role creation to explicit dynamic SQL inside PL/pgSQL. This is a robustness refinement; CI for that exact latest head is queued/in progress as of this note. Do not carry the earlier pass forward as evidence for the newer commit until its run finishes.
 - Latest integration test: `scripts/test-schoolpro-online-payment-disable.integration.sql`; latest CI wiring is in `.github/workflows/ci.yml`.
 - The gateway finalizer disablement is proven in disposable PostgreSQL on the earlier tested revision, not production. Apply remains pending. The payment RLS runtime gap for receipt submissions and school finance workflows remains open.
+
+
+## Receipt-only payment enforcement — latest verification (2026-10-16)
+
+### CI confirmation
+- GitHub Actions run **38947005526** completed with conclusion **success** on Stage A head `cdb96ae787aea9e99beb2f40044620681efe4a43`: [run details](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38947005526).
+- Confirmed jobs: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance` all succeeded. This validates the source/static suite, disposable PostgreSQL tenant-integrity checks, receipt-only online-gateway disablement integration test, and configured live two-school read-only tenant acceptance for that exact commit.
+- The forward migration disabling the legacy `public.finalize_schoolpro_payment(...)` gateway finalizer is still on the unmerged Stage A branch. CI success does **not** mean it has been merged, applied to production, or verified against the live production database.
+
+### Receipt-based payment security audit — source review
+Reviewed:
+- `supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql`
+- `supabase/migrations/20261011092231_schoolpro_operational_staff_and_fee_breakdown_access.sql`
+- `supabase/migrations/20261003000500_schoolpro_guardian_tenant_hardening.sql`
+- `supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql`
+- `scripts/test-schoolpro-payment-review-write-controls.mjs`
+
+Source-level controls observed in `submit_schoolpro_payment`:
+- requires an authenticated caller and a non-empty receipt object path under the caller's UUID;
+- checks the object belongs to the caller in `schoolpro-payment-receipts`;
+- requires an active guardian link to the school and separately validates each allocated invoice's student belongs to that guardian;
+- validates any selected bank account belongs to the same school and is active;
+- rejects duplicate invoice IDs, non-positive allocations, invalid invoices, and a total that does not equal the allocation sum;
+- locks invoice rows in UUID order and accounts for pending allocations to limit duplicate/concurrent over-allocation;
+- revokes direct execution from `PUBLIC` and `anon`, granting execution to `authenticated`.
+
+The payment-review migration uses restrictive RLS policies to preserve the finance-module gate, scope guardian submissions/proofs, and make Super Admin ledger access inspection-only rather than direct write access. Guardian policies also bind student/payment/result records to both the guardian link and school tenant.
+
+### Remaining gap — do not mark payment security complete
+- `scripts/test-schoolpro-payment-review-write-controls.mjs` is a **static source assertion**, not a live PostgreSQL RLS/RPC behavior test.
+- The current disposable PostgreSQL CI job applies the tenant-integrity and gateway-disablement integration SQL, but does not provision the complete SchoolPro schema and execute `submit_schoolpro_payment` as realistic guardian, unrelated guardian, school-finance, and Super Admin roles.
+- Therefore the receipt-path ownership check, cross-tenant/cross-student rejection, pending allocation concurrency behavior, effective RLS policies, and review/write boundaries remain **source-reviewed but not runtime-verified**. Do not describe these as fully tested.
+- Next action: map the migration dependencies and required auth/storage fixtures, then add a disposable integration test only if it can faithfully apply the relevant schema/functions/policies without copying production data or requiring a paid database. Include valid guardian submission; missing/foreign receipt; inactive or wrong-school guardian; invoice/student tenant mismatch; duplicate invoice; amount mismatch; pending-balance over-allocation; and role-based SELECT/INSERT/UPDATE/DELETE checks. If a minimal harness would bypass the real policies/functions, record the limitation instead of claiming coverage.
+
+### Product rule reaffirmed
+SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use uploaded payment evidence and IHLink Super Admin verification; school fees are recorded and receipted through the school-managed finance workflow. BillStack remains DataSub-only. Historical gateway code/migrations and records are not to be blindly deleted; trace callers, deployed function reachability, and migration history before any cleanup. No production migration, deployment, or PR merge was performed by this CI verification.

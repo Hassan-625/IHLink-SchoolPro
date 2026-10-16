@@ -95,9 +95,9 @@ The latest documentation-updated branch head is `a34b23cdbb288e2a4b67d8261fe572c
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Latest fully green branch head before this handover refresh: `38c8cc1fb4258bfca5f7686c8a51ea14f2653b0c`.
-- SchoolPro CI run #1030: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894803166 — **both `validate` and `tenant-acceptance` passed**.
-- Earlier run #1025 also passed both jobs for code commit `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`.
+- Latest fully green branch head before this handover refresh: `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`.
+- SchoolPro CI run #1036: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410 — **both `validate` and `tenant-acceptance` passed**.
+- The same run passed the static payment-review write-boundary regression test, family-media policy test and result-PIN cooldown test.
 - Authenticated two-account checks passed for both schools: own-school student access; foreign-school student/member/invoice/result reads blocked; own-school academic-period RPC allowed; foreign-school period RPC denied; and foreign-student result-output RPC returned false.
 - Storage positive/negative check passed: School A downloaded its existing result-template workbook; School B received HTTP 400 for that exact foreign object. The test now uses raw HTTP status for the negative assertion because the Supabase JS Storage wrapper returned `StorageUnknownError` with no exposed status for an empty/non-JSON denial body.
 - Payment-page validation run #751: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225604 — queued at the last status check.
@@ -118,6 +118,14 @@ Migration: `supabase/migrations/20261016110500_schoolpro_optimize_family_report_
 It adds partial exact-path indexes, separates media path checks, and uses `CASE` branches so non-media paths such as .xlsx workbooks do not invoke the expensive family-media function. Static regression test: `scripts/test-schoolpro-family-report-media-policy.mjs`.
 
 The exact-object tenant acceptance now passes, but that does **not** prove the folder-listing performance defect is fixed. Review the policy's path shapes and semantics, then validate the migration in a non-production database if available. It has not been applied or performance-tested in production.
+
+### Payment review write boundaries — draft only
+
+Migration: `supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql`.
+
+Read-only production inspection found the generic `schoolpro_module_permission` policy grants `ALL` operations to finance-module users on `schoolpro_payment_submissions`, `schoolpro_payment_allocations`, `schoolpro_payment_proofs` and `schoolpro_fee_payments`. Those direct writes can bypass the pending-only review RPC and its invoice/allocation reconciliation. The draft removes those broad policies, preserves guardian submission and authorized read policies, adds Super Admin read-only inspection policies, and removes direct Super Admin ledger mutation in favor of read-only inspection. The static contract test passed in CI run #1036.
+
+This is not runtime-verified. Before rollout, test guardian submit, school-finance read, Super Admin inspection, RPC confirmation/rejection, and direct INSERT/UPDATE/DELETE denials against a non-production database. Confirm the school-side payment recording flow still works through its explicit insert policy/RPC. Do not apply the migration to production from static tests alone.
 
 ### Result-PIN attempt cooldown — draft only
 
@@ -143,7 +151,7 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 ## Required before Stage A can be declared complete
 
-- [x] Run #1030 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `38c8cc1fb4258bfca5f7686c8a51ea14f2653b0c`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The handover refresh itself is documentation-only and will trigger another CI run.
+- [x] Run #1036 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The handover refresh itself is documentation-only and will trigger another CI run.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

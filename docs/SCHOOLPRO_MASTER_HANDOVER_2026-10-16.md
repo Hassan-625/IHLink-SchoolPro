@@ -197,3 +197,13 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 - A first static regression run caught that three Super Admin SELECT policies were missing after the refactor. They were restored and the subsequent exact-head CI passed. This was branch-only; no production SQL was applied.
 - Remaining caveat: no live production write test was attempted. Payment RLS checks are static/source contracts plus CI; a dedicated disposable PostgreSQL RLS-role integration test and payment lifecycle/concurrency tests are still required.
 - Stage A remains not merge-ready. Full-schema/trigger review, migration provenance reconciliation, Storage performance, result-PIN cooldown, payment lifecycle/concurrency, and receipt-Storage acceptance remain open. No production migration, row write, Render deployment or merge occurred.
+
+
+### Result PIN concurrency guard added — 2026-10-16
+
+- Verified code/test head: `8ff7f389b651248675f6a5b15e1c834d7fa78c2d`; later commits on this branch may be documentation-only.
+- SchoolPro CI #1140 passed `validate`, live two-school tenant acceptance and disposable PostgreSQL tenant-integrity integration. Payment-page validation #867 passed on the same exact code/test head.
+- The result-PIN rate-limit migration now obtains a PostgreSQL transaction advisory lock based on the hashed admission/network attempt key before checking cooldown and looking up a student. This serializes concurrent checks sharing the same key; a static regression test asserts the lock ordering. Dedicated runtime cooldown/concurrency tests remain outstanding.
+- **Unresolved network trust:** the draft currently prefers `x-forwarded-for` when deriving the attempt key. Confirm Supabase gateway header sanitization and trusted client-IP semantics before relying on the header; do not assume caller-supplied values are trustworthy.
+- Read-only aggregate check at audit time found 1,214 student rows, zero normalized admission numbers reused across schools, and zero duplicates within a school. This is a current-state count only; because admission uniqueness is school-scoped, the public result checker still needs a school discriminator or fail-closed ambiguity handling for future tenants.
+- Stage A remains not merge-ready. No production SQL, row write, Render deployment or merge occurred.

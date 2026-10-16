@@ -66,3 +66,11 @@ The gateway code must be traced through all UI/function/config references before
 **Corrected test scope:** prioritize receipt submission/review, protected review fields, tenant isolation, school-finance recording, invoice/student/school cross-link integrity, RPC authorization and concurrency for legitimate receipt-based workflows. Do not make Flutterwave/card finalization an acceptance gate. Any retained legacy gateway objects must be unreachable from SchoolPro user flows and explicitly documented until safely retired.
 
 This correction changes product scope only; the Stage A payment RLS/runtime test gap remains open. No production database was modified and no deployment was performed by this documentation update.
+
+
+## Follow-up — receipt-only scope enforced in forward migration (2026-10-16)
+- Added `supabase/migrations/20261016170000_schoolpro_disable_online_payment_gateway.sql` to replace the legacy `finalize_schoolpro_payment(...)` implementation with a fail-closed exception and revoke execute from PUBLIC, anon, authenticated, and service_role. Historical migration and intent records are retained.
+- Added `scripts/test-schoolpro-no-online-gateway.mjs` and wired it into SchoolPro CI.
+- CI run [#38946396648](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38946396648) was observed at current head `d555fcb967d2126d8fd684eaef371f7ddd3dacd6`: the new static receipt-only scope test passed; the disposable PostgreSQL tenant-integrity job passed. The overall workflow was still in progress at the time of this note. The optional two-school live tenant-acceptance job failed; its cause has not been established here, so it must be investigated separately and not attributed to this migration without evidence.
+- This remains static regression coverage plus the unrelated tenant-integrity SQL job; it does **not** execute the gateway-disable migration against a complete payment schema or prove production deployment status.
+- No production database changes, merges, or Render deployments occurred. Stage A remains blocked pending completion of the real-role payment RLS tests and investigation of the live acceptance failure.

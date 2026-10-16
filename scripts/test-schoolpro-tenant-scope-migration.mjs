@@ -27,6 +27,7 @@ files.push(['supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant
   'g.school_id=p_school and g.student_id=inv.student_id',
   'Each invoice may appear only once in a payment',
   'Payment allocations must be a list',
+  'ps.school_id=p_school',
   "ps.status='pending'",
   'inv.amount_due-inv.amount_paid-reserved_pending',
   'the invoice balance is already paid or reserved by a pending payment',

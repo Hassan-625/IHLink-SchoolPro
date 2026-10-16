@@ -657,3 +657,7 @@ Verified repository evidence at this review:
 
 ### Next execution order
 Keep SchoolPro priority. Continue the Stage A security gates (first, real-role payment RLS integration tests and trusted result-PIN network identity) without production writes. In parallel, continue MySQL source/target inventory and core-schema gap mapping on the migration branch. Do not represent the MySQL migration as done until all items above have evidence and cutover is explicitly authorized.
+
+
+### Follow-up artifact: concrete MySQL schema gap audit (2026-10-16)
+Created [mysql-schoolpro-schema-gap-audit-2026-10-16.md](./mysql-schoolpro-schema-gap-audit-2026-10-16.md) at commit `a833a5c03de881827a19198f607ba199e7bdd25e`. It enumerates the 20 tables currently present in `database/mysql/001_schoolpro_core.sql` and identifies missing/unfinished schema and application domains: template/workbook mapping, finance/subscriptions, guardians, broader operations, storage, full routines/jobs/API authorization, data reconciliation and recovery. This is an inventory artifact, not implementation completion. The migration remains incomplete and cutover is not authorized.

@@ -53,18 +53,16 @@
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-Code/test-fix commit: `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`; PR remains open, draft and unmerged.
+Latest branch head at this refresh: `5d1ecffddb2424b0bdf7eb9333254fac63fb7103`; PR remains open, draft and unmerged.
 
-- SchoolPro CI run #1025: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225771 — **live tenant-acceptance passed** on this code commit. General `validate` was still running at the last check, so the whole workflow is not yet green.
-- The real authenticated two-school test passed own-school reads and foreign-school denials for students, members, invoices and results, own-school academic-period RPC access and foreign-school RPC denial, both foreign-student result-output denials, plus the exact-object Storage check.
-- Storage positive/negative evidence: School A downloaded its existing result-template workbook; School B received HTTP 400 when requesting that exact foreign object. The negative test uses raw HTTP status so a wrapper-level `StorageUnknownError` cannot masquerade as an authorization pass.
-- Payment-page validation run #751: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225604 — queued at the last check.
+- SchoolPro CI run #1038: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895816281 — live `tenant-acceptance` passed; general `validate` was still running at the last check.
+- Latest fully green code/security commit: `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`; SchoolPro CI run #1036 passed both `validate` and `tenant-acceptance`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410.
+- Run #1036 passed the static regression tests for family-media Storage policy performance, database-side result-PIN cooldown, and payment-review write boundaries.
+- Payment-page validation run #764 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895816329.
+- The authenticated two-school Storage test passed using an existing workbook: School A downloaded its own object; School B received HTTP 400 for that exact foreign object. The earlier folder-list timeout still has a separate policy/query-performance cause; the proposed Storage migration remains draft-only.
 - Payment receipt Storage tests remain skipped because `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` are not configured and no existing receipt fixtures are available. Do not upload dummy production receipts.
-- The static family-report-media policy regression test passed in CI. The draft SQL migration narrows the family-media policy to known media path shapes and replaces the broad student/results join with indexed exact-path lookups. **It has not been applied to production**, and live performance after migration is not yet verified.
-- A separate draft migration adds database-side result-PIN cooldown after eight failures in 15 minutes, keyed by a one-way hash of the admission identifier and request network context. The static regression test passed on the preceding validation attempt; the current exact-head general validation is still running. This migration has not been applied or runtime-tested. Review trusted client-IP header semantics and cleanup/retention before any production rollout.
-- Supabase logs for the earlier Storage-list timeout show SQLSTATE `57014` / Storage status `544`: `Families read their report images` invoked `private.schoolpro_family_report_media(name)` for workbook objects in the shared `school-result-templates` bucket. This is a policy/query-performance defect. The exact-object acceptance test passing does not prove that folder listing is performant; the proposed policy migration still needs review and safe validation.
-- The live bucket contains eight existing IHLink Academy workbook objects and one template row. No production data was written by acceptance tests.
-- Migration source/ledger drift remains unresolved. The source for `20260924112325_schoolpro_secure_public_result_checker` was not found in current repository branches/history. Do not reconstruct it from a partial live function snapshot or repair the production ledger by guesswork.
+- Three source tenant-hardening migrations still lack matching ledger version/name pairs; the source for `20260924112325_schoolpro_secure_public_result_checker` was not recovered from checked branches/history. Do not reconstruct it from a partial live function or repair migration history by guesswork.
+- The Storage-policy, result-PIN cooldown and payment-review write-boundary migrations are draft-only. None has been applied to production; runtime behavior still requires review and safe testing.
 
 ### Live authenticated two-school acceptance passed (exact-object Storage test)
 

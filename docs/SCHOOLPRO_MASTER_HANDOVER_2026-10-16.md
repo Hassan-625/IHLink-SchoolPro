@@ -26,29 +26,29 @@
 
 **Do not start B while A remains open.** The user explicitly requested A/B/C strengthening and verification before D resumes.
 
-## 2A. Full master roadmap restored — A through J
+## 2A. Full master roadmap — A through J (scope preserved)
 
-**Scope correction:** The approved SchoolPro master roadmap is **A–J (ten stages)**. The earlier A–D section above is only the immediate gated execution sequence; it is not the whole roadmap. Stages E–J were inadvertently left without their definitions in this continuation snapshot. They are restored here from the prior A–J handover register. No stage is cancelled, removed, marked complete, or replaced by this Stage A work.
+**Scope correction:** The approved SchoolPro roadmap contains **A–J (ten stages)**. A–D is the immediate gated sequence, not the whole project. The workstream names below are preserved from the prior master-handover summaries. The exact original E–J acceptance checklists have not yet been recovered from the source document; the summaries below are scope reminders, not a substitute for the original approved checklist. Do not mark E–J complete, remove them, or silently redefine them.
 
-| Stage | Original workstream | Required scope / acceptance focus |
+| Stage | Workstream retained in the master roadmap | Acceptance focus preserved in prior handover summaries |
 |---|---|---|
-| **A** | Core application, authentication, roles and tenant isolation | Verify sign-in/session lifecycle, role and portal boundaries, Super Admin platform access vs school-scoped roles, RLS/policies/RPCs/Storage, migration/source parity, and real two-school positive and negative tests. Stage A is currently open and not merge-ready. |
-| **B** | Academic sessions, student population, classes and rosters | Verify session setup and continuity, school-scoped student population, class/stream assignment and roster accuracy, preserving existing identities/password fixtures and not copying IH Academy operational records into new schools. |
-| **C** | Assessments, class/subject averages, result review and publication | Verify component-by-component assessment entry and save, correct calculations, one class-subject average per subject, form-master review/edit before exam-officer publication, post-publication correction requests, historical integrity and role enforcement. |
-| **D** | Result Design Studio and custom Excel workbooks | Support separate Nursery, Primary, JSS and SS standards; school-uploaded workbooks, mapping, preview, logos/signatories and school-specific replacement of defaults without affecting other schools. Revisit the deferred A4 print issue. |
-| **E** | Document Studio, storage, RLS and cross-school isolation | Verify document/template upload, retrieval, replacement and rendering; object ownership and school-scoped Storage access; cross-school positive/negative checks; document permissions and isolation from unrelated school workspaces. |
-| **F** | Historical school data, academic-year rollover and progression | Verify historical sessions/enrolments/results, year rollover, promotion/demotion, transfers and graduation, transcript history and access, with no silent loss or incorrect promotion of graduated/transfer-out students. |
-| **G** | Admissions, attendance, assignments, CBT and other operational portals | Exercise each operational module end-to-end against real school-scoped records; verify admissions/offers, attendance, assignments, CBT eligibility and submission, and role/portal boundaries rather than relying on source-only checks. |
-| **H** | School fees, subscriptions and payment reconciliation | Verify annual Demo and paid subscription rules, receipt-upload/admin verification for SchoolPro subscriptions, school-side fee receipts/admin marking, invoice allocation and balance calculations, duplicate/concurrent payment safety, grace/suspension rules and BillStack use for DataSub only. |
-| **I** | Android APK, release readiness, Render deployment and rollback | Verify Android build/signing/artifact delivery, customer-facing configuration, production Render deployment against the intended commit, smoke checks, and documented rollback. No production deploy without explicit authorization. |
-| **J** | Security, performance, backups and resilience | Verify least-privilege access, security-definer RPC authorization and abuse controls, query scoping/pagination, data integrity and transactional bulk operations, performance on empty and large datasets, backup/restore evidence, and failure/recovery behavior. |
+| **A** | Authentication, permissions and tenant isolation | Verify sign-in/session lifecycle, roles and portal boundaries, Super Admin vs school-scoped roles, RLS/policies/RPCs/Storage, migration/source parity, and two-school positive/negative tests. Open; not merge-ready. |
+| **B** | Academic sessions, student population, class arms and rosters | Verify session continuity, school-scoped student population, class/arm assignment, roster integrity and the agreed seeded demo data without copying operational records into new schools. |
+| **C** | Assessment entry, averages, review and publication | Verify independent component saves, calculations and class-subject averages, form-master review/edit before exam-officer publication, correction requests after publication, historical integrity and role enforcement. |
+| **D** | Result Design Studio and custom Excel workbooks | Support section-specific Nursery/Primary/JSS/SS standards, school-specific workbook upload/mapping/preview, logo/signatory placement and isolated template replacement. Revisit the deferred A4 print issue. |
+| **E** | Document Studio and document security | Preserve the document/template mapping, generated-document security and cross-school access review. **Recover the exact original checklist before execution sign-off.** |
+| **F** | Historical data, rollover and progression | Preserve historical records and verify academic-year rollover/progression. **Recover the exact original checklist before execution sign-off.** |
+| **G** | Operational modules and portals | Verify student, parent, staff and operational workflows. **Recover the exact original checklist before execution sign-off.** |
+| **H** | Fees, subscriptions and payment reconciliation | Verify SQL/payment behavior, annual billing, receipts, invoices, balances and grace/suspension rules, with BillStack limited to DataSub. **Recover the exact original checklist before execution sign-off.** |
+| **I** | Release readiness, Android APK, Render deployment and support | Verify release artifacts, Android delivery, authorized Render deployment and support readiness. **Recover the exact original checklist before execution sign-off.** |
+| **J** | Platform security, performance and resilience | Verify security, performance and recovery/resilience. **Recover the exact original checklist before execution sign-off.** |
 
-**Execution and completion rule**
-- Continue from the exact Stage A blocker recorded below. Do not start B until A is complete, merged with the user's explicit authorization, and verified after merge.
+**Execution order and completion rule**
+- Continue from the Stage A blockers below. Do not start B until A is complete, reviewed and merged into the intended production branch with the user's explicit authorization, then verified after merge.
 - Then complete and re-verify B, C and D in that order.
-- Continue E, F, G, H, I and J in the above original order, retaining their own acceptance evidence. Shared concerns (such as tenant isolation) must be tested in each relevant stage; passing Stage A does not automatically certify later module behavior.
-- Keep this A–J register in the master handover. Stage-specific trackers may add implementation detail but must not narrow the overall scope.
-- No production migration, production data change, merge or deployment is authorized by this handover update.
+- Continue E, F, G, H, I and J in the original approved order. Restore each original checklist from the source handover before declaring its stage complete.
+- Stage-specific trackers may add implementation detail but must not narrow the A–J scope.
+- This handover update does not authorize a production migration, production data change, merge or deployment.
 
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
@@ -63,6 +63,7 @@ Code/test-fix commit: `9b3b3513f0f27da878099f4749e252c8f1dcf537`; latest branch 
 - Latest payment-page validation run #731: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749307 — passed.
 - CI accepts `SUPABASE_PUBLISHABLE_KEY` as fallback when `SUPABASE_ANON_KEY` is absent. Receipt Storage paths remain blank and there are no existing receipt fixtures. Do not add dummy production objects.
 - A draft SQL migration now narrows the family-report-media Storage policy to known media path shapes and replaces the broad student/results join with indexed exact-path lookups. A static regression test is wired into CI. **The migration has not been applied to production**, and its live performance effect is not yet verified.
+- A separate draft migration adds database-side result-PIN cooldown after eight failures in 15 minutes, keyed by a one-way hash of the admission identifier and request network context; no raw admission/PIN is stored. It is static-test-only so far and has not been applied or runtime-tested. Review the gateway-provided client-IP semantics and retention/cleanup before any production rollout.
 - Supabase logs for the previous Storage-list timeout show SQLSTATE `57014` / Storage status `544`: `Families read their report images` invoked `private.schoolpro_family_report_media(name)` for objects in the shared `school-result-templates` bucket. The function's broad published-result scan entered `schoolpro_can_view_result_output` → `schoolpro_result_access` → `schoolpro_can_read_student` / `schoolpro_operationally_active` and timed out. This identifies a policy/query-performance defect, not a transient network-only issue.
 - The live bucket currently has eight existing workbook objects, all belonging to IHLink Academy; the live template table has one row, also for IHLink Academy. School B has no existing template object/row. No production data was written.
 - Storage acceptance remains blocked until the policy fix is validated and a legitimate existing own-school fixture is available for the two-account positive/negative check. Do not skip assertions, weaken isolation, or treat timeout/missing fixture as a pass.

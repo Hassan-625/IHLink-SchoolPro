@@ -814,3 +814,13 @@ Following the explicit product correction, a **draft-branch code change** now di
 **Verification state:** files and CI insertion were re-fetched from GitHub and confirmed present. No CI result for these latest commits has yet been observed, and the migration has not been applied to any database. Therefore this is a proposed forward fix on the draft Stage A branch, not a production fix or proof of deployed behavior. Production Render/Supabase were not changed; no PR was merged or deployed.
 
 **Next:** confirm the new CI run for the latest Stage A head, correct any failing assertions, then validate the forward migration against a disposable PostgreSQL instance with the relevant schema and roles. Independently finish tracing whether the old Edge Function is deployed/reachable; its inspected body only returns bank-transfer instructions and does not perform card checkout. Do not delete that function until deployment and caller status are established.
+
+
+#### CI evidence for the receipt-only forward-disable change (2026-10-16)
+- Workflow run: [SchoolPro CI #38946396648](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38946396648), inspected at head `d555fcb967d2126d8fd684eaef371f7ddd3dacd6`.
+- The new `scripts/test-schoolpro-no-online-gateway.mjs` step completed successfully.
+- The separate disposable PostgreSQL tenant-integrity job completed successfully, but it does not apply the payment disablement migration or validate payment RLS.
+- The optional live two-school tenant-acceptance job failed in the same workflow. Its failure cause was not established during this step; investigate it separately rather than attributing it to the payment migration.
+- The full workflow was still in progress when checked, so no overall CI pass is claimed.
+- Security review follow-up commit: `60aab0c9fb8ec63852ed01e7f15c11e933cf63d0`, in `docs/security/stage-a-payment-rls-review-2026-10-16.md`.
+- The online-payment disablement remains draft-branch only and has not been applied to production. No merge or Render deploy.

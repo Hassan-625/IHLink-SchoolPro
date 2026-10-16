@@ -322,3 +322,31 @@ This is a starter inventory, not a claim that every IHLink repository has been d
 
 - **Result-publication contract audit (2026-10-16):** Added [result-publication-contract-audit-2026-10-16.md](./result-publication-contract-audit-2026-10-16.md) in commit 688fd7430b7116fc974a0e2714a95c5e2c19f9da. The report records nine enabled result-table triggers, their names/functions, key RLS effective-policy rules, source score-calculation behavior, and the lock-trigger interaction. It flags the `locked=true → locked=false` path as a static review question only: no exploit has been demonstrated, no write probe was run, and no production policy or data was changed. It defines disposable-clone tests for published/locked edits, score bounds, cross-tenant relations, lifecycle audit, notifications and privileged writers. Target parity remains unverified.
 - **Current check refresh:** MySQL schema draft #97 passed https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925590580; payment validation #877 passed https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925590527. SchoolPro CI #1150 remained in progress at last inspection https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925590492. These runs were started before commit 688fd7430b7116fc974a0e2714a95c5e2c19f9da; do not treat them as exact-head CI evidence. PR #107 remains open/draft/unmerged, and production remains unchanged.
+
+
+## Session continuation — 2026-10-16 (after connection interruption)
+
+### Current migration branch and validation
+- PR #107 remains **open, draft and unmerged**: https://github.com/Hassan-625/IHLink-SchoolPro/pull/107.
+- Migration branch head at this handover edit: `0f2fd2147440badbd95951d4b595f6c70d916799`.
+- Disposable MySQL 8.4 schema workflow #99 **passed** on this exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925934224.
+- Payment-page validation #880 **passed** on this exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925934159.
+- SchoolPro CI #1153 was still **in progress** on this exact head at handover update time: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925933945. Refresh before describing the complete branch as green.
+- Separately, Stage A PR #106 had SchoolPro CI #1145 and payment validation #872 pass on code/test head `3fc09cd2fa0382a15bb48f4e134f0e2cf595df53`; subsequent documentation-only commit `ed7ff4d901bea0606fa778b2e1416b6ee940ea7d` triggered CI #1151 (in progress) and payment validation #878 (passed). Do not conflate the Stage A release branch with the MySQL pilot branch.
+
+### DataSub callback/ledger finding — source review
+- Re-read DataSub source migration `supabase/migrations/20260920170000_datasub_provider_operations.sql`, the current `datasub-provider-webhook` Edge Function, `datasub-reconcile`, and `_shared/refunds.ts`.
+- The legacy `public.process_datasub_provider_callback` routine is service-role-only in the source migration. It de-duplicates provider event IDs and locks the pending transaction, but on `failed`/`reversed` it directly increments `datasub_wallets.balance` without a matching `wallet_ledger` refund entry, and it does not verify that the supplied provider code matches the transaction's provider. These are high-priority financial-integrity defects **if this RPC is invoked**.
+- The checked-in `datasub-provider-webhook` does **not** call this routine; it records a routing event and returns 202, leaving transaction changes to the reconciliation worker. Searches in DataSub, Admin, Design System and SchoolPro source found no direct textual call. This supports “legacy/unreferenced in inspected source,” not proof that no deployed/external service can call it. Do not call this a current public exploit or claim proven reachability.
+- Do not port this routine into MySQL/API as-is. Next, create a disposable PostgreSQL regression fixture for duplicate events, provider mismatch, failed/reversed ledger entries and rollback; verify all actual callers/deployment provenance; then design one atomic, idempotent ledger-and-balance transition or formally retire the legacy RPC only after dependency evidence.
+- DataSub's current reconciliation/refund code uses `refund_datasub_wallet` with `REFUND:<transaction reference>` idempotency and claims the transaction into `REFUND_PENDING`. Unit tests exist in `IHLink-DataSub/tests/payment-refund.test.ts`, but they do not prove database ledger/lock behavior. The legacy callback RPC must not bypass the canonical refund path.
+
+### Next actions (ordered)
+1. Recheck SchoolPro CI #1153 for PR #107 exact head and inspect logs if it fails.
+2. Build the disposable PostgreSQL test around the DataSub callback RPC and canonical wallet ledger, without touching production; verify call graph/deployment provenance before proposing a forward migration.
+3. Continue DataSub source-to-live mapping for callback queueing, reseller commission and network-availability triggers; retain source SHAs and definition hashes.
+4. Continue SchoolPro Stage A separately: full-schema/trigger review, migration source/ledger reconciliation, Storage folder-list performance, result-PIN trusted-network/runtime tests, payment lifecycle/RLS-role tests, and receipt Storage acceptance when valid fixtures exist.
+5. Keep MySQL as a disposable pilot only. Supabase remains authoritative; no production data/schema edits, environment changes, deployment, data copy or cutover without explicit approval. Do not merge PR #106 or #107 without explicit approval.
+
+### Safety status
+No production schema/data change, production RPC call, wallet mutation, Render/Vercel deployment, environment change, live data copy, or PR merge was performed during this continuation. BillStack remains DataSub-only. SchoolPro production remains on Render.

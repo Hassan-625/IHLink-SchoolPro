@@ -192,7 +192,7 @@ async function main() {
   // which hides the status and cannot distinguish a denial from a transport failure.
   const encodedObjectPath = templateFixture.storagePath.split('/').map(encodeURIComponent).join('/');
   const foreignResponse = await fetch(
-    process.env.SUPABASE_URL.replace(/\\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
+    process.env.SUPABASE_URL.replace(/\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
     {
       method: 'GET',
       headers: {
@@ -209,7 +209,6 @@ async function main() {
   );
   console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName,
     'received HTTP', foreignResponse.status, 'for the foreign object');
-  console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName, 'is denied the exact foreign object');
   if (process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH) {
     for (const [name, client, foreignPath] of [
       ['School A', a.client, process.env.SCHOOL_B_RECEIPT_PATH],

@@ -560,3 +560,10 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 ### DataSub validation #342 final result (2026-10-16)
 - DataSub validation #342 completed successfully, including app tests, typecheck, native/browser security checks, PIN recovery, mobile layout checks, and build: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684.
 - This passing app validation does not override the separate failing SQL race regression #24. The late-success-after-refund defect remains open until a corrective SQL change and passing PostgreSQL regression are available.
+
+
+### DataSub corrective migration added on draft branch (2026-10-16)
+- Added forward migration `20261016193000_datasub_late_refund_callback_guard.sql` to the DataSub draft branch. It replaces `process_datasub_provider_callback` so the callback, while holding the transaction row lock, checks for the exact canonical refund ledger entry before terminal success handling. If the refund is already credited, it retains/restores `failed / REFUNDED` and marks the callback event `late_after_refund` rather than settling success.
+- Updated `.github/workflows/postgres-refund-regression.yml` to apply this forward migration after the draft hardening migration and before running the disposable PostgreSQL regression suite.
+- This is draft branch code only. The prior regression #24 demonstrated the bug (`success / SETTLED` while one refund ledger row existed); the new correction is not considered validated until the rerun passes. No production migration or deployment.
+- DataSub validation #342 passed independently: https://github.com/Hassan-625/IHLink-DataSub/actions/runs/38933498684. Keep the SQL regression result separate from application CI status.

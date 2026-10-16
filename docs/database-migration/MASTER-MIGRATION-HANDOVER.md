@@ -761,3 +761,29 @@ Next concrete test additions:
 - Check whether a constraint/trigger elsewhere already blocks these mismatches before deciding on a code change.
 - Keep manual receipt review, direct finance ledger entry, and online card finalization as separate test suites.
 No policy or application code was changed in this audit step. No PostgreSQL runtime result is claimed. This continuation preserves the existing roadmap and does not mark Stage A complete.
+
+
+### Product-scope correction — SchoolPro has no online payment gateway (2026-10-16)
+**Authoritative product decision from the user:** SchoolPro must NOT offer online/card payment or a payment gateway. The earlier audit mistakenly described the existing Flutterwave/card-payment code as an intended SchoolPro workflow. Correct that interpretation across future implementation, testing, and documentation.
+
+#### Intended SchoolPro payment model
+- **SchoolPro annual subscription:** customer school uploads payment receipt/proof; IHLink platform Super Admin verifies and marks the subscription paid. Demo activation and annual plan rules remain as previously recorded.
+- **School fees:** each school handles its own collections and records the payment/receipt through the school finance workflow. Do not route SchoolPro school-fee or subscription payments through BillStack or an online card gateway.
+- **BillStack:** DataSub only; it is not part of SchoolPro payments.
+
+#### Repository evidence and required handling
+- `supabase/migrations/20260920212500_schoolpro_online_fee_payments.sql` creates `schoolpro_payment_intents` and `finalize_schoolpro_payment(...)`, with Flutterwave/card references and service-role-only finalization. This is legacy/unintended product scope unless the user explicitly changes the decision. Do NOT treat its presence as a requirement or acceptance criterion.
+- `supabase/functions/schoolpro-payment/index.ts` is a gateway-adjacent function. It must be dependency-traced and classified for removal/disablement.
+- `src/pages/schoolpro/SchoolProPayments.tsx` is receipt-based guardian-to-school fee payment, not an online gateway. Preserve and secure this school-owned transfer/receipt workflow; do not remove it just because its name contains “Payments”.
+- The general `src/components/BankTransferPayments.tsx` contains cross-product receipt-based bank transfer functionality, including a `schoolpro_subscription` platform code path. That path represents receipt upload/review, not online checkout; keep it distinct from the unintended card-payment path.
+- The historical migration file must not be rewritten as if it had never existed. First trace deployed migration state, all callers, references, and any existing intent records. Then implement a forward, non-destructive change that disables/removes the online gateway path and unused UI/edge-function references while preserving records unless a separately approved retention plan says otherwise. Do not drop payment-intent data or production objects as part of a blind cleanup.
+- Update payment security tests so they validate receipt submission/review, school fee recording, tenant isolation, protected review fields and authorized RPCs only. Online/card intent creation and gateway finalization are not SchoolPro acceptance requirements. If legacy objects remain temporarily for compatibility, explicitly document them as disabled/unreachable and keep them out of user-facing flows.
+
+#### Corrected next action and status
+1. Trace all references to `schoolpro_payment_intents`, `finalize_schoolpro_payment`, Flutterwave, and `supabase/functions/schoolpro-payment` across UI, edge-function configuration, tests, workflows, and migration history.
+2. Confirm whether the online path is referenced by any currently reachable SchoolPro UI or production function deployment; do not infer reachability from file existence.
+3. Prepare a forward cleanup/disable change on the draft Stage A branch, preserving historical migrations and any existing records. Add regression checks proving SchoolPro has no online checkout/card gateway while receipt upload, school finance recording, subscription review and Super Admin verification remain functional.
+4. Run static/CI validation and the relevant receipt/RLS tests. Report exact evidence; do not claim production gateway removal until deployment/configuration has been verified.
+5. Continue the full Stage A audit. This scope correction does not mark A complete and does not reduce the existing A–J roadmap. B/C must still be re-verified before D.
+
+No production changes, data deletion, merge, or deployment were performed by recording this correction.

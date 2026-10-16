@@ -824,3 +824,12 @@ Following the explicit product correction, a **draft-branch code change** now di
 - The full workflow was still in progress when checked, so no overall CI pass is claimed.
 - Security review follow-up commit: `60aab0c9fb8ec63852ed01e7f15c11e933cf63d0`, in `docs/security/stage-a-payment-rls-review-2026-10-16.md`.
 - The online-payment disablement remains draft-branch only and has not been applied to production. No merge or Render deploy.
+
+
+#### Runtime test added for online-payment disablement (2026-10-16)
+- Added `scripts/test-schoolpro-online-payment-disable.integration.sql` (commit `9e6610e39279c8e7b229db0a9cc16a702b8c4581`) and wired it into the disposable PostgreSQL CI job in `.github/workflows/ci.yml` (commit `68f75c26167540d94ccbfb971cdc72064351d40a`).
+- This integration test creates missing API roles only in the dedicated throwaway PostgreSQL CI database, applies the forward migration, verifies `anon`, `authenticated`, and `service_role` lack EXECUTE on the legacy finalizer, and asserts direct invocation raises the expected disabled-feature SQLSTATE/message.
+- This adds actual PostgreSQL execution/privilege validation beyond the static source test. It does not touch production.
+- CI run at prior head `60aab0c9fb8ec63852ed01e7f15c11e933cf63d0` showed the optional live two-school tenant acceptance succeeding, correcting the earlier run's transient/isolated failure; the overall workflow was still in progress when checked. New integration-test workflow status must be checked at head `68f75c26167540d94ccbfb971cdc72064351d40a` before claiming a pass.
+- The edge function `supabase/functions/schoolpro-payment/index.ts` was inspected directly: it authenticates the caller and only supports the `instructions` action for fetching invoice and active school's bank-transfer account details; all other actions return `unsupported_action`. It does not initiate card checkout in its current source. Production deployment/reachability is still unverified, so preserve it for now rather than deleting it.
+- Current next steps: verify latest CI run and fix any SQL test issues; then resume the payment RLS/runtime review for the actual receipt-submission/review and school finance flows. No merge, production migration, or Render deployment has occurred.

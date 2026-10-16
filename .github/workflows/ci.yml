@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_PUBLISHABLE_KEY }}
       SCHOOL_A_EMAIL: ${{ secrets.SCHOOL_A_EMAIL }}
       SCHOOL_A_PASSWORD: ${{ secrets.SCHOOL_A_PASSWORD }}
       SCHOOL_A_ID: ${{ secrets.SCHOOL_A_ID }}

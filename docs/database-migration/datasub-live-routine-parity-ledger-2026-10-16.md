@@ -134,3 +134,19 @@ The following candidate source files were located in the DataSub repository at `
 | `private.queue_ihlink_notification_email()` | `a443b01923aa68be07b26931363605c2` | Not located in DataSub main, the inspected Design System main tree, or the initial Admin search. | Likely shared notification/email infrastructure; source ownership and deployed consumer contract remain unknown. Do not replace or port based on the name alone. |
 
 All four live trigger functions were observed owned by `postgres`, SECURITY DEFINER, with empty `search_path`. The triggers are attached to `datasub_transactions` (API callback queue, email queue, reseller commission) and `datasub_provider_attempts` (network availability). The function owner/configuration is metadata evidence, not proof of authorization safety. Exact source equivalence and failure/rollback tests remain open.
+
+
+## Callback settlement ledger mismatch — 2026-10-16 (high-priority review item)
+
+Read-only inspection of live `public.process_datasub_provider_callback(text,text,text,text,text,numeric,integer,jsonb)` confirmed:
+
+- Live definition MD5: `6647d6b5d9bf25df13745dbfbaa2ad93`; owner postgres; SECURITY DEFINER; empty search_path; EXECUTE observed only for postgres and service_role.
+- It deduplicates `(provider_code, external_event_id)`, locks the matched transaction, and only processes transactions still pending.
+- It directly credits `public.datasub_wallets` for failed/reversed callback status, but does **not** insert into `public.wallet_ledger`.
+- It does not compare `p_provider_code` against the provider bound to the located transaction before changing transaction/wallet state.
+- Candidate source was located in DataSub `supabase/migrations/20260920170000_datasub_provider_operations.sql`; that candidate contains the same direct-credit/no-ledger pattern. This is source evidence, not proof that the function is currently called.
+- A targeted scan of 11 relevant active deployed Edge Functions (`datasub-api`, `datasub-provider-webhook`, `datasub-payment`, `datasub-purchase`, `datasub-reconcile`, `datasub-provider-health`, `datasub-catalog-sync`, `legitdataway-webhook`, `datasub-pin-recovery`, `datasub-api-callbacks`, `legitdataway-catalog-sync`) found no reference to `process_datasub_provider_callback`. The public `datasub-provider-webhook` only records a routing event; the LegitDataway webhook returns verification-pending status and does not call this routine. This is not an exhaustive scan of every possible SQL/worker caller.
+
+**Assessment:** treat this as a high-priority legacy financial-path integrity risk, not a demonstrated public exploit. The service-role-only ACL reduces direct exposure, but any trusted caller using this routine could create a wallet-balance/ledger mismatch, and the missing provider-to-transaction binding weakens callback integrity.
+
+**Required before target implementation:** prove all callers/triggered jobs and whether this routine is still needed; in a disposable PostgreSQL test, verify provider mismatch rejection, duplicate event idempotency, conflicting event IDs for the same transaction, failed/reversed callback vs refund-worker races, and full rollback. The target design must atomically record the refund/credit in the canonical ledger and balance and bind provider identity to the transaction. Do not modify the live routine or production data as part of this audit.

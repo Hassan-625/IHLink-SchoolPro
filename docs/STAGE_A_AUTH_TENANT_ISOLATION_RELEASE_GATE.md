@@ -212,3 +212,13 @@ This migration has not been applied or runtime-tested. Before any production rol
 - Trusted network-context semantics are still open: verify that the gateway-provided headers used for the key cannot be spoofed/rotated by callers before relying on them as a security boundary. The current implementation still prefers `x-forwarded-for`; do not claim IP trust is verified.
 - A read-only aggregate check found 1,214 student rows and no duplicate normalized admission numbers across schools or within a school at the audit time. This reduces current ambiguity but does not guarantee future global uniqueness; the public result checker should eventually include a school discriminator or otherwise fail closed if an admission number becomes ambiguous.
 - Stage A remains **NOT MERGE-READY**. No production migration, row write, Render deployment or merge occurred.
+
+
+## Exact-head refresh — 2026-10-16 (payment RLS regression test alignment)
+
+- Verified application/test head: `3fc09cd2fa0382a15bb48f4e134f0e2cf595df53`. PR #106 remains draft/open/unmerged.
+- SchoolPro CI #1145 passed all three jobs, including the disposable PostgreSQL tenant-integrity integration and live two-school tenant acceptance: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925209603.
+- Payment-page validation #872 passed on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38925209600.
+- The payment-review static regression test was aligned with the final draft policy implementation by removing stale comment-text assertions; it now asserts the actual restrictive-policy boundaries, guardian ownership checks, Super Admin SELECT-only policies, and no destructive data statements. The exact-head CI passed after this test correction.
+- These are source/static and CI results only. The payment RLS migration has not been applied to production, and the payment policies have not been exercised under real authenticated roles in a disposable PostgreSQL RLS fixture. That role-based integration test, payment lifecycle/concurrency tests, and full-schema interaction review remain open.
+- Stage A remains **NOT MERGE-READY**. The latest tested commit does not clear the existing Storage performance, result-PIN trusted-network/runtime, migration-provenance, payment lifecycle, or receipt-Storage gates. No production migration, row write, Render deployment or merge occurred.

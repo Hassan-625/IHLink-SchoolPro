@@ -69,7 +69,7 @@ jobs:
               exit 1
             fi
             cat "$output_file"
-            if grep -Fq 'ERROR 1452' "$output_file" && grep -Fq "CONSTRAINT `$constraint`" "$output_file"; then
+            if grep -Fq 'ERROR 1452' "$output_file" && grep -Fq "$constraint" "$output_file"; then
               echo "PASS: $sql_file rejected by $constraint"
             else
               echo "FAIL: $sql_file failed for an unexpected reason; expected $constraint" >&2
@@ -79,11 +79,3 @@ jobs:
           assert_fk_rejection tests/mysql/cross_tenant_enrollment_must_fail.sql fk_enrollment_student
           assert_fk_rejection tests/mysql/cross_tenant_enrollment_session_must_fail.sql fk_enrollment_session
           assert_fk_rejection tests/mysql/cross_tenant_enrollment_class_must_fail.sql fk_enrollment_class
-          fi
-          cat "$output_file"
-          if grep -Eq 'ERROR 1452 .*CONSTRAINT' "$output_file"; then
-            echo 'PASS: invalid cross-school relationship was rejected by the expected foreign-key constraint'
-          else
-            echo 'FAIL: SQL failed, but not with the expected foreign-key violation (ERROR 1452)' >&2
-            exit 1
-          fi

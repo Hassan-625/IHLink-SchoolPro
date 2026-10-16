@@ -28,7 +28,7 @@ function clientFor(email, password) {
     const {data, error} = await client.auth.signInWithPassword({email, password});
     assert.ifError(error);
     assert.ok(data.session?.access_token, 'Sign-in must return a real access token');
-    return {client, user: data.user};
+    return {client, user: data.user, accessToken: data.session.access_token};
   })();
 }
 
@@ -187,32 +187,28 @@ async function main() {
   assert.ifError(ownTemplateDownloadError);
   assert.ok(ownTemplateObject, templateFixture.ownerName + ' must download its own existing result-template object');
 
-  const {data: foreignTemplateObject, error: foreignTemplateDownloadError} = await templateFixture.foreignClient
-    .storage.from('school-result-templates').download(templateFixture.storagePath);
-  assert.ok(foreignTemplateDownloadError, templateFixture.foreignName + ' must be denied downloading ' + templateFixture.ownerName + ' result-template object');
-  assert.equal(foreignTemplateObject, null, 'Foreign school must receive no result-template object');
-  const foreignStorageMessage = String(foreignTemplateDownloadError.message || foreignTemplateDownloadError);
-  const foreignStorageStatus = Number(foreignTemplateDownloadError.statusCode || foreignTemplateDownloadError.status || 0);
-  console.log('INFO foreign template denial response:', JSON.stringify({
-    status: foreignStorageStatus,
-    message: foreignStorageMessage,
-    name: foreignTemplateDownloadError?.name,
-    constructor: foreignTemplateDownloadError?.constructor?.name,
-    keys: Object.keys(foreignTemplateDownloadError || {}),
-    originalError: foreignTemplateDownloadError?.originalError?.message || foreignTemplateDownloadError?.cause?.message || null,
-    originalErrorName: foreignTemplateDownloadError?.originalError?.name || foreignTemplateDownloadError?.cause?.name || null,
-    statusCodeRaw: foreignTemplateDownloadError?.statusCode ?? null,
-  }));
+  // Use raw HTTP for the negative assertion so the test can inspect the actual HTTP
+  // status. supabase-js can wrap an empty/non-JSON denial body as StorageUnknownError,
+  // which hides the status and cannot distinguish a denial from a transport failure.
+  const encodedObjectPath = templateFixture.storagePath.split('/').map(encodeURIComponent).join('/');
+  const foreignResponse = await fetch(
+    process.env.SUPABASE_URL.replace(/\\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
+    {
+      method: 'GET',
+      headers: {
+        apikey: process.env.SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + (templateFixture.foreignName === 'School A' ? a.accessToken : b.accessToken),
+      },
+    },
+  );
+  const foreignBody = await foreignResponse.text();
   assert.ok(
-    [400, 401, 403, 404].includes(foreignStorageStatus)
-      || /not found|permission|denied|unauthorized|forbidden/i.test(foreignStorageMessage),
-    'Foreign template denial must be an authorization/not-found response, not a transport failure',
+    [400, 401, 403, 404].includes(foreignResponse.status),
+    templateFixture.foreignName + ' must receive an HTTP authorization/not-found denial for the foreign template; got ' +
+      foreignResponse.status + ' with body ' + foreignBody.slice(0, 240),
   );
-  assert.doesNotMatch(
-    foreignStorageMessage,
-    /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT/i,
-    'A Storage timeout or network failure must not count as a tenant-denial pass',
-  );
+  console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName,
+    'received HTTP', foreignResponse.status, 'for the foreign object');
   console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName, 'is denied the exact foreign object');
   if (process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH) {
     for (const [name, client, foreignPath] of [

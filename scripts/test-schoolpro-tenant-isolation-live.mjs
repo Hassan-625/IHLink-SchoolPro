@@ -63,6 +63,29 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
 
 }
 
+
+async function listStorageWithRetry(client, bucket, path, label, maxAttempts = 3) {
+  let lastResult;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    lastResult = await client.storage.from(bucket).list(path, {limit: 1});
+    if (!lastResult.error) {
+      if (attempt > 1) console.log('PASS', label, 'Storage list succeeded on retry', attempt);
+      return lastResult;
+    }
+
+    const message = String(lastResult.error.message || lastResult.error);
+    const status = Number(lastResult.error.statusCode || lastResult.error.status || 0);
+    const transient = /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT|502|503|504|429/i.test(message)
+      || [429, 502, 503, 504].includes(status);
+    if (!transient || attempt === maxAttempts) return lastResult;
+
+    const delayMs = 1500 * attempt;
+    console.warn('WARN', label, 'transient Storage error on attempt', attempt + '/' + maxAttempts, '- retrying in', delayMs + 'ms');
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return lastResult;
+}
+
 async function main() {
   const a = await clientFor(process.env.SCHOOL_A_EMAIL, process.env.SCHOOL_A_PASSWORD);
   const b = await clientFor(process.env.SCHOOL_B_EMAIL, process.env.SCHOOL_B_PASSWORD);
@@ -92,12 +115,14 @@ async function main() {
     console.log('PASS', name, 'foreign-student result-output RPC denied');
   }
 
-  const {data: knownSchoolTemplates, error: knownTemplatesError} = await b.client
-    .storage.from('school-result-templates').list(process.env.SCHOOL_B_ID, {limit: 1});
+  const {data: knownSchoolTemplates, error: knownTemplatesError} = await listStorageWithRetry(
+    b.client, 'school-result-templates', process.env.SCHOOL_B_ID, 'School B own-school template fixture',
+  );
   assert.ifError(knownTemplatesError);
   assert.ok(knownSchoolTemplates?.length, 'School B fixture must have a real result-template object for a meaningful negative test');
-  const {data: foreignTemplates, error: foreignTemplatesError} = await a.client
-    .storage.from('school-result-templates').list(process.env.SCHOOL_B_ID, {limit: 1});
+  const {data: foreignTemplates, error: foreignTemplatesError} = await listStorageWithRetry(
+    a.client, 'school-result-templates', process.env.SCHOOL_B_ID, 'School A foreign-school template denial',
+  );
   assert.ifError(foreignTemplatesError);
   assert.equal(foreignTemplates?.length ?? 0, 0, 'School A must not list School B result-template objects');
   console.log('PASS School A cannot list a verified existing School B result-template object');

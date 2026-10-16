@@ -15,6 +15,6 @@ assert.match(sql, /delete from private\.schoolpro_result_pin_attempts\s+where ad
 assert.match(sql, /revoke all on table private\.schoolpro_result_pin_attempts from public, anon, authenticated/i, 'Attempt table must not be directly accessible from API roles');
 assert.match(sql, /revoke all on function private\.record_schoolpro_result_pin_failure\(text\) from public, anon, authenticated/i, 'Internal counter function must not be callable from API roles');
 assert.match(sql, /set search_path to ''/i, 'Security-definer functions must pin an empty search_path');
-assert.doesNotMatch(sql, /digest\(lower\(trim\(coalesce\(p_admission/i, 'pgcrypto digest must be schema-qualified under empty search_path');
+assert.doesNotMatch(sql, /(?<!extensions\\.)digest\\(lower\\(trim\\(coalesce\\(p_admission/i, 'pgcrypto digest must be schema-qualified under empty search_path');
 
 console.log('PASS: result-PIN rate-limit migration has hashed identifiers, atomic failure counts, cooldown and restricted private storage.');

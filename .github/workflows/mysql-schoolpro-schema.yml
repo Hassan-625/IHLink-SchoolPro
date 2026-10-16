@@ -85,3 +85,4 @@ jobs:
           assert_fk_rejection tests/mysql/cross_school_assignment_subject_must_fail.sql fk_csa_subject
           assert_fk_rejection tests/mysql/cross_school_assignment_session_must_fail.sql fk_csa_session
           assert_fk_rejection tests/mysql/cross_school_assignment_membership_must_fail.sql fk_csa_membership
+          assert_fk_rejection tests/mysql/assessment_component_requires_class_subject_assignment.sql fk_ac_class_subject_session

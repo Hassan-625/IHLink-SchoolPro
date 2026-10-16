@@ -367,8 +367,8 @@ CREATE TABLE IF NOT EXISTS school_audit_events (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO schema_migrations (version, description)
-VALUES ('001_schoolpro_core_draft', 'Draft core tenancy and academic/results schema; test environment only')
-ON DUPLICATE KEY UPDATE description = VALUES(description);
+VALUES ('001_schoolpro_core_draft', 'Draft core tenancy and academic/results schema; test environment only') AS incoming
+ON DUPLICATE KEY UPDATE description = incoming.description;
 
 -- Not yet included: guardians, fee ledger/receipts, subscriptions, result templates and workbook mappings,
 -- report generation, admissions, CBT, assignments/submissions, notifications, storage metadata and all other modules.

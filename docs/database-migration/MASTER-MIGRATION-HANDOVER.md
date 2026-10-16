@@ -272,3 +272,6 @@ This is a starter inventory, not a claim that every IHLink repository has been d
 
 
 - **Next assessment-integrity assertion added (2026-10-16):** Added tests/mysql/assessment_component_requires_class_subject_assignment.sql and wired it into the disposable MySQL workflow. It creates a synthetic subject for School A without assigning it to the target class/session, then expects the assessment-component insert to be rejected by fk_ac_class_subject_session. This extends testing beyond tenant ownership to ensure assessments cannot be defined for an unassigned class/subject tuple. The new assertion is pending workflow verification. It remains a schema constraint test, not proof of application/API authorization or full schema parity.
+
+
+- **MySQL 8.4 compatibility cleanup (2026-10-16):** Replaced the deprecated VALUES(column) expression in the draft schema-migration upsert with the supported INSERT row alias form. This removes a MySQL 8.4 deprecation warning without changing the migration record's intended values. Commit e09ea2fcec001d7832dae8e714b4f0f25f598067; rerun schema CI to verify alongside the new assessment assignment assertion.

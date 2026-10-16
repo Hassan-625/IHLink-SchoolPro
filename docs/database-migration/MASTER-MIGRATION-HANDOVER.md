@@ -632,3 +632,28 @@ No production schema/data change, production RPC call, wallet mutation, Render/V
 3. **Operational tenant-integrity trigger migration remains only partially proven.** The disposable integration script covers the newly added tables/relationships, but it is not the complete live schema and does not prove coexistence with every existing trigger or legacy workflow. Review trigger names/order, table columns, relation lifecycle (including legitimate transfers), lock ordering/deadlock behavior and existing source/ledger discrepancies before any rollout. Do not apply this to production as part of this review.
 
 **Next Stage A action:** close the payment RLS gap with a real-role disposable database test and correct command-specific boundaries if the test confirms broad direct writes; separately establish a trusted rate-limit network key. Re-run all CI against the resulting exact head and update the release gate. Stage A remains **NOT MERGE-READY**. No production migration, data write, merge or Render deployment occurred.
+
+
+## 6. Explicit answer: SchoolPro MySQL migration completion status (reviewed 2026-10-16)
+**Decision: NOT COMPLETE. No production cutover is approved.** The MySQL work is an isolated schema foundation/pilot, not a complete database migration or an application running on MySQL.
+
+Verified repository evidence at this review:
+- The only file surfaced in `database/mysql/` is `001_schoolpro_core.sql`; it is a core tenancy/academic/results foundation and not a complete schema for all live SchoolPro modules.
+- `docs/database-migration/mysql-migration-checklist.md` still has its source inventory, host readiness, server-side API/auth, academic/results parity, finance/module parity, rehearsal/performance, and cutover checklists unchecked.
+- `docs/database-migration/mysql-schoolpro-design.md` explicitly states the first SQL migration implements only the core foundation and that the current browser client still uses `@supabase/supabase-js`; an authenticated server-side API and controlled identity migration/reset strategy are still required.
+- Draft PR #107 remains open, draft and unmerged. It is not production release approval.
+- Prior evidence only demonstrates disposable MySQL 8.4 schema validation and ten cross-tenant/relational negative assertions on the foundation. That does not prove application feature parity, source-data reconciliation, runtime authorization, or readiness to cut over.
+- No approved production record transfer, Render environment change, production deployment or cutover has occurred. Supabase remains SchoolPro's production source of truth.
+
+### MySQL work remaining before cutover
+1. Finish the full live source inventory and source-to-target map: all SchoolPro tables/columns, constraints/indexes, policies/grants, triggers/routines/views, Storage buckets/object ownership, scheduled jobs, Edge Functions and frontend/server call sites; reconcile the applied migration ledger against deployed definitions.
+2. Expand the MySQL schema beyond the current core foundation to cover every in-scope live module and relationship, including identity/membership/permissions, full assessments/results lifecycle, finance and subscription proofs, admissions, attendance, assignments, CBT, templates/workbooks, documents, notifications and operational modules confirmed by the inventory.
+3. Implement the authenticated server-side API and authorization boundary. Test every endpoint/object family for school-to-school denial, school-scoped roles and platform Super Admin behavior. Browser/mobile clients must never receive MySQL credentials.
+4. Decide and test the identity/session migration strategy; Supabase Auth password hashes/sessions are not assumed portable.
+5. Implement feature/behavior parity for A, B and C and then D: individual assessment save; score/grade/average calculations; review/publication/correction history; section-specific school-owned templates and custom Excel mapping; A4/PDF output; annual demo/paid subscriptions, two-week grace/suspension rules, SchoolPro receipt upload/admin verification, and school-managed fee receipts. BillStack stays DataSub-only.
+6. Run a controlled synthetic or separately approved anonymized data rehearsal with deterministic ID mapping, row-count reconciliation, duplicate/orphan/cross-school checks, financial/result aggregate checks, exclusions report and report-output comparisons. Do not copy live data until separately approved.
+7. Test concurrency/transaction behavior, representative load and p50/p95/p99 latency; complete backup/restore and rollback drills; confirm target host's MySQL version, actual database quota, connection/runtime limits, TLS, SaaS terms and backup/restore capability.
+8. Pass the full acceptance suite in disposable/staging environments, obtain security/performance sign-off and explicit owner approval. Only then plan a separate cutover; retain Supabase through the agreed rollback window.
+
+### Next execution order
+Keep SchoolPro priority. Continue the Stage A security gates (first, real-role payment RLS integration tests and trusted result-PIN network identity) without production writes. In parallel, continue MySQL source/target inventory and core-schema gap mapping on the migration branch. Do not represent the MySQL migration as done until all items above have evidence and cutover is explicitly authorized.

@@ -1,0 +1,64 @@
+name: SchoolPro MySQL schema draft
+
+on:
+  pull_request:
+    paths:
+      - 'database/mysql/**'
+      - 'tests/mysql/**'
+      - '.github/workflows/mysql-schoolpro-schema.yml'
+  push:
+    branches:
+      - 'migration/mysql-schoolpro-foundation'
+    paths:
+      - 'database/mysql/**'
+      - 'tests/mysql/**'
+      - '.github/workflows/mysql-schoolpro-schema.yml'
+
+jobs:
+  schema-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-test-password
+          MYSQL_DATABASE: schoolpro_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot-test-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for MySQL
+        env:
+          MYSQL_PWD: root-test-password
+        run: |
+          for attempt in $(seq 1 30); do
+            if mysql -h 127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'MySQL did not become ready' >&2
+          exit 1
+      - name: Apply draft schema to disposable CI database
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/001_schoolpro_core.sql
+      - name: Insert valid isolated fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
+      - name: Confirm cross-school relationship is rejected
+        env:
+          MYSQL_PWD: root-test-password
+        run: |
+          if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/cross_tenant_enrollment_must_fail.sql; then
+            echo 'FAIL: cross-school student relationship was accepted' >&2
+            exit 1
+          else
+            echo 'PASS: invalid cross-school relationship was rejected'
+          fi

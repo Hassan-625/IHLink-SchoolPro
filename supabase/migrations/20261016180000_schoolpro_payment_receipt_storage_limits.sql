@@ -14,5 +14,3 @@ set name = excluded.name,
     file_size_limit = excluded.file_size_limit,
     allowed_mime_types = excluded.allowed_mime_types;
 
-comment on table storage.buckets is
-  'Supabase Storage bucket settings are enforced by the Storage API; SchoolPro payment receipts are private and limited to 10 MiB and JPEG, PNG, WebP, or PDF.';

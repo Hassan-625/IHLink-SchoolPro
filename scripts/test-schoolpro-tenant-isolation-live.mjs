@@ -50,9 +50,14 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     console.log('PASS', accountName, 'foreign-school read blocked:', table);
   }
 
+  const {data: ownPeriod, error: ownPeriodError} = await client.rpc('schoolpro_current_academic_period', {p_school: ownSchoolId});
+  assert.ifError(ownPeriodError);
+  assert.ok(ownPeriod && typeof ownPeriod === 'object', accountName + ' must be able to call the own-school academic-period RPC');
   const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
-  assert.ok(periodError || foreignPeriod == null, accountName + ' must not retrieve a foreign school academic period');
-  console.log('PASS', accountName, 'foreign-school academic-period RPC denied');
+  assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC');
+  assert.match(periodError.message, /school access|required|permission|denied/i, accountName + ' must receive an authorization denial for the foreign-school RPC');
+  assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
+  console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied');
 
   const {data: foreignTemplateObjects, error: storageError} = await client
     .storage.from('school-result-templates').list(otherSchoolId, {limit: 1});

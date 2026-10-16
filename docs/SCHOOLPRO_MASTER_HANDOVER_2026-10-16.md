@@ -53,15 +53,18 @@
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-Current branch head: `3760e1f0c93c08f45f8d1fe471c37e66b706ccc6` (handover roadmap correction; draft PR remains open and unmerged).
+Current branch head at this handover update: `9b3b3513f0f27da878099f4749e252c8f1dcf537` (full A–J roadmap restoration, Storage-policy investigation/fix draft, and CI regression test; draft PR remains open and unmerged).
 
-- SchoolPro CI run #1001: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589735 — **validate passed; live tenant-acceptance failed** at result-template Storage listing.
-- The immediately preceding run #1000: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38889434119 — **validate passed; live tenant-acceptance failed** at the same Storage timeout.
-- Latest payment-page validation run #727: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589626 — passed.
-- Both #1000 and #1001 logged successful two-account DB/RPC isolation assertions, then failed after the existing School B template-object Storage request timed out on the initial attempt and two retries. Last error: “The connection to the database timed out.”
-- CI accepts `SUPABASE_PUBLISHABLE_KEY` as fallback when `SUPABASE_ANON_KEY` is absent. The current secret configuration is sufficient for authentication; this did not resolve Storage.
-- Receipt Storage paths are still blank and no real receipt fixtures are available. Do not add dummy production objects.
-- The Storage check is still a blocker. Do not skip it, weaken policies, or treat timeout as a pass.
+- SchoolPro CI run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — exact current branch head; general `validate` was still running at the time of this handover update, and live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path. This is a real fixture gap, not a pass.
+- Run #1004: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891682515 — ran against the migration/harness draft commit; final workflow status must be checked before calling CI green.
+- Runs #1000 and #1001 previously passed general validation and all database/RPC isolation checks, but failed on Storage listing timeout. Run #1002 repeated the old listing timeout.
+- Run #1003 changed the harness to query the school-owned template row and download its exact object instead of listing a folder; it correctly exposed that School B has no saved template row/path. The exact-object test must not manufacture a production fixture.
+- Latest payment-page validation run #731: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749307 — passed.
+- CI accepts `SUPABASE_PUBLISHABLE_KEY` as fallback when `SUPABASE_ANON_KEY` is absent. Receipt Storage paths remain blank and there are no existing receipt fixtures. Do not add dummy production objects.
+- A draft SQL migration now narrows the family-report-media Storage policy to known media path shapes and replaces the broad student/results join with indexed exact-path lookups. A static regression test is wired into CI. **The migration has not been applied to production**, and its live performance effect is not yet verified.
+- Supabase logs for the previous Storage-list timeout show SQLSTATE `57014` / Storage status `544`: `Families read their report images` invoked `private.schoolpro_family_report_media(name)` for objects in the shared `school-result-templates` bucket. The function's broad published-result scan entered `schoolpro_can_view_result_output` → `schoolpro_result_access` → `schoolpro_can_read_student` / `schoolpro_operationally_active` and timed out. This identifies a policy/query-performance defect, not a transient network-only issue.
+- The live bucket currently has eight existing workbook objects, all belonging to IHLink Academy; the live template table has one row, also for IHLink Academy. School B has no existing template object/row. No production data was written.
+- Storage acceptance remains blocked until the policy fix is validated and a legitimate existing own-school fixture is available for the two-account positive/negative check. Do not skip assertions, weaken isolation, or treat timeout/missing fixture as a pass.
 
 ### Authenticated two-school checks that passed before the Storage timeout
 
@@ -79,7 +82,7 @@ The workflow successfully signed into two distinct real Supabase password-authen
 
 ### Immediate next Stage A action
 
-Investigate the Storage listing timeout at the Supabase Storage/policy/database path. Keep the test read-only and preserve both positive and negative checks. Prefer a targeted check of an exact known existing object if an authorized, already-existing fixture can be identified. Do not weaken the tenant policy or turn a timeout into a pass. After correction, rerun the exact PR-head workflow and record the logs.
+Root cause has been identified in Supabase logs: the permissive family-report-media policy on the shared template bucket runs an expensive report-access scan for workbook objects. A draft migration narrows the policy to known media paths and adds exact-path indexes. Next: finish exact-head CI, review the SQL carefully, then validate the migration and policy behavior in a non-production environment if available before any production rollout. Keep live tests read-only; no own-school fixture exists for School B, so do not upload dummy production files. Storage acceptance cannot be marked passed until both an authorized positive fixture and the foreign-school denial are verified.
 
 ## 4. Remaining Stage A release blockers
 

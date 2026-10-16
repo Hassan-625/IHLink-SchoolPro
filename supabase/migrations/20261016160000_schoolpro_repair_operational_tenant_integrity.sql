@@ -110,7 +110,7 @@ begin
 
   return new;
 end;
-$;
+$$;
 
 revoke all on function private.schoolpro_validate_operational_tenant()
   from public, anon, authenticated;

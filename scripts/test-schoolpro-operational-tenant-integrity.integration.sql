@@ -40,6 +40,9 @@ insert into public.schoolpro_promotions values
 insert into public.schoolpro_member_permissions values
 ('90000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001');
 
+create temporary table _initialize_temp_schema (id integer);
+drop table _initialize_temp_schema;
+
 create function pg_temp.assert_rejected(p_name text, p_statement text, p_expected text)
 returns void language plpgsql as $$
 declare actual_message text;

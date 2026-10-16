@@ -787,3 +787,14 @@ No policy or application code was changed in this audit step. No PostgreSQL runt
 5. Continue the full Stage A audit. This scope correction does not mark A complete and does not reduce the existing A–J roadmap. B/C must still be re-verified before D.
 
 No production changes, data deletion, merge, or deployment were performed by recording this correction.
+
+
+#### Follow-up reference trace after payment-scope correction (2026-10-16)
+Reviewed the current Stage A branch's `src/App.tsx`, `src/pages/schoolpro/SchoolProPayments.tsx`, and `src/pages/schoolpro/SchoolProSubscription.tsx`:
+- `src/App.tsx` routes `/schoolpro/payments` to `SchoolProPayments`.
+- `SchoolProPayments` is explicitly receipt/transfer-based: it uploads to `schoolpro-payment-receipts` and invokes `submit_schoolpro_payment`; it does not perform online card checkout in the inspected code. Preserve this workflow.
+- `SchoolProSubscription` queries subscription intents filtered to `payment_method = 'bank_transfer'` and renders `BankTransferPayments` with platform `schoolpro_subscription`; this is receipt-upload/review functionality, not a gateway.
+- The `supabase/functions/schoolpro-payment/index.ts` gateway-adjacent function and historical Flutterwave migration remain in the repository. This limited trace did not establish their production deployment status or prove that no other references exist. A repository-wide reference/deployment trace remains required before safely disabling/removing them.
+- Attempt to fetch `supabase/config.toml` on this branch returned 404; therefore no function deployment configuration was confirmed by that path. Do not infer that the function is or is not deployed from this result.
+
+Corrected current decision: no online payment gateway is a SchoolPro requirement. Receipt-based school fee and subscription workflows remain in scope. Next, complete repository-wide call/reference search, inspect function deployment configuration and production reachability using approved evidence, then prepare a forward non-destructive cleanup if the gateway code is unused. Preserve historical migration files and any data; no production cleanup has been applied.

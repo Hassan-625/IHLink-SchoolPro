@@ -70,9 +70,9 @@ begin
     raise exception 'Invalid school bank account';
   end if;
 
-  -- Lock each same-school invoice so a concurrent invoice update cannot race this validation.
-  -- This lock does not reserve balance across multiple pending submissions; review-lifecycle tests remain required.
-  for a in select value from jsonb_array_elements(p_allocations) loop
+  -- Lock invoices in UUID order to avoid opposite-order multi-invoice deadlocks.
+  -- The invoice lock serializes submissions for the same invoice; the pending allocation sum reserves its remaining balance.
+  for a in select value from jsonb_array_elements(p_allocations) order by (value->>'invoice_id')::uuid loop
     select * into inv
     from public.schoolpro_invoices
     where id=(a->>'invoice_id')::uuid and school_id=p_school
@@ -114,7 +114,7 @@ begin
     nullif(btrim(p_bank_reference),''),p_receipt_path,p_receipt_mime
   ) returning id into sid;
 
-  for a in select value from jsonb_array_elements(p_allocations) loop
+  for a in select value from jsonb_array_elements(p_allocations) order by (value->>'invoice_id')::uuid loop
     select * into inv
     from public.schoolpro_invoices
     where id=(a->>'invoice_id')::uuid and school_id=p_school

@@ -95,9 +95,8 @@ The latest documentation-updated branch head is `a34b23cdbb288e2a4b67d8261fe572c
 
 ## Latest exact-head CI and Storage root-cause update (2026-10-16)
 
-- Latest fully green branch head before this handover refresh: `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`.
-- SchoolPro CI run #1036: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410 — **both `validate` and `tenant-acceptance` passed**.
-- The same run passed the static payment-review write-boundary regression test, family-media policy test and result-PIN cooldown test.
+- Latest exact-head CI: branch head `3c080c1208ce2960880bd6a8bebe1302239c5b12`; SchoolPro CI run #1039: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896036201 — **both `validate` and live `tenant-acceptance` passed**.
+- Run #1036 passed the static payment-review write-boundary regression test, family-media policy test and result-PIN cooldown test: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410.
 - Authenticated two-account checks passed for both schools: own-school student access; foreign-school student/member/invoice/result reads blocked; own-school academic-period RPC allowed; foreign-school period RPC denied; and foreign-student result-output RPC returned false.
 - Storage positive/negative check passed: School A downloaded its existing result-template workbook; School B received HTTP 400 for that exact foreign object. The test now uses raw HTTP status for the negative assertion because the Supabase JS Storage wrapper returned `StorageUnknownError` with no exposed status for an empty/non-JSON denial body.
 - Payment-page validation run #751: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894225604 — queued at the last status check.
@@ -151,7 +150,7 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 ## Required before Stage A can be declared complete
 
-- [x] Run #1036 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The handover refresh itself is documentation-only and will trigger another CI run.
+- [x] Run #1039 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `3c080c1208ce2960880bd6a8bebe1302239c5b12`; [ ] receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. The handover refresh itself is documentation-only and will trigger another CI run.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

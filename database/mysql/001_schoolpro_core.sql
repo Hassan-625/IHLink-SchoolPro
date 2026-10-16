@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS academic_terms (
   status ENUM('planned','active','closed') NOT NULL DEFAULT 'planned',
   PRIMARY KEY (id),
   UNIQUE KEY uq_term_school_id (school_id, id),
+  UNIQUE KEY uq_term_school_id_session (school_id, id, session_id),
   UNIQUE KEY uq_term_session_number (school_id, session_id, term_number),
   KEY idx_terms_session_status (school_id, session_id, status),
   CONSTRAINT fk_terms_session FOREIGN KEY (school_id, session_id)
@@ -224,7 +225,7 @@ CREATE TABLE IF NOT EXISTS class_subject_assignments (
   CONSTRAINT fk_csa_class FOREIGN KEY (school_id, class_id) REFERENCES school_classes(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_csa_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_csa_session FOREIGN KEY (school_id, session_id) REFERENCES academic_sessions(school_id, id) ON DELETE RESTRICT,
-  CONSTRAINT fk_csa_membership FOREIGN KEY (school_id, membership_id) REFERENCES school_memberships(school_id, id) ON DELETE SET NULL
+  CONSTRAINT fk_csa_membership FOREIGN KEY (school_id, membership_id) REFERENCES school_memberships(school_id, id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS assessment_components (
@@ -245,7 +246,7 @@ CREATE TABLE IF NOT EXISTS assessment_components (
   UNIQUE KEY uq_assessment_component_code (school_id, session_id, term_id, class_id, subject_id, component_code),
   KEY idx_assessment_component_lookup (school_id, class_id, subject_id, session_id, term_id, is_active),
   CONSTRAINT fk_ac_session FOREIGN KEY (school_id, session_id) REFERENCES academic_sessions(school_id, id) ON DELETE RESTRICT,
-  CONSTRAINT fk_ac_term FOREIGN KEY (school_id, term_id) REFERENCES academic_terms(school_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_ac_term_session FOREIGN KEY (school_id, term_id, session_id) REFERENCES academic_terms(school_id, id, session_id) ON DELETE RESTRICT,
   CONSTRAINT fk_ac_class FOREIGN KEY (school_id, class_id) REFERENCES school_classes(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_ac_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -269,6 +270,7 @@ CREATE TABLE IF NOT EXISTS result_records (
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY uq_result_school_id (school_id, id),
+  UNIQUE KEY uq_result_school_id_session_term (school_id, id, session_id, term_id),
   UNIQUE KEY uq_result_enrollment_subject_term (school_id, enrollment_id, subject_id, term_id),
   KEY idx_result_class_term_status (school_id, session_id, term_id, status),
   KEY idx_result_subject_term (school_id, subject_id, session_id, term_id, status),
@@ -276,7 +278,7 @@ CREATE TABLE IF NOT EXISTS result_records (
   CONSTRAINT fk_result_enrollment FOREIGN KEY (school_id, enrollment_id) REFERENCES student_enrollments(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_session FOREIGN KEY (school_id, session_id) REFERENCES academic_sessions(school_id, id) ON DELETE RESTRICT,
-  CONSTRAINT fk_result_term FOREIGN KEY (school_id, term_id) REFERENCES academic_terms(school_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_result_term_session FOREIGN KEY (school_id, term_id, session_id) REFERENCES academic_terms(school_id, id, session_id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_creator FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_result_updater FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_result_publisher FOREIGN KEY (published_by) REFERENCES users(id) ON DELETE SET NULL

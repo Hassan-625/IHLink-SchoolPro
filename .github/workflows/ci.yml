@@ -107,3 +107,5 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Apply draft migration and run disposable tenant-integrity tests
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-operational-tenant-integrity.integration.sql
+      - name: Verify SchoolPro online gateway is disabled (disposable PostgreSQL)
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-online-payment-disable.integration.sql

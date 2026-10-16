@@ -176,6 +176,13 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 | Production migration / deployment | **Not performed in this work** | Requires completed release gate and explicit approval |
 
 
-### Follow-up source review — 2026-10-16, exact head `7cf775eb319b571a36d09a62fe6e6581428f525d`
+### Current exact-head verification — 2026-10-16
 
-Exact-head CI run #1064 passed both `tenant-acceptance` and `validate`, and payment-page validation #1064 passed on the same head. Read-only catalog inspection confirmed the draft's table/column references, then identified that later parent-row `school_id` changes could invalidate existing child tenant relationships. The source draft and static contract now block those unsafe reassignments and lock referenced parent rows during child validation. A disposable PostgreSQL integration job has been added to CI to exercise valid and invalid cases against an ephemeral database. This is still an unmerged, unexecuted migration; CI does not prove production runtime correctness. Next gates remain successful exact-head CI, non-production integration results, migration-source/ledger reconciliation, and the other listed Stage A blockers. No production write, migration, deployment or merge has been performed.
+**Current Stage A branch head:** `68c2d84130ba68b4d71970df9279bb729b44443e`. PR #106 remains open, draft and unmerged.
+
+- SchoolPro CI run #1067 passed `validate`, live two-school `tenant-acceptance`, and the new disposable PostgreSQL integration job: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621711.
+- Payment-page validation passed on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621712.
+- The disposable PostgreSQL 16 integration job applied the draft migration to an ephemeral database and passed 13 cross-tenant rejection checks, including unsafe parent-row school reassignment. This verifies trigger syntax and behavior in a minimal PostgreSQL fixture; it does not prove full-schema compatibility or justify applying the migration to production.
+- An earlier intermediate commit failed the new integration test because of a malformed function delimiter; that was corrected, and the subsequent exact-head CI passed. The failure and fix were confined to source/test work.
+- Production Supabase was only inspected read-only. No production migration, row write, Render deploy, or PR merge occurred.
+- **Stage A remains in progress and not merge-ready.** Continue the remaining Stage A blockers: full-schema/trigger review, migration source/ledger reconciliation, Storage policy performance, result-PIN cooldown review, payment review/lifecycle/concurrency, and real receipt Storage acceptance where existing fixtures are available. Do not create dummy production data or a paid Supabase branch. Keep B, C, D and E–J in their existing order and scope.

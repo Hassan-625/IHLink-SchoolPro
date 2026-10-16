@@ -176,9 +176,14 @@ This migration has not been applied or runtime-tested. Before any production rol
 **Do not start Stage B (sessions, student population and class rosters) until Stage A is complete, merged, and verified after merge.** Do not apply a production migration or trigger a production deployment as part of this draft. Live authenticated two-school RLS/RPC and exact-object Storage acceptance passed on 2026-10-16; exact-head CI #1049 and payment validation #775 passed on `b235e87a01abd53fd274895e4e7c560c6681d1d5`. The broader folder-list performance fix remains draft/unverified, payment-receipt Storage remains untested, and the tenant-integrity repair is source-only pending CI and non-production runtime validation. Stage A remains NOT MERGE-READY.
 
 
-## Follow-up source review — exact head `7cf775eb319b571a36d09a62fe6e6581428f525d` (2026-10-16)
+## Current exact-head verification — 2026-10-16
 
-- Exact-head SchoolPro CI run #1064 passed both `tenant-acceptance` and `validate`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38915779846. Payment-page validation run #1064 passed on the same head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38915779618.
-- Read-only schema review confirmed that the draft's referenced table names, columns and foreign-key relationships match the live catalog for lesson notes, result approvals, promotions and member permissions.
-- The review found that later parent-row `school_id` changes could invalidate child relationships. The migration draft now rejects unsafe parent reassignment and locks referenced parent rows while validating child writes. A disposable PostgreSQL integration job is added to CI to execute positive and negative relationship cases against an ephemeral database.
-- These controls remain source-only until revised exact-head CI and PostgreSQL integration tests pass. No production migration, write, merge or deployment has occurred.
+**Current branch head:** `68c2d84130ba68b4d71970df9279bb729b44443e`  
+**PR #106:** open, draft, unmerged — https://github.com/Hassan-625/IHLink-SchoolPro/pull/106
+
+- SchoolPro CI run #1067 passed all three jobs — `validate`, live `tenant-acceptance`, and `tenant-integrity-db-integration`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621711.
+- Payment-page validation passed on the same head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38917621712.
+- The new disposable PostgreSQL 16 job applied the draft migration to a temporary database and passed 13 negative cases covering cross-school subject/class references, result approvals, promotion student/source/destination classes, member permissions, and unsafe parent school reassignment. The temporary database was destroyed after the job. This is real PostgreSQL trigger execution, but the fixture schema is deliberately minimal; it is not a full Supabase integration or production migration.
+- The first integration attempt on intermediate commit `0be081adc98b2db3263a302e20a48c49edd0549c` correctly failed on a malformed function delimiter. That defect was fixed in `68c2d84130ba68b4d71970df9279bb729b44443e`, and the full integration job passed on the corrected head. No production state was touched.
+- Read-only production catalog inspection confirmed the target tables/columns. The migration remains unmerged and unapplied to Supabase production. Remaining gates include review against the complete live schema and existing trigger behavior, the other Stage A blockers listed above, and explicit user approval before any merge or production change.
+- Stage A remains **NOT MERGE-READY**. Do not start B until A is approved, merged and post-merge verified. No production write, migration, Render deployment, or merge has been performed.

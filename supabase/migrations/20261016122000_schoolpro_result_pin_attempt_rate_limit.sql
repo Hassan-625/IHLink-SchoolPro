@@ -94,6 +94,10 @@ begin
     'hex'
   );
 
+  -- Serialize checks sharing the same hashed admission/network key. Without this
+  -- lock, concurrent wrong-PIN requests can all pass the pre-check before failures accrue.
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0));
+
   select a.blocked_until
     into v_blocked_until
   from private.schoolpro_result_pin_attempts a

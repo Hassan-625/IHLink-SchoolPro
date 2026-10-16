@@ -193,7 +193,16 @@ async function main() {
   assert.equal(foreignTemplateObject, null, 'Foreign school must receive no result-template object');
   const foreignStorageMessage = String(foreignTemplateDownloadError.message || foreignTemplateDownloadError);
   const foreignStorageStatus = Number(foreignTemplateDownloadError.statusCode || foreignTemplateDownloadError.status || 0);
-  console.log('INFO foreign template denial response:', JSON.stringify({status: foreignStorageStatus, message: foreignStorageMessage}));
+  console.log('INFO foreign template denial response:', JSON.stringify({
+    status: foreignStorageStatus,
+    message: foreignStorageMessage,
+    name: foreignTemplateDownloadError?.name,
+    constructor: foreignTemplateDownloadError?.constructor?.name,
+    keys: Object.keys(foreignTemplateDownloadError || {}),
+    originalError: foreignTemplateDownloadError?.originalError?.message || foreignTemplateDownloadError?.cause?.message || null,
+    originalErrorName: foreignTemplateDownloadError?.originalError?.name || foreignTemplateDownloadError?.cause?.name || null,
+    statusCodeRaw: foreignTemplateDownloadError?.statusCode ?? null,
+  }));
   assert.ok(
     [400, 401, 403, 404].includes(foreignStorageStatus)
       || /not found|permission|denied|unauthorized|forbidden/i.test(foreignStorageMessage),

@@ -26,29 +26,42 @@
 
 **Do not start B while A remains open.** The user explicitly requested A/B/C strengthening and verification before D resumes.
 
-## 2A. Full master roadmap preservation — A through J
+## 2A. Full master roadmap restored — A through J
 
-**Scope correction:** The A–D sequence above is the current gated execution order, not the complete SchoolPro delivery roadmap. The full master roadmap remains **A–J**. Stages E, F, G, H, I and J are not cancelled, removed, completed, or superseded by this Stage A handover. Do not describe the overall project as an A–D-only plan.
+**Scope correction:** The approved SchoolPro master roadmap is **A–J (ten stages)**. The earlier A–D section above is only the immediate gated execution sequence; it is not the whole roadmap. Stages E–J were inadvertently left without their definitions in this continuation snapshot. They are restored here from the prior A–J handover register. No stage is cancelled, removed, marked complete, or replaced by this Stage A work.
 
-This file is a Stage A continuation snapshot and currently records the detailed definitions of A–D only. The authoritative wording and acceptance criteria for E–J must be carried forward verbatim from the prior full master handover; they must not be guessed or replaced with newly invented stage names. Until that source is reconciled into the canonical master document, record E–J as **scope preserved; exact source text still to be restored/verified**, not as out of scope.
+| Stage | Original workstream | Required scope / acceptance focus |
+|---|---|---|
+| **A** | Core application, authentication, roles and tenant isolation | Verify sign-in/session lifecycle, role and portal boundaries, Super Admin platform access vs school-scoped roles, RLS/policies/RPCs/Storage, migration/source parity, and real two-school positive and negative tests. Stage A is currently open and not merge-ready. |
+| **B** | Academic sessions, student population, classes and rosters | Verify session setup and continuity, school-scoped student population, class/stream assignment and roster accuracy, preserving existing identities/password fixtures and not copying IH Academy operational records into new schools. |
+| **C** | Assessments, class/subject averages, result review and publication | Verify component-by-component assessment entry and save, correct calculations, one class-subject average per subject, form-master review/edit before exam-officer publication, post-publication correction requests, historical integrity and role enforcement. |
+| **D** | Result Design Studio and custom Excel workbooks | Support separate Nursery, Primary, JSS and SS standards; school-uploaded workbooks, mapping, preview, logos/signatories and school-specific replacement of defaults without affecting other schools. Revisit the deferred A4 print issue. |
+| **E** | Document Studio, storage, RLS and cross-school isolation | Verify document/template upload, retrieval, replacement and rendering; object ownership and school-scoped Storage access; cross-school positive/negative checks; document permissions and isolation from unrelated school workspaces. |
+| **F** | Historical school data, academic-year rollover and progression | Verify historical sessions/enrolments/results, year rollover, promotion/demotion, transfers and graduation, transcript history and access, with no silent loss or incorrect promotion of graduated/transfer-out students. |
+| **G** | Admissions, attendance, assignments, CBT and other operational portals | Exercise each operational module end-to-end against real school-scoped records; verify admissions/offers, attendance, assignments, CBT eligibility and submission, and role/portal boundaries rather than relying on source-only checks. |
+| **H** | School fees, subscriptions and payment reconciliation | Verify annual Demo and paid subscription rules, receipt-upload/admin verification for SchoolPro subscriptions, school-side fee receipts/admin marking, invoice allocation and balance calculations, duplicate/concurrent payment safety, grace/suspension rules and BillStack use for DataSub only. |
+| **I** | Android APK, release readiness, Render deployment and rollback | Verify Android build/signing/artifact delivery, customer-facing configuration, production Render deployment against the intended commit, smoke checks, and documented rollback. No production deploy without explicit authorization. |
+| **J** | Security, performance, backups and resilience | Verify least-privilege access, security-definer RPC authorization and abuse controls, query scoping/pagination, data integrity and transactional bulk operations, performance on empty and large datasets, backup/restore evidence, and failure/recovery behavior. |
 
-Execution rule:
-- Continue the immediate work at **A — Authentication and tenant isolation**, at the Storage-timeout investigation described below.
-- Complete and post-merge verify A before beginning B; then preserve the agreed B → C → D gates.
-- After D, continue through the remaining original E–J stages in their previously approved order and with their original acceptance criteria.
-- Update the canonical full A–J master handover alongside this branch-specific Stage A tracker. A stage-specific document must never silently narrow or replace the full roadmap.
+**Execution and completion rule**
+- Continue from the exact Stage A blocker recorded below. Do not start B until A is complete, merged with the user's explicit authorization, and verified after merge.
+- Then complete and re-verify B, C and D in that order.
+- Continue E, F, G, H, I and J in the above original order, retaining their own acceptance evidence. Shared concerns (such as tenant isolation) must be tested in each relevant stage; passing Stage A does not automatically certify later module behavior.
+- Keep this A–J register in the master handover. Stage-specific trackers may add implementation detail but must not narrow the overall scope.
+- No production migration, production data change, merge or deployment is authorized by this handover update.
 
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-Branch head before the latest handover-only commit: `a17b9bbbd9d949068078960b571296c23378f640` (the handover documentation update itself). The preceding test-harness commit was `a40297c7c113bbddc432c66c75631d85d4f9021e`.
+Current branch head: `3760e1f0c93c08f45f8d1fe471c37e66b706ccc6` (handover roadmap correction; draft PR remains open and unmerged).
 
-- SchoolPro CI run #998: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38888587103
-  - General `validate` job: **passed**.
-  - Live `tenant-acceptance` job: **failed** at result-template Storage listing after three attempts; last error was “The connection to the database timed out.”
-- Payment page validation run #724: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38888587087
-- CI workflow now accepts `SUPABASE_PUBLISHABLE_KEY` as a fallback when `SUPABASE_ANON_KEY` is not defined, so the existing publishable-key secret can be used without adding a duplicate secret.
-- The live test harness now retries transient Storage list failures at most twice after the initial attempt, with bounded delays. This did **not** fix the timeout. Do not skip the assertion or add unbounded retries.
+- SchoolPro CI run #1001: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589735 — **validate passed; live tenant-acceptance failed** at result-template Storage listing.
+- The immediately preceding run #1000: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38889434119 — **validate passed; live tenant-acceptance failed** at the same Storage timeout.
+- Latest payment-page validation run #727: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589626 — passed.
+- Both #1000 and #1001 logged successful two-account DB/RPC isolation assertions, then failed after the existing School B template-object Storage request timed out on the initial attempt and two retries. Last error: “The connection to the database timed out.”
+- CI accepts `SUPABASE_PUBLISHABLE_KEY` as fallback when `SUPABASE_ANON_KEY` is absent. The current secret configuration is sufficient for authentication; this did not resolve Storage.
+- Receipt Storage paths are still blank and no real receipt fixtures are available. Do not add dummy production objects.
+- The Storage check is still a blocker. Do not skip it, weaken policies, or treat timeout as a pass.
 
 ### Authenticated two-school checks that passed before the Storage timeout
 

@@ -2,10 +2,6 @@
 -- The generic finance-module ALL policies otherwise allow direct updates/deletes that bypass
 -- pending-only review transitions and invoice/allocation reconciliation.
 -- Read and guardian-submit policies remain in place; review RPCs perform privileged writes.
-drop policy if exists "schoolpro_module_permission" on public.schoolpro_payment_submissions;
-drop policy if exists "schoolpro_module_permission" on public.schoolpro_payment_allocations;
-drop policy if exists "schoolpro_module_permission" on public.schoolpro_payment_proofs;
-
 -- Preserve platform-wide inspection while keeping submission/allocation/proof writes behind RPCs.
 drop policy if exists "Super admin read payment submissions" on public.schoolpro_payment_submissions;
 create policy "Super admin read payment submissions"
@@ -27,6 +23,17 @@ create policy "Super admin read payment proofs"
 -- Replace both broad ALL policies with Super Admin SELECT-only access so payment records
 -- cannot be silently edited/deleted outside the reviewed accounting workflows.
 drop policy if exists "schoolpro_module_permission" on public.schoolpro_fee_payments;
+create policy "schoolpro_module_permission"
+  on public.schoolpro_fee_payments as restrictive for all to authenticated
+  using (
+    private.is_admin(ARRAY['super_admin']::public.user_role[])
+    or private.schoolpro_module_allowed(school_id, 'finance')
+  )
+  with check (
+    private.schoolpro_module_allowed(school_id, 'finance')
+    and not private.is_admin(ARRAY['super_admin']::public.user_role[])
+  );
+
 drop policy if exists "Super admin full access schoolpro_fee_payments" on public.schoolpro_fee_payments;
 drop policy if exists "Super admin read fee payments" on public.schoolpro_fee_payments;
 create policy "Super admin read fee payments"

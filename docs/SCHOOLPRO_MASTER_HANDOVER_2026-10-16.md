@@ -68,8 +68,8 @@ Code/test-fix commit: `379c7fcb5fbd574c4ffc200d5a610cd2652359ed`; PR remains ope
 
 ### Live authenticated two-school acceptance passed (exact-object Storage test)
 
-SchoolPro CI run #1030 (branch head `38c8cc1fb4258bfca5f7686c8a51ea14f2653b0c`) passed both the `validate` and `tenant-acceptance` jobs:
-https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894803166
+SchoolPro CI run #1036 (branch head `6b33eba01075b0e08bdca5765b95492b2cd7d1d5`) passed both the `validate` and `tenant-acceptance` jobs:
+https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38895439410
 
 - The workflow signed into two distinct real Supabase password-authenticated test accounts.
 - School A and School B could read their own student fixture.
@@ -83,6 +83,7 @@ https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38894803166
 - The earlier broad Storage folder listing timed out three times because the existing family-report-media policy triggered an expensive report-access scan. The exact-object acceptance now passes, but that does **not** establish that folder listing is performant or that the proposed policy migration is correct. The migration is draft-only and not applied to production.
 - Payment receipt Storage tests were skipped because no existing `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` values are configured. Do not upload dummy production receipts.
 - The database-level result-PIN cooldown is a draft migration and static-test-only; gateway IP header behavior, cleanup/retention, cooldown reset and concurrent attempts have not been runtime-tested.
+- A further draft migration, `20261016143000_schoolpro_payment_review_write_controls.sql`, removes generic finance-module `ALL` policies from payment submissions, allocations, proofs and fee-payment ledger rows so school finance roles cannot directly update/delete records outside the review/accounting RPCs. It adds explicit Super Admin read-only inspection policies for review records and replaces the fee-ledger Super Admin `ALL` policy with `SELECT` only. The static test passed in run #1036; no runtime policy test or production migration has been performed.
 - General CI run #1030 passed both jobs on the latest fully green branch head. A further documentation-only refresh may trigger another validation run; no application code or production state was changed by the handover edits.
 - No production database writes, migration, merge, or Render deployment was performed as part of this work.
 
@@ -92,17 +93,18 @@ Finish exact-head CI for the updated documentation commit. Then review the Stora
 
 ## 4. Remaining Stage A release blockers
 
-1. **Migration source/ledger drift.** Production ledger records 476 migrations and ends at version `20261015161735`. Three existing source filenames are not recorded under the same version/name pairs:
+1. **Payment review write-boundary validation.** The new migration `20261016143000_schoolpro_payment_review_write_controls.sql` is draft-only. It needs reviewed runtime evidence that guardian submissions, school finance reads, Super Admin inspection and RPC-based confirmation/rejection still work while direct status/amount/allocation mutations are denied. Do not apply it to production on static CI alone.
+2. **Migration source/ledger drift.** Production ledger records 476 migrations and ends at version `20261015161735`. Three existing source filenames are not recorded under the same version/name pairs:
    - `20261002234500_schoolpro_operational_tenant_isolation.sql`
    - `20261003000500_schoolpro_guardian_tenant_hardening.sql`
    - `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql`
    Later live policies/triggers provide related tenant controls under different names, but exact equivalence has not been proven. Reconcile using reviewed SQL/source evidence; do not apply migrations just to align names.
-2. **Missing migration source.** The live ledger contains `20260924112325_schoolpro_secure_public_result_checker`, but the corresponding source migration file was not found in main, the release branch, the checked audit branches, or current repository history. Do not reconstruct it from a partial live-function snapshot. Recover authoritative source or establish a carefully reviewed baseline.
-3. **Public result PIN brute-force protection.** A draft database-level attempt counter/cooldown migration is prepared. It is not applied or runtime-tested; review client-IP header trust, retention/cleanup, cooldown reset and concurrency behavior before release. Frontend-only throttling remains insufficient.
-4. **Storage policy performance.** Exact-object cross-school acceptance passed. The earlier folder-list timeout root cause is confirmed, but the proposed policy migration is not applied or performance-tested; receipt download isolation remains untested until real, already-existing receipt fixtures are available.
-5. **Payment lifecycle.** Pending/review/reject/cancel transitions, duplicate invoice allocations and concurrent receipt-submission behavior require dedicated transaction-level acceptance tests. The staged migration `20261015203000_schoolpro_payment_receipt_tenant_guard.sql` has not been applied to production.
-6. **Broader authorization review.** Review exposed SECURITY DEFINER RPCs individually. Do not blanket-revoke public/authenticated execution because some guest/token workflows are intentional. Confirm Super Admin platform access without widening school-scoped actions.
-7. **Post-merge production verification.** Only after explicit approval and every gate passing: verify merge SHA, Render deployment SHA/status, login and authorized/unauthorized workflows, and re-run relevant checks. No merge/deploy is currently authorized by this handover.
+3. **Missing migration source.** The live ledger contains `20260924112325_schoolpro_secure_public_result_checker`, but the corresponding source migration file was not found in main, the release branch, the checked audit branches, or current repository history. Do not reconstruct it from a partial live-function snapshot. Recover authoritative source or establish a carefully reviewed baseline.
+4. **Public result PIN brute-force protection.** A draft database-level attempt counter/cooldown migration is prepared. It is not applied or runtime-tested; review client-IP header trust, retention/cleanup, cooldown reset and concurrency behavior before release. Frontend-only throttling remains insufficient.
+5. **Storage policy performance.** Exact-object cross-school acceptance passed. The earlier folder-list timeout root cause is confirmed, but the proposed policy migration is not applied or performance-tested; receipt download isolation remains untested until real, already-existing receipt fixtures are available.
+6. **Payment lifecycle.** Pending/review/reject/cancel transitions, duplicate invoice allocations and concurrent receipt-submission behavior require dedicated transaction-level acceptance tests. The staged migration `20261015203000_schoolpro_payment_receipt_tenant_guard.sql` has not been applied to production.
+7. **Broader authorization review.** Review exposed SECURITY DEFINER RPCs individually. Do not blanket-revoke public/authenticated execution because some guest/token workflows are intentional. Confirm Super Admin platform access without widening school-scoped actions.
+8. **Post-merge production verification.** Only after explicit approval and every gate passing: verify merge SHA, Render deployment SHA/status, login and authorized/unauthorized workflows, and re-run relevant checks. No merge/deploy is currently authorized by this handover.
 
 The detailed current checklist and evidence are in [Stage A release gate](https://github.com/Hassan-625/IHLink-SchoolPro/blob/release/stage-a-auth-tenant-isolation/docs/STAGE_A_AUTH_TENANT_ISOLATION_RELEASE_GATE.md).
 

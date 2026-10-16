@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY uq_enrollment_school_id (school_id, id),
+  UNIQUE KEY uq_enrollment_school_id_session (school_id, id, session_id),
   UNIQUE KEY uq_enrollment_student_session (school_id, student_id, session_id),
   KEY idx_enrollment_class_session_status (school_id, class_id, session_id, status),
   CONSTRAINT fk_enrollment_student FOREIGN KEY (school_id, student_id)
@@ -243,12 +244,15 @@ CREATE TABLE IF NOT EXISTS assessment_components (
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   PRIMARY KEY (id),
   UNIQUE KEY uq_assessment_component_scope (school_id, id),
+  UNIQUE KEY uq_assessment_component_school_id_session_term (school_id, id, session_id, term_id),
   UNIQUE KEY uq_assessment_component_code (school_id, session_id, term_id, class_id, subject_id, component_code),
   KEY idx_assessment_component_lookup (school_id, class_id, subject_id, session_id, term_id, is_active),
   CONSTRAINT fk_ac_session FOREIGN KEY (school_id, session_id) REFERENCES academic_sessions(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_ac_term_session FOREIGN KEY (school_id, term_id, session_id) REFERENCES academic_terms(school_id, id, session_id) ON DELETE RESTRICT,
   CONSTRAINT fk_ac_class FOREIGN KEY (school_id, class_id) REFERENCES school_classes(school_id, id) ON DELETE RESTRICT,
-  CONSTRAINT fk_ac_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT
+  CONSTRAINT fk_ac_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_ac_class_subject_session FOREIGN KEY (school_id, class_id, subject_id, session_id)
+    REFERENCES class_subject_assignments(school_id, class_id, subject_id, session_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS result_records (
@@ -275,7 +279,7 @@ CREATE TABLE IF NOT EXISTS result_records (
   KEY idx_result_class_term_status (school_id, session_id, term_id, status),
   KEY idx_result_subject_term (school_id, subject_id, session_id, term_id, status),
   KEY idx_result_enrollment_term (school_id, enrollment_id, session_id, term_id),
-  CONSTRAINT fk_result_enrollment FOREIGN KEY (school_id, enrollment_id) REFERENCES student_enrollments(school_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_result_enrollment_session FOREIGN KEY (school_id, enrollment_id, session_id) REFERENCES student_enrollments(school_id, id, session_id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_subject FOREIGN KEY (school_id, subject_id) REFERENCES school_subjects(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_session FOREIGN KEY (school_id, session_id) REFERENCES academic_sessions(school_id, id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_term_session FOREIGN KEY (school_id, term_id, session_id) REFERENCES academic_terms(school_id, id, session_id) ON DELETE RESTRICT,
@@ -289,6 +293,8 @@ CREATE TABLE IF NOT EXISTS result_scores (
   school_id CHAR(36) NOT NULL,
   result_id CHAR(36) NOT NULL,
   assessment_component_id CHAR(36) NOT NULL,
+  session_id CHAR(36) NOT NULL,
+  term_id CHAR(36) NOT NULL,
   score DECIMAL(7,2) NOT NULL,
   entered_by CHAR(36) NULL,
   updated_by CHAR(36) NULL,
@@ -297,8 +303,8 @@ CREATE TABLE IF NOT EXISTS result_scores (
   PRIMARY KEY (id),
   UNIQUE KEY uq_result_score_component (school_id, result_id, assessment_component_id),
   KEY idx_result_scores_component (school_id, assessment_component_id),
-  CONSTRAINT fk_result_scores_result FOREIGN KEY (school_id, result_id) REFERENCES result_records(school_id, id) ON DELETE RESTRICT,
-  CONSTRAINT fk_result_scores_component FOREIGN KEY (school_id, assessment_component_id) REFERENCES assessment_components(school_id, id) ON DELETE RESTRICT,
+  CONSTRAINT fk_result_scores_result FOREIGN KEY (school_id, result_id, session_id, term_id) REFERENCES result_records(school_id, id, session_id, term_id) ON DELETE RESTRICT,
+  CONSTRAINT fk_result_scores_component FOREIGN KEY (school_id, assessment_component_id, session_id, term_id) REFERENCES assessment_components(school_id, id, session_id, term_id) ON DELETE RESTRICT,
   CONSTRAINT fk_result_scores_entered_by FOREIGN KEY (entered_by) REFERENCES users(id) ON DELETE SET NULL,
   CONSTRAINT fk_result_scores_updated_by FOREIGN KEY (updated_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

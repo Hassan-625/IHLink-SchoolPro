@@ -139,9 +139,18 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 - The live bucket has eight existing IHLink Academy workbooks and one template row. No production object or application row was created by the test.
 - The authenticated Storage acceptance test uses School A's existing template, confirms School A can download it, and confirms School B receives an HTTP 400 for that exact object.
-- Source migration files `20261002234500_schoolpro_operational_tenant_isolation.sql`, `20261003000500_schoolpro_guardian_tenant_hardening.sql`, and `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql` exist on repository branches but have no matching version/name entries in the live migration ledger. Live DB has later tenant-integrity policies/triggers with different names; this suggests related hardening exists but does not prove the source files are equivalent.
+- Source migration files `20261002234500_schoolpro_operational_tenant_isolation.sql`, `20261003000500_schoolpro_guardian_tenant_hardening.sql`, and `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql` exist in the current release branch but their version/name pairs are absent from the live migration ledger. A read-only inventory found 127 SQL files in the release branch migration directory against 476 production ledger rows: 79 exact version/name pairs, 24 same-name files with version drift, 24 source names absent from the ledger, and 373 ledger names without same-named files in that branch directory. This is a correspondence inventory, not proof that every unmatched row is unapplied; historical/renamed sources must be traced before repair.
+- Read-only production catalog inspection found alternate-name equivalents for guardian-link, CBT question/eligibility, result and document-issue integrity guards. However, the operational tenant-validation function and triggers are absent on `schoolpro_lesson_notes`, `schoolpro_result_approvals`, and `schoolpro_promotions`. The `schoolpro_member_permissions` table has separate foreign keys to school and member but no trigger/composite constraint enforcing that the member belongs to the same school. Treat this as a confirmed structural integrity gap requiring a forward-only repair and non-production regression tests; no production row was inserted or changed.
 - Ledger version `20260924112325` records `schoolpro_secure_public_result_checker`, but that migration source was not recovered from current branches/history. Do not reconstruct it from a partial live function snapshot or repair migration history by guesswork.
 - The payment-receipt ownership/locking migration remains staged only. Payment review/reject/cancel lifecycle and concurrent transaction behavior still require dedicated tests.
+
+### Confirmed relational-integrity gap from read-only catalog inspection
+
+- Present under alternate names: guardian-link school binding; CBT test-question/eligibility relation guards; result relation guard; document-issue relation guard.
+- Absent in production: `private.schoolpro_validate_operational_tenant()` and its triggers for `schoolpro_lesson_notes`, `schoolpro_result_approvals`, and `schoolpro_promotions`.
+- Also absent: a school/member-pair guard on `schoolpro_member_permissions`. Existing independent foreign keys do not prove that `member_id` belongs to the row's `school_id`; its current RLS policies scope access by `school_id` but do not provide this relational invariant.
+- This is a confirmed structural risk, not a demonstrated data breach. No test row or production write was attempted. Repair with a new forward-only migration and negative cross-school-ID tests in a non-production environment; do not replay old migrations or repair the ledger by guesswork.
+
 
 ## What this audit does not yet prove
 
@@ -153,6 +162,7 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 - [x] Run #1047 passed both general validation and live authenticated two-school DB/RPC/exact-object Storage acceptance on branch head `a622e28a0e9b209f7f7d5c02dc4ec25a459d16be`; payment-page validation #773 also passed on that same SHA. [ ] Receipt Storage, payment lifecycle, migration-source/ledger reconciliation, and draft SQL runtime validation remain open. Subsequent handover/release-gate documentation commits require their own exact-head CI verification.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
+- [ ] Add and non-production-test a forward-only tenant-integrity repair for lesson notes, result approvals, promotions and school/member permission pairs; verify cross-school related IDs are rejected.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.
 - [x] Authenticated two-school database reads, key RPC positive/negative checks, and exact-object Storage denial passed on 2026-10-16; [ ] folder-list performance fix remains draft/unverified; payment receipt Storage test remains skipped.
@@ -163,4 +173,4 @@ This migration has not been applied or runtime-tested. Before any production rol
 
 ## Mandatory sequence gate
 
-**Do not start Stage B (sessions, student population and class rosters) until Stage A is complete, merged, and verified after merge.** Do not apply a production migration or trigger a production deployment as part of this draft. Live authenticated two-school RLS/RPC and exact-object Storage acceptance passed on 2026-10-16; the broader folder-list performance fix remains draft/unverified and payment-receipt Storage remains untested. Stage A remains NOT MERGE-READY.
+**Do not start Stage B (sessions, student population and class rosters) until Stage A is complete, merged, and verified after merge.** Do not apply a production migration or trigger a production deployment as part of this draft. Live authenticated two-school RLS/RPC and exact-object Storage acceptance passed on 2026-10-16; exact-head CI #1049 and payment validation #775 passed on `b235e87a01abd53fd274895e4e7c560c6681d1d5`. The broader folder-list performance fix remains draft/unverified, payment-receipt Storage remains untested, and the tenant-integrity gaps listed above remain open. Stage A remains NOT MERGE-READY.

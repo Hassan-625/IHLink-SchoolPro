@@ -5,6 +5,7 @@ const disableSql = readFileSync('supabase/migrations/20261016170000_schoolpro_di
 const subscriptionUi = readFileSync('src/pages/schoolpro/SchoolProSubscription.tsx', 'utf8');
 const schoolFeeUi = readFileSync('src/pages/schoolpro/SchoolProPayments.tsx', 'utf8');
 const onlineMigration = readFileSync('supabase/migrations/20260920212500_schoolpro_online_fee_payments.sql', 'utf8');
+const receiptStorageMigration = readFileSync('supabase/migrations/20261016180000_schoolpro_payment_receipt_storage_limits.sql', 'utf8');
 
 assert.match(disableSql, /raise exception[\s\S]*SchoolPro online payments are disabled/i,
   'The legacy online finalizer must fail closed');
@@ -28,5 +29,13 @@ assert.match(schoolFeeUi, /submit_schoolpro_payment/,
 // Keep the historical migration immutable; the forward migration disables its RPC instead.
 assert.match(onlineMigration, /gateway text not null default 'flutterwave'/i,
   'The original migration is retained as historical provenance');
+
+assert.match(receiptStorageMigration, /'schoolpro-payment-receipts'[\\s\\S]*false[\\s\\S]*10485760/i,
+  'Payment receipt storage must remain private and capped at 10 MiB');
+for (const mime of ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']) {
+  assert.ok(receiptStorageMigration.includes(mime), `Receipt storage must allow ${mime}`);
+}
+assert.match(receiptStorageMigration, /on conflict \\(id\\) do update[\\s\\S]*allowed_mime_types = excluded\\.allowed_mime_types/i,
+  'Existing receipt bucket settings must be brought into compliance by the forward migration');
 
 console.log('PASS: legacy online finalizer is disabled in the forward migration and receipt-based SchoolPro workflows remain present (static source checks only).');

@@ -50,3 +50,19 @@ Add a disposable PostgreSQL integration fixture/workflow that loads the relevant
 ## Safety
 
 No production SQL was run, no production records were changed, no PR was merged, and no Render deployment was triggered. Stage A remains not merge-ready.
+
+
+## Product-scope correction — no SchoolPro online gateway
+The product owner clarified on 2026-10-16 that SchoolPro has **no online/card payment gateway**. The earlier references in this audit to the Flutterwave finalizer as a required SchoolPro payment path were incorrect. The existing `supabase/migrations/20260920212500_schoolpro_online_fee_payments.sql` and `supabase/functions/schoolpro-payment/index.ts` are legacy/unintended scope and must not be treated as a feature acceptance requirement.
+
+Keep the workflows distinct:
+- SchoolPro subscription payment: receipt uploaded by the school; IHLink Super Admin verifies and marks paid.
+- School fee payment: school-managed finance recording and receipt-based payment confirmation.
+- BillStack: DataSub only.
+- Guardian-to-school bank transfer receipt submission remains a valid receipt-based workflow; it is not online card checkout.
+
+The gateway code must be traced through all UI/function/config references before a forward disable/removal change. Do not rewrite historical migrations or drop intent records blindly. Verify production deployment/reachability and preserve existing records; no gateway removal is claimed yet.
+
+**Corrected test scope:** prioritize receipt submission/review, protected review fields, tenant isolation, school-finance recording, invoice/student/school cross-link integrity, RPC authorization and concurrency for legitimate receipt-based workflows. Do not make Flutterwave/card finalization an acceptance gate. Any retained legacy gateway objects must be unreachable from SchoolPro user flows and explicitly documented until safely retired.
+
+This correction changes product scope only; the Stage A payment RLS/runtime test gap remains open. No production database was modified and no deployment was performed by this documentation update.

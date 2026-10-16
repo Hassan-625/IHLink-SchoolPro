@@ -52,17 +52,33 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
-      - name: Confirm cross-school relationship is rejected for the expected FK reason
+      - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password
         shell: bash
         run: |
           set -euo pipefail
-          output_file="$(mktemp)"
-          if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/cross_tenant_enrollment_must_fail.sql >"$output_file" 2>&1; then
+          assert_fk_rejection() {
+            local sql_file="$1"
+            local constraint="$2"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected $constraint rejection" >&2
+              exit 1
+            fi
             cat "$output_file"
-            echo 'FAIL: cross-school student relationship was accepted' >&2
-            exit 1
+            if grep -Fq 'ERROR 1452' "$output_file" && grep -Fq "CONSTRAINT `$constraint`" "$output_file"; then
+              echo "PASS: $sql_file rejected by $constraint"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected $constraint" >&2
+              exit 1
+            fi
+          }
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_must_fail.sql fk_enrollment_student
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_session_must_fail.sql fk_enrollment_session
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_class_must_fail.sql fk_enrollment_class
           fi
           cat "$output_file"
           if grep -Eq 'ERROR 1452 .*CONSTRAINT' "$output_file"; then

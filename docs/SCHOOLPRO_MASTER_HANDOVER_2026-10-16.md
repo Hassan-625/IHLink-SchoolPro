@@ -53,9 +53,10 @@
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-Current branch head at this handover update: `9b3b3513f0f27da878099f4749e252c8f1dcf537` (full A–J roadmap restoration, Storage-policy investigation/fix draft, and CI regression test; draft PR remains open and unmerged).
+Code/test-fix commit: `9b3b3513f0f27da878099f4749e252c8f1dcf537`; latest branch head when this note was refreshed: `2d112d5a2f1b257d1b0f6489fc15fa5f182ab36c` (documentation synchronization; draft PR remains open and unmerged).
 
-- SchoolPro CI run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — exact current branch head; general `validate` was still running at the time of this handover update, and live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path. This is a real fixture gap, not a pass.
+- SchoolPro CI run #1007: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38892010470 — latest documentation-head run; live `tenant-acceptance` failed because School B has no existing `schoolpro_result_templates` row/path; general `validate` was still running at the time of this refresh.
+- Run #1005: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891749136 — general `validate` passed, including the new static family-media policy regression test; live `tenant-acceptance` failed only when it found the absent School B template fixture.
 - Run #1004: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38891682515 — ran against the migration/harness draft commit; final workflow status must be checked before calling CI green.
 - Runs #1000 and #1001 previously passed general validation and all database/RPC isolation checks, but failed on Storage listing timeout. Run #1002 repeated the old listing timeout.
 - Run #1003 changed the harness to query the school-owned template row and download its exact object instead of listing a folder; it correctly exposed that School B has no saved template row/path. The exact-object test must not manufacture a production fixture.

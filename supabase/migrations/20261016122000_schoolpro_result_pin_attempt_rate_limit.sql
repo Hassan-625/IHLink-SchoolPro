@@ -19,7 +19,7 @@ as $function$
 declare
   v_key text;
 begin
-  v_key := encode(digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
+  v_key := encode(extensions.digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
 
   insert into private.schoolpro_result_pin_attempts (
     admission_key, window_started_at, failed_attempts, blocked_until, updated_at
@@ -76,7 +76,7 @@ declare
   v_admission_key text;
   v_blocked_until timestamptz;
 begin
-  v_admission_key := encode(digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
+  v_admission_key := encode(extensions.digest(lower(trim(coalesce(p_admission, ''))), 'sha256'), 'hex');
 
   select a.blocked_until
     into v_blocked_until
@@ -110,7 +110,7 @@ begin
     and p.session = p_session
     and p.is_active
     and (p.expires_at is null or p.expires_at > now())
-    and p.pin_hash = encode(digest(upper(trim(p_pin)), 'sha256'), 'hex')
+    and p.pin_hash = encode(extensions.digest(upper(trim(p_pin)), 'sha256'), 'hex')
   limit 1;
 
   if pinrow.id is null then

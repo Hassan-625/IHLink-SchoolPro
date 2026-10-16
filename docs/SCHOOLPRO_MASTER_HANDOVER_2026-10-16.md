@@ -26,6 +26,18 @@
 
 **Do not start B while A remains open.** The user explicitly requested A/B/C strengthening and verification before D resumes.
 
+## 2A. Full master roadmap preservation — A through J
+
+**Scope correction:** The A–D sequence above is the current gated execution order, not the complete SchoolPro delivery roadmap. The full master roadmap remains **A–J**. Stages E, F, G, H, I and J are not cancelled, removed, completed, or superseded by this Stage A handover. Do not describe the overall project as an A–D-only plan.
+
+This file is a Stage A continuation snapshot and currently records the detailed definitions of A–D only. The authoritative wording and acceptance criteria for E–J must be carried forward verbatim from the prior full master handover; they must not be guessed or replaced with newly invented stage names. Until that source is reconciled into the canonical master document, record E–J as **scope preserved; exact source text still to be restored/verified**, not as out of scope.
+
+Execution rule:
+- Continue the immediate work at **A — Authentication and tenant isolation**, at the Storage-timeout investigation described below.
+- Complete and post-merge verify A before beginning B; then preserve the agreed B → C → D gates.
+- After D, continue through the remaining original E–J stages in their previously approved order and with their original acceptance criteria.
+- Update the canonical full A–J master handover alongside this branch-specific Stage A tracker. A stage-specific document must never silently narrow or replace the full roadmap.
+
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  

@@ -37,13 +37,12 @@ for (const relatedCheck of [
 
 assert.match(sql, /ref_school is distinct from new\.school_id/i, 'Cross-tenant relationships must be rejected, including missing referenced rows');
 assert.match(sql, /member_school is null or member_school is distinct from new\.school_id/i, 'Missing or cross-school members must be rejected');
-for (const parentGuard of [
-  /from public\.schoolpro_lesson_notes ln[\s\S]*?ln\.subject_id = new\.id[\s\S]*?ln\.school_id is distinct from new\.school_id/i,
-  /from public\.schoolpro_promotions p[\s\S]*?p\.student_id = new\.id[\s\S]*?p\.school_id is distinct from new\.school_id/i,
-  /from public\.schoolpro_result_approvals a[\s\S]*?a\.result_id = new\.id[\s\S]*?a\.school_id is distinct from new\.school_id/i,
-  /from public\.schoolpro_member_permissions mp[\s\S]*?mp\.member_id = new\.id[\s\S]*?mp\.school_id is distinct from new\.school_id/i,
-]) {
-  assert.match(sql, parentGuard, 'Parent school reassignment must not invalidate existing child tenant relationships');
-}
+assert.match(
+  sql,
+  /tg_table_name in \(\s*'schoolpro_subjects',\s*'schoolpro_classes',\s*'schoolpro_students',\s*'schoolpro_results',\s*'schoolpro_members'\s*\)/i,
+  'Tenant ownership must be immutable on referenced parent tables'
+);
+assert.match(sql, /new\.school_id is distinct from old\.school_id/i, 'Parent tenant reassignment must be rejected');
+assert.match(sql, /raise exception 'School ownership cannot be reassigned'/i, 'Parent tenant reassignment must fail closed');
 assert.doesNotMatch(sql, /insert into|update public\.|delete from/i, 'Migration must not mutate existing application data');
 console.log('PASS: operational and staff-permission tenant-integrity migration contains fixed-search-path, restricted trigger functions and cross-school relationship checks.');

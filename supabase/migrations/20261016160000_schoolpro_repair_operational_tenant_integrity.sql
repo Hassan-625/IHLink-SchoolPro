@@ -58,53 +58,18 @@ begin
       end if;
     end if;
 
-  -- Prevent later school reassignment of referenced parent rows from silently
-  -- invalidating child tenant relationships already accepted by the guards above.
-  elsif tg_table_name = 'schoolpro_subjects' then
-    if exists (
-      select 1 from public.schoolpro_lesson_notes ln
-      where ln.subject_id = new.id and ln.school_id is distinct from new.school_id
-    ) then
-      raise exception 'Subject school change would invalidate lesson-note tenant scope';
-    end if;
-
-  elsif tg_table_name = 'schoolpro_classes' then
-    if exists (
-      select 1 from public.schoolpro_lesson_notes ln
-      where ln.class_id = new.id and ln.school_id is distinct from new.school_id
-    ) or exists (
-      select 1 from public.schoolpro_promotions p
-      where (p.from_class_id = new.id or p.to_class_id = new.id)
-        and p.school_id is distinct from new.school_id
-    ) or exists (
-      select 1 from public.schoolpro_students s
-      where s.class_id = new.id and s.school_id is distinct from new.school_id
-    ) then
-      raise exception 'Class school change would invalidate operational tenant scope';
-    end if;
-
-  elsif tg_table_name = 'schoolpro_students' then
-    if exists (
-      select 1 from public.schoolpro_promotions p
-      where p.student_id = new.id and p.school_id is distinct from new.school_id
-    ) then
-      raise exception 'Student school change would invalidate promotion tenant scope';
-    end if;
-
-  elsif tg_table_name = 'schoolpro_results' then
-    if exists (
-      select 1 from public.schoolpro_result_approvals a
-      where a.result_id = new.id and a.school_id is distinct from new.school_id
-    ) then
-      raise exception 'Result school change would invalidate approval tenant scope';
-    end if;
-
-  elsif tg_table_name = 'schoolpro_members' then
-    if exists (
-      select 1 from public.schoolpro_member_permissions mp
-      where mp.member_id = new.id and mp.school_id is distinct from new.school_id
-    ) then
-      raise exception 'Member school change would invalidate permission tenant scope';
+  -- Tenant ownership is immutable for these records. Moving a row between
+  -- schools would invalidate every existing relation, including relations owned
+  -- by other operational modules that are not enumerated in this repair.
+  elsif tg_table_name in (
+    'schoolpro_subjects',
+    'schoolpro_classes',
+    'schoolpro_students',
+    'schoolpro_results',
+    'schoolpro_members'
+  ) then
+    if new.school_id is distinct from old.school_id then
+      raise exception 'School ownership cannot be reassigned';
     end if;
   end if;
 

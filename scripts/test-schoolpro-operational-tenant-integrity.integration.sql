@@ -87,18 +87,18 @@ select pg_temp.assert_rejected('cross-school permission member',
   'Permission member belongs to another school');
 select pg_temp.assert_rejected('subject parent reassignment',
   $$update public.schoolpro_subjects set school_id='00000000-0000-0000-0000-000000000002' where id='10000000-0000-0000-0000-000000000001'$$,
-  'Subject school change would invalidate lesson-note tenant scope');
+  'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('class parent reassignment',
   $$update public.schoolpro_classes set school_id='00000000-0000-0000-0000-000000000002' where id='20000000-0000-0000-0000-000000000001'$$,
-  'Class school change would invalidate operational tenant scope');
+  'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('student parent reassignment',
   $$update public.schoolpro_students set school_id='00000000-0000-0000-0000-000000000002' where id='30000000-0000-0000-0000-000000000001'$$,
-  'Student school change would invalidate promotion tenant scope');
+  'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('result parent reassignment',
   $$update public.schoolpro_results set school_id='00000000-0000-0000-0000-000000000002' where id='40000000-0000-0000-0000-000000000001'$$,
-  'Result school change would invalidate approval tenant scope');
+  'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('member parent reassignment',
   $$update public.schoolpro_members set school_id='00000000-0000-0000-0000-000000000002' where id='50000000-0000-0000-0000-000000000001'$$,
-  'Member school change would invalidate permission tenant scope');
+  'School ownership cannot be reassigned');
 
 select 'PASS: PostgreSQL rejected cross-tenant child writes and unsafe parent reassignment.' as result;

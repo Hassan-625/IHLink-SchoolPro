@@ -83,6 +83,15 @@ CI evidence:
 
 The retry did not solve the Storage timeout. Next investigation should isolate the Storage listing request/policy/database path and test an exact known object (without weakening the negative assertion). Do not add longer unbounded retries or skip the Storage check.
 
+## Latest exact-head CI status (2026-10-16, branch head `3760e1f0c93c08f45f8d1fe471c37e66b706ccc6`)
+
+- Run #1001: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589735 — general `validate` passed; `tenant-acceptance` failed.
+- Run #1000: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38889434119 — general `validate` passed; `tenant-acceptance` failed.
+- Both live runs passed authenticated own-school/foreign-school DB reads and the academic-period/result-output RPC positive/negative assertions. Both then timed out at the existing School B object lookup in `school-result-templates`, after the initial attempt plus two bounded retries.
+- The last error in each run was `The connection to the database timed out`. The positive Storage fixture lookup did not complete, so the corresponding foreign-school Storage denial assertion did not run. The Storage acceptance gate remains **failed/unverified**.
+- Payment page validation run #727 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38890589626.
+- Payment-receipt Storage checks remain skipped because no existing receipt paths are configured. Do not upload dummy production receipts.
+
 ## What this audit does not yet prove
 
 - Two authenticated school accounts cannot read or mutate each other's rows, related IDs, RPC operations, or Storage objects.
@@ -91,7 +100,7 @@ The retry did not solve the Storage timeout. Next investigation should isolate t
 
 ## Required before Stage A can be declared complete
 
-- [x] General CI validate job passed on PR #106's latest run; [ ] live tenant-acceptance job still fails at result-template Storage listing timeout.
+- [x] General CI validate job passed on runs #1000 and #1001; [ ] live tenant-acceptance job still fails at result-template Storage listing timeout.
 - [ ] Review current production schema and migration history; identify unapplied, partially applied or out-of-order migrations without applying changes.
 - [ ] Inventory all school-scoped tables, RLS enable/force state, and every permissive policy (policies combine permissively with OR unless restrictive policy semantics are explicitly used).
 - [ ] Inspect RPCs, triggers, Edge Functions and Storage policies for school-ID trust, membership checks and cross-tenant relationships.

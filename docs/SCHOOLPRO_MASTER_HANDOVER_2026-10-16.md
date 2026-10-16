@@ -53,10 +53,11 @@
 ## 3. Latest Stage A PR and CI state (16 October 2026)
 
 PR #106: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106  
-PR remains open, draft and unmerged. The latest completed green live-acceptance evidence is SchoolPro CI run #1041 on commit `7c58c21d221ae6d26d63350f9851512a6ccf38af`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896381743. Both `validate` and live `tenant-acceptance` passed.
+PR remains open, draft and unmerged. The exact current code-and-documentation head at this verification is `a622e28a0e9b209f7f7d5c02dc4ec25a459d16be`.
 
-- Payment-page validation run #768 passed on commit `494f0edfced9511f4a2e9ad52ab8c3933fc36465`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896569096.
-- The later commits primarily reconcile the handover and Stage A release gate. At the last check, CI run #1046 and payment-page validation #772 were still running against documentation-updated head `f34fee2b2611234924a0e2628442bb2ae23891e1`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896845628 and https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896845596. This handover refresh is documentation-only and requires its own exact-head CI check.
+- **SchoolPro CI run #1047 passed** on that exact head. Both `validate` and live `tenant-acceptance` passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896946134.
+- **Payment-page validation run #773 passed** on the same exact head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896946151.
+- Run #1041 also passed both CI jobs on earlier code commit `7c58c21d221ae6d26d63350f9851512a6ccf38af`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38896381743.
 - The recovered A–J roadmap is reconciled against the canonical historical guide at commit `1989a8e14d2bab69d758a231b532b7989857c40c`. The current table restores all ten original workstream titles and detailed acceptance focus while preserving later requirements.
 - The authenticated two-school Storage test passed using an existing workbook: School A downloaded its own object; School B received HTTP 400 for that exact foreign object. The earlier folder-list timeout has a separate policy/query-performance cause; the proposed Storage migration remains draft-only.
 - Payment receipt Storage tests remain skipped because `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` are not configured and no existing receipt fixtures are available. Do not upload dummy production receipts.

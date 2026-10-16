@@ -79,3 +79,7 @@ Exact catalog signature: `public.datasub_transfer_wallet(uuid,numeric,text,uuid)
 ## Follow-up tracking — 2026-10-16
 
 Created DataSub issue [#47 — Security review: harden public provider webhook event ingestion](https://github.com/Hassan-625/IHLink-DataSub/issues/47). It records the observed behavior, acceptance criteria, and the requirement to confirm the actual provider authentication contract before choosing a signature or secret scheme. This issue is a tracking artifact only; no code or deployed configuration was changed.
+
+## Isolated verification plan
+
+The test matrix is now documented in [DataSub isolated financial-path security test plan](datasub-isolated-security-test-plan-2026-10-16.md). It is a specification only: direct writes, duplicate purchase retries, wallet-transfer concurrency, refund/reconciliation races, and webhook abuse have **not** been executed against a disposable database yet. Production is explicitly excluded as a test target.

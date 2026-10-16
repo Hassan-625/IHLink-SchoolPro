@@ -41,3 +41,14 @@ The live migration ledger records 20260925191607 harden_datasub_refund_idempoten
 ## Change-control boundary
 
 Read-only audit and documentation only. No production DDL/DML, environment changes, deployment, migration execution, PR merge or cutover was performed or authorized by this artifact.
+
+## Supplemental live evidence — wallet transfer routine (read-only, 2026-10-16)
+
+Exact catalog signature: `public.datasub_transfer_wallet(uuid,numeric,text,uuid)`.
+
+- Definition MD5 observed: `ecfc51ef872d2c4816d13b4e52fe18d6`. Owner: `postgres`. `SECURITY DEFINER`: true. Function config: empty `search_path`. Observed EXECUTE ACL: `postgres`, `authenticated`, and `service_role`. These are audit facts, not by themselves a vulnerability.
+- The full body confirms that it checks `auth.uid()` against an active profile; validates request ID, positive amount, two-decimal precision and numeric upper bound; takes an advisory transaction lock keyed by sender + request ID; and returns the previous transfer only when the request's recipient account and amount match. Reusing the same request ID with a different recipient or amount raises an exception.
+- It verifies the transaction PIN, requires an active/customer-visible DataSub BillStack virtual account for another active user, and requires the sender to have an active customer-visible DataSub BillStack account. It creates the recipient wallet if absent, then locks sender and recipient wallet rows in sorted user-ID order before reading balances.
+- It checks sufficient funds, inserts the transfer record, debits the sender, credits the recipient, writes paired debit/credit wallet-ledger rows with before/after balances and transfer metadata, then returns success. PostgreSQL function execution provides transaction atomicity unless the function or caller explicitly changes transaction behavior; the full body showed no such exception-handling block that would swallow a partial-write failure.
+- Remaining test cases: concurrent same-request duplicate; same request ID with changed amount/recipient; two opposing A→B and B→A transfers to exercise lock order; insufficient funds; invalid/locked PIN; inactive or non-customer-visible account; injected error after transfer row / balance update / ledger insert in a disposable database to prove rollback; verify no direct client can mutate transfer/wallet/ledger tables to bypass the routine.
+- This is a definition-level review only. No transfer was initiated, no wallet/balance/ledger rows were read, and no production write occurred.

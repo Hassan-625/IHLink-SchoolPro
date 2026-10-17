@@ -331,3 +331,12 @@ An owner-reported candidate isolated fork exists as pg-3898d936, but no authoriz
 - **G3 Destination/schema/workflow correctness: BLOCKED** — Aiven endpoint/version/capabilities/access have not been verified; Auth/Storage/Edge boundaries remain undecided.
 - **G4 Isolated rehearsal/recovery: BLOCKED / NOT RUN** — no authorized isolated Aiven-compatible target has been established.
 - Overall migration decision remains **NO-GO**. No Supabase branch or charges, new Aiven resource, production mutation, export/import, deployment, merge or cutover occurred.
+
+
+## Issued-document policy patch and CI provenance recheck — 2026-10-17
+
+Read-only review of draft PR #108 (https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) confirms the proposed change corrects more than the student tautology: it adjusts student, guardian and staff permissive SELECT policies to require relationship-school consistency, and hardens generated document-output object policy checks. This broader scope is necessary because permissive policies combine with OR semantics; fixing only the student policy would leave alternate policy paths.
+
+The isolated PostgreSQL 17 RLS/storage regression reported as passing ran against commit 1dfa6f73ebb8b3deb3c8dd5a203ee693f0632220. The current PR head is 018af841733e094a634955b199ac590bac9f95ff. A GitHub commit comparison shows exactly one commit ahead and only one changed file: docs/database-migration/ISSUED-DOCUMENT-RLS-CORRECTION-TEST-PLAN-2026-10-17.md (7 additions, 0 deletions). The migration SQL, regression SQL and workflow were unchanged between the tested commit and current head, so the recorded synthetic regression remains applicable to those code/test assets. The current head's reported Vercel success is not a substitute for security CI; no separate new regression run was observed for the latest head.
+
+**Disposition:** keep PR #108 draft and unmerged. The disposable regression proves the modeled two-school policy behavior and path-tampering cases, but does not emulate Supabase Storage API/signed URLs, JWT/PostgREST behavior, deployed helper ACLs, or app download/RPC paths. Those are still open before production approval or data export. No production policy or Storage change was made.

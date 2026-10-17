@@ -2541,3 +2541,8 @@ Extended `scripts/test-schoolpro-tenant-isolation-live.mjs` so the optional read
 ### Live tenant acceptance retry correction — 2026-10-17
 
 The first run of expanded live acceptance (CI #1576) verified foreign-school reads were denied across the added operational tables for School A and for most of School B's table list, then failed on a single query to `schoolpro_result_approvals` with an empty error message and status 0. This is not yet classifiable as an authorization failure or a pass. Updated the read-only count query to select only `id` and retry empty, status-0 transport errors while continuing to fail immediately for explicit database/API errors. Corrected code head: `de02a07404ddc39c86fd3278fbed820227d399da`. Await a fresh exact-head run; do not count CI #1576 as passing.
+
+
+### Live tenant probe correction 2 — 2026-10-17
+
+The retry correction alone did not resolve the live `schoolpro_result_approvals` probe: CI #1578 again timed out/returned an empty status-0 error on the School B exact-count request, after the other operational-table denial checks passed. Replaced exact `COUNT(*)` with a bounded `SELECT id ... LIMIT 1` negative probe; this tests the required security property directly (no foreign row is returned) without requiring a full count under RLS policies. Updated head: `e35365fbe9ff05ca4ce7da40a2c1cb4cfe9a94ce`. New exact-head CI/payment validation must pass, and the live test remains unaccepted until then.

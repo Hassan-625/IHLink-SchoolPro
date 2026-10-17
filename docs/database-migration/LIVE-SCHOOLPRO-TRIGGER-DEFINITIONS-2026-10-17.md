@@ -1121,3 +1121,8 @@ CREATE OR REPLACE FUNCTION public.enforce_schoolpro_result_lock()
 AS $function$ begin if old.locked=true and new.locked=true and (to_jsonb(new)-'locked'-'updated_at') is distinct from (to_jsonb(old)-'locked'-'updated_at') then raise exception 'Result is locked'; end if; return new; end $function$
 
 ```
+
+
+## Current tenant relation follow-up — 2026-10-17
+
+See [Live tenant-relation catalog reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md). Current live trigger bindings include `private.enforce_schoolpro_tenant_relations()`, `private.validate_schoolpro_result_tenant()`, `private.validate_candidate_cbt_tenant()`, `private.schoolpro_guardian_school_scope()`, and `private.guard_schoolpro_document_issue_lifecycle()`; these differ in name from several branch-only migration validator functions. Lesson notes, result approvals and promotions use current RLS/operational triggers, but exact equivalence to the absent named validators is not proven. Seventeen targeted existing-row tenant joins returned zero mismatches. The issued-document student SELECT policy contains the tautology `st.school_id = st.school_id` and needs an approved fix plus negative tests; it was not changed in production.

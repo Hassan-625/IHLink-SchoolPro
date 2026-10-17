@@ -69,7 +69,12 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
   assert.ifError(ownError);
   assert.ok(ownStudents?.length, accountName + ' must be able to read at least one own-school student');
 
-  for (const table of ['schoolpro_students', 'schoolpro_members', 'schoolpro_invoices', 'schoolpro_results']) {
+  for (const table of [
+    'schoolpro_students', 'schoolpro_members', 'schoolpro_invoices', 'schoolpro_results',
+    'schoolpro_library_books', 'schoolpro_transport_routes', 'schoolpro_hostel_rooms',
+    'schoolpro_inventory_assets', 'schoolpro_calendar_events', 'schoolpro_lesson_notes',
+    'schoolpro_result_approvals', 'schoolpro_promotions',
+  ]) {
     const count = await countRows(client, table, otherSchoolId);
     assert.equal(count, 0, accountName + ' must not read foreign-school rows from ' + table);
     console.log('PASS', accountName, 'foreign-school read blocked:', table);

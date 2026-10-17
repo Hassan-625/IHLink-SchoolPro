@@ -7,7 +7,7 @@ values (
   'schoolpro-payment-receipts',
   'schoolpro-payment-receipts',
   false,
-  10485760,
+  5242880,
   array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']::text[]
 )
 on conflict (id) do update
@@ -43,6 +43,20 @@ using (
     where p.receipt_path = objects.name
       and private.has_school_access(
         p.school_id,
+        array[
+          'proprietor'::public.school_member_role,
+          'administrator'::public.school_member_role,
+          'accountant'::public.school_member_role,
+          'bursar'::public.school_member_role
+        ]
+      )
+  )
+  or exists (
+    select 1
+    from public.schoolpro_payment_submissions s
+    where s.receipt_path = objects.name
+      and private.has_school_access(
+        s.school_id,
         array[
           'proprietor'::public.school_member_role,
           'administrator'::public.school_member_role,

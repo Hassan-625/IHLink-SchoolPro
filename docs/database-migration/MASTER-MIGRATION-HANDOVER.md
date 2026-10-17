@@ -991,3 +991,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Corrected the helper to use an explicit named dollar delimiter (`$assert$...$assert$`). Current correction commit: `13712c209883e24a697d29d9da56277825350be8`.
 - Fresh runs for that exact commit are queued/in progress: SchoolPro CI [#38990676105](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990676105) and payment-page validation [#38990676100](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990676100). Do not mark the RLS fixture green until the database job and all required CI jobs complete successfully.
 - The prior receipt-RPC fixture passed on commit `0d1294d03a90f9a5ee601d83645cbe9b1ff34c70`; the RLS fixture is separate and not yet validated. No production changes, deployment, or merge occurred.
+
+
+## Follow-up verification: RLS fixture access and tenant acceptance diagnostics — 2026-10-17
+
+- The named SQL delimiter correction allowed the RLS fixture to proceed further. The next failure is a missing fixture permission: authenticated test role cannot SELECT `schoolpro_guardian_links` while the policy under test evaluates its guardian-link predicate. The disposable fixture now enables RLS on that table, adds a scoped guardian/finance SELECT policy, and grants SELECT to the test role (commit `6ba6fde9f028e4d7e553b4ecb520e6f21db96e7a`). This is test-fixture setup only, not a production policy change.
+- The live two-school acceptance job also failed while counting foreign-school `schoolpro_invoices` rows. Its logger printed `[object Object]`, hiding the useful structured API error. Added structured error formatting to the read-only acceptance script (commit `b7075b732c26a8c80f4bf79565a5fe199257500f`) so the next run exposes the actual status/message rather than obscuring the cause.
+- Latest corrective commits are queued for CI; do not treat either test as passing until fresh jobs complete. Earlier tenant checks passed for students, members, and the academic-period RPC before the invoice-count error.
+- No production writes, deployment, migration application, or PR merge was performed.

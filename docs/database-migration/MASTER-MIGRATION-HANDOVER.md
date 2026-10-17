@@ -1626,3 +1626,17 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Relevant Stage A branch commits: \`843107fd876361d55528f750ddcb85d30741952a\` (policy migration), \`14177ea1ed00b5ee99d17efe964556d4a2cf2490\` (isolated SQL fixture), \`7f8a5edc358ab07446d65c8b1f9adecc66814f3b\` (local Storage API test), \`a6a76ddf6142141450414d7244c06cc1e80acbec\` (CI job).
 - **Validation is pending.** The current execution environment has no Docker or Supabase CLI available, so the local stack has not been started here. Do not mark this test as passed until GitHub Actions runs the new job and its logs confirm the two-user assertions. The new policy migration remains draft/unmerged and must receive review before any eventual production application.
 - The live tenant acceptance test still requires existing test-owned receipt paths and remains a separate production read-only acceptance check. Do not configure those paths with invented values and do not add dummy objects to the production bucket. Stage A remains **BLOCKED / NOT MERGE-READY** until the non-production test passes, source/ledger drift is reconciled, and all other Stage A gates pass.
+
+
+## 19. Receipt Storage CI verification result and production-fixture-free acceptance (2026-10-17)
+
+- GitHub Actions SchoolPro CI run [#1363](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39023324540) completed **failure overall**, but the new \`Receipt Storage isolation (local Supabase)\` job completed **success**. Job logs show:
+  - both disposable users uploaded synthetic receipts into their own UUID folders;
+  - each user downloaded their own receipt and was denied the other user's receipt;
+  - cross-user upload into the other user's UUID folder was denied;
+  - local Supabase stack was stopped after the test.
+- Other integration jobs in run #1363 completed success: result-PIN rate limit, public admission abuse, payment-review RLS, tenant-integrity DB integration, result-verification exposure, and static \`validate\`.
+- The only failed job was \`tenant-acceptance\`, which exited before sending any request because \`SCHOOL_A_RECEIPT_PATH\` and \`SCHOOL_B_RECEIPT_PATH\` were empty. This is expected given the maintainer-confirmed empty production receipt bucket; it is not a failed Storage policy assertion.
+- Updated \`scripts/test-schoolpro-tenant-isolation-live.mjs\` in commit \`fb3807042dc7f29bafe1958a58a07e9664a9a147\`: receipt object paths must now be supplied together or both omitted. If omitted, the live two-school tenant read/RPC/template checks still run and the script prints an explicit \`SKIP\` for production receipt-object checks, pointing to the separate local Storage integration job. If paths are supplied, the live positive/negative receipt download checks still execute. This avoids blocking all tenant acceptance on unavailable production fixtures without misreporting live receipt-object verification as passed.
+- The local test verifies the policies from the new, unmerged repository migration in an isolated Supabase stack; it does not prove that the production database has been reconciled to this migration or that production receipt objects exist. No production receipt objects were created and no production migration was applied.
+- The updated acceptance script is awaiting its new CI run. Stage A remains **BLOCKED / NOT MERGE-READY** until the new run completes, all other required gates pass, and the receipt-policy migration is reviewed for parity with the current application schema/role model.

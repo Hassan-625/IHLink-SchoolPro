@@ -42,18 +42,23 @@ create policy "calendar school read" on public.schoolpro_calendar_events for sel
 \ir ../supabase/migrations/20261017180000_schoolpro_operational_tenant_indexes.sql
 
 -- Ensure every operational tenant probe has a leading school_id index.
-do $$
-begin
-  if not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_library_books_school_id_idx')
-     or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_transport_routes_school_id_idx')
-     or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_hostel_rooms_school_id_idx')
-     or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_inventory_assets_school_id_idx')
-     or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_result_approvals_school_id_idx')
-     or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_promotions_school_id_idx') then
-    raise exception 'FAIL: missing operational school_id index';
-  end if;
-end
-$$;
+select count(*) = 6 as tenant_indexes_present
+from pg_indexes
+where schemaname='public'
+  and indexname = any(array[
+    'schoolpro_library_books_school_id_idx',
+    'schoolpro_transport_routes_school_id_idx',
+    'schoolpro_hostel_rooms_school_id_idx',
+    'schoolpro_inventory_assets_school_id_idx',
+    'schoolpro_result_approvals_school_id_idx',
+    'schoolpro_promotions_school_id_idx'
+  ]) \gset
+\if :tenant_indexes_present
+  \echo 'PASS: all operational school_id indexes exist.'
+\else
+  \echo 'FAIL: missing operational school_id index.'
+  \quit 1
+\endif
 
 -- The repair must preserve the live policy names/feature paths, not replace the policies
 -- with the historical migration's narrower generic policy set.

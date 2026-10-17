@@ -2603,3 +2603,13 @@ A concurrent branch edit normalized the PL/pgSQL dollar delimiter to a single `$
 ### Index migration static-check correction — 2026-10-17
 
 The static assertion that the index migration fails closed had an over-escaped regular expression and was corrected to match `to_regclass` through `raise exception`. Latest code-bearing Stage A head is now `eeac24a9e1820272ef673f59afd053a81408f193`; SchoolPro CI #1596 is queued and payment validation #1323 is running. The live acceptance probe is still expected to be sensitive to the index deployment state; no production migration has been applied.
+
+
+### Exact-head revalidation after migration 006 FK assertion correction — 2026-10-17
+
+The assignment-submission negative test now expects the actual MySQL constraint name `fk_submission_student` (the previous expected name was incorrect). The latest branch head observed during this recheck is `1964131c0e62075dbcc9f767c7299cb73aa60cc3`. Exact-head runs were started:
+- SchoolPro CI #1597: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739286
+- MySQL schema draft #400: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739279
+- Payment-page validation #1324: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739281
+
+At the last check, all three were still in progress. Earlier MySQL run #385 failed on the incorrect assertion and is not accepted; the payment-page run #1296 passed, but that does not replace the fresh exact-head run. Await #400 and verify all six migrations plus fixtures and the cross-school negative cases. Do not call migration 006 accepted until the corrected run finishes successfully. This note is evidence of run status, not an acceptance claim.

@@ -1,5 +1,5 @@
 # IHLink Master Database Migration Handover
-**Last updated:** 2026-10-17  
+**Last updated:** 17 October 2026
 **Status:** Audit and isolated schema-pilot stage — NOT approved for production cutover  
 **Working PR:** https://github.com/Hassan-625/IHLink-SchoolPro/pull/107  
 **Working branch:** `migration/mysql-schoolpro-foundation`  
@@ -1423,3 +1423,52 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - This closes the **draft exact-head CI validation checkpoint** for the listed tests. It does not establish live Cloudflare challenge/replay behavior, provider-native volumetric rate limiting, or production source-to-deployment parity.
 - Stage A remains **not production-complete**: live account/student login functions still use the deployed `X-Forwarded-For` implementation; the draft `schoolpro-public-admission` gateway is not deployed; and the live admissions RPC still permits `anon`/`authenticated` execution until the gateway and revocation migration are safely rolled out. No production change or merge was performed.
 - Next: review the exact Stage A diff and rollout sequence, obtain explicit approval before production actions, and reverify A/B/C at the required release gate before resuming D. The seven RLS-enabled/no-policy tables remain classified as intentionally server-only based on the observed grants and consumer/lifecycle trace; retention changes are not authorized by this audit.
+
+
+## 13. Stage A release-gate review and re-verification — 2026-10-17
+
+### Exact-head verification — PASS for draft CI, NOT a production release approval
+
+- Re-fetched PR #106 immediately before this review. It remains **open, draft, unmerged**; base commit `29856dff17ea8a3bc8bb31b7900967b7df9d316b`; exact head `ea6186b400ec9ae0514641296f5c43f0cda30f86`.
+- Re-queried GitHub Actions run [#1341](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469332) for that exact head. All seven jobs are now completed with `success`:
+  1. `validate` — typecheck, Stage A source guards, Turnstile mocked behavior test, untrusted-forwarding-header regression, mobile/layout checks, artifact upload and production build.
+  2. `tenant-acceptance` — live, read-only two-school acceptance harness.
+  3. `payment-review-rls-integration` — disposable PostgreSQL policy/grant test.
+  4. `tenant-integrity-db-integration` — disposable PostgreSQL tenant-integrity, disabled-online-gateway and receipt-submission RPC tests.
+  5. `result-verification-exposure-integration` — disposable snapshot/exposure test.
+  6. `result-pin-rate-limit-integration` — disposable PIN cooldown, login attempt/cleanup, 12 concurrent login-key calls, and 8 concurrent wrong-PIN requests.
+  7. `public-admission-abuse-integration` — disposable admissions limits, validation and RPC grant-boundary test.
+- Payment-page validation [#1068](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469275) also completed successfully.
+- **A draft test/CI checkpoint is reverified on this exact head. A is not cleared for merge, deployment or production completion.** CI does not close live source-to-deployment mismatches, live Cloudflare token/replay behavior, the verified public admissions RPC reachability gap, or missing production rollout evidence.
+
+### Release-gate matrix
+
+| Gate | Current finding | Release disposition / evidence still required |
+|---|---|---|
+| Authentication and school context | Draft auth/profile-race, role/access, normalized account-key throttling and no-untrusted-forwarding-header tests pass. Live two-school acceptance passed in run #1341. | Draft evidence passes. After any approved merge/deploy, repeat positive and negative login/session/role/workspace checks against the deployed commit and Render service. |
+| Tenant integrity and result exposure | Disposable tenant-integrity and result-verification integration jobs passed; tenant acceptance passed. | Keep the known Basic 5 A 2025/2026 subject-ID linkage anomaly protected; do not alter records as part of this release gate. Verify production schema/source parity and intended RPC/RLS/Storage access after a separately approved rollout. |
+| Payment review RLS | Disposable PostgreSQL integration job passed. Fixture executes the draft migration against minimal test-only tables, models permissive policies/grants, and switches to an authenticated role to check guardian read scope/direct-write denial, school-finance review/write behavior and Super Admin read-only behavior. | Useful runtime evidence, but **not a full clone of the live schema or every actual role/RPC/caller path**. Still test submit/review/reject/cancel, immutable review-controlled columns, cross-school IDs, receipt-object ownership/path, duplicate allocations and transaction concurrency against the full relevant schema/policy/grant set in a disposable environment. Do not claim production exploit or complete production parity from the fixture alone. |
+| Receipt storage isolation | No valid, safe two-school receipt-object fixture is configured in the live acceptance harness. | Blocked. Configure known, existing test-owned paths only; verify own-school read/write and cross-school denial. Do not upload dummy receipts or mutate customer records in production. |
+| Family report-media Storage | Static regression guard passes and enforces indexed exact-path checks/short-circuit for non-media objects. Earlier folder-listing performance issue was not closed by exact-object tests alone. | Blocked pending disposable/runtime policy and performance test for exact-object reads, folder listing, cross-school objects, student photos, signatures, logos and workbook-path short-circuit. Capture latency/query evidence; do not infer performance from source assertions. |
+| Result PIN and login throttling | Disposable cooldown and concurrency assertions pass; account/student draft handlers no longer use unverified forwarding headers as database rate-limit identity. | Draft gate passes. Provider-native edge/WAF volumetric throttling is still unverified; do not add a caller-controlled IP database key. Establish trusted proxy/header provenance before considering any IP-based control. |
+| Public admissions abuse control | Disposable contact-limit/validation/RPC-grant tests pass; Turnstile verifier behavioral tests pass with mocked Siteverify. | **Production blocker:** live `submit_schoolpro_application` remains SECURITY DEFINER and executable by `anon`/`authenticated`; `schoolpro-public-admission` is absent from the deployed Edge Function inventory. Live migration ledger does not contain draft revoke migration `20261017133000`. Do not revoke the RPC before the gateway/frontend is deployed and verified, or the public form may break. |
+| Trigger and migration integrity | Draft migrations are tested in isolated fixtures. Read-only live ledger ended at `20261015161735`; draft versions `20261016122000`, `20261017103000`, `20261017120000`, `20261017133000` are absent from the observed live ledger. | Blocked. Compare each proposed migration with live schema, trigger definitions/order, dependent routines and operational workflows. Reconcile source/ledger drift using authoritative history/catalog evidence; do not guess, renumber, or replay historical migrations. |
+| Production parity and deployment | No approved production change occurred in this workstream. Live account login v2 and student login v3 still use the leftmost `x-forwarded-for` value; the draft removed that unverified identity. | Blocked pending explicit approval, reviewed release scope, controlled rollout, post-deployment checks and rollback plan. Do not represent draft code as production protection. |
+
+### Required controlled rollout — in this order, after explicit approval
+
+1. **Confirm deployment targets and allowed origins.** Verify the actual public/customer-facing hostnames and scheme-qualified origins, including the Render production domain and any real custom domain. Do not guess hostnames.
+2. **Prepare challenge configuration.** Create the Cloudflare Turnstile widget and configure Render build variable `VITE_TURNSTILE_SITE_KEY`; configure server-only Supabase Edge secrets `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES`, and `SCHOOLPRO_ADMISSION_ALLOWED_ORIGINS`. Never put the secret in frontend build variables.
+3. **Deploy the public-admission gateway and frontend in a controlled sequence.** Confirm the deployed function is present and the frontend submits only through the gateway; preserve the existing application path until a working replacement is verified.
+4. **Exercise the live challenge flow.** Verify valid, invalid, expired/replayed token rejection; wrong action/hostname rejection; missing-config fail-closed behavior; allowed/blocked origins; and successful legitimate admission. Record live evidence separately from the mocked CI test.
+5. **Only after the gateway is confirmed healthy, apply the reviewed admissions RPC grant/validation migration.** Verify `anon` and `authenticated` cannot execute the public RPC and `service_role` can; re-run the public form end-to-end. Never revoke first.
+6. **Deploy the reviewed login-handler changes** only after the source, environment and operational plan are approved. Do not claim IP-wide or volumetric protection unless the actual trusted edge and provider-native limits are configured and tested.
+7. **Apply the remaining reviewed migrations** only after trigger/source-to-ledger reconciliation and receipt/Storage/payment tests close. Keep migrations ordered and reversible where practical; capture the exact production migration identifiers and resulting schema evidence.
+8. **Post-deploy verification:** test both school workspaces, role-specific positive and negative paths, payments/receipt isolation, results and student login; confirm Render is running the intended commit; inspect errors and rollback readiness. Do not merge/deploy as a side effect of a green draft CI run.
+
+### Stage A decision
+
+- **Draft CI:** PASS on exact head `ea6186b400ec9ae0514641296f5c43f0cda30f86`, run #1341, 7/7 jobs.
+- **Stage A release gate:** **BLOCKED / NOT MERGE-READY** until receipt Storage isolation, family-media runtime/performance evidence, complete payment lifecycle/role boundary coverage, full-schema trigger and migration-drift review, and a safe admissions/login rollout plan are addressed and reviewed.
+- **Production:** unchanged by this checkpoint. No production migration, row mutation, Supabase function/secret change, Render deployment, merge or cutover was performed.
+- **Sequence remains A → B → C → D.** Do not start B until Stage A has passed the outstanding release gates, been explicitly approved and merged to the intended production branch, and then been verified post-merge/deployment. Reverify B and C before resuming D. Preserve the full E–J roadmap.

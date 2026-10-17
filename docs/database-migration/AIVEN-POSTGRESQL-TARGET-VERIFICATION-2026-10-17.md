@@ -156,3 +156,8 @@ Do not run historical SQL to “catch up”, replay any ledger entry, reset migr
 - Provenance investigation found no Supabase deploy workflow in the branch's workflow inventory. The current CI workflows do not prove historical production database deployment. The 397 live-only and 44 branch-only migration versions remain unresolved at artifact/commit/disposition level.
 
 **Decision unchanged:** no export/import, migration replay, production writes, Render changes, or cutover until provenance reconciliation and row-level ownership validation are approved.
+
+
+## Provenance follow-up — 2026-10-17
+
+The migration reconciliation addendum now records additional immutable evidence: `main` and `migration/mysql-schoolpro-foundation` both contain the same 123 numbered migration files; current CI validates app code and a disposable MySQL draft, not production Supabase migration deployment; commit `a6da195` documents a 33-version direct-to-production Supabase API batch but intentionally omits its DDL; PR #79 provides only narrow filename reconciliation evidence; and commit `61afde6` captures some live result/CBT parity but is not a complete deployment log. These findings narrow provenance for a subset but do not resolve the 397/44 sets. All other version dispositions remain unresolved unless individually evidenced. Export/import remains blocked.

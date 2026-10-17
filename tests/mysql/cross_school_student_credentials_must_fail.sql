@@ -1,0 +1,1 @@
+INSERT INTO student_credentials (school_id,student_id,password_hash,must_change_password,status) VALUES ('10000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000002','synthetic-hash',TRUE,'active');

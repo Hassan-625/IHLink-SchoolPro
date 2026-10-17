@@ -1,0 +1,109 @@
+# SchoolPro cross-boundary foreign-key review — 2026-10-17
+
+## Scope and result
+
+Read-only query of the live Supabase PostgreSQL catalog. Scope: every FK where exactly one endpoint is a `public.schoolpro_*` table; this includes inbound references from shared/private integration tables. Result: **79 foreign keys; 79 validated; 0 NOT VALIDATED**. No DDL was executed.
+
+This is the exact current catalog list by source table, constraint name, source column, target table/column and validation status. Reconcile it against the prior canonical 79-entry register by exact constraint name and column tuple. FK validation proves referential integrity only; it does not prove tenant authorization.
+
+## Individual constraint disposition
+
+| Source table | Constraint | Source column(s) | Target table/column(s) | FK validated | Migration disposition |
+|---|---|---|---|---|---|
+| `private.schoolpro_academic_clock` | `schoolpro_academic_clock_school_id_fkey` | `school_id` | `public.schoolpro_schools(id)` | yes | Tenant-root relationship; preserve allowlisted school IDs; inbound shared-service rows need separate disposition. |
+| `public.ihlink_email_queue` | `ihlink_email_queue_school_id_fkey` | `school_id` | `public.schoolpro_schools(id)` | yes | Tenant-root relationship; preserve allowlisted school IDs; inbound shared-service rows need separate disposition. |
+| `public.payment_transactions` | `payment_transactions_schoolpro_payment_intent_id_fkey` | `schoolpro_payment_intent_id` | `public.schoolpro_payment_intents(id)` | yes | Shared payment integration; preserve correlation/idempotency through an approved adapter, not broad cross-product copy. |
+| `public.schoolpro_academic_documents` | `schoolpro_academic_documents_issued_by_fkey` | `issued_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_access_invitations` | `schoolpro_access_invitations_created_by_fkey` | `created_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_admissions` | `schoolpro_admissions_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_announcements` | `schoolpro_announcements_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_assignment_submissions` | `schoolpro_assignment_submissions_graded_by_fkey` | `graded_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_assignments` | `schoolpro_assignments_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_attendance` | `schoolpro_attendance_marked_by_fkey` | `marked_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_audit_logs` | `schoolpro_audit_logs_actor_id_fkey` | `actor_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_bank_accounts` | `schoolpro_bank_accounts_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_board_members` | `schoolpro_board_members_appointed_by_fkey` | `appointed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_candidate_cbt_answers` | `schoolpro_candidate_cbt_answers_marked_by_fkey` | `marked_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_cbt_answers` | `schoolpro_cbt_answers_marked_by_fkey` | `marked_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_cbt_eligibility` | `schoolpro_cbt_eligibility_assigned_by_fkey` | `assigned_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_cbt_tests` | `schoolpro_cbt_tests_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_charge_categories` | `schoolpro_charge_categories_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_class_result_submissions` | `schoolpro_class_result_submissions_submitted_by_fkey` | `submitted_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_custom_requests` | `schoolpro_custom_requests_requester_user_id_fkey` | `requester_user_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_custom_requests` | `schoolpro_custom_requests_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_demo_requests` | `schoolpro_demo_requests_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_demo_requests` | `schoolpro_demo_requests_user_id_fkey` | `user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_discipline_records` | `schoolpro_discipline_records_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_document_issue_events` | `schoolpro_document_issue_events_actor_id_fkey` | `actor_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_document_issues` | `schoolpro_document_issues_issued_by_fkey` | `issued_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_document_templates` | `schoolpro_document_templates_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_feature_overrides` | `schoolpro_feature_overrides_updated_by_fkey` | `updated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_fee_bank_accounts` | `schoolpro_fee_bank_accounts_updated_by_fkey` | `updated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_fee_exceptions` | `schoolpro_fee_exceptions_updated_by_fkey` | `updated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_fee_payments` | `schoolpro_fee_payments_recorded_by_fkey` | `recorded_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_fee_structures` | `schoolpro_fee_structures_created_by_fkey` | `created_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_finance_settings` | `schoolpro_finance_settings_updated_by_fkey` | `updated_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_generated_result_outputs` | `schoolpro_generated_result_outputs_generated_by_fkey` | `generated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_guardian_links` | `schoolpro_guardian_links_guardian_user_id_fkey` | `guardian_user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_guardian_links` | `schoolpro_guardian_links_linked_by_fkey` | `linked_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_health_records` | `schoolpro_health_records_recorded_by_fkey` | `recorded_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_initial_credentials` | `schoolpro_initial_credentials_user_id_fkey` | `user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_invoice_templates` | `schoolpro_invoice_templates_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_invoices` | `schoolpro_invoices_created_by_fkey` | `created_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_leave_requests` | `schoolpro_leave_requests_reviewed_by_fkey` | `reviewed_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_lesson_notes` | `schoolpro_lesson_notes_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_lesson_notes` | `schoolpro_lesson_notes_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_member_permissions` | `schoolpro_member_permissions_updated_by_fkey` | `updated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_members` | `schoolpro_members_user_id_fkey` | `user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_module_records` | `schoolpro_module_records_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_notifications` | `schoolpro_notifications_user_id_fkey` | `user_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_onboarding_requests` | `schoolpro_onboarding_requests_reviewed_by_fkey` | `reviewed_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_onboarding_requests` | `schoolpro_onboarding_requests_user_id_fkey` | `user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_payment_intents` | `schoolpro_payment_intents_payer_user_id_fkey` | `payer_user_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_payment_intents` | `schoolpro_payment_intents_virtual_account_id_fkey` | `virtual_account_id` | `public.virtual_accounts(id)` | yes | Shared account/payment integration; keep DataSub/BillStack ledger external and reconcile reference mapping. |
+| `public.schoolpro_payment_proofs` | `schoolpro_payment_proofs_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_payment_proofs` | `schoolpro_payment_proofs_submitted_by_fkey` | `submitted_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_payment_submissions` | `schoolpro_payment_submissions_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_payment_submissions` | `schoolpro_payment_submissions_submitted_by_fkey` | `submitted_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_payroll_records` | `schoolpro_payroll_records_approved_by_fkey` | `approved_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_promotions` | `schoolpro_promotions_applied_by_fkey` | `applied_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_promotions` | `schoolpro_promotions_decided_by_fkey` | `decided_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_question_bank` | `schoolpro_question_bank_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_access_events` | `schoolpro_result_access_events_changed_by_fkey` | `changed_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_result_access_overrides` | `schoolpro_result_access_overrides_updated_by_fkey` | `updated_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_result_access_pins` | `schoolpro_result_access_pins_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_approvals` | `schoolpro_result_approvals_reviewed_by_fkey` | `reviewed_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_corrections` | `schoolpro_result_corrections_reopened_by_fkey` | `reopened_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_domain_ratings` | `schoolpro_result_domain_ratings_rated_by_fkey` | `rated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_events` | `schoolpro_result_events_actor_id_fkey` | `actor_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_templates` | `schoolpro_result_templates_updated_by_fkey` | `updated_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_result_term_settings` | `schoolpro_result_term_settings_updated_by_fkey` | `updated_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_result_verifications` | `schoolpro_result_verifications_issued_by_fkey` | `issued_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_results` | `schoolpro_results_approved_by_fkey` | `approved_by` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_schools` | `schoolpro_schools_owner_id_fkey` | `owner_id` | `public.profiles(id)` | yes | Shared profile/control-plane reference; no bulk profile copy; verify school-level actor authorization. |
+| `public.schoolpro_students` | `schoolpro_students_user_id_fkey` | `user_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_subscription_intents` | `schoolpro_subscription_intents_payer_user_id_fkey` | `payer_user_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_subscription_intents` | `schoolpro_subscription_intents_virtual_account_id_fkey` | `virtual_account_id` | `public.virtual_accounts(id)` | yes | Shared account/payment integration; keep DataSub/BillStack ledger external and reconcile reference mapping. |
+| `public.schoolpro_subscription_payments` | `schoolpro_subscription_payments_payer_user_id_fkey` | `payer_user_id` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_subscription_payments` | `schoolpro_subscription_payments_virtual_account_id_fkey` | `virtual_account_id` | `public.virtual_accounts(id)` | yes | Shared account/payment integration; keep DataSub/BillStack ledger external and reconcile reference mapping. |
+| `public.schoolpro_timetable_entries` | `schoolpro_timetable_entries_created_by_fkey` | `created_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_transcript_issues` | `schoolpro_transcript_issues_issued_by_fkey` | `issued_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+| `public.schoolpro_transcript_issues` | `schoolpro_transcript_issues_revoked_by_fkey` | `revoked_by` | `auth.users(id)` | yes | External Supabase Auth identity reference; stable UUID bridge only; no auth-user/credential bulk copy. |
+
+## Destination-category decisions
+
+- `auth.users`: external Supabase Auth identity references; keep Auth external for the first rehearsal, preserve stable UUID references only where explicitly mapped, and do not migrate passwords, sessions, refresh tokens, MFA or challenge secrets.
+- `public.profiles`: shared profiles/control-plane identities; not SchoolPro-owned bulk data. Map UUIDs and verify every owner/actor's school-level authorization independently.
+- `public.virtual_accounts`: shared account/payment integration; do not move DataSub/BillStack ledgers into SchoolPro's Aiven dataset. Preserve payment correlation and webhook idempotency through an approved adapter.
+- `public.schoolpro_schools`: tenant-root references, including inbound shared email queue/private academic clock integration; school IDs require an explicit allowlist and external rows require separate disposition.
+- `public.schoolpro_payment_intents`: payment transaction integration; keep the cross-product payment lifecycle outside broad SchoolPro tenant export and reconcile the FK/retention contract explicitly.
+
+## Acceptance required before closure
+
+1. Diff this exact live list against the prior 79-entry register; reconcile any count/scope discrepancy by exact constraint name and both column tuples.
+2. For every FK, review nullability, delete/update action, source/target ownership, retention, target-schema replacement, and whether the FK remains on Aiven or becomes a service/API reference.
+3. For SchoolPro child rows referencing Auth/Profile, test authorization at the application/RPC layer; an FK to a global identity row is not a tenant-boundary control.
+4. For shared inbound rows (`ihlink_email_queue`, `payment_transactions`, and private academic clock), decide whether to retain the shared service, redirect it through an adapter, or migrate only explicitly approved integration rows. Do not copy shared tables by prefix.
+5. Run row-level tenant-pair and orphan checks on all child-parent combinations, including tables without direct `school_id`; report exact row counts and zero-mismatch evidence before rehearsal import.
+
+**Status:** all 79 catalog constraints in this scope are marked validated by PostgreSQL, but ownership, tenant authorization and target disposition remain open. No production writes, export/import, replay, Aiven change, Render change/deployment, merge or cutover occurred.

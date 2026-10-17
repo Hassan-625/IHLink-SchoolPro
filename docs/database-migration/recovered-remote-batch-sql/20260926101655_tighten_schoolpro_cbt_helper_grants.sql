@@ -1,0 +1,1 @@
+revoke all on function public.schoolpro_can_manage_cbt(uuid) from public,anon; revoke all on function public.schoolpro_cbt_is_eligible(uuid,uuid) from public,anon; grant execute on function public.schoolpro_can_manage_cbt(uuid) to authenticated; grant execute on function public.schoolpro_cbt_is_eligible(uuid,uuid) to authenticated;

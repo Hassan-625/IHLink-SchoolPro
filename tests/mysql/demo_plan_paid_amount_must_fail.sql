@@ -1,0 +1,1 @@
+UPDATE school_subscription_plans SET annual_price = 5000 WHERE code = 'demo';

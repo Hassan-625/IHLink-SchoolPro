@@ -1,0 +1,1 @@
+INSERT INTO admission_documents (id,school_id,application_id,document_type,storage_path,verified) VALUES ('cc300000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','c1000000-0000-4000-8000-000000000001','passport','10000000-0000-4000-8000-000000000002/admissions/foreign.pdf',FALSE);

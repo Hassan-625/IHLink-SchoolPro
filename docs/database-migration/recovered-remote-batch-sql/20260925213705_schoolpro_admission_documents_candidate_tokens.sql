@@ -1,0 +1,8 @@
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('schoolpro-admissions','schoolpro-admissions',false,10485760,array['application/pdf','image/jpeg','image/png']) on conflict(id) do nothing;
+create policy "admission staff upload documents" on storage.objects for insert to authenticated with check(bucket_id='schoolpro-admissions' and exists(select 1 from public.schoolpro_members m where m.user_id=auth.uid() and m.school_id=(storage.foldername(name))[1]::uuid));
+create policy "admission staff read documents" on storage.objects for select to authenticated using(bucket_id='schoolpro-admissions' and exists(select 1 from public.schoolpro_members m where m.user_id=auth.uid() and m.school_id=(storage.foldername(name))[1]::uuid));
+alter table public.schoolpro_admission_documents add column if not exists storage_path text,add column if not exists file_name text,add column if not exists mime_type text,add column if not exists file_size bigint;
+alter table public.schoolpro_candidate_cbt_attempts add column if not exists access_token uuid not null default gen_random_uuid(),add column if not exists expires_at timestamptz,add column if not exists duration_minutes int,add column if not exists last_saved_at timestamptz;
+create unique index if not exists candidate_cbt_access_token_uq on public.schoolpro_candidate_cbt_attempts(access_token);
+alter table public.schoolpro_admission_offers add column if not exists public_token uuid not null default gen_random_uuid(),add column if not exists acceptance_instructions text;
+create unique index if not exists admission_offer_public_token_uq on public.schoolpro_admission_offers(public_token);

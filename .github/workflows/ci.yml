@@ -47,3 +47,51 @@ jobs:
           name: mobile-layout-checks
           path: mobile-ui-evidence/
       - run: npm run build
+
+  mysql-api-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-test-password
+          MYSQL_DATABASE: schoolpro_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot-test-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Wait for disposable MySQL
+        env:
+          MYSQL_PWD: root-test-password
+        run: |
+          for attempt in $(seq 1 30); do
+            if mysql -h 127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'MySQL did not become ready' >&2
+          exit 1
+      - name: Apply core schema and synthetic tenant fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: |
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/001_schoolpro_core.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/007_schoolpro_auth_login_throttling.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/008_schoolpro_student_credentials_sessions.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_student_credentials_fixture.sql
+      - name: Install MySQL API runtime dependency
+        working-directory: server/mysql-api
+        run: npm install --no-save --package-lock=false
+      - name: Test authentication, origin protection and tenant context
+        working-directory: server/mysql-api
+        run: npm test

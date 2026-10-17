@@ -1,0 +1,646 @@
+# SchoolPro routine ACL, ownership and sequence catalog — 2026-10-17
+
+Read-only snapshot from Supabase `lnqsroyiybutkfngbyge`, PostgreSQL 17.6. This is a security review artifact, not a target script.
+
+## Summary
+- Routine ACL entries for public/private routines named with `schoolpro`: 512.
+- Matching sequence entries: 1.
+- SchoolPro-named relations/objects inventoried for owner and RLS flags: 109.
+- View dependency query against public `schoolpro_*` base tables returned zero dependent views/materialized views in the current catalog query. This must be reconfirmed with a complete dependency query at final source freeze; it does not cover functions or application-side derived queries.
+
+## Routine owners, SECURITY DEFINER settings and EXECUTE ACL rows (512)
+
+- `private.create_schoolpro_demo_invoice(p_demo uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.enforce_schoolpro_subscription_expiry()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.enforce_schoolpro_subscription_expiry()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.enforce_schoolpro_tenant_relations()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.guard_schoolpro_document_issue_lifecycle()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.guard_schoolpro_operational_write()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.log_schoolpro_result_lifecycle()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.manage_schoolpro_subscription_invoice(p_invoice uuid, p_action text, p_version timestamp with time zone, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.manage_schoolpro_subscription_invoice(p_invoice uuid, p_action text, p_version timestamp with time zone, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.protect_schoolpro_proprietor_role()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.protect_schoolpro_proprietor_role()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_archive_progression()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_auto_fee_invoices()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_bulk_academic_action(p_school uuid, p_session text, p_action text, p_students uuid[])`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_bulk_academic_action(p_school uuid, p_session text, p_action text, p_students uuid[])`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_access_schools(p_permission text, p_scope text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_access_schools(p_permission text, p_scope text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_access_schools(p_permission text, p_scope text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_family_result_periods()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_family_result_periods()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_family_result_periods()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_readable_students()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_readable_students()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_readable_students()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_result_reader_keys()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_result_reader_keys()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_result_reader_keys()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_staff_schools()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_staff_schools()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cached_staff_schools()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_issue_transcript(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_issue_transcript(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_class(p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_class(p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_fee_structure(p_structure uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_fee_structure(p_structure uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_student(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_read_student(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_register()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_register()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_review_class(p_school uuid, p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_review_class(p_school uuid, p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_write_result(p_school uuid, p_student uuid, p_subject uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_write_result(p_school uuid, p_student uuid, p_subject uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_can_write_result(p_school uuid, p_student uuid, p_subject uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cbt_answer_plan_allowed(p_attempt uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cbt_answer_plan_allowed(p_attempt uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cbt_test_plan_allowed(p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_cbt_test_plan_allowed(p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_class_result_fingerprint(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_class_staff_directory(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_class_staff_directory(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_clear_changed_board_role()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_coordinator_classes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_coordinator_classes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_enrollment_calendar()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_enrollment_calendar()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_enrollment_reader_keys()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_enrollment_reader_keys()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_class_read(p_school uuid, p_class uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_class_read(p_school uuid, p_class uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_report_media(p_name text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_report_media(p_name text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_result_periods(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_family_result_periods(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_guardian_school_scope()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_issue_transcript(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_issue_transcript(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_lesson_author_scope(p_school uuid, p_class uuid, p_subject uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_lesson_author_scope(p_school uuid, p_class uuid, p_subject uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_lesson_leader(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_lesson_leader(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_module_allowed(target_school uuid, required_permission text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_module_allowed(target_school uuid, required_permission text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_notify_discipline()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_operationally_active(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_operationally_active(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_operationally_active(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_operationally_active(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_owns_invoice_student(p_school uuid, p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_owns_invoice_student(p_school uuid, p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_plan_feature_allowed(p_school uuid, p_feature text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_plan_feature_allowed(p_school uuid, p_feature text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_preserve_activity_session()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_record_school(p_table text, p_row jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_record_school(p_table text, p_row jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_record_school(p_table text, p_row jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_record_school(p_table text, p_row jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_refresh_academic_clocks()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_reject_new_inactive_student_activity()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_reject_new_inactive_student_activity()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_report_details(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_report_details(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_result_access(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_result_access(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_result_reader_matches(p_school uuid, p_student uuid, p_subject uuid, p_session text, p_status schoolpro_result_status, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_result_reader_matches(p_school uuid, p_student uuid, p_subject uuid, p_session text, p_status schoolpro_result_status, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_result_reader_matches(p_school uuid, p_student uuid, p_subject uuid, p_session text, p_status schoolpro_result_status, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_revoke_transcript(p_issue uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_revoke_transcript(p_issue uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_send_school_notice(p_school uuid, p_title text, p_message text, p_classes uuid[], p_students uuid[], p_audience text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_send_school_notice(p_school uuid, p_title text, p_message text, p_classes uuid[], p_students uuid[], p_audience text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_board_role(p_school uuid, p_member uuid, p_title text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_board_role(p_school uuid, p_member uuid, p_title text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_form_master(p_class uuid, p_member uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_form_master(p_class uuid, p_member uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_result_access_exception(p_student uuid, p_term text, p_session text, p_allowed boolean, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_set_result_access_exception(p_student uuid, p_term text, p_session text, p_allowed boolean, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_stamp_activity_period()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_stamp_activity_period()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_student_transcripts(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_student_transcripts(p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_teacher_allocation_visible(p_school uuid, p_member uuid, p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_teacher_allocation_visible(p_school uuid, p_member uuid, p_class uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_tick_calendar(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_transcript_enrichment()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_valid_session(p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_valid_session(p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_validate_activity_calendar()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_validate_calendar()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_validate_calendar()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.schoolpro_validate_lesson_workflow()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.seed_schoolpro_report_defaults(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.sync_schoolpro_demo_invoice()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.sync_schoolpro_fee_invoices(p_structure uuid, p_class text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.sync_schoolpro_onboarding_demo_invoice()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_assignment_target()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_cbt_eligibility()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_cbt_eligibility()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_leave()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_leave()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_result_tenant()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_subject_assignment()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `private.validate_schoolpro_workflow_record()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.accept_schoolpro_admission_offer(p_token uuid, p_name text, p_email text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.accept_schoolpro_admission_offer(p_token uuid, p_name text, p_email text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.accept_schoolpro_admission_offer(p_token uuid, p_name text, p_email text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.accept_schoolpro_admission_offer(p_token uuid, p_name text, p_email text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_request uuid, p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_request uuid, p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_request uuid, p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_school uuid, p_tier text, p_days integer, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_school uuid, p_tier text, p_days integer, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.activate_schoolpro_demo(p_school uuid, p_tier text, p_days integer, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.adjust_schoolpro_inventory(p_asset uuid, p_delta integer, p_condition text, p_location text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.adjust_schoolpro_inventory(p_asset uuid, p_delta integer, p_condition text, p_location text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.adjust_schoolpro_inventory(p_asset uuid, p_delta integer, p_condition text, p_location text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.admit_schoolpro_applicant(p_application uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.admit_schoolpro_applicant(p_application uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.allocate_schoolpro_hostel(p_room uuid, p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.allocate_schoolpro_hostel(p_room uuid, p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.allocate_schoolpro_hostel(p_room uuid, p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.apply_schoolpro_promotion(p_promotion uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.apply_schoolpro_promotion(p_promotion uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.apply_schoolpro_promotion(p_promotion uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_entrance_cbt(p_application uuid, p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_entrance_cbt(p_application uuid, p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_entrance_cbt(p_application uuid, p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.assign_schoolpro_transport(p_route uuid, p_student uuid, p_pickup text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.borrow_schoolpro_library_book(p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.check_schoolpro_result_pin(p_admission text, p_term text, p_session text, p_pin text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.check_schoolpro_result_pin(p_admission text, p_term text, p_session text, p_pin text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.check_schoolpro_result_pin(p_admission text, p_term text, p_session text, p_pin text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.check_schoolpro_result_pin(p_admission text, p_term text, p_session text, p_pin text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.claim_schoolpro_onboarding()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.claim_schoolpro_onboarding()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.claim_schoolpro_onboarding()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.control_center_activate_schoolpro(p_school uuid, p_tier text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.control_center_activate_schoolpro(p_school uuid, p_tier text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.control_center_activate_schoolpro(p_school uuid, p_tier text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_fee_bundle(p_school uuid, p_name text, p_classes text[], p_term text, p_session text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_fee_bundle(p_school uuid, p_name text, p_classes text[], p_term text, p_session text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_fee_bundle(p_school uuid, p_name text, p_classes text[], p_term text, p_session text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_portal_invite(p_student uuid, p_email text, p_type text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_portal_invite(p_student uuid, p_email text, p_type text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_portal_invite(p_student uuid, p_email text, p_type text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_progression(p_student uuid, p_session text, p_decision text, p_to_class uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_progression(p_student uuid, p_session text, p_decision text, p_to_class uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_progression(p_student uuid, p_session text, p_decision text, p_to_class uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_result_pin(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_result_pin(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_result_pin(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_workspace(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_workspace(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.create_schoolpro_workspace(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.delete_schoolpro_draft_result(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.delete_schoolpro_draft_result(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.delete_schoolpro_draft_result(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_bundle(p_structure uuid, p_name text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_bundle(p_structure uuid, p_name text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_bundle(p_structure uuid, p_name text, p_due date, p_items jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_invoice(p_invoice uuid, p_title text, p_amount numeric, p_due date, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_invoice(p_invoice uuid, p_title text, p_amount numeric, p_due date, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.edit_schoolpro_fee_invoice(p_invoice uuid, p_title text, p_amount numeric, p_due date, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.enforce_schoolpro_result_lock()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.enforce_schoolpro_result_lock()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.enforce_schoolpro_result_lock()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.enforce_schoolpro_result_lock()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.enforce_schoolpro_result_lock()`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_default_assessment_scheme(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_default_assessment_scheme(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_default_assessment_scheme(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_standard_assessment_schemes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_standard_assessment_schemes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.ensure_schoolpro_standard_assessment_schemes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_billstack_transfer(p_intent uuid, p_transaction_ref text, p_verified_amount numeric, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_billstack_transfer(p_intent uuid, p_transaction_ref text, p_verified_amount numeric, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_document_issue(p_issue uuid, p_output_path text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_document_issue(p_issue uuid, p_output_path text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_document_issue(p_issue uuid, p_output_path text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_enrollment(p_application uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_enrollment(p_application uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_enrollment(p_application uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_payment(p_reference text, p_gateway_transaction_id text, p_verified_amount numeric, p_status text, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_payment(p_reference text, p_gateway_transaction_id text, p_verified_amount numeric, p_status text, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_subscription(p_intent uuid, p_transaction_ref text, p_amount numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.finalize_schoolpro_subscription(p_intent uuid, p_transaction_ref text, p_amount numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.generate_schoolpro_class_invoices(p_structure uuid, p_class text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.generate_schoolpro_class_invoices(p_structure uuid, p_class text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.generate_schoolpro_class_invoices(p_structure uuid, p_class text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.get_schoolpro_admission_offer(p_token uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.get_schoolpro_admission_offer(p_token uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.get_schoolpro_admission_offer(p_token uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.get_schoolpro_admission_offer(p_token uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.grade_schoolpro_assignment_submission(p_submission uuid, p_score numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.grade_schoolpro_assignment_submission(p_submission uuid, p_score numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.grade_schoolpro_assignment_submission(p_submission uuid, p_score numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.import_schoolpro_results(p_school uuid, p_term text, p_session text, p_rows jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.import_schoolpro_results(p_school uuid, p_term text, p_session text, p_rows jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.import_schoolpro_results(p_school uuid, p_term text, p_session text, p_rows jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_admission_offer(p_application uuid, p_letter text, p_expiry timestamp with time zone, p_instructions text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_admission_offer(p_application uuid, p_letter text, p_expiry timestamp with time zone, p_instructions text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_admission_offer(p_application uuid, p_letter text, p_expiry timestamp with time zone, p_instructions text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_result_verification(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_result_verification(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.issue_schoolpro_result_verification(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_guardian(target_student uuid, guardian_email text, guardian_relationship text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_guardian(target_student uuid, guardian_email text, guardian_relationship text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_guardian(target_student uuid, guardian_email text, guardian_relationship text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_student_account(target_student uuid, target_email text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_student_account(target_student uuid, target_email text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.link_schoolpro_student_account(target_student uuid, target_email text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.list_available_schoolpro_cbts()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.list_available_schoolpro_cbts()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.list_available_schoolpro_cbts()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.manage_schoolpro_subscription_invoice(p_invoice uuid, p_action text, p_version timestamp with time zone, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.manage_schoolpro_subscription_invoice(p_invoice uuid, p_action text, p_version timestamp with time zone, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.manage_schoolpro_subscription_invoice(p_invoice uuid, p_action text, p_version timestamp with time zone, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_cbt_theory(p_attempt uuid, p_question uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_cbt_theory(p_attempt uuid, p_question uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_cbt_theory(p_attempt uuid, p_question uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_theory_answer(p_answer uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_theory_answer(p_answer uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.mark_schoolpro_theory_answer(p_answer uuid, p_marks numeric, p_feedback text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.prepare_schoolpro_bank_subscription(p_school uuid, p_catalog uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.prepare_schoolpro_bank_subscription(p_school uuid, p_catalog uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.prepare_schoolpro_bank_subscription(p_school uuid, p_catalog uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.prepare_schoolpro_subscription_payment(p_user uuid, p_school uuid, p_catalog uuid, p_account uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.prepare_schoolpro_subscription_payment(p_user uuid, p_school uuid, p_catalog uuid, p_account uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.process_schoolpro_payroll(p_record uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.process_schoolpro_payroll(p_record uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.process_schoolpro_payroll(p_record uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_results(p_school uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_results(p_school uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_results(p_school uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_selected_results(p_school uuid, p_term text, p_session text, p_students uuid[], p_all boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_selected_results(p_school uuid, p_term text, p_session text, p_students uuid[], p_all boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.publish_schoolpro_selected_results(p_school uuid, p_term text, p_session text, p_students uuid[], p_all boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.queue_schoolpro_email(p_school uuid, p_email text, p_name text, p_template text, p_subject text, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.queue_schoolpro_email(p_school uuid, p_email text, p_name text, p_template text, p_subject text, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.queue_schoolpro_email(p_school uuid, p_email text, p_name text, p_template text, p_subject text, p_payload jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.queue_schoolpro_transactional_email()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public, auth`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.queue_schoolpro_transactional_email()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public, auth`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.record_schoolpro_payment(target_invoice uuid, payment_amount numeric, payment_method text, payment_reference text, payment_notes text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.record_schoolpro_payment(target_invoice uuid, payment_amount numeric, payment_method text, payment_reference text, payment_notes text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.record_schoolpro_payment(target_invoice uuid, payment_amount numeric, payment_method text, payment_reference text, payment_notes text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.reopen_schoolpro_result_for_correction(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.reopen_schoolpro_result_for_correction(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.reopen_schoolpro_result_for_correction(p_result uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.request_schoolpro_workspace_demo(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.request_schoolpro_workspace_demo(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.request_schoolpro_workspace_demo(p_request uuid, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.retry_schoolpro_email(p_job uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.retry_schoolpro_email(p_job uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.retry_schoolpro_email(p_job uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.return_schoolpro_library_book(p_loan uuid, p_fine numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.return_schoolpro_library_book(p_loan uuid, p_fine numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.return_schoolpro_library_book(p_loan uuid, p_fine numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_leave(p_request uuid, p_status text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_leave(p_request uuid, p_status text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_leave(p_request uuid, p_status text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_onboarding(p_request uuid, p_action text, p_expected_status text, p_note text, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_onboarding(p_request uuid, p_action text, p_expected_status text, p_note text, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_onboarding(p_request uuid, p_action text, p_expected_status text, p_note text, p_tier text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_proof(p_proof uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_proof(p_proof uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_proof(p_proof uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_submission(p_submission uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_submission(p_submission uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_payment_submission(p_submission uuid, p_decision text, p_note text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_result(p_result uuid, p_status text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_result(p_result uuid, p_status text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.review_schoolpro_result(p_result uuid, p_status text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.revoke_schoolpro_document_issue(p_issue uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.revoke_schoolpro_document_issue(p_issue uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.revoke_schoolpro_document_issue(p_issue uuid, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.save_schoolpro_cbt_answer(p_attempt uuid, p_question uuid, p_answer text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.save_schoolpro_cbt_answer(p_attempt uuid, p_question uuid, p_answer text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.save_schoolpro_cbt_answer(p_attempt uuid, p_question uuid, p_answer text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schedule_schoolpro_admission_event(p_application uuid, p_type text, p_at timestamp with time zone, p_location text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schedule_schoolpro_admission_event(p_application uuid, p_type text, p_at timestamp with time zone, p_location text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schedule_schoolpro_admission_event(p_application uuid, p_type text, p_at timestamp with time zone, p_location text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_academic_summary(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_academic_summary(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_academic_summary(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_accept_access_invitation(p_user uuid, p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_accept_access_invitation(p_user uuid, p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_allocate_hostel(p_school uuid, p_student uuid, p_room uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_allocate_hostel(p_school uuid, p_student uuid, p_room uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_allocate_hostel(p_school uuid, p_student uuid, p_room uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_auto_create_admission_document()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_auto_create_admission_document()`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_bulk_academic_action(p_school uuid, p_session text, p_action text, p_students uuid[])`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_bulk_academic_action(p_school uuid, p_session text, p_action text, p_students uuid[])`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_bulk_academic_action(p_school uuid, p_session text, p_action text, p_students uuid[])`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_author_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_author_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_author_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_manage_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_manage_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_manage_cbt(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_release_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_release_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_view_result_output(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_view_result_output(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_can_view_result_output(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_cbt_is_eligible(p_test uuid, p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_cbt_is_eligible(p_test uuid, p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_cbt_is_eligible(p_test uuid, p_student uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_broadsheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_review_sheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_review_sheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_review_sheet(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_staff_directory(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_staff_directory(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_class_staff_directory(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_consume_account_challenge(p_user uuid, p_hash text, p_password text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_consume_account_challenge(p_user uuid, p_hash text, p_password text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_consume_student_challenge(p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_consume_student_challenge(p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_coordinator_classes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_coordinator_classes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_coordinator_classes(p_school uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_current_academic_period(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_current_academic_period(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_current_academic_period(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_family_result_periods(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_family_result_periods(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_family_result_periods(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_finalize_testing_certificate(p_issue uuid, p_output_path text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_finalize_testing_certificate(p_issue uuid, p_output_path text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_grade_for_score(p_school uuid, p_score numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_grade_for_score(p_school uuid, p_score numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_grade_for_score(p_school uuid, p_score numeric)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_initial_challenge(p_user uuid, p_surname text, p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_initial_challenge(p_user uuid, p_surname text, p_hash text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_library_loan(p_school uuid, p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_library_loan(p_school uuid, p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_library_loan(p_school uuid, p_book uuid, p_student uuid, p_member uuid, p_due timestamp with time zone)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_transcript(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_transcript(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_issue_transcript(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_join_school_code(p_user uuid, p_school_code text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_join_school_code(p_user uuid, p_school_code text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_member_can_manage(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_member_can_manage(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_member_can_manage(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_overall_grade(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_overall_grade(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_overall_grade(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_printable_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_printable_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_printable_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_progression_summary(p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_progression_summary(p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_progression_summary(p_student uuid, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_record_offline_payment(p_invoice uuid, p_amount numeric, p_method text, p_reference text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_record_offline_payment(p_invoice uuid, p_amount numeric, p_method text, p_reference text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_record_offline_payment(p_invoice uuid, p_amount numeric, p_method text, p_reference text, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_report_details(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_report_details(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_report_details(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_access(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_access(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_access(target_student uuid, target_term text, target_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_class_rank(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_class_rank(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_class_rank(p_student_id uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_comment(p_score numeric)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_comment(p_score numeric)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_comment(p_score numeric)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_comment(p_score numeric)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_result_comment(p_score numeric)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=public`; grantee `PUBLIC/unknown`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_return_library_loan(p_loan uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_return_library_loan(p_loan uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_return_library_loan(p_loan uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=public`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_review_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_review_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_review_result(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_revoke_transcript(p_issue uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_revoke_transcript(p_issue uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_revoke_transcript(p_issue uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_save_academic_calendar(p_school uuid, p_session text, p_term text, p_start date, p_end date)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_save_academic_calendar(p_school uuid, p_session text, p_term text, p_start date, p_end date)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_save_academic_calendar(p_school uuid, p_session text, p_term text, p_start date, p_end date)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_send_school_notice(p_school uuid, p_title text, p_message text, p_classes uuid[], p_students uuid[], p_audience text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_send_school_notice(p_school uuid, p_title text, p_message text, p_classes uuid[], p_students uuid[], p_audience text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_send_school_notice(p_school uuid, p_title text, p_message text, p_classes uuid[], p_students uuid[], p_audience text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_board_role(p_school uuid, p_member uuid, p_title text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_board_role(p_school uuid, p_member uuid, p_title text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_board_role(p_school uuid, p_member uuid, p_title text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_form_master(p_class uuid, p_member uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_form_master(p_class uuid, p_member uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_form_master(p_class uuid, p_member uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_initial_credential(p_user uuid, p_school uuid, p_surname text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_initial_credential(p_user uuid, p_school uuid, p_surname text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_access_exception(p_student uuid, p_term text, p_session text, p_allowed boolean, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_access_exception(p_student uuid, p_term text, p_session text, p_allowed boolean, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_access_exception(p_student uuid, p_term text, p_session text, p_allowed boolean, p_reason text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_lock(p_school uuid, p_term text, p_session text, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_lock(p_school uuid, p_term text, p_session text, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_set_result_lock(p_school uuid, p_term text, p_session text, p_locked boolean)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_student_transcripts(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_student_transcripts(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_student_transcripts(p_student uuid)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subject_statistics(p_student uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_submit_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_submit_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_submit_class_results(p_school uuid, p_class uuid, p_term text, p_session text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subscription_entitlements(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subscription_entitlements(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_subscription_entitlements(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_take_login_attempt(p_key text, p_limit integer)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_take_login_attempt(p_key text, p_limit integer)`: owner `postgres`; SECURITY DEFINER `false`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_ownership(p_school_id uuid, p_new_owner_id uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_ownership(p_school_id uuid, p_new_owner_id uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_ownership(p_school_id uuid, p_new_owner_id uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_student_out(p_student uuid, p_destination text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_student_out(p_student uuid, p_destination text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_transfer_student_out(p_student uuid, p_destination text, p_reason text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_user_permissions(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_user_permissions(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_user_permissions(p_school uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_vacate_hostel(p_allocation uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_vacate_hostel(p_allocation uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_vacate_hostel(p_allocation uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_verify_result_code(p_code text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_verify_result_code(p_code text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_verify_result_code(p_code text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.schoolpro_verify_result_code(p_code text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.set_schoolpro_default_document_template(p_template uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.set_schoolpro_default_document_template(p_template uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.set_schoolpro_default_document_template(p_template uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.start_schoolpro_cbt(p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.start_schoolpro_cbt(p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.start_schoolpro_cbt(p_test uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_application(p_school uuid, p_first text, p_last text, p_gender text, p_dob date, p_guardian text, p_phone text, p_email text, p_class text, p_previous text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_application(p_school uuid, p_first text, p_last text, p_gender text, p_dob date, p_guardian text, p_phone text, p_email text, p_class text, p_previous text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_application(p_school uuid, p_first text, p_last text, p_gender text, p_dob date, p_guardian text, p_phone text, p_email text, p_class text, p_previous text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_application(p_school uuid, p_first text, p_last text, p_gender text, p_dob date, p_guardian text, p_phone text, p_email text, p_class text, p_previous text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_assignment(p_assignment uuid, p_submission_text text, p_file_url text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_assignment(p_assignment uuid, p_submission_text text, p_file_url text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_assignment(p_assignment uuid, p_submission_text text, p_file_url text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_cbt(p_attempt uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_cbt(p_attempt uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_cbt(p_attempt uuid)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_payment(p_school uuid, p_bank_account uuid, p_total numeric, p_payment_date date, p_payer_name text, p_bank_reference text, p_receipt_path text, p_receipt_mime text, p_allocations jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_payment(p_school uuid, p_bank_account uuid, p_total numeric, p_payment_date date, p_payer_name text, p_bank_reference text, p_receipt_path text, p_receipt_mime text, p_allocations jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_payment(p_school uuid, p_bank_account uuid, p_total numeric, p_payment_date date, p_payer_name text, p_bank_reference text, p_receipt_path text, p_receipt_mime text, p_allocations jsonb)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_term_demo(p_request uuid, p_tier text, p_term_start date, p_term_end date, p_exam_start date, p_exam_end date, p_calendar text, p_letter text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_term_demo(p_request uuid, p_tier text, p_term_start date, p_term_end date, p_exam_start date, p_exam_end date, p_calendar text, p_letter text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.submit_schoolpro_term_demo(p_request uuid, p_tier text, p_term_start date, p_term_end date, p_exam_start date, p_exam_end date, p_calendar text, p_letter text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_admission_document(p_document uuid, p_verified boolean, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_admission_document(p_document uuid, p_verified boolean, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_admission_document(p_document uuid, p_verified boolean, p_notes text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_document(p_serial text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `anon`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_document(p_serial text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `authenticated`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_document(p_serial text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `postgres`; privilege `EXECUTE`; grantable `false`.
+- `public.verify_schoolpro_document(p_serial text)`: owner `postgres`; SECURITY DEFINER `true`; settings `search_path=""`; grantee `service_role`; privilege `EXECUTE`; grantable `false`.
+
+## Sequences (1)
+
+- `public.schoolpro_audit_logs_id_seq` (bigint)
+
+## Relation owner/RLS flags (109)
+
+- `private.schoolpro_academic_clock`: kind `r`, owner `postgres`, RLS `false`, FORCE RLS `false`.
+- `public.schoolpro_academic_documents`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_access_invitations`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_account_challenges`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_admission_acceptances`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_admission_documents`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_admission_events`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_admission_offers`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_admissions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_announcements`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_assessment_schemes`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_assignment_submissions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_assignments`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_attendance`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_audit_logs`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_audit_logs_id_seq`: kind `S`, owner `postgres`, RLS `false`, FORCE RLS `false`.
+- `public.schoolpro_bank_accounts`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_board_members`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_branding`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_calendar_events`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_candidate_cbt_answers`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_candidate_cbt_attempts`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_cbt_answers`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_cbt_attempts`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_cbt_eligibility`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_cbt_test_questions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_cbt_tests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_charge_categories`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_class_result_submissions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_classes`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_custom_requests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_demo_requests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_discipline_records`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_document_issue_events`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_document_issues`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_document_templates`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_email_queue`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_enrollment_history`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_feature_overrides`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_bank_accounts`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_exceptions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_items`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_payments`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_records`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_fee_structures`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_finance_settings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_generated_result_outputs`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_grade_scale`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_guardian_links`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_health_records`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_hostel_allocations`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_hostel_rooms`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_initial_credentials`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_inventory_assets`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_invoice_templates`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_invoices`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_leadership_settings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_leave_requests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_lesson_notes`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_library_books`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_library_loans`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_login_attempts`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_member_permissions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_members`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_module_records`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_notifications`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_onboarding_requests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_payment_allocations`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_payment_intents`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_payment_proofs`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_payment_submissions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_payroll_records`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_plan_catalog`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_portal_invites`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_promotions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_question_bank`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_access_events`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_access_overrides`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_access_pins`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_approvals`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_correction_requests`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_corrections`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_domain_definitions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_domain_ratings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_events`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_rating_scale`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_templates`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_term_settings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_result_verifications`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_results`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_schools`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_site_content`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_site_gallery`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_site_news`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_site_settings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_student_activation_challenges`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_student_transport`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_students`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subject_assignments`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subjects`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subscription_catalog`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subscription_intents`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subscription_payments`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subscription_plans`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_subscriptions`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_timetable_entries`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_transcript_issues`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_transcript_settings`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+- `public.schoolpro_transport_routes`: kind `r`, owner `postgres`, RLS `true`, FORCE RLS `false`.
+
+## Review cautions
+- A SECURITY DEFINER routine with `search_path=""` and qualified references has a different risk profile from one with an implicit path, but both still require body/caller/grant review.
+- ACL expansion includes default owner privileges; it is not a complete substitute for schema usage, table grants, default privileges, role membership, and runtime-role tests.
+- The observed 95 SECURITY DEFINER public SchoolPro routines and the private helper grants must be reconciled against intended caller roles and the new API service role. Do not mechanically grant all EXECUTE privileges to the application role.
+- Sequence and owner semantics differ between Supabase-managed PostgreSQL and Aiven. Recreate only reviewed objects and privileges in the rehearsal target.

@@ -1,0 +1,218 @@
+name: SchoolPro MySQL schema draft
+
+on:
+  pull_request:
+    paths:
+      - 'database/mysql/**'
+      - 'tests/mysql/**'
+      - '.github/workflows/mysql-schoolpro-schema.yml'
+  push:
+    branches:
+      - 'migration/mysql-schoolpro-foundation'
+    paths:
+      - 'database/mysql/**'
+      - 'tests/mysql/**'
+      - '.github/workflows/mysql-schoolpro-schema.yml'
+
+jobs:
+  schema-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root-test-password
+          MYSQL_DATABASE: schoolpro_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot-test-password"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for MySQL
+        env:
+          MYSQL_PWD: root-test-password
+        run: |
+          for attempt in $(seq 1 30); do
+            if mysql -h 127.0.0.1 -uroot -e 'SELECT 1' >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'MySQL did not become ready' >&2
+          exit 1
+      - name: Apply draft schema to disposable CI database
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/001_schoolpro_core.sql
+      - name: Apply guardian, finance and annual subscription schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/002_schoolpro_guardians_finance_subscriptions.sql
+      - name: Apply assessment review, template and transcript schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/003_schoolpro_assessment_review_templates_transcripts.sql
+      - name: Apply admissions and student progression schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/004_schoolpro_admissions_progression.sql
+      - name: Apply operational modules schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/005_schoolpro_operational_modules.sql
+      - name: Apply learning, CBT, library, transport and payroll schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/006_schoolpro_learning_cbt_library_transport_payroll.sql
+      - name: Apply MySQL authentication throttling schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/007_schoolpro_auth_login_throttling.sql
+      - name: Apply student credential and session schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/008_schoolpro_student_credentials_sessions.sql
+      - name: Insert valid isolated core fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
+      - name: Insert valid guardian, finance and subscription fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_finance_fixture.sql
+      - name: Insert valid assessment, result template and transcript fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_results_templates_fixture.sql
+      - name: Insert valid admissions and progression fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_admissions_progression_fixture.sql
+      - name: Insert valid operational module fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_operational_modules_fixture.sql
+      - name: Insert valid learning, CBT, library, transport and payroll fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_learning_cbt_library_transport_payroll_fixture.sql
+      - name: Insert valid authentication throttling fixture
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_auth_login_throttling_fixture.sql
+      - name: Insert valid student credential/session fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_student_credentials_fixture.sql
+      - name: Test MySQL API authentication and tenant context
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: 3306
+          MYSQL_DATABASE: schoolpro_test
+          MYSQL_USER: root
+          MYSQL_PASSWORD: root-test-password
+          WEB_ORIGIN: http://localhost:5173
+        run: |
+          npm install --prefix server/mysql-api --no-audit --no-fund
+          npm test --prefix server/mysql-api
+      - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
+        env:
+          MYSQL_PWD: root-test-password
+        shell: bash
+        run: |
+          set -euo pipefail
+          assert_fk_rejection() {
+            local sql_file="$1"
+            local constraint="$2"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected $constraint rejection" >&2
+              exit 1
+            fi
+            cat "$output_file"
+            if grep -Fq 'ERROR 1452' "$output_file" && grep -Fq "$constraint" "$output_file"; then
+              echo "PASS: $sql_file rejected by $constraint"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected $constraint" >&2
+              exit 1
+            fi
+          }
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_must_fail.sql fk_enrollment_student
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_session_must_fail.sql fk_enrollment_session
+          assert_fk_rejection tests/mysql/cross_tenant_enrollment_class_must_fail.sql fk_enrollment_class
+          assert_fk_rejection tests/mysql/cross_tenant_result_term_must_fail.sql fk_result_term_session
+          assert_fk_rejection tests/mysql/result_score_component_term_must_match.sql fk_result_scores_component
+          assert_fk_rejection tests/mysql/cross_school_assignment_class_must_fail.sql fk_csa_class
+          assert_fk_rejection tests/mysql/cross_school_assignment_subject_must_fail.sql fk_csa_subject
+          assert_fk_rejection tests/mysql/cross_school_assignment_session_must_fail.sql fk_csa_session
+          assert_fk_rejection tests/mysql/cross_school_assignment_membership_must_fail.sql fk_csa_membership
+          assert_fk_rejection tests/mysql/assessment_component_requires_class_subject_assignment.sql fk_ac_class_subject_session
+          assert_fk_rejection tests/mysql/cross_tenant_guardian_link_must_fail.sql fk_guardian_link_student
+          assert_fk_rejection tests/mysql/cross_tenant_fee_structure_class_must_fail.sql fk_fee_structure_class
+          assert_fk_rejection tests/mysql/cross_tenant_invoice_student_must_fail.sql fk_invoice_student
+          assert_fk_rejection tests/mysql/invoice_enrollment_student_mismatch_must_fail.sql fk_invoice_enrollment_student_session
+          assert_fk_rejection tests/mysql/cross_tenant_fee_submission_bank_must_fail.sql fk_fee_submission_bank
+          assert_fk_rejection tests/mysql/cross_tenant_fee_payment_invoice_must_fail.sql fk_fee_payment_invoice_student
+          assert_fk_rejection tests/mysql/cross_tenant_fee_allocation_invoice_must_fail.sql fk_fee_allocation_invoice_student
+          assert_fk_rejection tests/mysql/subscription_receipt_cross_tenant_must_fail.sql fk_subscription_receipt_subscription
+          assert_fk_rejection tests/mysql/cross_school_result_approval_must_fail.sql fk_result_approval_result
+          assert_fk_rejection tests/mysql/cross_school_transcript_student_must_fail.sql fk_transcript_student
+          assert_fk_rejection tests/mysql/cross_school_admission_document_must_fail.sql fk_admission_document_application
+          assert_fk_rejection tests/mysql/cross_school_enrollment_history_student_must_fail.sql fk_enrollment_history_student
+          assert_fk_rejection tests/mysql/cross_school_promotion_target_class_must_fail.sql fk_student_promotion_to_class
+          assert_check_rejection() {
+            local sql_file="$1"
+            local constraint="$2"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected $constraint rejection" >&2
+              exit 1
+            fi
+            cat "$output_file"
+            if grep -Fq 'ERROR 3819' "$output_file" && grep -Fq "$constraint" "$output_file"; then
+              echo "PASS: $sql_file rejected by $constraint"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected $constraint" >&2
+              exit 1
+            fi
+          }
+          assert_check_rejection tests/mysql/receipt_owner_mismatch_must_fail.sql chk_fee_submission_receipt_owner
+          assert_check_rejection tests/mysql/demo_plan_paid_amount_must_fail.sql chk_subscription_plan_price
+          assert_check_rejection tests/mysql/template_path_must_be_school_scoped.sql chk_result_template_owner_path
+          assert_check_rejection tests/mysql/grade_scale_above_100_must_fail.sql chk_grade_scale_range
+          assert_check_rejection tests/mysql/admission_document_path_must_be_school_scoped.sql chk_admission_document_path
+          assert_check_rejection tests/mysql/timetable_invalid_time_must_fail.sql chk_timetable_weekday
+          assert_check_rejection tests/mysql/timetable_invalid_time_range_must_fail.sql chk_timetable_time
+          assert_fk_rejection tests/mysql/cross_school_timetable_class_must_fail.sql fk_timetable_class
+          assert_fk_rejection tests/mysql/cross_school_hostel_student_must_fail.sql fk_hostel_allocation_student
+          assert_fk_rejection tests/mysql/cross_school_assignment_submission_must_fail.sql fk_submission_student
+          assert_fk_rejection tests/mysql/cross_school_student_credentials_must_fail.sql fk_student_credentials_student
+          assert_fk_rejection tests/mysql/cross_school_cbt_question_must_fail.sql fk_cbt_tq_question
+          assert_fk_rejection tests/mysql/cross_school_library_loan_book_must_fail.sql fk_library_loan_book
+          assert_check_rejection tests/mysql/auth_login_identifier_hash_must_fail.sql chk_auth_login_identifier_hash
+          assert_enum_rejection() {
+            local sql_file="$1"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected annual-only billing cycle rejection" >&2
+              exit 1
+            fi
+            cat "$output_file"
+            if grep -Fq 'ERROR 1265' "$output_file" || grep -Fq 'ERROR 1366' "$output_file"; then
+              echo "PASS: $sql_file rejected non-annual billing cycle"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected invalid ENUM value" >&2
+              exit 1
+            fi
+          }
+          assert_enum_rejection tests/mysql/termly_subscription_cycle_must_fail.sql

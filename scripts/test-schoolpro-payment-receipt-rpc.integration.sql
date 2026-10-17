@@ -157,10 +157,10 @@ select pg_temp.assert_rejected('pending allocation balance reservation',
 
 update public.schoolpro_bank_accounts set active=false where id='30000000-0000-0000-0000-000000000001';
 select pg_temp.assert_rejected('inactive bank account',
-  $select public.submit_schoolpro_payment(
+  $stmt$select public.submit_schoolpro_payment(
     '00000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001',50,current_date,'Test','REF-X',
     '10000000-0000-0000-0000-000000000001/receipt.pdf','application/pdf',
-    '[{"invoice_id":"40000000-0000-0000-0000-000000000001","amount":50}]'::jsonb)$,
+    '[{"invoice_id":"40000000-0000-0000-0000-000000000001","amount":50}]'::jsonb)$stmt$,
   'Invalid school bank account');
 
 select 'PASS: receipt submission RPC accepted the valid case and rejected six invalid cases.' as result;

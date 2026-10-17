@@ -46,13 +46,14 @@ function describeError(error) {
 async function countRows(client, table, schoolId, maxAttempts = 3) {
   let result;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    result = await client.from(table).select('*', {count: 'exact', head: true}).eq('school_id', schoolId);
+    result = await client.from(table).select('id', {count: 'exact', head: true}).eq('school_id', schoolId);
     if (!result.error) return result.count ?? 0;
 
     const message = describeError(result.error);
     const status = Number(result.error.statusCode || result.error.status || 0);
     const transient = /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT|502|503|504|429/i.test(message)
-      || [429, 502, 503, 504].includes(status);
+      || [429, 502, 503, 504].includes(status)
+      || (status === 0 && !String(result.error.message || '').trim() && !result.error.code);
     if (!transient || attempt === maxAttempts) {
       throw new Error('Read-only tenant count failed for ' + table + ' (attempt ' + attempt + '/' + maxAttempts + ', status ' + status + '): ' + message);
     }

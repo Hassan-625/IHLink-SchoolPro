@@ -7,7 +7,7 @@ const SCHOOL_B = '10000000-0000-4000-8000-000000000002';
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const PASSWORD = 'Test-password-2026!';
 
-async function fixture() {
+async function fixture({platformRole = null, membershipStatus = 'active'} = {}) {
   const passwordHash = await hashPassword(PASSWORD);
   const sessions = new Map();
   const attempts = new Map();
@@ -47,14 +47,17 @@ async function fixture() {
         const session = sessions.get(params[0]);
         return [session && !session.revoked ? [{id: user.id, email: user.email, display_name: user.display_name, status: user.status, session_id: session.id, token_hash: params[0]}] : [], []];
       }
-      if (query.startsWith('SELECT role_code FROM platform_roles')) return [[], []];
+      if (query.startsWith('SELECT role_code FROM platform_roles WHERE user_id = ? AND role_code IN')) {
+        return [platformRole && ['super_admin', 'platform_admin'].includes(platformRole) ? [{role_code: platformRole}] : [], []];
+      }
+      if (query.startsWith('SELECT role_code FROM platform_roles')) return [platformRole ? [{role_code: platformRole}] : [], []];
       if (query.startsWith('SELECT id, name, status FROM schools')) {
         const school = params[0] === SCHOOL_A ? {id: SCHOOL_A, name: 'Synthetic School A', status: 'active'}
           : params[0] === SCHOOL_B ? {id: SCHOOL_B, name: 'Synthetic School B', status: 'active'} : null;
         return [school ? [school] : [], []];
       }
       if (query.startsWith("SELECT role_code FROM school_memberships WHERE school_id = ? AND user_id = ? AND status = 'active'")) {
-        return [params[0] === SCHOOL_A && params[1] === USER_ID ? [{role_code: 'proprietor'}] : [], []];
+        return [params[0] === SCHOOL_A && params[1] === USER_ID && membershipStatus === 'active' ? [{role_code: 'proprietor'}] : [], []];
       }
       throw new Error('Unexpected SQL in mock pool: ' + query);
     },
@@ -194,4 +197,36 @@ test('native login returns an opaque bearer token without setting a browser cook
     headers: {Authorization: 'Bearer ' + payload.sessionToken},
   });
   assert.equal(me.status, 200);
+});
+
+
+test('platform Super Admin can inspect both school contexts without school membership', async (t) => {
+  const app = await fixture({platformRole: 'super_admin', membershipStatus: 'suspended'});
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({email: 'owner@example.test', password: PASSWORD}),
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  for (const schoolId of [SCHOOL_A, SCHOOL_B]) {
+    const response = await fetch(app.baseUrl + '/v1/schools/' + schoolId + '/context', {headers: {Cookie: cookie}});
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).access.kind, 'platform');
+  }
+});
+
+test('suspended school membership cannot access tenant context', async (t) => {
+  const app = await fixture({membershipStatus: 'suspended'});
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({email: 'owner@example.test', password: PASSWORD}),
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const response = await fetch(app.baseUrl + '/v1/schools/' + SCHOOL_A + '/context', {headers: {Cookie: cookie}});
+  assert.equal(response.status, 404);
 });

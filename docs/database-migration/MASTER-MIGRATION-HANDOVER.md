@@ -1052,3 +1052,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The follow-up run on `56657886334889c95c810e1fb43ac32013db9374` failed at fixture setup because the generated SQL contained malformed dollar-quoted role creation statements (`DO $` rather than a valid tagged block). The migration logic still was not reached.
 - Removed role creation from the SQL fixture and moved it to explicit idempotency-by-fresh-database `psql --command` steps in CI before the fixture executes. Since each job receives a new disposable database, `CREATE ROLE anon NOLOGIN` and `CREATE ROLE authenticated NOLOGIN` are expected to run once. Changes: fixture commit `5f614fa5ab6dfed2a8958d8d0a49a49a7613960a`; workflow commit `2a9110523860a68e95881b039f307564963deb96`.
 - The next CI run must validate the correction; do not treat the result-PIN runtime test as passed yet. No production migration/deployment or merge occurred.
+
+
+## Result-PIN CI role setup moved out of SQL fixture — fresh verification pending — 2026-10-17
+
+- Corrected the malformed PL/pgSQL role-creation block that caused the second test attempt to stop at fixture setup. Role creation now occurs as separate `psql --command` steps in the CI job, then the SQL fixture applies the migration. Current Stage A head: `2a9110523860a68e95881b039f307564963deb96`.
+- [SchoolPro CI run #38991451449](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451449) has started but is still in progress; its `result-pin-rate-limit-integration` job has not reported a final result yet. Do not mark this control tested until the job completes successfully.
+- [Payment-page validation #38991451545](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451545) was in progress when this note was added.
+- No production migration, data write, Render deployment, or merge occurred. Trusted-proxy/header provenance and concurrency acceptance remain separate open requirements.

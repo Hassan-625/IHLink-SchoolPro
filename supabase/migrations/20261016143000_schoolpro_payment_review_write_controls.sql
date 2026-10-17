@@ -2,6 +2,11 @@
 -- These policies are restrictive: they do not grant access on their own. Rebuild the scope
 -- explicitly so guardian-owned submissions remain usable and Super Admin inspection stays
 -- read-only, while review mutations continue through the locked SECURITY DEFINER RPC.
+-- Submission rows must be created through submit_schoolpro_payment so receipt ownership,
+-- allocation totals and invoice locks cannot be bypassed with a direct REST insert.
+drop policy if exists "guardian inserts submissions" on public.schoolpro_payment_submissions;
+revoke insert on table public.schoolpro_payment_submissions from authenticated;
+
 drop policy if exists "schoolpro_module_permission" on public.schoolpro_payment_submissions;
 create policy "schoolpro_module_permission"
   on public.schoolpro_payment_submissions as restrictive for all to authenticated
@@ -37,6 +42,29 @@ create policy "schoolpro_module_permission"
     )
   )
   with check (private.schoolpro_module_allowed(school_id, 'finance'));
+
+-- Legacy proof rows also require an uploaded receipt owned by the submitting guardian.
+drop policy if exists "guardian submits proof" on public.schoolpro_payment_proofs;
+create policy "guardian submits proof"
+  on public.schoolpro_payment_proofs for insert to authenticated
+  with check (
+    submitted_by = (select auth.uid())
+    and receipt_path is not null
+    and split_part(receipt_path, '/', 1) = (select auth.uid())::text
+    and exists (
+      select 1 from storage.objects o
+      where o.bucket_id = 'schoolpro-payment-receipts'
+        and o.name = public.schoolpro_payment_proofs.receipt_path
+        and coalesce(o.owner_id, o.owner::text) = (select auth.uid())::text
+    )
+    and exists (
+      select 1 from public.schoolpro_guardian_links g
+      where g.school_id = public.schoolpro_payment_proofs.school_id
+        and g.student_id = public.schoolpro_payment_proofs.student_id
+        and g.guardian_user_id = (select auth.uid())
+        and g.status = 'active'
+    )
+  );
 
 drop policy if exists "schoolpro_module_permission" on public.schoolpro_payment_proofs;
 create policy "schoolpro_module_permission"

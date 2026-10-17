@@ -39,6 +39,7 @@ jobs:
       - run: node scripts/test-schoolpro-document-serial-uniqueness.mjs
       - run: node scripts/test-schoolpro-result-verification-exposure.mjs
       - run: node scripts/test-schoolpro-public-admission-abuse-controls.mjs
+      - run: node scripts/test-schoolpro-public-admission-edge-gateway.mjs
       - run: node scripts/test-schoolpro-login-rate-limit-trusted-ip.mjs
       - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
       - name: Check SchoolPro receipt-submission security guards

@@ -614,3 +614,8 @@ The migration reconciliation addendum now records additional immutable evidence:
 See [Branch-only migration disposition register](BRANCH-ONLY-MIGRATION-DISPOSITION-REGISTER-2026-10-17.md) for one-by-one source-history and live-catalog evidence on all 44 branch-only versions. It identifies the 33-version production sync marker as non-replayable provenance documentation and records the current schema mismatches for tenant-isolation, guardian/CBT/document integrity, family-result and subscription-plan objects. Current object presence must not be interpreted as exact migration deployment evidence.
 
 The source inventory remains an allowlist proposal only. Export/import is not approved until original SQL/deployment provenance is recovered and the full schema/tenant ownership review is signed off.
+
+
+## Alternate-branch/source-history search — 2026-10-17
+
+Inspected `fix/operational-migration-history-oct10` as well as `migration/mysql-schoolpro-foundation`; the alternate branch has 55 numbered migrations and does not recover the original 33-version SQL batch. Code/commit search for two representative remote-only names (`schoolpro_admission_lifecycle`, `schoolpro_completion_security_cleanup`) returned no indexed matches. Several of the 44 branch-only files were added to current history by “Restore … migration” commits; these are not deployment proofs. Full source/deployment evidence remains outstanding.

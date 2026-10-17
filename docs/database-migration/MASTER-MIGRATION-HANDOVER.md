@@ -2786,3 +2786,10 @@ Added a real MySQL-backed API integration test in `server/mysql-api/test/api.tes
 - Student logout revokes the session and subsequent `/v1/student/me` returns 401.
 
 Updated `.github/workflows/ci.yml` to apply migration 008 and the synthetic student credential fixture in the disposable MySQL 8.4 API job. This supplements the mock-pool tests with actual MySQL persistence and relational behavior. Exact-head CI/schema/payment validation is pending for this increment. Remaining student-auth security work: make password update + session invalidation transactional, revoke other student sessions on password change, enforce forced-change gate on all future student data routes, and test locked/inactive student/school states against MySQL. No production migration, deployment or cutover.
+
+
+### Student password-change transaction hardening — 2026-10-17
+
+Changed `POST /v1/student/password` to run inside a MySQL transaction: it locks the active credential row with `SELECT ... FOR UPDATE`, verifies the current password while holding the lock, updates the scrypt hash and initial-change state, revokes other active sessions for the same student while preserving the current session, then commits. Invalid current passwords roll back without changing credentials; exceptions roll back and release the connection.
+
+Added an assertion to the disposable-MySQL API integration test that the seeded second student session is revoked after a password change. The mock-pool transaction harness was extended to model credential update and sibling-session revocation. Exact-head MySQL schema/API tests, SchoolPro CI and payment validation are pending; no production deployment or cutover.

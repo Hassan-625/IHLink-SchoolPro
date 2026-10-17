@@ -35,7 +35,9 @@ INSERT INTO cbt_answers(id,school_id,attempt_id,question_id,answer)
 VALUES ('e6000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','e5000000-0000-4000-8000-000000000001','e3000000-0000-4000-8000-000000000001','4');
 
 INSERT INTO library_books(id,school_id,title,author,isbn,copies,available_copies)
-VALUES ('e7000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Synthetic Science Book','Test Author','ISBN-TEST-001',3,2);
+VALUES
+ ('e7000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Synthetic Science Book','Test Author','ISBN-TEST-001',3,2),
+ ('e7000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','Foreign-school fixture book','Test Author B','ISBN-TEST-002',1,1);
 
 INSERT INTO library_loans
  (id,school_id,book_id,student_id,borrowed_at,due_at,status,session_id,term_id)

@@ -11,6 +11,8 @@ assert.match(sql, /failed_attempts \+ 1 >= 8/i, 'Eight failures must trigger coo
 assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 15 minutes');
 assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
 assert.ok(sql.includes("current_setting('request.headers', true)"), 'Rate-limit key should include request network context to reduce admission-only lockout abuse');
+assert.match(sql, /nullif\(trim\(v_headers ->> 'cf-connecting-ip'\), ''\)/i, 'Use the hosted edge client-IP header as the trusted rate-limit identity');
+assert.doesNotMatch(sql, /v_client_ip := split_part\([\s\S]{0,250}x-forwarded-for/i, 'Do not derive the security rate-limit identity from caller-influenced X-Forwarded-For');
 const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
 const blockedAt = sql.indexOf('select a.blocked_until');
 const studentLookupAt = sql.indexOf('from public.schoolpro_students st');

@@ -2466,3 +2466,23 @@ Added draft migration `database/mysql/005_schoolpro_operational_modules.sql` usi
 - Initial MySQL schema workflow #361 correctly caught an assertion-quality issue, not a migration DDL failure: the negative timetable fixture invalidated both weekday and time range, and MySQL reported `chk_timetable_time` first while the test expected `chk_timetable_weekday`.
 - Split the test inputs so invalid weekday is tested with a valid time range, and added a separate invalid time-range fixture. CI now expects each precise check constraint independently. The initial run is recorded as failed and is not counted as acceptance.
 - Re-run all workflows on the corrected fixture/workflow commit before considering migration 005 validated.
+
+
+### MySQL migration 005 validated — 2026-10-17
+
+Corrected exact-head validation completed successfully on code-bearing commit `1c37d77962eb8b48de3c33288a45da1ef6d035a0`:
+- MySQL schema workflow #368 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032033651
+- SchoolPro CI #1560 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032033656
+- Payment-page validation #1287 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032033647
+
+This validates migrations 001–005 and their selected synthetic tests in disposable MySQL 8.4. The first schema run #361 failed because a test asserted the wrong CHECK constraint for an input violating two constraints; the isolated weekday/time tests now pass. The operational tables are still proposals, and application behavior/security parity remains open.
+
+## MySQL learning, CBT, library, transport and payroll slice — 2026-10-17
+
+Added draft migration `database/mysql/006_schoolpro_learning_cbt_library_transport_payroll.sql` for assignments/submissions, question bank, CBT tests/questions/attempts/answers, library books/loans, transport routes/student assignments and payroll records.
+
+- Added synthetic fixture coverage for each domain and a generated payroll net calculation.
+- Added negative cross-tenant tests for assignment submission student, CBT question, and library loan book relationships.
+- Workflow updated to apply migration 006 after 001–005 and run the new fixtures/negative cases.
+- This remains schema-level only. CBT eligibility/token security, attempt locking and timing, answer grading, question disclosure control, assignment grading permissions, library copy-count concurrency, route capacity, payroll approval/payment authorization and audit transactions require service-level contracts.
+- Migration 006 validation is pending; do not infer success from earlier green workflow runs.

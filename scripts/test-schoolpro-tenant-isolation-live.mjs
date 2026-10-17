@@ -10,6 +10,8 @@ const required = [
   'SCHOOL_B_EMAIL',
   'SCHOOL_B_PASSWORD',
   'SCHOOL_B_ID',
+  'SCHOOL_A_RECEIPT_PATH',
+  'SCHOOL_B_RECEIPT_PATH',
 ];
 const missing = required.filter((key) => !process.env[key]);
 if (missing.length) {
@@ -214,17 +216,39 @@ async function main() {
   );
   console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName,
     'received HTTP', foreignResponse.status, 'for the foreign object');
-  if (process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH) {
-    for (const [name, client, foreignPath] of [
-      ['School A', a.client, process.env.SCHOOL_B_RECEIPT_PATH],
-      ['School B', b.client, process.env.SCHOOL_A_RECEIPT_PATH],
-    ]) {
-      const {data, error} = await client.storage.from('schoolpro-payment-receipts').download(foreignPath);
-      assert.ok(error || !data, name + ' must not download another account\'s payment receipt');
-      console.log('PASS', name, 'foreign-user payment receipt download denied');
-    }
-  } else {
-    console.log('SKIP payment-receipt Storage download test: provide two existing test receipt paths; do not create production fixtures just for this test');
+  const receiptFixtures = [
+    {name: 'School A', owner: a, ownPath: process.env.SCHOOL_A_RECEIPT_PATH, foreign: b, foreignPath: process.env.SCHOOL_B_RECEIPT_PATH},
+    {name: 'School B', owner: b, ownPath: process.env.SCHOOL_B_RECEIPT_PATH, foreign: a, foreignPath: process.env.SCHOOL_A_RECEIPT_PATH},
+  ];
+  assert.notEqual(
+    process.env.SCHOOL_A_RECEIPT_PATH,
+    process.env.SCHOOL_B_RECEIPT_PATH,
+    'Use two distinct existing receipt objects owned by the two test accounts',
+  );
+  for (const fixture of receiptFixtures) {
+    assert.ok(
+      fixture.ownPath.startsWith(fixture.owner.user.id + '/'),
+      fixture.name + ' receipt fixture must be rooted under the authenticated owner user ID',
+    );
+    const ownReceipt = await downloadStorageWithRetry(
+      fixture.owner.client,
+      'schoolpro-payment-receipts',
+      fixture.ownPath,
+      fixture.name + ' own receipt fixture',
+    );
+    assert.ifError(ownReceipt.error);
+    assert.ok(ownReceipt.data, fixture.name + ' must be able to download its own existing receipt');
+    const foreignReceipt = await downloadStorageWithRetry(
+      fixture.owner.client,
+      'schoolpro-payment-receipts',
+      fixture.foreignPath,
+      fixture.name + ' foreign receipt fixture',
+    );
+    assert.ok(
+      foreignReceipt.error || !foreignReceipt.data,
+      fixture.name + ' must not download another account\\'s payment receipt',
+    );
+    console.log('PASS', fixture.name, 'own receipt allowed; other account receipt denied');
   }
 
   console.log('PASS: authenticated two-school tenant read/RPC/Storage acceptance checks completed.');

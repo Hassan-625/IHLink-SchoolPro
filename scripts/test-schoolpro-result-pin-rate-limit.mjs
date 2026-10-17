@@ -20,6 +20,7 @@ assert.ok(lockAt >= 0, 'Same attempt key must serialize concurrent checks');
 assert.ok(blockedAt > lockAt, 'Cooldown must be checked after acquiring the per-key transaction lock');
 assert.ok(studentLookupAt > blockedAt, 'Blocked attempts must be rejected before student lookup');
 assert.ok(sql.includes('perform private.record_schoolpro_result_pin_failure(v_attempt_key)'), 'Unknown admission and incorrect PIN paths must both count failures');
+assert.match(sql, /and exists \(\s*select 1\s+from public\.schoolpro_result_access_pins candidate_pin[\s\S]*?candidate_pin\.pin_hash = encode\([\s\S]*?extensions\.digest\(upper\(trim\(p_pin\)\)/i, 'Resolve duplicate admission numbers by matching the supplied PIN to its tenant-scoped student before choosing a student');
 assert.match(sql, /delete from private\.schoolpro_result_pin_attempts\s+where attempt_key = v_attempt_key/i, 'Successful published-result access must clear the failure counter');
 assert.match(sql, /revoke all on table private\.schoolpro_result_pin_attempts from public, anon, authenticated/i, 'Attempt table must not be directly accessible from API roles');
 assert.match(sql, /revoke all on function private\.record_schoolpro_result_pin_failure\(text\) from public, anon, authenticated/i, 'Internal counter function must not be callable from API roles');

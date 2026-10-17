@@ -1501,3 +1501,35 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - This is a gate-strengthening change, **not a passed runtime test**. At the time of this note, GitHub did not return a workflow run for the newest PR head; CI execution is pending/unavailable through the queried run listing. The gate must not be called closed until the live acceptance job passes with the two valid path secrets configured.
 - If the paths are not available, use a dedicated disposable Supabase/Storage environment or create test-owned objects only in an approved test environment. Do not point these secrets at arbitrary customer receipts and do not upload dummy receipts into production.
 
+
+
+## 15. Exact-head CI diagnosis and payment/Storage test remediation — 2026-10-17
+
+### CI run #1344 — failure causes confirmed from job logs
+
+- PR #106 was still open/draft/unmerged. At the time of this diagnosis, its exact head was `9c84946b10bf0dbef677418ab6f2cbffc4d4ed5b`.
+- SchoolPro CI [run #1344](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022220584) did **not** pass:
+  - `validate` was still running its mobile-layout/build tail when inspected; earlier source-level checks, including `test-schoolpro-payment-review-write-controls.mjs`, passed.
+  - `tenant-acceptance` failed immediately before making any Supabase request because repository Actions secrets `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` were empty. This is an environment/fixture-availability failure, not a Storage policy denial or proof that isolation works.
+  - `payment-review-rls-integration` failed with a SQL syntax error at the new guardian pre-reviewed INSERT assertion: the dynamic SQL dollar-quote delimiter was opened as `$insert` rather than a valid PostgreSQL dollar-quoted string. The failure occurred before that assertion could exercise RLS; therefore the payment RLS test had not passed.
+  - The completed tenant-integrity, public-admission abuse, result-verification exposure, and result-PIN/login-rate-limit integration jobs succeeded in this run.
+- Payment-page validation [run #1069](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022220591) succeeded.
+
+### Payment test syntax correction and rerun
+
+- Corrected the test statement delimiter in `scripts/test-schoolpro-payment-review-rls.integration.sql` to use matching `$insert$ ... $insert$` delimiters. Isolated branch commit: `2f9bccfc141ec136673025d4995086970afe908e`.
+- GitHub started fresh workflows for this commit: SchoolPro CI [run #1345](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022362975) and payment-page validation [run #1070](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022362976). Both were in progress at the time this entry was written. Do not report the corrected SQL or the full workflow as passing until run #1345's payment job and final workflow conclusion are successful.
+- The payment fixture still tests a deliberately limited representative policy/grant schema. After syntax repair, inspect the full run output for the new guardian pre-reviewed INSERT denial and existing guardian-read, finance-review, and Super Admin read-only checks. Further lifecycle assertions remain necessary before calling payment testing complete: direct write/receipt path boundary, cross-school identifiers, reject/cancel behavior, duplicate allocation, and invoice-lock/concurrent review behavior. Compare actual application call sites before changing direct table grants.
+
+### Receipt Storage isolation — blocked by missing safe fixture paths
+
+- The live acceptance workflow's environment dump showed both receipt-path secrets blank. The script correctly failed closed before sending any request. No object was downloaded and no production data was changed.
+- To complete the runtime test, configure `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` to two distinct, existing **test-owned** objects in `schoolpro-payment-receipts`, each rooted under the matching authenticated test user's UUID. Verify the paths belong to the two configured test accounts before rerunning. Do not use arbitrary customer receipts or create dummy production objects.
+- If safe existing objects are unavailable, provision a dedicated disposable Supabase/Storage environment with test-owned fixtures and exercise own-object download success plus cross-account denial there. The current live two-school job cannot be marked green by skipping this test or making the required paths optional.
+- The result-template Storage assertion is a separate existing-object check and does not substitute for receipt-object isolation. Family report-media folder-listing/runtime performance remains a separate open gate as well.
+
+### Current disposition
+
+- The syntax correction is committed to the isolated PR branch; its validation is pending the new CI run.
+- Receipt Storage runtime isolation remains **BLOCKED** until valid test-owned fixture paths or a dedicated disposable Storage test environment are available and the test passes.
+- Stage A remains **BLOCKED / NOT MERGE-READY**. No production migration, production row/object mutation, Render deployment, Supabase function/secret change, or PR merge was performed. Keep the full A–J roadmap and A → B → C → D release order intact.

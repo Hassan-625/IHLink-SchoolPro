@@ -1,7 +1,9 @@
 -- Keep receipt Storage access controls in migration history as well as the live database.
 -- Receipt objects are private and stored under the authenticated uploader's user ID.
--- School-finance access is granted only for a receipt linked to a payment-proof row
--- for a school where the caller has one of the approved finance/leadership roles.
+-- School-finance access is granted only for a receipt linked to a payment-proof or submission row,
+-- where the recorded uploader owns the exact object path and the caller has finance/leadership access.
+-- private.has_school_access also deliberately allows active platform Super Admins to inspect schools;
+-- that helper's Super Admin bypass is part of this policy's effective authorization semantics.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'schoolpro-payment-receipts',
@@ -42,6 +44,8 @@ using (
     select 1
     from public.schoolpro_payment_proofs p
     where p.receipt_path = objects.name
+      and split_part(p.receipt_path, '/', 1) = p.submitted_by::text
+      and coalesce(objects.owner_id, objects.owner::text) = p.submitted_by::text
       and private.has_school_access(
         p.school_id,
         array[
@@ -56,6 +60,8 @@ using (
     select 1
     from public.schoolpro_payment_submissions s
     where s.receipt_path = objects.name
+      and split_part(s.receipt_path, '/', 1) = s.submitted_by::text
+      and coalesce(objects.owner_id, objects.owner::text) = s.submitted_by::text
       and private.has_school_access(
         s.school_id,
         array[

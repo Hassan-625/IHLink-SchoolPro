@@ -1026,3 +1026,13 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - This resolves the outstanding workflow status from the preceding entry. It does not make PR #106 merge-ready: the passing integration fixtures are targeted/minimal, and the release gate still lists full-schema interaction, migration provenance, Storage performance/acceptance, result-PIN runtime/trusted-network semantics, and payment lifecycle/concurrency as open.
 - A source audit of `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql` reconfirmed the current rate limiter uses `x-forwarded-for` first, then `cf-connecting-ip` and `x-real-ip`. Trusted gateway overwrite/normalization of those headers is **not yet verified**, and the static test does not execute the checker or prove concurrency/cooldown behavior at runtime. Add a disposable PostgreSQL integration test for the actual result-PIN migration and explicitly verify network-header trust before claiming this security control is complete.
 - No production migration, data write, Render deployment, or merge occurred. PR #106 remains draft/open/unmerged.
+
+
+## Result-PIN runtime test added to Stage A — 2026-10-17 (pending CI)
+
+- Added `scripts/test-schoolpro-result-pin-rate-limit.integration.sql` to execute the actual `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql` migration in an isolated PostgreSQL 16 fixture. It tests eight incorrect PIN attempts, hashed attempt-key storage, rejection during cooldown, unknown-admission failure counting, successful published-result retrieval after cooldown expiry, and clearing the attempt counter.
+- Added a separate `result-pin-rate-limit-integration` job to `.github/workflows/ci.yml` on Stage A branch. Commit: `13e24eae6c3de863ff042e1f477cf63251a6b93f`.
+- CI validation is **pending**; do not count this runtime test as passed until its job completes. This sequential test does not yet prove concurrent requests serialize correctly.
+- Trusted network-header provenance remains open. The SQL currently prefers `x-forwarded-for`; this fixture simulates request metadata and cannot prove that the production gateway overwrites spoofable client-supplied headers. Verify gateway behavior before treating network-scoped throttling as a security boundary.
+- The previous exact-head Stage A workflow passed fully at `82cc647d71014db1683e4d0f13a8a2cd1ff56efc` (all four jobs). The new commit adds the runtime fixture and CI job; it has not yet been verified.
+- No production migration, data write, Render deployment, or merge occurred. PR #106 remains draft/open/unmerged.

@@ -2229,3 +2229,17 @@ The deployed `review_schoolpro_payment_submission(uuid,text,text)` and `review_s
 - The new Storage policy fixture, actual-trigger snapshots and two-session review race are included in Stage A head `ae189d47389047337e2681fccb9dd5bdf03fdb7c` / preceding test changes; SchoolPro CI #1485 is running at this note. Record its exact final status in a follow-up handover section before making a release decision.
 
 No production DDL/DML, receipt upload, deployment, migration replay or merge occurred.
+
+
+## 45. Exact-head CI results for receipt-path and concurrent review tests (2026-10-17)
+
+- SchoolPro CI [#1487](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39028618496) completed with all **8/8 jobs successful** on tested commit `e21d52b43e24724384bbbd94587d318755680502`: general validation/build, local Supabase receipt Storage isolation, payment-review RLS, tenant-integrity DB integration, result-PIN rate-limit integration, tenant acceptance, public-admission abuse controls and result-verification exposure.
+- Payment-page validation [#1214](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39028618404) passed on that same tested commit.
+- Payment-review job step results include both `Exercise payment-review RLS using authenticated role switching` and `Exercise two-session duplicate payment review concurrency` = success. Two independent PostgreSQL sessions produced one successful confirmation and one `Already reviewed` rejection, with exactly one fee-payment row and one allocation link.
+- Local Supabase Storage isolation passed after the fixture was corrected to include `submitted_by`, active profiles, school ownership and the Super Admin helper bypass. The runtime test verifies guardian own-folder upload/download, cross-user upload/download denial, finance access to own-school proof/submission receipt paths, denial for another school's receipt, and active Super Admin read access to both.
+- The same run passed the trigger-snapshot rollback assertions: attempted fee-payment and email-queue writes, invoice balance/status, allocation link and submission status are rolled back when a later invoice trigger raises. The trigger function bodies are snapshots with minimal dependency stubs, not a full restore of production's activation/subscription and notification integrations.
+- Follow-up commit `499fe19aa476723f1e6a3d151e71eedc13e12ea4` adds a direct negative assertion that the production activation-guard function rejects a review transition when the school is inactive. Its exact-head SchoolPro CI #1488 and payment validation #1215 are in progress at the time of this update; do not transfer the #1487 pass to this newer head.
+
+### Acceptance decision after run #1487
+
+CI on `e21d52b` passes the disposable runtime assertions, including Storage policy behavior and concurrent review. Stage A is nevertheless **NOT MERGE-READY** until run #1488 validates the additional activation-guard test and remaining full-schema/source-history caveats are either closed or explicitly accepted. The migration source/ledger comparison for Stage A is complete: the eleven listed 2026-10-15 20:30 through 2026-10-17 files are unapplied PR proposals, while older historical filename mismatches remain possible supersession cases requiring object-level equivalence review. No production migration, DML, receipt upload, deployment or merge occurred.

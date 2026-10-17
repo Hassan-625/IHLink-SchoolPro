@@ -35,17 +35,23 @@ create table public.schoolpro_results (
 \ir ../supabase/migrations/20261016122000_schoolpro_result_pin_attempt_rate_limit.sql
 
 insert into public.schoolpro_schools (id,name,address)
-values ('00000000-0000-0000-0000-000000000001','Fixture School','Test address');
+values
+  ('00000000-0000-0000-0000-000000000001','Fixture School','Test address'),
+  ('00000000-0000-0000-0000-000000000002','Duplicate Admission School','Other test address');
 insert into public.schoolpro_students
-  (id,school_id,first_name,last_name,admission_number,class_name,status)
+  (id,school_id,first_name,last_name,admission_number,class_name,status,created_at)
 values
   ('10000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001',
-   'Amina','Bello','SP-TEST-001','Basic 1 A','active');
+   'Amina','Bello','SP-TEST-001','Basic 1 A','active','2026-01-01T00:00:00Z'),
+  ('10000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002',
+   'Newer','Duplicate','SP-TEST-001','Basic 4 A','active','2026-02-01T00:00:00Z');
 insert into public.schoolpro_result_access_pins
   (id,student_id,term,session,is_active,pin_hash)
 values
   ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',
-   'First Term','2025/2026',true,encode(extensions.digest('1234','sha256'),'hex'));
+   'First Term','2025/2026',true,encode(extensions.digest('1234','sha256'),'hex')),
+  ('20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002',
+   'First Term','2025/2026',true,encode(extensions.digest('9999','sha256'),'hex'));
 insert into public.schoolpro_subjects (id,name)
 values ('30000000-0000-0000-0000-000000000001','Mathematics');
 insert into public.schoolpro_results
@@ -108,6 +114,10 @@ begin
   result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','1234');
   if not coalesce((result->>'ok')::boolean,false) then
     raise exception 'Valid PIN should succeed after cooldown expires: %', result;
+  end if;
+  if result->'student'->>'name' <> 'Amina Bello'
+     or result->'school'->>'name' <> 'Fixture School' then
+    raise exception 'Duplicate admission number resolved to the wrong tenant/student: %', result;
   end if;
   if exists (select 1 from private.schoolpro_result_pin_attempts
              where attempt_key = encode(extensions.digest('sp-test-001|203.0.113.10','sha256'),'hex')) then

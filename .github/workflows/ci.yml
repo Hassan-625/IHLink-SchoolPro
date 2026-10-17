@@ -63,6 +63,23 @@ jobs:
           path: mobile-ui-evidence/
       - run: npm run build
 
+  receipt-storage-isolation:
+    name: Receipt Storage isolation (local Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v3
+      - name: Run receipt isolation against an isolated local Supabase Storage API
+        run: node scripts/test-schoolpro-receipt-storage-local.mjs
+
   tenant-acceptance:
     if: ${{ vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
     runs-on: ubuntu-latest

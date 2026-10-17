@@ -5,6 +5,8 @@ const migrationPath = 'supabase/migrations/20261016160000_schoolpro_repair_opera
 const sql = readFileSync(migrationPath, 'utf8');
 const rlsMigrationPath = 'supabase/migrations/20261017170000_schoolpro_forward_operational_tenant_isolation.sql';
 const rlsSql = readFileSync(rlsMigrationPath, 'utf8');
+const indexMigrationPath = 'supabase/migrations/20261017180000_schoolpro_operational_tenant_indexes.sql';
+const indexSql = readFileSync(indexMigrationPath, 'utf8');
 
 assert.match(sql, /create or replace function private\.schoolpro_validate_operational_tenant\(\)/i);
 assert.match(sql, /security definer\s+set search_path\s*=\s*''/i, 'Trigger functions must use a fixed empty search_path');
@@ -74,4 +76,19 @@ for (const tableName of [
   assert.match(rlsSql, new RegExp("'" + tableName + "'"), 'Missing RLS posture target: ' + tableName);
 }
 
-console.log('PASS: operational relationship integrity and forward-only RLS posture migrations preserve feature policies and fail closed.');
+
+assert.match(indexSql, /schoolpro_result_approvals_school_id_idx[\\s\\S]*?on public\\.schoolpro_result_approvals \\(school_id\\)/i, 'Result approvals needs a tenant-leading index for RLS query plans');
+assert.match(indexSql, /schoolpro_promotions_school_id_idx[\\s\\S]*?on public\\.schoolpro_promotions \\(school_id\\)/i, 'Promotions needs a tenant-leading index');
+assert.match(indexSql, /to_regclass[\\s\\S]*?raise exception/i, 'Index repair must fail closed if a required table is absent');
+for (const indexName of [
+  'schoolpro_library_books_school_id_idx',
+  'schoolpro_transport_routes_school_id_idx',
+  'schoolpro_hostel_rooms_school_id_idx',
+  'schoolpro_inventory_assets_school_id_idx',
+  'schoolpro_result_approvals_school_id_idx',
+  'schoolpro_promotions_school_id_idx',
+]) {
+  assert.match(indexSql, new RegExp('create index if not exists ' + indexName, 'i'), 'Missing operational tenant query index: ' + indexName);
+}
+
+console.log('PASS: operational relationship integrity, forward-only RLS posture and tenant query indexes preserve feature policies and fail closed.');

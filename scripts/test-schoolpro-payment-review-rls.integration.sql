@@ -92,16 +92,16 @@ grant select,insert,update,delete on public.schoolpro_payment_submissions, publi
 create function pg_temp.assert_count(p_name text, p_actual bigint, p_expected bigint)
 returns void language plpgsql as $$
 begin if p_actual <> p_expected then raise exception 'FAIL: % expected %, got %',p_name,p_expected,p_actual; end if; end $$;
-create function pg_temp.assert_rejected(p_name text, p_statement text)
-returns void language plpgsql as $$
-declare msg text;
+create function pg_temp.assert_no_rows_affected(p_name text, p_statement text)
+returns void language plpgsql as $
+declare affected bigint;
 begin
  execute p_statement;
- raise exception 'RLS_TEST_ACCEPTED:%',p_name;
-exception when others then
- get stacked diagnostics msg=message_text;
- if msg='RLS_TEST_ACCEPTED:'||p_name then raise exception 'FAIL: unauthorized action was accepted: %',p_name; end if;
-end $$;
+ get diagnostics affected = row_count;
+ if affected > 0 then raise exception 'FAIL: unauthorized action changed % row(s): %',affected,p_name; end if;
+exception when insufficient_privilege then
+ return;
+end $;
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);
@@ -111,8 +111,8 @@ select pg_temp.assert_count('guardian sees own submission only',(select count(*)
 select pg_temp.assert_count('guardian sees own allocation only',(select count(*) from public.schoolpro_payment_allocations),1);
 select pg_temp.assert_count('guardian sees own proof only',(select count(*) from public.schoolpro_payment_proofs),1);
 select pg_temp.assert_count('guardian sees linked fee payment only',(select count(*) from public.schoolpro_fee_payments),1);
-select pg_temp.assert_rejected('guardian cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=999 where id='e0000000-0000-0000-0000-000000000001'$$);
-select pg_temp.assert_rejected('guardian cannot delete allocation',$$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('guardian cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=999 where id='e0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('guardian cannot delete allocation',$$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$$);
 
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
 select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);
@@ -129,7 +129,7 @@ select pg_temp.assert_count('Super Admin reads all submissions',(select count(*)
 select pg_temp.assert_count('Super Admin reads all allocations',(select count(*) from public.schoolpro_payment_allocations),2);
 select pg_temp.assert_count('Super Admin reads all proofs',(select count(*) from public.schoolpro_payment_proofs),2);
 select pg_temp.assert_count('Super Admin reads all fee payments',(select count(*) from public.schoolpro_fee_payments),2);
-select pg_temp.assert_rejected('Super Admin cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=888 where id='e0000000-0000-0000-0000-000000000001'$$);
-select pg_temp.assert_rejected('Super Admin cannot delete fee payment',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('Super Admin cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=888 where id='e0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('Super Admin cannot delete fee payment',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
 reset role;
 select 'PASS: payment-review RLS restricted guardian scope, allowed school-finance review, and kept Super Admin read-only.' as result;

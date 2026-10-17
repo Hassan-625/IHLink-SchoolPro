@@ -2365,3 +2365,14 @@ Candidate PR #107 head: `cf419bf94e353f2cb9b5c0647aa3e7932ed68195`.
 - Payment-page validation #1244: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030626313
 
 Do not mark this slice accepted until the disposable MySQL workflow passes on the exact head and any failures are fixed/retested. No production database or application configuration was changed.
+
+
+### MySQL finance test fixture correction — 2026-10-17
+
+- MySQL schema run #294 failed on the intended invoice/enrollment mismatch case because its fixture used a student from the other school; the invoice's direct student FK correctly rejected it first, so the test did not isolate the composite enrollment constraint.
+- Added a second synthetic student inside School A and changed the negative case to use that same-school student with School A's different enrollment. The test should now reach `fk_invoice_enrollment_student_session` and prove the student/enrollment/session tuple must match.
+- Exact-head rerun after the fixture correction: MySQL schema workflow #299, SchoolPro CI #1520, and payment validation #1247 are queued:
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030722203
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030722204
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030722216
+- Do not mark the new MySQL schema slice accepted until #299 passes. No production database changes occurred.

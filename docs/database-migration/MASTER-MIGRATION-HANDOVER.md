@@ -2740,3 +2740,12 @@ Extended `server/mysql-api/test/server.test.mjs` with two focused runtime contra
 - Native login returns an opaque bearer token without a browser `Set-Cookie` header, and that token authenticates `/v1/me`.
 
 The mock pool now tracks revoked session state so the logout test checks subsequent authentication behavior rather than only response formatting. These are mock-pool API contract tests, not a replacement for disposable-MySQL session-revocation integration or mobile secure-vault integration. Exact-head MySQL schema/API tests, SchoolPro CI and payment validation are required before acceptance. No production change or deployment.
+
+
+### MySQL API tenant-role boundary tests — 2026-10-17
+
+Added two more isolated API contract tests in `server/mysql-api/test/server.test.mjs`:
+- A platform Super Admin can inspect either synthetic school through the platform role path even when the fixture has no active school membership.
+- A user whose only school membership is suspended receives the same not-found response for that tenant as a user with no active membership.
+
+The fixture now supports explicit platform-role and membership-status variants. These tests check the API's role-branching logic with a mock pool; they do not establish that the deployed production role catalog is migrated or that every data endpoint enforces the same boundary. Exact-head SchoolPro CI, MySQL schema workflow, and payment validation are required. PR #107 remains draft/unmerged; no production migration or deployment.

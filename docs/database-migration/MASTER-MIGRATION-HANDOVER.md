@@ -1815,3 +1815,21 @@ This is a read-only comparison of key behaviors in production against the draft 
 - The draft adds tenant checks for lesson subject/class, approval result, promotion student/source/destination class, immutable `school_id` on subjects/classes/students/results/members, and the member-permission/member school match. The current production schema has the referenced IDs and tenant columns, but production FK/constraint definitions and the complete set of cross-tenant data rows still require a full relation-by-relation audit before application.
 - This is a positive source/schema compatibility check, **not** proof that the migration is safe to apply over all production data. The live migration ledger remains behind source, and the migration must be exercised against a production-shaped disposable schema plus cross-tenant negative cases before any approval.
 - No production writes or trigger changes were performed. Stage A remains draft/open.
+
+
+## 30. Read-only preflight for existing cross-tenant operational references (2026-10-17)
+
+The following aggregate-only production preflight returned zero mismatched rows for each checked relationship:
+
+| Relationship | Mismatched rows |
+|---|---:|
+| Lesson note → subject school | 0 |
+| Lesson note → class school | 0 |
+| Result approval → result school | 0 |
+| Promotion → student school | 0 |
+| Promotion → source class school | 0 |
+| Promotion → destination class school | 0 |
+| Member permission → member school | 0 |
+| School member with null school ID | 0 |
+
+This is useful preflight evidence that the proposed tenant-integrity triggers should not immediately reject existing rows on these specific relationships. It is not a full data-integrity certification: it only covers rows with a resolvable referenced record, and does not replace foreign-key validation, null/orphan detection, trigger tests, or the complete source/ledger reconciliation. The query returned counts only and did not modify data.

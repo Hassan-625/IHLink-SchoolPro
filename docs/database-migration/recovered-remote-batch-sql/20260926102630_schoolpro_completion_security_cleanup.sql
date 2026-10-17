@@ -1,0 +1,1 @@
+alter function public.schoolpro_result_comment(numeric) set search_path=public; alter function public.enforce_schoolpro_result_lock() set search_path=public; revoke all on function public.queue_schoolpro_transactional_email() from public,anon,authenticated;

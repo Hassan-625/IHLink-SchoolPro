@@ -42,7 +42,7 @@ create policy "calendar school read" on public.schoolpro_calendar_events for sel
 
 -- The repair must preserve the live policy names/feature paths, not replace the policies
 -- with the historical migration's narrower generic policy set.
-do $
+do $$
 begin
   if not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_library_books' and policyname='Families read borrowed book details')
      or not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_calendar_events' and policyname='calendar school read')
@@ -63,7 +63,7 @@ begin
   ) then
     raise exception 'FAIL: an operational table is missing ENABLE/FORCE ROW LEVEL SECURITY';
   end if;
-end $;
+end $$;
 
 insert into public.schoolpro_library_books values
  ('a1000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),

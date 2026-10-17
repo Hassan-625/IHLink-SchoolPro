@@ -2267,3 +2267,31 @@ Read-only comparison of the three historical source files with current productio
 The Stage A proposal set is reconciled against the production ledger and deployed definitions; unapplied PR migrations are classified as expected pending changes, not ledger corruption. Historical filename mismatches are now classified into two likely superseded cases (guardian and CBT relation guards) and one unresolved operational-RLS posture difference. Do not replay historical migrations or hand-edit the ledger. If Stage A is to ship, explicitly review the operational RLS/FORCE-RLS gap and the pending repair migration as a forward-only change with role/owner-trigger tests.
 
 **Stage A remains NOT MERGE-READY.** The exact-head CI is green, but CI success is not equivalent to production migration acceptance. Outstanding release decision: approve a safe forward-only operational tenant integrity repair and verify its full schema/trigger interactions; confirm migration history/provenance for the historical operational isolation migration; and keep all production changes behind explicit approval. No production migration, DML, receipt upload, deployment or merge occurred.
+
+
+## Stage A operational tenant-isolation forward repair — 2026-10-17
+
+**Current Stage A candidate:** `release/stage-a-auth-tenant-isolation`, head `2ace61eafd070b3618d9f57ceaf3fdac606edd8e`. PR #106 remains draft/open/unmerged while exact-head CI runs. Production has not been modified.
+
+### Production facts rechecked read-only
+
+- The eight historical operational tables (`schoolpro_library_books`, `schoolpro_transport_routes`, `schoolpro_hostel_rooms`, `schoolpro_inventory_assets`, `schoolpro_calendar_events`, `schoolpro_lesson_notes`, `schoolpro_result_approvals`, `schoolpro_promotions`) have RLS enabled but `relforcerowsecurity=false`.
+- Live policy catalog is not equivalent to the old `20261002234500_schoolpro_operational_tenant_isolation.sql` policy set. Current feature-specific policies include family borrowed-book read access, calendar member read access, author/leadership lesson-note paths, and separate result-approval/promotion policies. The historical migration drops all policies on these tables before replacing them, so replaying it would risk removing live feature semantics. **Do not replay it.**
+- Production table owner is `postgres`. FORCE RLS is defense-in-depth for non-BYPASSRLS owners; it does not constrain superusers or BYPASSRLS roles such as the service role. Authenticated clients must continue to use scoped policies and must never receive service-role credentials.
+- The separate forward-only relational repair `20261016160000_schoolpro_repair_operational_tenant_integrity.sql` already adds fixed-search-path SECURITY DEFINER trigger functions, cross-school reference checks for lesson notes/result approvals/promotions/member permissions, and immutable tenant ownership for referenced parent rows. Its disposable PostgreSQL test covers 13 negative cross-tenant/reassignment cases.
+
+### New forward-only posture repair
+
+- Added `supabase/migrations/20261017170000_schoolpro_forward_operational_tenant_isolation.sql` on the Stage A branch. It validates that all eight expected tables exist, then enables and forces RLS without dropping, creating, or rewriting any existing feature policy. It intentionally does not mutate application rows.
+- Extended `scripts/test-schoolpro-operational-tenant-integrity.integration.sql` to apply both forward migrations in disposable PostgreSQL, assert ENABLE/FORCE RLS for all eight tables, confirm representative existing feature policy names remain present, and exercise own-school row visibility as the ordinary `authenticated` role across the operational fixture tables.
+- Extended `scripts/test-schoolpro-operational-tenant-integrity.mjs` to assert the forward migration fails closed for missing tables, preserves policies, and documents FORCE RLS limits.
+- CI run #1493 (SchoolPro CI) and payment-page validation #1220 were started for head `2ace61eafd070b3618d9f57ceaf3fdac606edd8e`; results must be read from the completed run before claiming acceptance:
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029530039
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029529982
+
+### Stage A closure status and remaining guardrails
+
+- The old migration-name mismatch is now addressed by an explicit forward-only source migration rather than by replaying destructive historical policy replacement. This is **source-level repair only** until disposable PostgreSQL tests pass and exact-head CI is green.
+- Recheck the complete current PR diff, all CI jobs, payment validation, and production catalog/trigger interactions after the run finishes. Production remains on the old schema and migration ledger until explicit cutover approval; do not apply the proposed migrations or merge/deploy automatically.
+- Cancellation remains unsupported in the deployed payment-review contract (only `confirmed`/`rejected`); do not represent rejection as cancellation or rewrite confirmed ledger rows.
+- Once Stage A is accepted and merged with explicit owner approval and post-merge verification, prioritize the separate SchoolPro-to-MySQL foundation track (PR #107 / `migration/mysql-schoolpro-foundation`). Keep DataSub and other IHLink platforms on Supabase; preserve the current SchoolPro architecture and records; use synthetic disposable MySQL fixtures first; map tenant/role rules, routines, triggers, Storage replacement and transactional payment flows before any production cutover. Do not start Stage B operational data population until Stage A is verified after merge, and re-verify B and C before resuming D. Preserve the full A–J backlog.

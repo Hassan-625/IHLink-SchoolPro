@@ -12,7 +12,7 @@ assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 
 assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
 assert.doesNotMatch(sql, /current_setting\('request\.headers'/i, 'Do not trust caller-controlled request headers for database security rate-limit identity');
 assert.doesNotMatch(sql, /cf-connecting-ip|x-forwarded-for|x-real-ip|forwarded/i, 'Do not derive database rate-limit identity from unverified network headers');
-assert.match(sql, /lower\(trim\(coalesce\(p_admission, ''\)\)\)\s*\|\|\s*'\|'\s*\|\|\s*lower\(trim\(coalesce\(p_term, ''\)\)\)/i, 'Rate-limit key must be based on normalized admission and result period');
+assert.match(sql, /extensions\.digest\(\s*lower\(trim\(coalesce\(p_admission, ''\)\)\)\s*,\s*'sha256'/i, 'Rate-limit key must hash normalized admission identity alone');
 const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
 const blockedAt = sql.indexOf('select a.blocked_until');
 const studentLookupAt = sql.indexOf('from public.schoolpro_students st');
@@ -27,4 +27,4 @@ assert.match(sql, /revoke all on function private\.record_schoolpro_result_pin_f
 assert.match(sql, /set search_path to ''/i, 'Security-definer functions must pin an empty search_path');
 assert.doesNotMatch(sql, /(?<!extensions\.)digest\(lower\(trim\(coalesce\(p_admission/i, 'pgcrypto digest must be schema-qualified under empty search_path');
 
-console.log('PASS: result-PIN rate-limit migration has hashed normalized admission-period identifiers, atomic failure counts, cooldown and restricted private storage.');
+console.log('PASS: result-PIN rate-limit migration has hashed normalized admission identifiers, atomic failure counts, cooldown and restricted private storage.');

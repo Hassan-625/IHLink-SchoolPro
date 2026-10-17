@@ -1655,3 +1655,18 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - In run #1365, the following disposable-database integration jobs were completed successfully: result-verification exposure, result-PIN/login rate limiting, payment-review RLS, public-admission abuse controls, and tenant-integrity/receipt-submission RPC. The local Supabase receipt Storage isolation job and general `validate` job were still in progress at the latest status check; do not record the whole CI run as passed until both finish and the overall conclusion is available.
 - This improves the live tenant read/RPC/template acceptance gate despite the absence of production receipt fixtures. The independent local Storage job remains required to test receipt-object policy behaviour without production objects.
 - Outstanding safeguards remain unchanged: inspect the completed run and any failures; review the draft receipt Storage policy migration against current application role/schema semantics and production definitions; reconcile migration-ledger/source parity; preserve the explicit no-production-change/no-merge rule. Stage A is **NOT MERGE-READY** while required checks or migration review remain open.
+
+
+## 21. Run #1365 complete — all listed SchoolPro CI jobs passed (2026-10-17)
+
+- SchoolPro CI [run #1365](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39023594211) completed with overall **success** for the PR #106 merge commit containing head `fb3807042dc7f29bafe1958a58a07e9664a9a147`.
+- All eight listed jobs completed successfully: `tenant-acceptance`, `Receipt Storage isolation (local Supabase)`, `tenant-integrity-db-integration`, `payment-review-rls-integration`, `result-verification-exposure-integration`, `public-admission-abuse-integration`, `result-pin-rate-limit-integration`, and `validate` (including typecheck, source tests, layout checks and production build).
+- The local Storage job logs explicitly show the isolated Supabase stack applied the test fixture and repository receipt-policy migration, then confirmed:
+  - each disposable user could upload a synthetic receipt under its own UUID folder;
+  - each could download its own receipt but not the other user's receipt;
+  - cross-user receipt upload was denied by the Storage API policy;
+  - the local stack was stopped after testing.
+- The live two-school acceptance checks also passed as recorded in section 20. Live production receipt-object checks remain explicitly skipped because there are no safe test fixtures; the separate local test provides isolated runtime evidence against the repository policy migration.
+- Payment-page validation [run #1092](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39023594275) also completed successfully.
+- **Scope limitation:** this CI success validates the tested code, disposable database scenarios, live tenant read/RPC/template checks and local Storage-policy behaviour. It does **not** prove the draft receipt-policy migration is already applied to production, nor does it complete schema/role parity review, migration-ledger reconciliation or the broader Stage A release acceptance. No production migration, object write, secret change, deployment or PR merge was performed.
+- **Disposition:** the prior CI failures caused by missing production receipt fixture paths are resolved without adding objects to production. Keep PR #106 open/unmerged while the receipt-policy migration is reviewed against the production role/schema definitions and remaining Stage A gates are checked. Do not mark Stage A merge-ready solely from this successful run.

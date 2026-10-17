@@ -106,12 +106,14 @@ try {
   const userB = await createTestUser(admin, 'receipt-b-' + suffix + '@example.test', password);
   const financeA = await createTestUser(admin, 'receipt-finance-a-' + suffix + '@example.test', password);
   const financeB = await createTestUser(admin, 'receipt-finance-b-' + suffix + '@example.test', password);
+  const superAdmin = await createTestUser(admin, 'receipt-super-admin-' + suffix + '@example.test', password);
   assert.notEqual(userA.id, userB.id, 'Receipt isolation requires two distinct users');
 
   const a = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-a-' + suffix + '@example.test', password);
   const b = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-b-' + suffix + '@example.test', password);
   const financeClientA = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-finance-a-' + suffix + '@example.test', password);
   const financeClientB = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-finance-b-' + suffix + '@example.test', password);
+  const superAdminClient = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-super-admin-' + suffix + '@example.test', password);
   const bytes = Buffer.from('%PDF-1.4\n% synthetic receipt fixture\n%%EOF\n', 'utf8');
   const pathA = a.user.id + '/receipt-a.pdf';
   const pathB = b.user.id + '/receipt-b.pdf';
@@ -152,6 +154,17 @@ try {
 
   const schoolA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   const schoolB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const {error: profileInsertError} = await admin.from('profiles').insert([
+    {id: financeClientA.user.id, status: 'active', role: 'user'},
+    {id: financeClientB.user.id, status: 'active', role: 'user'},
+    {id: superAdminClient.user.id, status: 'active', role: 'super_admin'},
+  ]);
+  assert.ifError(profileInsertError);
+  const {error: schoolInsertError} = await admin.from('schoolpro_schools').insert([
+    {id: schoolA, owner_id: financeClientA.user.id},
+    {id: schoolB, owner_id: financeClientB.user.id},
+  ]);
+  assert.ifError(schoolInsertError);
   const {error: memberInsertError} = await admin.from('schoolpro_test_storage_memberships').insert([
     {user_id: financeClientA.user.id, school_id: schoolA, role: 'accountant'},
     {user_id: financeClientB.user.id, school_id: schoolB, role: 'accountant'},
@@ -162,6 +175,11 @@ try {
     {school_id: schoolB, submitted_by: userB.id, receipt_path: pathB},
   ]);
   assert.ifError(submissionInsertError);
+  const {error: proofInsertError} = await admin.from('schoolpro_payment_proofs').insert([
+    {school_id: schoolA, submitted_by: userA.id, receipt_path: pathA},
+    {school_id: schoolB, submitted_by: userB.id, receipt_path: pathB},
+  ]);
+  assert.ifError(proofInsertError);
 
   const financeOwnReceipt = await financeClientA.client.storage.from(bucket).download(pathA);
   assert.ifError(financeOwnReceipt.error);
@@ -169,6 +187,11 @@ try {
   const financeForeignReceipt = await financeClientA.client.storage.from(bucket).download(pathB);
   assert.ok(financeForeignReceipt.error || !financeForeignReceipt.data, 'School finance must not read another school submission receipt');
   console.log('PASS: school finance can read a receipt linked to its own school submission and is denied another school receipt.');
+  const superAdminReceiptA = await superAdminClient.client.storage.from(bucket).download(pathA);
+  assert.ifError(superAdminReceiptA.error);
+  const superAdminReceiptB = await superAdminClient.client.storage.from(bucket).download(pathB);
+  assert.ifError(superAdminReceiptB.error);
+  console.log('PASS: active platform Super Admin can inspect both schools through the explicit helper bypass.');
 
   console.log('PASS: local Supabase Storage receipt-isolation integration completed using the repository policy migration.');
 } finally {

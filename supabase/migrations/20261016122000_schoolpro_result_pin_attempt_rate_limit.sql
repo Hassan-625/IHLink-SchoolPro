@@ -111,6 +111,22 @@ begin
   join public.schoolpro_schools sc on sc.id = st.school_id
   where upper(st.admission_number) = upper(trim(p_admission))
     and st.status = 'active'
+    -- Admission numbers are unique per school, not globally. Resolve the student
+    -- by the supplied PIN as well, so another school's newer duplicate admission
+    -- number cannot shadow the intended student's valid PIN.
+    and exists (
+      select 1
+      from public.schoolpro_result_access_pins candidate_pin
+      where candidate_pin.student_id = st.id
+        and candidate_pin.term = p_term
+        and candidate_pin.session = p_session
+        and candidate_pin.is_active
+        and (candidate_pin.expires_at is null or candidate_pin.expires_at > now())
+        and candidate_pin.pin_hash = encode(
+          extensions.digest(upper(trim(p_pin)), 'sha256'),
+          'hex'
+        )
+    )
   order by st.created_at desc
   limit 1;
 

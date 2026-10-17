@@ -1017,3 +1017,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The overall workflow is not yet complete: `validate` was still running at the time of this update. Do not mark the whole workflow green until the final result is confirmed.
 - The separate payment-page validation run [#38990991474](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990991474) passed on the same commit.
 - No production migration, deployment, or merge occurred.
+
+
+## Exact-head CI confirmation — payment RLS correction — 2026-10-17
+
+- The complete SchoolPro CI workflow [#38990991453](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990991453) has now completed **successfully** on exact Stage A head `82cc647d71014db1683e4d0f13a8a2cd1ff56efc`. All four jobs passed: `validate`, `tenant-acceptance`, `tenant-integrity-db-integration`, and `payment-review-rls-integration`.
+- Payment-page validation [#38990991474](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990991474) also passed on the same exact head.
+- This resolves the outstanding workflow status from the preceding entry. It does not make PR #106 merge-ready: the passing integration fixtures are targeted/minimal, and the release gate still lists full-schema interaction, migration provenance, Storage performance/acceptance, result-PIN runtime/trusted-network semantics, and payment lifecycle/concurrency as open.
+- A source audit of `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql` reconfirmed the current rate limiter uses `x-forwarded-for` first, then `cf-connecting-ip` and `x-real-ip`. Trusted gateway overwrite/normalization of those headers is **not yet verified**, and the static test does not execute the checker or prove concurrency/cooldown behavior at runtime. Add a disposable PostgreSQL integration test for the actual result-PIN migration and explicitly verify network-header trust before claiming this security control is complete.
+- No production migration, data write, Render deployment, or merge occurred. PR #106 remains draft/open/unmerged.

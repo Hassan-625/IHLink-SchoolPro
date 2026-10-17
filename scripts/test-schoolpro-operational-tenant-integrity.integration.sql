@@ -42,7 +42,7 @@ create policy "calendar school read" on public.schoolpro_calendar_events for sel
 \ir ../supabase/migrations/20261017180000_schoolpro_operational_tenant_indexes.sql
 
 -- Ensure every operational tenant probe has a leading school_id index.
-do $
+do $$
 begin
   if not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_library_books_school_id_idx')
      or not exists (select 1 from pg_indexes where schemaname='public' and indexname='schoolpro_transport_routes_school_id_idx')
@@ -53,7 +53,7 @@ begin
     raise exception 'FAIL: missing operational school_id index';
   end if;
 end
-$;
+$$;
 
 -- The repair must preserve the live policy names/feature paths, not replace the policies
 -- with the historical migration's narrower generic policy set.

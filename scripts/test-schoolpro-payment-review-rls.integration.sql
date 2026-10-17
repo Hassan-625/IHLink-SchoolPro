@@ -93,7 +93,7 @@ create function pg_temp.assert_count(p_name text, p_actual bigint, p_expected bi
 returns void language plpgsql as $$
 begin if p_actual <> p_expected then raise exception 'FAIL: % expected %, got %',p_name,p_expected,p_actual; end if; end $$;
 create function pg_temp.assert_no_rows_affected(p_name text, p_statement text)
-returns void language plpgsql as $
+returns void language plpgsql as $assert$
 declare affected bigint;
 begin
  execute p_statement;
@@ -101,7 +101,7 @@ begin
  if affected > 0 then raise exception 'FAIL: unauthorized action changed % row(s): %',affected,p_name; end if;
 exception when insufficient_privilege then
  return;
-end $;
+end $assert$;
 
 set role authenticated;
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);

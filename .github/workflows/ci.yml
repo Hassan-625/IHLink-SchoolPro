@@ -36,6 +36,7 @@ jobs:
       - run: node scripts/test-schoolpro-family-report-media-policy.mjs
       - run: node scripts/test-schoolpro-operational-tenant-integrity.mjs
       - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
+      - run: node scripts/test-schoolpro-result-pin-edge-gateway.mjs
       - run: node scripts/test-schoolpro-document-serial-uniqueness.mjs
       - run: node scripts/test-schoolpro-result-verification-exposure.mjs
       - run: node scripts/test-schoolpro-public-admission-abuse-controls.mjs
@@ -220,6 +221,7 @@ jobs:
         run: |
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE service_role NOLOGIN"
       - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql
       - name: Exercise login-attempt throttling and cleanup in disposable PostgreSQL
@@ -246,7 +248,7 @@ jobs:
             ) &
           done
           wait
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
           echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
 
   result-verification-exposure-integration:

@@ -222,3 +222,10 @@ $function$;
 
 comment on table private.schoolpro_result_pin_attempts is
   'Stores one-way attempt keys and failure windows for rate limiting public result-PIN checks; no raw admission number or PIN is stored.';
+
+-- The browser must not bypass the Turnstile-verified Edge Function by invoking
+-- the SECURITY DEFINER RPC directly. Only the server-side Edge Function role may call it.
+revoke all on function public.check_schoolpro_result_pin(text, text, text, text)
+  from public, anon, authenticated;
+grant execute on function public.check_schoolpro_result_pin(text, text, text, text)
+  to service_role;

@@ -10,7 +10,7 @@ assert.match(sql, /split_part\(p_receipt_path,'\/',1\)<>v_user::text[\s\S]*?from
   'Receipt path must resolve to an object in the receipt bucket owned by the caller');
 assert.match(sql, /jsonb_array_length\(p_allocations\)=0[\s\S]*?raise exception 'Payment amount and allocations are required'/i,
   'At least one invoice allocation is required');
-assert.match(sql, /group by x->>'invoice_id' having count\(\)>1[\s\S]*?Each invoice may appear only once/i,
+assert.match(sql, /group by x->>'invoice_id' having count\(\*\)>1[\s\S]*?Each invoice may appear only once/i,
   'Duplicate invoice allocations must be rejected');
 assert.match(sql, /g\.school_id=p_school and g\.guardian_user_id=v_user and g\.status='active'/i,
   'Caller must have an active guardian link for the selected school');

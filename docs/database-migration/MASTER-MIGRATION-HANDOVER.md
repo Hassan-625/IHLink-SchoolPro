@@ -2376,3 +2376,11 @@ Do not mark this slice accepted until the disposable MySQL workflow passes on th
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030722204
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030722216
 - Do not mark the new MySQL schema slice accepted until #299 passes. No production database changes occurred.
+
+
+### MySQL allocation negative-test isolation fix — 2026-10-17
+
+- MySQL workflow #300 failed because the allocation negative test reused the same submission/invoice pair as a valid fixture, so the unique key fired before the intended invoice/student composite foreign key.
+- Added a second independent pending School A submission and changed the negative test to use it with a same-school but mismatched student/invoice pair. This isolates the intended `fk_fee_allocation_invoice_student` constraint rather than accepting an unrelated duplicate-key failure.
+- Payment page validation #1248 passed at its recorded head, but it predates this latest fixture correction. New exact-head MySQL and application CI runs must pass before acceptance.
+- Production remains untouched; all MySQL tests use disposable CI data.

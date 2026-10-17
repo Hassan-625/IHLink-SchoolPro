@@ -2653,3 +2653,13 @@ The first migration-007 validation attempt (#415) failed at `Apply authenticatio
 - one InnoDB table definition and one `schema_migrations` upsert.
 
 Corrected code commit: `2575687c7440a7d4d054901dab9131b0896a2718`. The corrected exact-head workflow results have not yet been returned at the time of this entry. Do not count #415 as a pass. The valid fixture and malformed-hash negative test remain wired to the MySQL schema workflow. No production database was touched.
+
+
+### Migration 007 corrected exact-head result — 2026-10-17
+
+The clean DDL correction was validated on code-bearing commit `2575687c7440a7d4d054901dab9131b0896a2718`:
+- MySQL schema draft #419 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034087917
+- Payment-page validation #1337 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034087929
+- SchoolPro CI #1610 was still in progress at last check: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034087944
+
+Migration 007 now installs in disposable MySQL 8.4 with the hash-format CHECK. The schema job passed its fixture and malformed-hash negative test. This establishes only that the throttling-state table and format constraint install; it does not yet prove production-grade rate-limit semantics or the full authentication/API authorization contract. Keep PR #107 draft/unmerged and all migrations unapplied to production.

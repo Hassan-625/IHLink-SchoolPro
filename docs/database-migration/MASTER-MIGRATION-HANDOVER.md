@@ -965,3 +965,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - CI was triggered by the new fixture and is pending final result. Current fixture edits continued after the first workflow trigger; verify the run head SHA matches the latest Stage A commit before considering the final version validated. If CI fails, inspect the PostgreSQL job logs and correct the fixture before proceeding.
 - This is a disposable behavioral test of the RPC logic against a minimal schema, **not yet** a full production-equivalent schema/RLS test, concurrency test, Storage API byte/MIME validation test, or effective payment-review policy test. The fixture runs with a local PostgreSQL superuser to set up the isolated test database; it simulates caller identity through the test `auth.uid()` implementation. Do not overstate it as a complete authorization-stack proof.
 - No production Supabase calls, migrations, bucket changes, record mutations, deployments, or PR merges were performed. PR #106 remains draft/open/unmerged. The MySQL application/runtime migration remains incomplete.
+
+
+## Receipt RPC integration CI passed — 2026-10-17
+
+- Verified [SchoolPro CI #38990160428](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990160428) completed **successfully** on Stage A head `0d1294d03a90f9a5ee601d83645cbe9b1ff34c70`. All jobs passed: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance`.
+- Verified [payment-page validation #38990160500](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990160500) completed **successfully** on that same head.
+- The CI workflow's disposable PostgreSQL job ran the new receipt-submission RPC integration fixture. This establishes that the fixture and its valid/rejected RPC cases pass against its minimal test schema; it does **not** establish full production schema parity or effective RLS behavior, because the fixture uses a test `auth.uid()` implementation and setup superuser.
+- Next priority: add a separate isolated PostgreSQL job to exercise effective payment-review RLS policies using authenticated role switching and stubbed, test-only authorization helpers, while clearly recording the fixture's scope. Include SELECT/INSERT/UPDATE/DELETE checks for guardian, school-finance, and Super Admin identities on submissions, allocations, proofs, and fee-payment ledger rows.
+- No production changes or merges occurred. PR #106 remains draft/open/unmerged. MySQL migration is still incomplete; no production data cutover has been performed.

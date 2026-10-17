@@ -21,10 +21,18 @@ returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.has_school_access(uuid, public.school_member_role[])
 returns boolean language sql stable as $fn$ select true $fn$;
 
+create table public.schoolpro_schools (
+  id uuid primary key,
+  name text not null
+);
 create table public.schoolpro_students (
   id uuid primary key,
   school_id uuid not null,
-  status text not null
+  status text not null,
+  first_name text not null default 'Test',
+  last_name text not null default 'Student',
+  admission_number text not null default 'SP-TEST-001',
+  class_name text not null default 'Basic 5 A'
 );
 create table public.schoolpro_results (
   id uuid primary key,
@@ -49,8 +57,10 @@ create table public.schoolpro_result_verifications (
   revoked_at timestamptz
 );
 
-insert into public.schoolpro_students(id,school_id,status)
-values ('a1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000001','active');
+insert into public.schoolpro_schools(id,name)
+values ('b1000000-0000-0000-0000-000000000001','Synthetic School');
+insert into public.schoolpro_students(id,school_id,status,first_name,last_name,admission_number,class_name)
+values ('a1000000-0000-0000-0000-000000000001','b1000000-0000-0000-0000-000000000001','active','Test','Student','SP-TEST-001','Basic 5 A');
 
 insert into public.schoolpro_results(id,student_id,term,session,status,locked,total_score)
 values
@@ -85,6 +95,46 @@ begin
     raise exception 'Snapshot contains detailed assessment data: %', saved;
   end if;
 
+  -- The public verifier must also sanitize new aggregate snapshots.
+  select result.snapshot into saved
+  from public.schoolpro_verify_result_code(code) as result;
+  if saved <> jsonb_build_object('total',150,'average',75) then
+    raise exception 'Public verifier returned unexpected aggregate snapshot: %', saved;
+  end if;
+  if saved ? 'results' or saved ? 'subject_id' or saved ? 'assessment_scores' then
+    raise exception 'Public verifier leaked detailed result data: %', saved;
+  end if;
+
+  -- Legacy valid codes can still hold detailed snapshots; the public reader must reduce them.
+  insert into public.schoolpro_result_verifications(
+    verification_code, school_id, student_id, term, session, snapshot, status, issued_by
+  ) values (
+    'LEGACY-DETAIL-CODE',
+    'b1000000-0000-0000-0000-000000000001',
+    'a1000000-0000-0000-0000-000000000001',
+    'First Term', '2024/2025',
+    '{"results":[{"subject_id":"subject-a","total_score":80,"assessment_scores":{"ca":20,"exam":60}},{"subject_id":"subject-b","total_score":70,"assessment_scores":{"ca":10,"exam":60}}]}'::jsonb,
+    'valid',
+    'd1000000-0000-0000-0000-000000000001'
+  );
+  select result.snapshot into saved
+  from public.schoolpro_verify_result_code('LEGACY-DETAIL-CODE') as result;
+  if saved <> jsonb_build_object('total',150,'average',75) then
+    raise exception 'Legacy public snapshot was not sanitized: %', saved;
+  end if;
+  if saved ? 'results' or saved ? 'subject_id' or saved ? 'assessment_scores' then
+    raise exception 'Legacy public verifier leaked detailed result data: %', saved;
+  end if;
+
+  update public.schoolpro_result_verifications
+  set revoked_at = now()
+  where verification_code = 'LEGACY-DETAIL-CODE';
+  select result.snapshot into saved
+  from public.schoolpro_verify_result_code('LEGACY-DETAIL-CODE') as result;
+  if saved is not null then
+    raise exception 'Revoked verification code returned a snapshot: %', saved;
+  end if;
+
   begin
     perform public.issue_schoolpro_result_verification(
       'a1000000-0000-0000-0000-000000000001','Second Term','2025/2026'
@@ -101,4 +151,4 @@ begin
 end
 $verification_test$;
 
-\echo 'PASS: result verification uses 192-bit codes and stores only aggregate locked/published result data.'
+\echo 'PASS: result verification uses 192-bit codes, stores aggregate snapshots, sanitizes legacy snapshots, and hides revoked snapshots.'

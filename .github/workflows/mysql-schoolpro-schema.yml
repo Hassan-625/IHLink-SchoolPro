@@ -100,6 +100,14 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_learning_cbt_library_transport_payroll_fixture.sql
+      - name: Insert valid authentication throttling fixture
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_auth_login_throttling_fixture.sql
+      - name: Insert valid student credential/session fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_student_credentials_fixture.sql
       - name: Test MySQL API authentication and tenant context
         env:
           MYSQL_HOST: 127.0.0.1
@@ -111,14 +119,6 @@ jobs:
         run: |
           npm install --prefix server/mysql-api --no-audit --no-fund
           npm test --prefix server/mysql-api
-      - name: Insert valid authentication throttling fixture
-        env:
-          MYSQL_PWD: root-test-password
-        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_auth_login_throttling_fixture.sql
-      - name: Insert valid student credential/session fixtures
-        env:
-          MYSQL_PWD: root-test-password
-        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_student_credentials_fixture.sql
       - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password

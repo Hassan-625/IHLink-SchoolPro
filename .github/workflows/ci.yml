@@ -193,6 +193,35 @@ jobs:
       - name: Exercise payment-review RLS using authenticated role switching
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-review-rls.integration.sql
 
+      - name: Exercise two-session duplicate payment review concurrency
+        shell: bash
+        run: |
+          set -euo pipefail
+          submission="e0000000-0000-0000-0000-000000000003"
+          school="b0000000-0000-0000-0000-000000000001"
+          reviewer="d0000000-0000-0000-0000-000000000099"
+          for attempt in 1 2; do
+            (
+              if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "select set_config('request.jwt.claim.sub','$reviewer',false); select set_config('test.finance_school','$school',false); select public.review_schoolpro_payment_submission('$submission','confirmed','parallel-review-$attempt');" > "/tmp/schoolpro-review-race-$attempt.log" 2>&1; then
+                echo accepted > "/tmp/schoolpro-review-race-$attempt.result"
+              else
+                if grep -q "Already reviewed" "/tmp/schoolpro-review-race-$attempt.log"; then
+                  echo rejected > "/tmp/schoolpro-review-race-$attempt.result"
+                else
+                  cat "/tmp/schoolpro-review-race-$attempt.log"
+                  exit 1
+                fi
+              fi
+            ) &
+          done
+          wait
+          accepted="$(grep -l '^accepted' /tmp/schoolpro-review-race-*.result | wc -l)"
+          rejected="$(grep -l '^rejected' /tmp/schoolpro-review-race-*.result | wc -l)"
+          test "$accepted" -eq 1
+          test "$rejected" -eq 1
+          actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select ps.status || ':' || count(fp.id)::text || ':' || coalesce(sum(fp.amount),0)::text || ':' || count(pa.payment_id)::text from public.schoolpro_payment_submissions ps join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id left join public.schoolpro_fee_payments fp on fp.invoice_id=pa.invoice_id where ps.id='$submission' group by ps.status")"
+          test "$actual" = "confirmed:1:100:1"
+          echo "PASS: concurrent review calls produced one confirmation and one fee-ledger payment."
   result-pin-rate-limit-integration:
     runs-on: ubuntu-latest
     services:

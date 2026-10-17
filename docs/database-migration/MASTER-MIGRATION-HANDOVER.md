@@ -1604,3 +1604,25 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The prior “use existing test-owned objects” path is unavailable unless the maintainer later identifies valid non-customer fixtures. The next safe engineering action is to establish a no-additional-cost local/CI-compatible Storage test environment that applies the relevant receipt bucket policies and uses two disposable test users plus synthetic receipts. Verify that this actually exercises the same policy definitions used by the application before treating it as acceptance evidence.
 - If the required policy-level test cannot be run locally/within existing CI infrastructure, pause and present the owner with any hosted-environment cost before creating a separate Supabase project. The unrelated IoT project is not to be reused.
 - CI remains red and Stage A remains **BLOCKED / NOT MERGE-READY**. No secrets were changed, no production objects were created, and no production changes or merges were made.
+
+
+## 18. Non-production receipt Storage isolation test — implementation in progress (2026-10-17)
+
+### Read-only production policy inspection
+
+- Queried only \`pg_policies\` metadata for \`storage.objects\` in the active SchoolPro Supabase project; no object listing, receipt download/upload, secret read/write, row mutation, or schema mutation was performed.
+- The live database currently defines:
+  - \`guardian upload payment receipts\`: authenticated upload restricted to a first path folder matching \`auth.uid()\`.
+  - \`guardian read own payment receipts\`: authenticated download restricted to a first path folder matching \`auth.uid()\`.
+  - \`school finance read payment receipts\`: read access only when the object path matches a row in \`schoolpro_payment_proofs\` and the caller has an allowed school-finance/leadership role for that school.
+- The previously inspected \`20261016180000_schoolpro_payment_receipt_storage_limits.sql\` configures the private bucket, 10 MiB limit and allowed MIME types, but does not itself declare these three \`storage.objects\` policies. This was a migration-source parity gap; the policy metadata above came from a read-only production query.
+
+### Non-production implementation committed to the Stage A branch
+
+- Added \`supabase/migrations/20261017150000_schoolpro_payment_receipt_storage_policies.sql\` to represent the observed policy definitions in migration history and keep the bucket configuration/policies together. It is **unmerged and unapplied to production**.
+- Added \`scripts/receipt-storage-local/fixture.sql\`, which provides minimal synthetic schema/function dependencies solely for the isolated test project. The fixture creates no customer or school data and is not a production migration.
+- Added \`scripts/test-schoolpro-receipt-storage-local.mjs\`. It creates a temporary Supabase CLI project, copies only the test fixture and receipt-policy migration into that project, starts the local Supabase stack, creates two disposable test users, uploads synthetic receipts, and asserts own-upload/own-download success plus cross-user upload/download denial. The test uses the actual Supabase Storage API and the repository's policy migration rather than writing test files into the production bucket.
+- Added the \`receipt-storage-isolation\` CI job to \`.github/workflows/ci.yml\`, using \`supabase/setup-cli@v3\` and no production secrets or remote project link.
+- Relevant Stage A branch commits: \`843107fd876361d55528f750ddcb85d30741952a\` (policy migration), \`14177ea1ed00b5ee99d17efe964556d4a2cf2490\` (isolated SQL fixture), \`7f8a5edc358ab07446d65c8b1f9adecc66814f3b\` (local Storage API test), \`a6a76ddf6142141450414d7244c06cc1e80acbec\` (CI job).
+- **Validation is pending.** The current execution environment has no Docker or Supabase CLI available, so the local stack has not been started here. Do not mark this test as passed until GitHub Actions runs the new job and its logs confirm the two-user assertions. The new policy migration remains draft/unmerged and must receive review before any eventual production application.
+- The live tenant acceptance test still requires existing test-owned receipt paths and remains a separate production read-only acceptance check. Do not configure those paths with invented values and do not add dummy objects to the production bucket. Stage A remains **BLOCKED / NOT MERGE-READY** until the non-production test passes, source/ledger drift is reconciled, and all other Stage A gates pass.

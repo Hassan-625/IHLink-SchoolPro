@@ -553,3 +553,20 @@ Before export, complete these exact gates:
 - [ ] Obtain explicit review approval of the allowlist, then rehearse only on the isolated target. No production cutover without separate approval.
 
 No source export, Aiven import, production DDL/DML, Render configuration change, deployment, or PR merge was performed for this review. Supabase remains production source of truth; Render remains application host; DataSub/BillStack remain on Supabase and out of scope.
+
+
+## 15. Catalog evidence artifacts and final review disposition
+
+The following full read-only catalog evidence artifacts are now committed on this branch and should be used together with this allowlist:
+
+- [Live SchoolPro routine definitions](./LIVE-SCHOOLPRO-ROUTINE-DEFINITIONS-2026-10-17.md) — 127 overloads captured across 124 public routine names containing `schoolpro`; 95 SECURITY DEFINER.
+- [Live SchoolPro trigger definitions and handler bodies](./LIVE-SCHOOLPRO-TRIGGER-DEFINITIONS-2026-10-17.md) — 160 trigger bindings and 39 unique handler names/definitions.
+- [Boundary catalog snapshot](./SCHOOLPRO-BOUNDARY-CATALOG-SNAPSHOT-2026-10-17.md) — all 293 public SchoolPro RLS policy expressions, 274 foreign keys involving SchoolPro-prefixed tables, 2,816 table-grant rows, seven relevant scheduled jobs, and seven extensions.
+- [Routine ACL, ownership and sequence snapshot](./SCHOOLPRO-ROUTINE-ACL-OWNERSHIP-SEQUENCES-2026-10-17.md) — 512 routine ACL rows, relation owners/RLS flags, and sequence inventory.
+- [Migration-ledger reconciliation](./SUPABASE-MIGRATION-LEDGER-RECONCILIATION-2026-10-17.md) — complete version-name diff between live ledger and branch migration files.
+
+### Final allowlist review
+
+The candidate table list is reviewed as a **migration-planning boundary only**, not a final import list. Current recommendation is to preserve these categories: (A) school-owned operational records and their inherited child records, subject to per-table ownership and FK review; (B) global SchoolPro plan/catalog data as reviewed seed/configuration, not tenant records; (C) shared identity/payment/Storage/queue dependencies excluded from bulk copy; (D) DataSub/BillStack and other IHLink product records excluded.
+
+**Approval is withheld (P0) until migration-ledger drift is reconciled.** The live ledger has 476 entries; this branch has 123 migration files; only 79 versions match, with 397 live-only and 44 branch-only. The exact lists are in the reconciliation document. Also, the call-site scan confirms widespread direct browser-side Supabase table/RPC use, but a line-by-line machine-readable call-site manifest has not yet been generated. Therefore the migration boundary is not yet finalized for export. Do not export/import any data until the ledger diff, call-site manifest and object semantics have been signed off.

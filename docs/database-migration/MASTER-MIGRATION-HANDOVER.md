@@ -2295,3 +2295,10 @@ The Stage A proposal set is reconciled against the production ledger and deploye
 - Recheck the complete current PR diff, all CI jobs, payment validation, and production catalog/trigger interactions after the run finishes. Production remains on the old schema and migration ledger until explicit cutover approval; do not apply the proposed migrations or merge/deploy automatically.
 - Cancellation remains unsupported in the deployed payment-review contract (only `confirmed`/`rejected`); do not represent rejection as cancellation or rewrite confirmed ledger rows.
 - Once Stage A is accepted and merged with explicit owner approval and post-merge verification, prioritize the separate SchoolPro-to-MySQL foundation track (PR #107 / `migration/mysql-schoolpro-foundation`). Keep DataSub and other IHLink platforms on Supabase; preserve the current SchoolPro architecture and records; use synthetic disposable MySQL fixtures first; map tenant/role rules, routines, triggers, Storage replacement and transactional payment flows before any production cutover. Do not start Stage B operational data population until Stage A is verified after merge, and re-verify B and C before resuming D. Preserve the full A–J backlog.
+
+
+### Follow-up CI defect/fix record — 2026-10-17
+
+- CI #1493 on intermediate head `2ace61eafd070b3618d9f57ceaf3fdac606edd8e` correctly caught two defects in the newly added tests: the fixture's dollar-quoted DO block was reduced to a single dollar delimiter by the GitHub file-update replacement operation, and the static documentation assertion expected a phrase split across SQL comment lines.
+- Fixed the SQL delimiter and relaxed the static assertion to check the substantive documented limit (superusers/BYPASSRLS). The corrected current Stage A head is `70b779f45dcbe306a5f15b1abbecab343ac7620e`.
+- Do not count CI #1493 as passing: its tenant-integrity integration and validation jobs failed on the intermediate test defects. A new exact-head CI/payment-page run must pass on `70b779f45dcbe306a5f15b1abbecab343ac7620e` before this repair is accepted. No production state changed.

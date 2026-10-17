@@ -188,3 +188,30 @@ jobs:
           wait
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
           echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
+
+  result-verification-exposure-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_verification_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_verification_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_verification_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Execute result-verification snapshot migration against disposable schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-verification-exposure.integration.sql

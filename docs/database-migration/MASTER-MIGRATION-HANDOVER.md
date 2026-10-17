@@ -2997,7 +2997,7 @@ This entry preserves the current stopping point; it does not mark any blocked ga
 
 ---
 
-## Migration audit checkpoint — 2026-10-17 16:xx WAT
+## Migration audit checkpoint — 2026-10-17
 
 This checkpoint supersedes earlier status statements about source recovery and storage counts. Keep this audit-first; do not replay recovered SQL or move data.
 

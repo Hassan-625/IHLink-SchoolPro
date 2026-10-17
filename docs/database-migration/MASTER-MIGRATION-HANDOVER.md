@@ -1883,3 +1883,12 @@ Run: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025648709
 - Current Stage A head after these draft changes: `4b13a0dce42890448d34ae11b78223d4c9cb7899`. SchoolPro CI run `39025908106` and payment-page validation `39025908128` were queued at the time of this update; require completion and inspect failures before counting this change as validated.
 - **Residual trade-off:** the no-IP database cooldown is keyed by admission and result period, so a targeted person who can repeatedly pass Turnstile may still cause a temporary lockout for that specific admission/period. The eight-failure threshold and 15-minute window are explicit draft settings and must be reviewed against school support/abuse expectations. Do not replace them with an unverified IP-header identity.
 - No production function grants, Edge Function deployments, secrets or app deployments were changed. Production continues to expose the old direct result-PIN RPC until the reviewed migration and Edge Function are approved and deployed together; this is a release blocker, not a completed production fix.
+
+
+## 34. Follow-up after CI #39025648709 — fixture and static-test corrections queued for rerun (2026-10-17)
+
+- Fixed the race-test fixture isolation by adding a second active bank account (`30000000-0000-0000-0000-000000000002`) and using it in the concurrent 600+600 invoice-reservation test. The prior negative-case test still deactivates the first account intentionally; the race test no longer depends on that mutable fixture state.
+- Fixed the static workflow assertion's over-escaped regular expression so it actually matches the concurrency CI step rather than testing for literal backslash sequences.
+- Reconciled a stale result-PIN test expectation: the migration, SQL integration test, concurrent workflow assertion and static migration test now all use the **admission-only SHA-256 key**. The key does not depend on IP headers or caller-selected term/session, preventing cooldown bypass by changing the requested period. The cross-school duplicate-admission trade-off remains as documented in section 32.
+- Current PR head at the latest check: `6122719194519ffd463f93f484e654d9a239cb2f`. SchoolPro CI run #39026007562 is queued and payment-page validation #39026007491 is in progress for this head. The prior run's passing jobs remain evidence for the code at its own head only.
+- Do not mark the two corrected failures resolved until the new CI run finishes. Stage A remains draft/open, no production SQL or migration was applied, and no merge was performed.

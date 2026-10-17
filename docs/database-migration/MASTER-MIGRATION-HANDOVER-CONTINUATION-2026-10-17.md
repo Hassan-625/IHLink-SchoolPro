@@ -252,3 +252,19 @@ The authoritative [Master Database Migration Handover](MASTER-MIGRATION-HANDOVER
 
 Using the organization ID supplied by the user, the Supabase cost endpoint returned a branch estimate of **$0.01344/hour** (approximately **$0.32256 per 24 hours** and **$9.81504 per 30 days** at continuous runtime). These are arithmetic projections from the quoted hourly amount, not a total-bill guarantee; additional usage charges and the organization's reported “Exceeding usage limits” status may affect billing. The quote was retrieved successfully. **No cost confirmation ID was requested, no branch was created, and no production change occurred.** Creation remains blocked until the user explicitly approves the quoted recurring hourly cost; after approval, confirm the exact amount/recurrence and then create only a disposable test branch. The existing `main` branch remains unsuitable as an adversarial test target because its status is `MIGRATIONS_FAILED`.
 
+
+
+### User decision: no further Supabase branch spend; proceed toward exit — 2026-10-17
+
+The user explicitly declined the quoted Supabase development-branch cost and stated the priority is to move SchoolPro out of Supabase. Respect this decision: **do not call cost confirmation or create a Supabase branch**, and do not incur new Supabase compute charges for this audit.
+
+The intended target remains **Aiven PostgreSQL** for SchoolPro, with the frontend remaining on Render. This does not authorize production export/import, changes to Render configuration, migration replay, deployment, merge, or cutover. Production Supabase must remain unchanged until a separately approved migration plan has a verified destination, source-to-target reconciliation, rollback/recovery procedure, and acceptance evidence.
+
+Continue without a Supabase branch by:
+1. Auditing repository migration/source artifacts and the existing committed gate registers.
+2. Verifying whether an Aiven PostgreSQL service already exists and is accessible through authorized tooling; if not, document the exact provisioning/configuration prerequisite rather than guessing credentials or creating a paid resource.
+3. Preparing a target-side, isolated PostgreSQL rehearsal using an already-authorized environment, if available, and clearly recording any checks that cannot run without it.
+4. Planning explicit replacements or retained boundaries for Supabase Auth, Storage and Edge Functions; moving PostgreSQL data alone does not remove those dependencies.
+5. Keeping DataSub outside this SchoolPro migration scope.
+
+The cost quote retrieved for a Supabase branch was $0.01344/hour. The user did not approve it. No branch was created and no production change occurred. Migration status remains **NO-GO** until destination correctness, tenant/role security, source completeness, and recovery rehearsal are supported by evidence.

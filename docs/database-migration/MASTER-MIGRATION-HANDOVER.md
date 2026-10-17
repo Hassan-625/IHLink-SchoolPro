@@ -2178,3 +2178,54 @@ Read-only catalog inspection found:
 - The test's invoice trigger is synthetic and the RPC is a test snapshot of the currently deployed definition. This is stronger transaction-behavior evidence, but it does not prove actual production activation/email/notification trigger ordering or concurrent review behavior under a full production schema.
 - At the last poll, the other jobs in run #1475 and payment-page validation #1202 were still running. Wait for the exact-head run to complete before recording overall CI status.
 - Acceptance remains blocked by the live submission RPC's missing receipt object owner check/invoice reservation locks, draft-vs-live Storage finance policy difference, broad deployed financial-table grants, incomplete full migration-source/ledger/catalog reconciliation, and lack of two-session review concurrency tests. No production changes or merge occurred.
+
+
+## 44. Production catalog reconciliation, receipt-path fix and trigger/concurrency harness (2026-10-17)
+
+### Migration-source vs production-ledger classification
+
+Read-only query of `supabase_migrations.schema_migrations` confirms the latest production ledger row remains `20261015161735 / schoolpro_access_invitation_role_constraint`. The following Stage A source files are present in PR #106 but their exact version/name pairs are **not in the production ledger**:
+
+- `20261015203000_schoolpro_payment_receipt_tenant_guard.sql`
+- `20261016110500_schoolpro_optimize_family_report_media_storage_policy.sql`
+- `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql`
+- `20261016143000_schoolpro_payment_review_write_controls.sql`
+- `20261016160000_schoolpro_repair_operational_tenant_integrity.sql`
+- `20261016170000_schoolpro_disable_online_payment_gateway.sql`
+- `20261016180000_schoolpro_payment_receipt_storage_limits.sql`
+- `20261017103000_schoolpro_document_serial_global_uniqueness.sql`
+- `20261017120000_schoolpro_result_verification_minimal_snapshot.sql`
+- `20261017133000_schoolpro_public_admission_rpc_abuse_controls.sql`
+- `20261017150000_schoolpro_payment_receipt_storage_policies.sql`
+
+These are **expected unapplied proposals on an open, unmerged PR**, not evidence that production should have them. The corresponding production definitions are still the pre-proposal definitions in the areas directly compared below. Do not apply these migrations or alter the ledger during this audit. Older source/ledger name mismatches noted in the Stage A release gate are a separate historical reconciliation task: where later ledger entries appear to implement similar behavior, classify as possible supersession only after comparing function/policy/trigger definitions and constraints, never by name alone.
+
+### Exact deployed receipt bucket and policy semantics
+
+- Bucket `schoolpro-payment-receipts` is private, has a 5,242,880-byte limit (5 MiB), and allows JPEG, PNG, WebP and PDF. This matches the draft bucket settings.
+- The live `storage.objects` policies are: authenticated guardian INSERT when the first path folder equals `auth.uid()`; authenticated guardian SELECT with the same folder check; and finance SELECT only where the exact object name matches a `schoolpro_payment_proofs.receipt_path` and `private.has_school_access(... proprietor/administrator/accountant/bursar ...)` succeeds.
+- The live finance policy does **not** include `schoolpro_payment_submissions`; the draft does. The draft was tightened in commit `6c603ba37ecf5ae1df6947ddd7081b8237c14acf` to require both first-folder = recorded `submitted_by` and `coalesce(objects.owner_id, objects.owner::text)` = `submitted_by` for both proof and submission branches. This blocks a finance-readable row from pointing at another user's receipt object.
+- Effective role semantics matter: `private.has_school_access(uuid, school_member_role[])` requires an active profile and allows a school owner, an assigned member with an allowed role, **or an active platform Super Admin via `private.is_admin()`**. The Super Admin bypass is intentional platform-wide read/inspection behavior and must remain explicit in tests; the role array alone does not exclude Super Admin.
+- The local Supabase fixture now models active profiles, finance memberships, school ownership and Super Admin helper bypass, and inserts proof as well as submission links. An initial run on older commit `8366ecbcae2b7f7ba58d60359e1c4ff6f9f9946c` failed because the fixture had not yet gained the `submitted_by` proof column. The updated fixture and policy changes are under revalidation in CI #1485; do not claim the revised Storage tests passed until that exact run finishes.
+
+### Deployed payment trigger chain observed in catalog
+
+Read-only `pg_trigger` / `pg_get_triggerdef` inspection found these enabled triggers:
+
+- `schoolpro_payment_submissions`, `schoolpro_payment_allocations`, `schoolpro_payment_proofs`, `schoolpro_fee_payments`, and `schoolpro_invoices`: BEFORE INSERT/UPDATE/DELETE `schoolpro_activation_before_write` → `private.guard_schoolpro_operational_write()`.
+- `schoolpro_invoices`: BEFORE INSERT/UPDATE `schoolpro_active_pupil_activity` → `private.schoolpro_reject_new_inactive_student_activity()`; AFTER INSERT `trg_schoolpro_invoice_notify` → `private.notify_school_staff()`.
+- `schoolpro_fee_payments`: AFTER INSERT `trg_schoolpro_payment_email` → `public.queue_schoolpro_transactional_email()`.
+
+The payment-review test fixture now snapshots the relevant production trigger function bodies and uses minimal disposable dependency tables/stubs. Its rollback assertion checks that a synthetic invoice-trigger failure after the fee-payment INSERT rolls back the fee-payment row, invoice balance/status, allocation payment link, submission status, and transactional-email queue side effect. This is deliberately **not described as a full production schema clone**: the activation-state helper is stubbed to active, and notification/email integrations are represented by local tables. The full exact-head CI result is pending at the time of this note.
+
+### Cancellation support
+
+The deployed `review_schoolpro_payment_submission(uuid,text,text)` and `review_schoolpro_payment_proof(uuid,text,text)` functions accept only `confirmed` and `rejected`. The live function catalog has no payment-cancellation/reversal RPC by name. Therefore **cancellation is not a supported submission-review transition in the deployed database contract**; the integration test correctly expects `cancelled` to be rejected. Do not implement cancellation as an alias for rejection or mutate confirmed fee-ledger rows. If cancellation is a product requirement, it needs a separate audited state machine/RPC and accounting reversal design.
+
+### Two-session duplicate-review race
+
+- Added a third pending submission plus a deterministic test-only delay trigger to the disposable payment-review fixture.
+- Added a CI step that launches two separate PostgreSQL connections reviewing the same submission concurrently, then asserts exactly one call confirms, the other is rejected as already reviewed, and only one fee-payment row/allocation link is produced.
+- The new Storage policy fixture, actual-trigger snapshots and two-session review race are included in Stage A head `ae189d47389047337e2681fccb9dd5bdf03fdb7c` / preceding test changes; SchoolPro CI #1485 is running at this note. Record its exact final status in a follow-up handover section before making a release decision.
+
+No production DDL/DML, receipt upload, deployment, migration replay or merge occurred.

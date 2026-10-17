@@ -2546,3 +2546,10 @@ The first run of expanded live acceptance (CI #1576) verified foreign-school rea
 ### Live tenant probe correction 2 — 2026-10-17
 
 The retry correction alone did not resolve the live `schoolpro_result_approvals` probe: CI #1578 again timed out/returned an empty status-0 error on the School B exact-count request, after the other operational-table denial checks passed. Replaced exact `COUNT(*)` with a bounded `SELECT id ... LIMIT 1` negative probe; this tests the required security property directly (no foreign row is returned) without requiring a full count under RLS policies. Updated head: `e35365fbe9ff05ca4ce7da40a2c1cb4cfe9a94ce`. New exact-head CI/payment validation must pass, and the live test remains unaccepted until then.
+
+
+### Stage A operational RLS probe performance finding and forward index repair — 2026-10-17
+
+The live two-school acceptance test repeatedly timed out when School B queried `schoolpro_result_approvals`, even after replacing exact count with a bounded `LIMIT 1` probe. The surfaced database error was `canceling statement due to statement timeout`, not a row returned to the wrong tenant. A read-only index inventory showed approximately 33,603 estimated rows / 9.7 MiB in `schoolpro_result_approvals` and no index beginning with `school_id`; the table only had unique indexes on `id` and `result_id`. Other operational tables `schoolpro_library_books`, `schoolpro_transport_routes`, `schoolpro_hostel_rooms`, `schoolpro_inventory_assets`, and `schoolpro_promotions` also lacked a leading `school_id` index.
+
+Added draft forward-only migration `20261017180000_schoolpro_operational_tenant_indexes.sql` to add a tenant-leading index to those six tables, with fail-closed table existence checks. Added the migration to the disposable operational integration test, added catalog assertions for all six indexes, and expanded the static test. No data or RLS policy is changed by this index migration. New code-bearing PR #106 head: `c9115f20ca81e129d8ce2e7311d5948465fb6df6`. Exact-head CI/payment validation are pending; neither previous live smoke failure is counted as a pass. Production remains unchanged.

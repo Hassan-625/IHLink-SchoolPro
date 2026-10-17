@@ -1,17 +1,17 @@
 # Branch-only migration disposition register — 2026-10-17
 
 **Source:** Supabase project `lnqsroyiybutkfngbyge` (read-only catalog queries); branch `migration/mysql-schoolpro-foundation`.
-**Gate:** All 44 numbered SQL files below are present in source but their exact versions are absent from the live Supabase migration ledger. This register does not approve replay, removal, migration-history reset, export, or import.
+**Gate:** The original 44 numbered SQL files below are absent from the live Supabase migration ledger. One additional draft-only RLS correction is now on this branch and is not deployed. This register does not approve replay, removal, migration-history reset, export, or import.
 
 ## Evidence rules
 
 - **Source commit** means the commit that introduced/restored the file in the currently inspected Git history. Many commits are explicitly titled “Restore … migration”; that proves the file was restored to this repository history, not that this exact blob was the original deployed artifact.
 - **Catalog match** means one or more intended object names/columns/policies currently exist. It is not proof that this file created them or that the complete migration's semantics match.
 - **Disposition** is deliberately provisional. “Current objects present; provenance unresolved” is not a deployment sign-off.
-- The exact live ledger remains 476 versions; the source branch contains 123 numbered files, 79 exact version intersections, 397 live-only versions, and these 44 branch-only versions.
+- The exact live ledger remains 476 versions; the baseline had 123 numbered files, 79 exact version intersections, 397 live-only versions and 44 branch-only versions. The current branch has 124 files and 45 branch-only versions including the new draft-only RLS correction.
 - Read-only catalog queries confirmed current tables, selected columns, routine names and policies. Full body/ACL/policy-semantic equivalence has not been established for every row.
 
-## 44-version register
+## Original 44-version register
 
 | Version / file | Source-history evidence | Live schema evidence inspected | Per-version classification / next action |
 |---|---|---|---|
@@ -59,6 +59,8 @@
 | `20261009225204_school_notice_targeting.sql` | Same source commit [51fb4eb](https://github.com/Hassan-625/IHLink-SchoolPro/commit/51fb4eb1ab9baf6f23921071772567d3c175f295) | Private and public `schoolpro_send_school_notice` overloads exist. | **Routine names present; recipient targeting and public wrapper authorization unresolved.** Compare role, school, class and student scoping plus grants. |
 | `20261010001000_structured_lesson_notes.sql` | [Commit 59b29a6](https://github.com/Hassan-625/IHLink-SchoolPro/commit/59b29a602fbba9cdaf94e9f763e2e420b58c1b2e), 2026-10-10 | `schoolpro_lesson_notes` and columns `lesson_date`, `duration_minutes`, `plan` exist. | **Table/column match observed; workflow triggers and tenant checks unresolved.** Compare trigger bindings and the absent validator names noted above. |
 | `20261013100000_schoolpro_result_leaders_read_session_enrolment.sql` | [Commit 29856df](https://github.com/Hassan-625/IHLink-SchoolPro/commit/29856dff17ea8a3bc8bb31b7900967b7df9d316b), 2026-10-13 | `private.schoolpro_enrollment_reader_keys` exists; no table named `schoolpro_enrollment_reader_keys` exists (the migration defines a function, not a table). | **Routine present; migration's read-only role scope remains unverified.** Compare function body and role keys with current result leader/session-enrollment authorization. |
+
+| `20261017150000_fix_student_issued_document_school_scope.sql` | Draft created on `migration/mysql-schoolpro-foundation`; no production deployment | Corrects `students read own issued documents` predicate from `st.school_id = st.school_id` to `st.school_id = schoolpro_document_issues.school_id`. | **Draft only; not yet tested in authenticated two-tenant rehearsal and not applied.** Keep excluded from any replay set until full-policy behavior and cross-tenant tests pass. |
 
 ## 33-version direct-to-production batch
 

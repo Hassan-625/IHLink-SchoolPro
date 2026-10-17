@@ -94,3 +94,10 @@ A disposable PostgreSQL regression script installs the previous policies, seeds 
 - The draft migration now changes three permissive SELECT policies because policy OR semantics meant the student-only correction was insufficient: student policy compares student and issue school; guardian policy compares guardian-link and issue school; staff policy preserves role authorization and additionally requires the referenced student to belong to the issue school.
 - This proves the tested RLS predicates in the isolated PostgreSQL model. It does not validate Supabase PostgREST JWT plumbing, production helper-function ownership/ACLs, actual storage policies, signed URLs, or application download/RPC paths. Those remain required before approval.
 - PR #108 remains draft; no production DDL/data changes and no merge occurred.
+
+
+## Storage RLS regression result — 2026-10-17
+- The draft now also replaces the \`schoolpro document outputs read\` policy. The previous policy used a LEFT JOIN to students and allowed staff-by-issue-school and guardian-by-student-link branches to authorize a deliberately mismatched issue/student row. The corrected policy uses an inner student/issue school join and requires guardian-link school equality.
+- [Issued-document and storage RLS regression](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048506722) passed on \`1dfa6f73ebb8b3deb3c8dd5a203ee693f0632220\` against disposable PostgreSQL 17. It tested baseline leakage, post-fix row/object reads, and synthetic insert/update/delete path tampering for the generated-document bucket.
+- The synthetic test validates the modeled RLS predicates, not Supabase Storage API behavior. Signed/public URL behavior, storage service-side authorization, upload/download endpoints, and real app RPC paths remain outstanding.
+- PR #108 remains draft. No production DDL/data changes or merge occurred.

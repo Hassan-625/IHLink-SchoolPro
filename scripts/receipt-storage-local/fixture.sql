@@ -3,7 +3,7 @@
 -- it is never applied to production and contains no real school or user records.
 create schema if not exists private;
 
-do $ begin create type public.user_role as enum ('super_admin','user'); exception when duplicate_object then null; end $;
+do $$ begin create type public.user_role as enum ('super_admin','user'); exception when duplicate_object then null; end $$;
 create table public.profiles(id uuid primary key,status text not null,role public.user_role not null default 'user');
 create table public.schoolpro_schools(id uuid primary key,owner_id uuid);
 
@@ -19,7 +19,7 @@ $enum$;
 
 create or replace function private.is_admin()
 returns boolean language sql stable security definer set search_path=''
-as $ select exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.status='active' and p.role='super_admin') $;
+as $$ select exists(select 1 from public.profiles p where p.id=(select auth.uid()) and p.status='active' and p.role='super_admin') $$;
 
 create table public.schoolpro_test_storage_memberships (
   user_id uuid not null,

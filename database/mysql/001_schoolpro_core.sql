@@ -184,6 +184,7 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
   PRIMARY KEY (id),
   UNIQUE KEY uq_enrollment_school_id (school_id, id),
   UNIQUE KEY uq_enrollment_school_id_session (school_id, id, session_id),
+  UNIQUE KEY uq_enrollment_school_id_student_session (school_id, id, student_id, session_id),
   UNIQUE KEY uq_enrollment_student_session (school_id, student_id, session_id),
   KEY idx_enrollment_class_session_status (school_id, class_id, session_id, status),
   CONSTRAINT fk_enrollment_student FOREIGN KEY (school_id, student_id)

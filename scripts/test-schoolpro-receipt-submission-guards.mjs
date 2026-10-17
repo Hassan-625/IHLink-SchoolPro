@@ -31,7 +31,7 @@ assert.match(sql, /revoke all on function public\.submit_schoolpro_payment[\s\S]
   'Submission RPC must not be executable by anonymous or public roles');
 
 
-assert.match(ci, /Verify concurrent receipt submissions cannot over-reserve an invoice[\\s\\S]*?RACE-[\\s\\S]*?exactly one pending reservation/i,
+assert.match(ci, /Verify concurrent receipt submissions cannot over-reserve an invoice[\s\S]*?RACE-[\s\S]*?exactly one pending reservation/i,
   'CI must execute the two-session concurrent invoice reservation acceptance test');
 
 console.log('PASS: receipt submission source guards cover ownership, tenant links, allocation invariants, anonymous RPC denial, and CI concurrency acceptance wiring.');

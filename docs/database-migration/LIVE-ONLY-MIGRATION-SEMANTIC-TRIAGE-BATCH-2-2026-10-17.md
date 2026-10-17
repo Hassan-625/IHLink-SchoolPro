@@ -57,3 +57,10 @@ For the full 397-version matrix, every GRANT/REVOKE must be reconciled to the *c
 - Continue trigger/function wiring review and all historical cron schedule/command transitions, not just current job-name matches.
 
 No production change was made. This is a versioned semantic evidence batch, not a 397-version completion certificate.
+
+
+## Correction to the module-helper paragraph above (subsequent live-definition verification)
+
+A direct `pg_get_functiondef('private.schoolpro_module_allowed(uuid,text)')` read confirms the **current live body is the later version from `20261008152205 schoolpro_plan_access`**, not the older `20260929203846` body. The earlier paragraph describing the current helper as returning true for an unrelated school caller was based on the original migration body and is superseded; it must not be read as a description of the current live function.
+
+Current body requires: non-null `auth.uid()`; active account; `private.schoolpro_operationally_active(target_school)`; `required_permission = ANY(public.schoolpro_user_permissions(target_school))`; and, except for the active platform Super Admin branch, the plan-feature gate for `cbt`, `reports`, and `branding`. Other feature names pass the plan-feature CASE default only after the preceding identity, operational-status and permission checks. This is still a **module/plan authorization helper, not a complete substitute for row-level school/parent/teacher ownership predicates**. The target needs the exact later body and full policy composition, not the superseded first definition.

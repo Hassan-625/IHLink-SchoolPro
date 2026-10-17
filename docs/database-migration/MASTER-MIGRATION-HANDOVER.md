@@ -2873,3 +2873,15 @@ No production DDL was executed. The forward RLS and six-index migrations remain 
 Ran read-only `EXPLAIN (COSTS, VERBOSE, SETTINGS)` as the ordinary `authenticated` role against `schoolpro_result_approvals`. The current production plan is a sequential scan with estimated cost approximately `0.00..2456622.25` and 8,712 estimated qualifying rows. The filter combines the tenant predicate with `private.schoolpro_module_allowed(school_id, 'results')`, `private.has_school_access(school_id)`, `schoolpro_member_can_manage(school_id)`, and a membership subplan. The membership subplan itself estimates a small scan; the dominant risk is evaluating the policy/helper expression over many rows without a tenant-leading index.
 
 This confirms the six-index migration is a justified performance prerequisite, but **it is not yet proof that the live timeout will be resolved**. The query plan was captured before applying any index and no `EXPLAIN ANALYZE` or data-changing query was run. After approved rollout, re-run `EXPLAIN` and the live acceptance probe. If the indexed plan still times out, review the repeated row-dependent helper evaluation and consider a carefully equivalent policy optimization with role-parity tests; do not weaken access rules or skip the result-approvals probe.
+
+
+### Stage A controlled rollout sequence prepared — 2026-10-17
+
+Given the production query plan and existing live policy semantics, the proposed controlled sequence is:
+1. Apply `20261017180000_schoolpro_operational_tenant_indexes.sql` first, to create the six tenant-leading indexes, including the missing index on the 33k-row `schoolpro_result_approvals` table.
+2. Reconcile the index catalog and capture a fresh read-only `EXPLAIN` plan for the same authenticated query.
+3. Apply `20261017170000_schoolpro_forward_operational_tenant_isolation.sql` to enable and force RLS on the eight reviewed operational tables without dropping/replacing their existing policies.
+4. Apply `20261016160000_schoolpro_repair_operational_tenant_integrity.sql` to enforce same-school references and immutable tenant ownership.
+5. Re-read the migration ledger, RLS flags, index definitions, trigger definitions, and policy names; run the two-school acceptance suite and all Stage A CI jobs against the resulting live catalog.
+
+This order is a proposed runbook, not an execution record. All three migrations remain unapplied in production. Because the table owner `postgres` has `BYPASSRLS`, FORCE RLS is defense in depth for non-bypass table owners, not a replacement for the authenticated policies or a constraint on privileged service credentials. If the live query still times out after indexes, stop and optimize the exact policy/helper path with role-equivalence tests before accepting Stage A.

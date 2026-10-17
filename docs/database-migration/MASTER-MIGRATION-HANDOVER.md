@@ -1278,3 +1278,9 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 
 - First execution of new job `result-verification-exposure-integration` in [SchoolPro CI #38994175325](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38994175325) failed before applying the migration because the psql include directive lost its leading backslash in the committed fixture. The other completed database integration jobs passed; live tenant acceptance independently hit the previously observed intermittent HTTP status 0 on School B invoice reads.
 - Fixed the fixture directive to the literal psql `\\ir ../supabase/migrations/20261017120000_schoolpro_result_verification_minimal_snapshot.sql` in commit `e9eafa043845e5500f17e508161c11e12c40f8f0`. A fresh CI run on this corrected commit is required before considering the new integration fixture successful. Do not infer test success from the static guard or from the earlier failed fixture run.
+
+
+### Result-verification integration outcome — 2026-10-17
+
+- Corrected-fixture run [SchoolPro CI #38994246728](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38994246728), head `e9eafa043845e5500f17e508161c11e12c40f8f0`, has **passed** the new `result-verification-exposure-integration` job on disposable PostgreSQL 16. The same run's `payment-review-rls-integration` and `result-pin-rate-limit-integration` jobs also passed. At the time of this note, `validate`, `tenant-integrity-db-integration`, and live `tenant-acceptance` were still running; the run is not yet a full CI pass.
+- The disposable fixture validates 192-bit token format and minimal aggregate snapshot against actual migration SQL. It does not apply the migration to production or prove production behavior until approved migration rollout.

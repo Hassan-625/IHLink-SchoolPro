@@ -1,7 +1,7 @@
 # Live-only migration version inventory — 2026-10-17
 
 **Source ledger:** Supabase production project `lnqsroyiybutkfngbyge`, read through `list_migrations`; branch tree `migration/mysql-schoolpro-foundation` read through GitHub.
-**Baseline reconciliation:** live ledger 476; original numbered migration files 123; exact version intersection 79; live-only versions 397. The current branch now has 124 numbered files after adding one draft-only RLS correction; that draft adds one branch-only version and does not change the 397 live-only count.
+**Baseline reconciliation:** live ledger 476; original numbered migration files 123; exact version intersection 79; live-only versions 397. The current migration branch has 123 numbered files and 44 branch-only versions; the issued-document RLS correction is maintained separately in draft PR #108 and is not part of this branch.
 **This file does not approve replay or export.** Scope buckets below are triage labels inferred from migration names, not final semantic classifications. A mixed migration may touch multiple products. Every row remains unresolved until its original SQL and deployment evidence are compared to live objects.
 
 ## Scope triage summary

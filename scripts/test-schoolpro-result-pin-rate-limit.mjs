@@ -12,7 +12,7 @@ assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 
 assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
 assert.doesNotMatch(sql, /current_setting\('request\.headers'/i, 'Do not trust caller-controlled request headers for database security rate-limit identity');
 assert.doesNotMatch(sql, /cf-connecting-ip|x-forwarded-for|x-real-ip|forwarded/i, 'Do not derive database rate-limit identity from unverified network headers');
-assert.match(sql, /extensions\.digest\(\s*lower\(trim\(coalesce\(p_admission, ''\)\)\)\s*,\s*'sha256'/i, 'Rate-limit key must hash normalized admission identity alone');
+assert.match(sql, /lower\(trim\(coalesce\(p_admission, ''\)\)\)[\s\S]{0,100}\|\|[\s\S]{0,50}lower\(trim\(coalesce\(p_term, ''\)\)\)[\s\S]{0,100}\|\|[\s\S]{0,50}lower\(trim\(coalesce\(p_session, ''\)\)\)/i, 'Rate-limit key must scope the cooldown to normalized admission and result period');
 const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
 const blockedAt = sql.indexOf('select a.blocked_until');
 const studentLookupAt = sql.indexOf('from public.schoolpro_students st');

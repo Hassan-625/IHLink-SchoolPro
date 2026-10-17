@@ -10,7 +10,7 @@
 ## Required approval and preconditions
 1. Review the proposed policy against all current permissive and restrictive policies on `schoolpro_document_issues`.
 2. Verify the current student portal's identity mapping: `schoolpro_students.user_id = auth.uid()`.
-3. Run in a disposable Supabase/Postgres rehearsal seeded with two schools, one student identity per school, and issued/revoked/draft documents.
+3. Use the existing ephemeral PostgreSQL 17 CI regression seeded with two synthetic schools, one student identity per school, and issued/revoked/draft documents. Do not create a Supabase development branch or incur branch charges for this test.
 4. Confirm the test role has no table-owner, BYPASSRLS, service-role, or superuser privileges.
 5. Obtain explicit production rollout approval only after all negative tests pass; this draft is not authorization to apply it.
 
@@ -87,3 +87,7 @@ GitHub reports all three workflows completed successfully on PR #108 head commit
 
 ## Storage-reference audit correction — 2026-10-17
 The first per-object pass used 25 path columns and did not include `schoolpro_demo_requests.calendar_path/letter_path`, JSON image paths in `schoolpro_document_templates.settings`, or result-term signature paths. The register was regenerated with bucket-aware matching across the additional fields. Corrected totals: 105 objects; 91 have an exact path reference in the expected bucket; 14 have no exact expected-bucket reference; 1 path has a reference that expects a different bucket; 97 have NULL Storage owner metadata. The two demo-document objects are now correctly matched to their demo-request rows. The invoice-bucket v2 logo is **not** counted as referenced by the document-template JSON path because that reference expects the document-template bucket.
+
+
+## Updated execution boundary — 2026-10-17
+The user explicitly declined new Supabase branch spend. The synthetic PostgreSQL 17 CI regression is the approved no-new-branch evidence for the SQL policy model; no Supabase branch should be created. It does not reproduce Supabase Auth/PostgREST or Storage API/signed-URL behavior. Those integration checks must be performed through an already-authorized safe environment or remain explicitly blocked; do not test by mutating production.

@@ -2030,3 +2030,10 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - Draft changes: migration commit `876916c9ba26c7f778c813186cdae5ae9e9718be`; integration test commit `7c087a8784464a626e8f5d348245f86ea5709168`.
 - Latest SchoolPro CI run [#1450](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026655882) and payment-page validation [#1177](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026656033) were queued at the time of writing. Do not count the new direct-insert/path-denial assertions as passed until run #1450 finishes and the `payment-review-rls-integration` job is inspected.
 - No production policies, grants, rows, Storage objects, secrets or deployments were changed. This forward migration remains part of the unresolved source/ledger drift and is not authorized for standalone application.
+
+
+## 35. Payment RLS integration failure triage — fixture policy name corrected (2026-10-17)
+
+- SchoolPro CI run [#1450](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026655882) exposed a test-fixture mismatch: the fixture called the legacy proof INSERT policy `guardian_own_insert_proofs`, while production and the migration use `guardian submits proof`. Consequently, the migration's `DROP POLICY` did not replace the fixture's permissive policy, and the synthetic foreign-receipt-path insert was incorrectly allowed by the test setup.
+- Corrected the fixture policy name to match production exactly in commit `26f013bd0d7589c24606d5abe930b2f0e773220c`. The failure is a fixture fidelity issue, not a reason to relax the receipt-owner assertion. The next CI run must prove the foreign-path insert is rejected under the correctly replaced policy.
+- Other completed jobs in run #1450 passed: tenant acceptance, tenant-integrity/RPC concurrency, result-verification exposure, and public-admission abuse controls. Local Storage isolation, result-PIN integration and general validation were still running at the last check; do not infer their outcomes from this partial status.

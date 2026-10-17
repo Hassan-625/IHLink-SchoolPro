@@ -30,8 +30,8 @@ assert.match(schoolFeeUi, /submit_schoolpro_payment/,
 assert.match(onlineMigration, /gateway text not null default 'flutterwave'/i,
   'The original migration is retained as historical provenance');
 
-assert.match(receiptStorageMigration, /'schoolpro-payment-receipts'[\s\S]*false[\s\S]*10485760/i,
-  'Payment receipt storage must remain private and capped at 10 MiB');
+assert.match(receiptStorageMigration, /'schoolpro-payment-receipts'[\s\S]*false[\s\S]*5242880/i,
+  'Payment receipt storage must remain private and capped at the production-observed 5 MiB');
 for (const mime of ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']) {
   assert.ok(receiptStorageMigration.includes(mime), `Receipt storage must allow ${mime}`);
 }

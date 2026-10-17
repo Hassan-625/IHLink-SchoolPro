@@ -2634,3 +2634,12 @@ The Stage A PR #106 head has advanced to `eeac24a9e1820272ef673f59afd053a81408f1
 - SchoolPro CI #1596 was still running at the last check: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727021
 
 This is a separate branch from the MySQL migration PR #107. Stage A is still not closed: the production catalog gap and live authenticated two-school smoke-test timeout remain unresolved; no production migration is authorized or applied. Wait for #1596, then inspect the result-approval probe rather than treating timeout as a pass or assuming a leak. The reviewed forward-only tenant-index migration remains pending explicit production approval.
+
+
+## MySQL migration 007 — authentication throttling state — 2026-10-17
+
+Extended the existing draft `database/mysql/007_schoolpro_auth_login_throttling.sql` with a format constraint requiring the identifier key to be a lowercase 64-character hexadecimal SHA-256 digest. The table deliberately does not store raw email/login identifiers or trust caller-supplied IP headers. Added a disposable valid fixture and a negative test for malformed identifier keys, and wired migration 007 into the MySQL 8.4 schema workflow after migration 006.
+
+- This is persistence/schema support only; it does not implement rate limiting by itself. Server-side atomic counter/window updates, lockout behavior, enumeration-safe responses, password reset/first-login limits, audit events, concurrency tests and API authorization remain to be implemented and verified in `server/mysql-api`.
+- The previous exact-head MySQL migration 006 run #400 passed, and payment validation #1324 passed; SchoolPro CI #1597 subsequently completed successfully. Those results do not cover migration 007, whose exact-head validation is now required.
+- No production schema, users, login attempts or credentials were changed. Migrations remain draft-only, PR #107 remains open/draft, and Supabase remains authoritative until explicit migration/cutover acceptance.

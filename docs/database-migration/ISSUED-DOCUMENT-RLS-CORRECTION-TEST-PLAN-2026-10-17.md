@@ -86,3 +86,11 @@ Review of the live SELECT policies found that the guardian policy also lacked a 
 - Staff: role/school authorization is retained and the linked student must belong to the issue school.
 
 A disposable PostgreSQL regression script installs the previous policies, seeds two synthetic schools and a deliberately mismatched issue/student relationship, proves that the old student, guardian and staff policy composition exposes that row, applies the exact draft migration, and asserts that the mismatch is no longer visible to any of those roles. It also checks own-school issued/revoked/draft behavior and anonymous denial. A dedicated GitHub Actions workflow runs this against PostgreSQL 17; this is isolated synthetic testing and does not access or mutate production. CI result is pending until the workflow actually runs.
+
+
+## CI regression result — 2026-10-17
+- The new [Issued-document RLS regression workflow](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048035679) completed **successfully** on commit `bcdf42de6ea2c7b24b07618d904642f604634e5f` using a disposable PostgreSQL 17 service.
+- The script seeded two synthetic schools and deliberately mismatched issue `103` (issue school A, student B). Under the old policy composition, Student B, Guardian B and School A registrar could see the mismatched issue. After applying the exact draft migration, all three roles were denied issue `103`; own-school issued/revoked behavior, student/guardian draft exclusion, staff own-school visibility and anonymous denial passed.
+- The draft migration now changes three permissive SELECT policies because policy OR semantics meant the student-only correction was insufficient: student policy compares student and issue school; guardian policy compares guardian-link and issue school; staff policy preserves role authorization and additionally requires the referenced student to belong to the issue school.
+- This proves the tested RLS predicates in the isolated PostgreSQL model. It does not validate Supabase PostgREST JWT plumbing, production helper-function ownership/ACLs, actual storage policies, signed URLs, or application download/RPC paths. Those remain required before approval.
+- PR #108 remains draft; no production DDL/data changes and no merge occurred.

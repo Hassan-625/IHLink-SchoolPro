@@ -5,7 +5,7 @@
 
 ## Executive finding
 
-The current MySQL migration is a **20-table foundation**, not a complete SchoolPro database migration. The only migration file surfaced in `database/mysql/` is `001_schoolpro_core.sql`. It explicitly describes itself as a core foundation. Existing disposable MySQL 8.4 CI validates schema creation and a set of cross-school foreign-key negative cases; those tests do not establish full application/API parity.
+The MySQL branch now has three draft migrations: `001_schoolpro_core.sql` (core tenancy and academic/results), `002_schoolpro_guardians_finance_subscriptions.sql` (guardian links, fee ledger/receipts, annual subscriptions), and `003_schoolpro_assessment_review_templates_transcripts.sql` (assessment schemes, grade scales, result approvals/corrections, school-owned templates and transcripts). Together they are a broader relational foundation, **not a complete SchoolPro database or application migration**. Disposable MySQL 8.4 CI validates schema creation and selected foreign-key/check/ENUM negative cases; it does not establish full application/API parity.
 
 ## Tables currently present in the draft
 
@@ -30,7 +30,7 @@ The current MySQL migration is a **20-table foundation**, not a complete SchoolP
 19. `attendance_records`
 20. `school_audit_events`
 
-This list is based on the checked-in SQL, not on a claim that all relationships or behaviours are complete.
+The original core list below remains the set of core tables from migration 001. Migrations 002 and 003 add the domain tables documented in their files. This inventory is based on checked-in SQL, not a claim that all relationships or behaviours are complete.
 
 ## High-priority schema and application gaps
 
@@ -40,9 +40,9 @@ This list is based on the checked-in SQL, not on a claim that all relationships 
 | Academic structure | Sessions, terms, classes, students, enrollments, subjects and class-subject assignments exist | Map all live columns, constraints, class arms, academic history, roster/subject links and promotion/archive semantics; verify 2001–2002 through 2025–2026 plus 2026–2027 target sessions and tenant-specific population |
 | Assessments and results | Components, result records, scores and lifecycle event table exist | Assessment schemes parity; independently save each assessment component; score bounds and calculations; grades/remarks/averages; approval/review/correction requests; publication locks and permissions; access PIN; transcript/broadsheet/report workflows; event atomicity and concurrency tests |
 | Authorization | Membership and permission tables plus composite tenant FKs exist | MySQL has no automatic equivalent to source PostgreSQL RLS. Implement server-side authorization for every endpoint and file; explicit role matrix, source grant/policy inventory and negative runtime tests required |
-| Templates and generated documents | No dedicated template/workbook/mapping/signatory/output tables surfaced in the 20-table SQL | School-owned Nursery/Primary/JSS/SSS templates, workbook upload and mapping, logos/signatories, output records, no cross-school/global overwrite, PDF/Excel/A4 parity |
-| Finance and subscriptions | No invoice/payment/subscription/proof/review tables surfaced in the 20-table SQL | Invoices, allocations, school fee receipts/payments, subscription catalogue/status, annual demo and paid plan lifecycle, two-week grace/suspension, upload receipt + IHLink admin verification, audit and idempotency/concurrency controls |
-| Guardians and parent access | No guardian/link tables surfaced in the 20-table SQL | Guardian identities, student links, status, parent permissions, fee receipt submission and published result/media access |
+| Templates and generated documents | Draft migration 003 adds school-owned result/workbook template mappings, logo/photo/signatory/QR fields, result approval/correction and transcript issue/settings tables | Still requires upload authorization, workbook parsing/mapping validation, preview/render/PDF/Excel/A4 parity, school-specific starter defaults, generated output history and full API tests |
+| Finance and subscriptions | Draft migration 002 now models fee structures/items, invoices, payment submissions/proofs, fee payments/allocations, bank accounts, annual plans/subscriptions and subscription receipts | Still requires complete source column/constraint parity, transactional submit/review/reject logic, idempotency/concurrency, grace/suspension enforcement, audit/notifications, server-side receipt ownership and data reconciliation |
+| Guardians and parent access | Draft migration 002 includes school-scoped guardian-to-student links | Guardian login/link lifecycle, parent permissions, receipt submission and published result/media access APIs and negative authorization tests remain open |
 | Operations | Attendance only among the current 20 tables | Inventory and map assignments/submissions, CBT, admissions, lesson notes, timetable, library, transport, hostel, inventory, payroll, discipline, health, notifications, email queue and any other live feature confirmed by source inventory |
 | Storage and media | No storage object metadata/path or signed-URL service surfaced in the draft core SQL | Inventory all buckets and policies; preserve object ownership/path rules, upload/download, signed URL expiry and tenant isolation; define migration/storage target separately |
 | Database routines and side effects | No equivalent full target implementation is demonstrated by schema CI | Map all relevant live routines, trigger bindings/order, views, scheduled jobs, Edge Functions, webhook/retry semantics and transaction boundaries; implement and test target equivalents |
@@ -52,7 +52,7 @@ This list is based on the checked-in SQL, not on a claim that all relationships 
 ## Required sequencing
 
 1. Continue the SchoolPro A security gates before merge: real-role payment RLS testing and trusted result-PIN network identity; no production writes.
-2. Complete the source inventory and map each live table/object/call site to target table/API/policy/test.
+2. Continue source inventory and map each live table/object/call site to target table/API/policy/test; the new 002/003 migrations are schema proposals only.
 3. Expand the schema and server-side API in small reviewed increments; add disposable MySQL integration tests for each domain.
 4. Re-verify A authentication/tenant isolation, B academic sessions/students/rosters, and C assessment/calculation/review/publication before resuming D Result Design Studio/custom Excel.
 5. Rehearse synthetic/anonymized data transfer, reconciliation, concurrency, performance, backup/restore and rollback.

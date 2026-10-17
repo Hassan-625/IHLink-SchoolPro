@@ -2486,3 +2486,9 @@ Added draft migration `database/mysql/006_schoolpro_learning_cbt_library_transpo
 - Workflow updated to apply migration 006 after 001–005 and run the new fixtures/negative cases.
 - This remains schema-level only. CBT eligibility/token security, attempt locking and timing, answer grading, question disclosure control, assignment grading permissions, library copy-count concurrency, route capacity, payroll approval/payment authorization and audit transactions require service-level contracts.
 - Migration 006 validation is pending; do not infer success from earlier green workflow runs.
+
+
+### MySQL migration 006 first validation correction — 2026-10-17
+
+- MySQL workflow #385 installed the new migration and valid fixtures but stopped in the negative-test harness because the expected foreign-key name for assignment student isolation was written as `fk_assignment_submission_student`; the actual migration names it `fk_submission_student`.
+- Corrected the workflow assertion to the actual constraint name. The failed run is not counted as a pass. A new exact-head schema run is required; payment-page validation had passed on the earlier code-bearing migration 006 commit, but that does not validate the corrected workflow assertion or schema suite.

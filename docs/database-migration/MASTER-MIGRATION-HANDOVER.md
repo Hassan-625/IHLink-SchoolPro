@@ -2384,3 +2384,18 @@ Do not mark this slice accepted until the disposable MySQL workflow passes on th
 - Added a second independent pending School A submission and changed the negative test to use it with a same-school but mismatched student/invoice pair. This isolates the intended `fk_fee_allocation_invoice_student` constraint rather than accepting an unrelated duplicate-key failure.
 - Payment page validation #1248 passed at its recorded head, but it predates this latest fixture correction. New exact-head MySQL and application CI runs must pass before acceptance.
 - Production remains untouched; all MySQL tests use disposable CI data.
+
+
+## MySQL result workflow and template schema slice — 2026-10-17
+
+Read-only production schema inspection confirmed the source columns for assessment schemes, grade scale, result approvals, correction requests/snapshots, result templates, transcript issues and transcript settings. Added a draft-only MySQL target migration at `database/mysql/003_schoolpro_assessment_review_templates_transcripts.sql`.
+
+- Assessment schemes are school-scoped, education-level-specific, JSON component definitions with validation.
+- Grade scales enforce 0–100 ranges and school-local label/position uniqueness.
+- Result approvals and correction requests/snapshots reference result rows through composite school/result foreign keys; request state and score constraints are represented.
+- Result/workbook templates are school-owned, have JSON mappings for fields/components/custom fields, preserve logo/photo/signatory/QR settings, and require workbook/logo object paths to begin with the owning school ID. This prevents accidental cross-school/global template reuse at the schema layer.
+- Transcript settings and issued transcript snapshots are included. Transcript serials are globally unique; revocation actor/time must be recorded together.
+- Added disposable synthetic fixtures and negative tests for cross-school result approval, cross-school transcript student, foreign-school workbook object path, and grade maximum above 100. Wired migration 003 and these checks into the MySQL 8.4 workflow.
+- This is relational schema coverage only. Application authorization, score calculations, approval transitions, immutable audit/event atomicity, actual Excel parsing/rendering, file-store permissions, transcript-level-specific content and source-row data reconciliation still need implementation and contract tests.
+- MySQL schema workflow #307, SchoolPro CI #1525 and payment-page validation #1252 passed on the prior finance-schema head `4579a7cf49b0112d3b783e903a64ee98dc263d87`. The new schema slice is not yet accepted; wait for fresh CI on this migration/fixture commit.
+- No production database, live files, Render configuration or production routes were changed.

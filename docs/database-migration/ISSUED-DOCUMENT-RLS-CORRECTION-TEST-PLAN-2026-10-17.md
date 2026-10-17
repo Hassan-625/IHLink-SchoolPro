@@ -39,3 +39,6 @@ Storage buckets observed: `schoolpro-document-outputs` (83 objects), `schoolpro-
 - `schoolpro-admission-documents` bucket has 0 objects; `schoolpro-admissions` bucket has 0 objects. Thus no current admission-upload objects could be tested.
 - Storage RLS catalog has school-folder scoping for admissions objects and school-scoped output-path reads. This is policy-definition evidence only; no authenticated adversarial object read/upload/delete test was run.
 - A second repository (`Hassan-625/IHLink_Design_System_1`) has 139 migration files, but none of the 35 exact marker version timestamps is present in that branch tree. It is a divergent history, not recovery of those 35 original SQL files.
+
+- Additional path-prefix audit: all 83 linked document-output objects have first path segment equal to the corresponding issue `school_id`; 0 prefix mismatches.
+- Document template table: 3 rows, all 3 have a matching object in `schoolpro-document-templates`, with 0 missing objects and 0 school-prefix mismatches. This does not account for other unreferenced objects in that bucket (9 total objects), which still need classification.

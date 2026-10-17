@@ -38,6 +38,7 @@ jobs:
       - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
       - run: node scripts/test-schoolpro-document-serial-uniqueness.mjs
       - run: node scripts/test-schoolpro-result-verification-exposure.mjs
+      - run: node scripts/test-schoolpro-public-admission-abuse-controls.mjs
       - run: node scripts/test-schoolpro-login-rate-limit-trusted-ip.mjs
       - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
       - name: Check SchoolPro receipt-submission security guards
@@ -215,3 +216,30 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Execute result-verification snapshot migration against disposable schema
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-verification-exposure.integration.sql
+
+  public-admission-abuse-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_admission_abuse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_admission_abuse_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_admission_abuse_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise public admissions RPC abuse controls in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-public-admission-abuse-controls.integration.sql

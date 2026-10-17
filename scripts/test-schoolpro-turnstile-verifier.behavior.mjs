@@ -40,7 +40,7 @@ for (const bad of [
   { ...valid, action: 'different_action' },
   { ...valid, hostname: 'attacker.example.net' },
   { ...valid, hostname: null },
-  { ...valid, 'error-codes': ['timeout-or-duplicate'] },
+  { ...valid, success: false, 'error-codes': ['timeout-or-duplicate'] },
 ]) {
   const result = await verifyTurnstile({
     token: 'token',

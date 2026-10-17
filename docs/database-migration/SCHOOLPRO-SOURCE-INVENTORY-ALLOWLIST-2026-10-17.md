@@ -607,3 +607,10 @@ Do not run historical SQL to “catch up”, replay any ledger entry, reset migr
 ## Provenance follow-up — 2026-10-17
 
 The migration reconciliation addendum now records additional immutable evidence: `main` and `migration/mysql-schoolpro-foundation` both contain the same 123 numbered migration files; current CI validates app code and a disposable MySQL draft, not production Supabase migration deployment; commit `a6da195` documents a 33-version direct-to-production Supabase API batch but intentionally omits its DDL; PR #79 provides only narrow filename reconciliation evidence; and commit `61afde6` captures some live result/CBT parity but is not a complete deployment log. These findings narrow provenance for a subset but do not resolve the 397/44 sets. All other version dispositions remain unresolved unless individually evidenced. Export/import remains blocked.
+
+
+## Migration provenance disposition register — 2026-10-17
+
+See [Branch-only migration disposition register](BRANCH-ONLY-MIGRATION-DISPOSITION-REGISTER-2026-10-17.md) for one-by-one source-history and live-catalog evidence on all 44 branch-only versions. It identifies the 33-version production sync marker as non-replayable provenance documentation and records the current schema mismatches for tenant-isolation, guardian/CBT/document integrity, family-result and subscription-plan objects. Current object presence must not be interpreted as exact migration deployment evidence.
+
+The source inventory remains an allowlist proposal only. Export/import is not approved until original SQL/deployment provenance is recovered and the full schema/tenant ownership review is signed off.

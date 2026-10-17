@@ -3,7 +3,7 @@
 > **Current target clarification (2026-10-17):** The active SchoolPro migration is **Supabase PostgreSQL → Aiven PostgreSQL**, with the existing frontend remaining on Render; the inspected Render workspace lists SchoolPro as a static site and no dedicated SchoolPro backend/API service, so a safe server-side API/auth boundary must be identified or built before Aiven can serve application requests. Earlier MySQL-oriented backlog and PR #107 are historical/pause-only, not the active target. DataSub remains on Supabase and is out of scope. The migration-ledger, tenant, RLS and storage evidence below is retained as risk/reconciliation evidence; it does not authorize production export/import or cutover.
 
 
-This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master file itself has not been rewritten in this pass.
+This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the master now contains an authoritative Aiven PostgreSQL direction reset and the exact continuation checkpoint.
 
 ## Evidence status
 - Production Supabase ledger: 476 versions. The current migration branch has 123 numbered files, 79 exact version intersections, 397 live-only versions and 44 branch-only versions. The issued-document RLS correction is tracked separately in [draft PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108), branch `security/issued-document-rls-fix-2026-10-17`; it is not deployed.
@@ -160,3 +160,13 @@ Read-only Render API metadata confirms service `srv-db0k11m0tbcc7386fmq0` (`ihli
 On the migration branch, `package.json` declares `@supabase/supabase-js ^2.57.4`; `src/lib/supabase.ts` initializes the Supabase client in the frontend and has a fallback URL to project `lnqsroyiybutkfngbyge` plus a publishable-key fallback. These source details prove direct Supabase coupling in that branch, not complete parity with deployed `main` or all build-time environment values.
 
 **Blocking design decision before target implementation:** a static browser client must not connect to Aiven using a privileged PostgreSQL connection string. Map all Supabase table/RPC/Auth/Storage/Edge Function call sites, then decide whether to retain selected Supabase-managed services during transition or introduce a server-side API/auth layer on Render. PostgreSQL schema/data transfer alone does not migrate Supabase platform services. Render/Aiven configuration was not changed; no production data was exported/imported and no deploy was triggered.
+
+
+## Exact continuation resumed — 2026-10-17
+This work resumed from the existing audit artifacts; the source-table inventory was not repeated. Confirmed existing artifacts include the 107-table candidate allowlist, per-table ownership register, 274-FK inventory (79 cross-boundary), 127 SchoolPro routine names, 160 trigger bindings, 293 SchoolPro RLS policy rows, 397 live-only SQL payload bundles/dependency rows, 35 individually recovered remote-batch SQL files, and the 44-version branch-only disposition register. The 44 dispositions remain provisional because catalog name matches do not establish full body/ACL/policy parity or deployment provenance.
+
+The 13 call-site manifest shards were fetched and parsed: 463 static line-scan records across the 190 source files. Manual source inspection found finite/bounded dispatch for the ten-table SchoolPro module map, three workflow tables, nine literal workflow RPC targets, two onboarding RPC choices, and two result/review RPC choices. The parameterized Storage bucket in `src/components/schoolpro/DocumentDesign.tsx` remains unresolved until every caller and bucket value is enumerated. The manifest scan is not an AST/runtime call graph and was generated from the migration branch, not the live Render commit.
+
+New review: [APPLICATION-DYNAMIC-CALLSITE-REVIEW-2026-10-17.md](APPLICATION-DYNAMIC-CALLSITE-REVIEW-2026-10-17.md), committed as `d68cc42532c232cbbe1e08118e8ac7ae61d053d6`.
+
+**Next action from this exact point:** (1) resolve all `DesignAssets`/`useDesignImages` callers and bucket values; (2) finish row-level/parent-child ownership for the 18 no-direct-`school_id` tables and 79 cross-boundary FKs; (3) continue semantic catalog diffs for recovered live-only SQL and unresolved branch-only rows. Do not recreate the table inventory. The remote marker's true count is 35 distinct versions; SQL payload recovery is complete, but independent timestamped migration-API deployment events remain unverified. Production export/import, migration replay, Render changes, deployment and merge remain blocked.

@@ -34,11 +34,26 @@ as $$ select p_module = 'finance' and current_setting('test.finance_school', tru
 create table public.schoolpro_invoices (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  amount_due numeric not null, amount_paid numeric not null default 0,
- status public.schoolpro_invoice_status not null default 'unpaid', updated_at timestamptz not null default now()
+ status public.schoolpro_invoice_status not null default 'unpaid', updated_at timestamptz not null default now(),
+ title text not null default 'Test invoice', term text not null default 'First Term',
+ session text not null default '2025/2026', created_by uuid
 );
 create table public.schoolpro_guardian_links (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  guardian_user_id uuid not null, status text not null
+);
+create table public.schoolpro_schools(id uuid primary key, owner_id uuid);
+create table public.schoolpro_members(school_id uuid not null,user_id uuid not null,role text not null);
+create table public.schoolpro_students(
+ id uuid primary key, school_id uuid not null, user_id uuid, first_name text, last_name text,
+ status text not null default 'active', transferred_out_at timestamptz
+);
+create table auth.users(id uuid primary key,email text);
+create table public.schoolpro_notifications(
+ school_id uuid,user_id uuid,title text,message text,kind text,href text
+);
+create table public.schoolpro_email_queue(
+ school_id uuid,recipient_email text,recipient_name text,template_key text,subject text,payload jsonb,status text
 );
 
 create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
@@ -109,6 +124,116 @@ insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorde
  ('12000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',200,'d0000000-0000-0000-0000-000000000099');
 insert into public.schoolpro_test_memberships(user_id,school_id,role) values
  ('d0000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','accountant');
+insert into public.schoolpro_schools(id,owner_id) values
+ ('b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000099');
+insert into public.schoolpro_students(id,school_id,user_id,first_name,last_name,status) values
+ ('c0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','Guardian','A','active'),
+ ('c0000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002','Guardian','B','active');
+insert into auth.users(id,email) values
+ ('d0000000-0000-0000-0000-000000000001','guardian-a@example.test'),
+ ('d0000000-0000-0000-0000-000000000002','guardian-b@example.test');
+insert into public.schoolpro_members(school_id,user_id,role) values
+ ('b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000099','accountant');
+
+-- Snapshot the actual production trigger functions, with minimal dependency stubs.
+create or replace function private.schoolpro_record_school(p_table text,p_row jsonb)
+returns uuid language sql stable security definer set search_path=''
+as $$ select nullif(p_row->>'school_id','')::uuid $$;
+create or replace function private.schoolpro_operationally_active(p_school uuid)
+returns boolean language sql stable as $$ select true $$;
+create or replace function private.has_product_access(p_product text,p_action text)
+returns boolean language sql stable as $$ select false $$;
+
+create or replace function private.guard_schoolpro_operational_write()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+declare old_school uuid; new_school uuid;
+begin
+ if auth.uid() is null and coalesce(current_setting('request.jwt.claim.role',true),'')<>'anon' then
+  if tg_op='DELETE' then return old; else return new; end if;
+ end if;
+ if tg_op<>'INSERT' then old_school:=private.schoolpro_record_school(tg_table_name,to_jsonb(old)); end if;
+ if tg_op<>'DELETE' then new_school:=private.schoolpro_record_school(tg_table_name,to_jsonb(new)); end if;
+ if (old_school is not null and not private.schoolpro_operationally_active(old_school))
+ or (new_school is not null and not private.schoolpro_operationally_active(new_school)) then
+  raise exception 'SchoolPro operational activation required: complete subscription payment or an audited Control Center activation';
+ end if;
+ if old_school is null and new_school is null and not coalesce(private.has_product_access('schoolpro','edit'),false) then
+  raise exception 'School-linked operational record required';
+ end if;
+ if tg_op='DELETE' then return old; else return new; end if;
+end $function$;
+
+create or replace function private.schoolpro_reject_new_inactive_student_activity()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+declare pupil uuid; j jsonb:=to_jsonb(new); prior jsonb;
+begin
+ if tg_op='UPDATE' then prior:=to_jsonb(old); end if;
+ pupil:=nullif(j->>'student_id','')::uuid;
+ if pupil is not null and (tg_op='INSERT' or j->>'student_id' is distinct from prior->>'student_id'
+    or (j->>'active'='true' and prior->>'active'='false')
+    or j->>'attendance_date' is distinct from prior->>'attendance_date')
+    and exists(select 1 from public.schoolpro_students where id=pupil and (status<>'active' or transferred_out_at is not null)) then
+  raise exception 'This pupil is no longer enrolled for new activities';
+ end if;
+ return new;
+end $function$;
+
+create or replace function private.notify_school_staff()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+declare sid uuid; ttl text; msg text; href text;
+begin
+ sid:=new.school_id;
+ if tg_table_name='schoolpro_invoices' then
+  insert into public.schoolpro_notifications(school_id,user_id,title,message,kind,href)
+  select sid,recipient,'Fee invoice created',new.title||' · '||new.term||' · '||new.session,tg_table_name,'/schoolpro/invoices/'||new.id
+  from (
+   select sc.owner_id recipient from public.schoolpro_schools sc where sc.id=sid
+   union select m.user_id from public.schoolpro_members m where m.school_id=sid and m.role in('proprietor','administrator','accountant','bursar')
+   union select st.user_id from public.schoolpro_students st where st.id=new.student_id and st.school_id=sid
+   union select g.guardian_user_id from public.schoolpro_guardian_links g where g.student_id=new.student_id and g.school_id=sid and g.status='active'
+  ) recipients where recipient is not null;
+  return new;
+ end if;
+ return new;
+end $function$;
+
+create or replace function public.queue_schoolpro_transactional_email()
+returns trigger language plpgsql security definer set search_path='public','auth'
+as $function$
+declare sid uuid; sch uuid; email text; nm text; subj text; msg text; key text;
+begin
+ if tg_table_name='schoolpro_fee_payments' then
+  sid:=new.student_id; sch:=new.school_id; key:='payment_receipt'; subj:='SchoolPro payment receipt';
+  msg:='A payment of NGN '||new.amount||' has been recorded. Reference: '||coalesce(new.reference,'N/A')||'.';
+ else return new; end if;
+ select u.email,concat_ws(' ',s.first_name,s.last_name) into email,nm
+ from public.schoolpro_students s left join auth.users u on u.id=s.user_id where s.id=sid;
+ if email is not null then
+  insert into public.schoolpro_email_queue(school_id,recipient_email,recipient_name,template_key,subject,payload,status)
+  values(sch,email,nm,key,subj,jsonb_build_object('message',msg,'student_id',sid),'pending');
+ end if;
+ return new;
+end $function$;
+
+create trigger schoolpro_activation_before_write before insert or update or delete on public.schoolpro_payment_submissions
+for each row execute function private.guard_schoolpro_operational_write();
+create trigger schoolpro_activation_before_write before insert or update or delete on public.schoolpro_payment_allocations
+for each row execute function private.guard_schoolpro_operational_write();
+create trigger schoolpro_activation_before_write before insert or update or delete on public.schoolpro_payment_proofs
+for each row execute function private.guard_schoolpro_operational_write();
+create trigger schoolpro_activation_before_write before insert or update or delete on public.schoolpro_fee_payments
+for each row execute function private.guard_schoolpro_operational_write();
+create trigger schoolpro_activation_before_write before insert or update or delete on public.schoolpro_invoices
+for each row execute function private.guard_schoolpro_operational_write();
+create trigger schoolpro_active_pupil_activity before insert or update on public.schoolpro_invoices
+for each row execute function private.schoolpro_reject_new_inactive_student_activity();
+create trigger trg_schoolpro_invoice_notify after insert on public.schoolpro_invoices
+for each row execute function private.notify_school_staff();
+create trigger trg_schoolpro_payment_email after insert on public.schoolpro_fee_payments
+for each row execute function public.queue_schoolpro_transactional_email();
 
 -- Reproduce the names and core predicates of the live production permissive policies.
 create policy "submitter or finance reads submissions" on public.schoolpro_payment_submissions for select to authenticated using (
@@ -363,6 +488,8 @@ select pg_temp.assert_count('failed confirmation rolls allocation link back',
  (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is null),1);
 select pg_temp.assert_count('failed confirmation rolls fee payment insert back',
  (select count(*) from public.schoolpro_fee_payments),3);
+select pg_temp.assert_count('failed confirmation rolls transactional email queue insert back',
+ (select count(*) from public.schoolpro_email_queue),0);
 select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','synthetic rejection');
 select pg_temp.assert_count('authorized rejection transitions pending to rejected',
  (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000002' and status='rejected' and review_note='synthetic rejection'),1);
@@ -373,6 +500,8 @@ select pg_temp.assert_count('confirmed payment updates invoice atomically',
  (select count(*) from public.schoolpro_invoices where id='90000000-0000-0000-0000-000000000001' and amount_paid=100 and status='part_paid'),1);
 select pg_temp.assert_count('confirmed payment links allocation to ledger entry',
  (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is not null),1);
+select pg_temp.assert_count('confirmed payment queues exactly one transactional receipt email',
+ (select count(*) from public.schoolpro_email_queue where template_key='payment_receipt'),1);
 select pg_temp.assert_rpc_rejected(
  'duplicate review cannot re-confirm an already confirmed submission',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','duplicate')$$,

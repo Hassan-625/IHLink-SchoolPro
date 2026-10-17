@@ -639,3 +639,12 @@ Read-only catalog comparisons found significant partial matches but do not estab
 The 33 versions named by `20260926114500_schoolpro_remote_migration_sync_ledger.sql` are listed in the live ledger and are declared by that marker as directly applied through the Supabase migration API, but the marker intentionally contains no DDL. Original SQL blobs and authoritative deployment audit records remain outstanding. A “Restore … migration” commit only establishes restoration into Git history, not the original production artifact or deployment event.
 
 **Gate unchanged:** no replay, production write, export/import, production configuration change, or merge. Per-version dispositions remain provisional pending original SQL + deployment evidence and full semantic catalog comparison.
+
+
+## Additional source-history search — alternate branch check (2026-10-17)
+
+Checked the other discovered migration-related branch, `fix/operational-migration-history-oct10`. Its tree contains 55 numbered migration files, and those include the same 44 branch-only SQL files plus three older SchoolPro operations migrations; it does not contain the 33 original SQL files listed by the remote sync marker. Repository code/commit search for `schoolpro_admission_lifecycle` and `schoolpro_completion_security_cleanup` returned no indexed code or commit matches. This narrows the currently accessible source history but does not prove that no deleted/unindexed ref, external artifact, developer worktree, or backup exists.
+
+The branch-only file histories also show that many files entered the current history in commits explicitly titled “Restore … migration” on 2026-09-26. Those commits are restoration events, not proof of original authorship or production deployment. Other files have later “capture/persist/harden” commits, also insufficient by themselves to prove database application. The per-version register keeps these as source-history evidence only.
+
+**Current conclusion:** exact original SQL and authoritative deployment events for the 33-version direct-to-production batch have not been recovered from the currently inspected repository branches. The remaining 397 live-only versions also lack complete per-version source/deployment evidence; the broad ledger list contains shared-platform and DataSub versions as well as SchoolPro versions, so each must be scope-classified before it can inform the SchoolPro target. Do not reconstruct SQL from names or current catalog objects.

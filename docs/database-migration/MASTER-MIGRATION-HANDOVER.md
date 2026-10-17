@@ -2613,3 +2613,15 @@ The assignment-submission negative test now expects the actual MySQL constraint 
 - Payment-page validation #1324: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739281
 
 At the last check, all three were still in progress. Earlier MySQL run #385 failed on the incorrect assertion and is not accepted; the payment-page run #1296 passed, but that does not replace the fresh exact-head run. Await #400 and verify all six migrations plus fixtures and the cross-school negative cases. Do not call migration 006 accepted until the corrected run finishes successfully. This note is evidence of run status, not an acceptance claim.
+
+
+### Migration 006 corrected schema result — 2026-10-17, follow-up
+
+The corrected MySQL schema workflow #400 has now completed successfully on code-bearing head `1964131c0e62075dbcc9f767c7299cb73aa60cc3`:
+- MySQL schema draft #400: PASS — https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739279
+- Payment-page validation #1324: PASS — https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739281
+- SchoolPro CI #1597 was still running at the time of this update: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033739286
+
+The schema job log confirms the expected cross-school FK/check rejection tests passed, including the corrected `fk_submission_student` assertion, foreign-school CBT question, foreign-school library book, and annual-only subscription check. The schema workflow's negative-test helper prints MySQL ERROR lines as expected; each is followed by a PASS assertion naming the expected constraint. This is not a schema failure.
+
+Acceptance is partial until SchoolPro CI #1597 completes. The run was triggered on code head `1964131...`; this handover-only update does not change the tested schema/code. Migrations 001–006 remain proposals for disposable MySQL CI only; no production database has been modified.

@@ -56,3 +56,16 @@ A second read-only comparison checked current definitions for the recovered ledg
 These are semantic body/policy comparisons for selected high-risk result workflow versions, not an exhaustive grant/revoke, RLS, trigger, or all-397-version comparison. The current RLS policies also include later cache-based result-reader predicates; the whole policy set must be diffed as a set rather than treating any one migration body as the complete current policy.
 
 The exact 79-constraint live FK list is now separately committed in [SCHOOLPRO-79-CROSS-BOUNDARY-FK-REVIEW-2026-10-17.md](SCHOOLPRO-79-CROSS-BOUNDARY-FK-REVIEW-2026-10-17.md), commit `9fa27b272bd1d75c6ac8f1ea69f132bd54b6f3ac`. Current live catalog says 79/79 are validated. This closes the inventory/validation-status check only; it does not close ownership, tenant authorization, shared-service disposition, or target-schema replacement.
+
+
+## Storage policy cross-check for the resolved design buckets — 2026-10-17
+
+Live `storage.objects` policy definitions were read-only inspected for the mapped buckets:
+
+- `schoolpro-document-templates`: insert/update/delete policies derive school scope from the first path segment via `storage.foldername(name)[1]` and `schoolpro_member_can_manage(...)`; a separate super-admin policy exists. The component writes under `<schoolId>/branding/<uuid>.<ext>`, which is structurally consistent with that first-segment scope. The bucket also has an Academy learner read policy tied to issued certificates, so the shared bucket has cross-product semantics and must not be blindly moved or recreated as SchoolPro-only data.
+- `schoolpro-invoice-templates`: upload/read/update/delete policies use the first path segment as school UUID; write/delete additionally constrain roles to proprietor/administrator/accountant/bursar. This matches the component's school-prefixed upload path; runtime Storage API negative tests are still required.
+- `schoolpro-branding`: the bucket's authenticated upload/update policies also derive the school from the first path segment; public-read policy exists. The underscore name `schoolpro_branding` in the database is not the Storage bucket identifier.
+- `school-result-templates`: the upload policy requires the path's first segment to resolve to a school the caller can manage and requires `owner_id=auth.uid()`; the UI writes school-prefixed template, logo and signature paths. The bucket also has family report-media read and super-admin management policies, reinforcing that it is a shared-purpose bucket.
+- `schoolpro-document-outputs` and `schoolpro-result-outputs`: live policies tie reads to issued-document/result rows and their school/student/guardian/staff authorization rules. The result output bucket's write policy is broader than only the exam officer, but uses school-role and results-module checks; validate it against the intended role matrix before migration.
+
+These catalog predicates establish path/policy shape only; they do not replace adversarial real Storage API, signed URL and download-path tests. Preserve bucket IDs, policy predicates, first-path-segment assumptions, ownership metadata and the result-renderer bucket mismatch as explicit rehearsal acceptance checks.

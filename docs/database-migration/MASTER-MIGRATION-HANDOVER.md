@@ -1777,3 +1777,13 @@ This is a read-only comparison of key behaviors in production against the draft 
 - Test changes: fixture commit `4ba918d26770a900efbe0937b5b398b700567b41`; workflow commit `b8b29feb02930e6662b94aacf21423903fa807e9`. The current PR head inspected is `dc6ac60f325620097cbcb6ada200c6374e0e72aa`.
 - At the time of this entry, payment-page validation run #39025103288 was still in progress. The latest confirmed passing runtime evidence remains the earlier local receipt-Storage isolation run; this newly added concurrency assertion is **not yet counted as passing** until the PostgreSQL integration job has run and its log/result has been inspected.
 - The new concurrency test is disposable-only and does not create or alter production payment rows. No production migration was applied and PR #106 remains draft/open.
+
+
+## 27. Latest run check after concurrency-test addition (2026-10-17 11:29 +01:00)
+
+- PR #106 remains open and draft at head `dc6ac60f325620097cbcb6ada200c6374e0e72aa`; it has 48 changed files and is **not merge-ready**.
+- Payment-page validation run #39025103288 completed successfully. This validates that workflow's payment-page checks only; it does not execute the PostgreSQL receipt-RPC race test, payment-review RLS fixture, local Supabase Storage policy test, or the complete SchoolPro CI matrix.
+- The workflow-run lookup for this exact head returned only the payment-page validation run. Therefore, the newly added database integration test has no confirmed execution evidence on the current head. Do not describe the overall Stage A security CI as green based solely on the payment-page result.
+- The receipt-RPC integration fixture now contains a third isolated invoice for the 600+600 concurrency case. The test harness records each independent RPC result, requires one accepted/one rejected request, and asserts the resulting allocation sum is exactly 600. This source-level review looks internally consistent; runtime evidence is still required.
+- Next gate: obtain a full SchoolPro CI run against the current PR head and inspect the actual job logs for receipt RPC concurrency, payment-review RLS grant revocation, local Storage finance-path isolation, result-snapshot sanitization, result-PIN cooldown, admission abuse controls and tenant integrity. If workflow dispatch is unavailable, do not substitute a prior commit's green run for current-head evidence.
+- The master handover was updated on `migration/mysql-schoolpro-foundation` at commit `327dc1cfb72b04ba8dcd5a832f94de8c120cb375` before this latest run check. This entry is the follow-up record; no production change was made.

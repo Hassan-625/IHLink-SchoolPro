@@ -120,7 +120,7 @@ begin
   update private.schoolpro_result_pin_attempts
     set blocked_until = now() - interval '1 second',
         window_started_at = now() - interval '16 minutes'
-  where attempt_key = encode(extensions.digest('sp-test-001','sha256'),'hex');
+  where attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex');
   result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','1234');
   if not coalesce((result->>'ok')::boolean,false) then
     raise exception 'Valid PIN should succeed after cooldown expires: %', result;
@@ -130,7 +130,7 @@ begin
     raise exception 'Duplicate admission number resolved to the wrong tenant/student: %', result;
   end if;
   if exists (select 1 from private.schoolpro_result_pin_attempts
-             where attempt_key = encode(extensions.digest('sp-test-001','sha256'),'hex')) then
+             where attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex')) then
     raise exception 'Successful result access did not clear the failure counter';
   end if;
 end

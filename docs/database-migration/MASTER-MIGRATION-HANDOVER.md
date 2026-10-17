@@ -1995,3 +1995,28 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - The draft optimization migration adds a path-shape `CASE` before calling the helper, so non-media paths short-circuit to false, and adds four partial exact-path indexes for student photos, principal signatures, form-teacher signatures and result-template logos.
 - Production currently has the helper and the policy but none of the four proposed indexes; the live policy has no path-shape `CASE`. The exact draft optimization is therefore **not present** despite matching policy/helper names. The production migration ledger has no exact entry for the draft version.
 - Do not apply the indexes/definition until the migration drift plan is reviewed. Keep a runtime test for template listing and guardian report-image access/performance; static CI alone does not establish production query-plan improvement.
+
+## Session continuation — 2026-10-17 (Stage A security review continuation)
+
+### Current evidence carried forward
+- Stage A PR #106 is a separate release/security workstream from MySQL migration PR #107 and remains draft/open/unmerged pending review: https://github.com/Hassan-625/IHLink-SchoolPro/pull/106.
+- Latest user-provided evidence reports Stage A CI run #1365 completed with all 8 jobs passing, including local Supabase receipt Storage isolation, live cross-school database/RPC/template acceptance, typecheck, source tests, layout checks and production build. Payment-page validation #1092 also passed. These results are recorded as supplied evidence; refresh the exact run/job details before treating them as independently re-verified in this session.
+- Receipt Storage isolation used disposable local Supabase users and synthetic receipts. Live production receipt-object checks were deliberately skipped because there are no safe production receipt fixtures. No production receipt objects were created and no production migration was applied.
+- Prior read-only production inspection reported guardian receipt upload/download rules constrained by the authenticated user's ownership folder, and school-finance download access tied to a matching payment-proof record plus the school-finance role. The proposed repository migration still needs comparison with live bucket names, object path conventions, role model, grants, and complete policy expressions. A bucket privacy/size/MIME migration does not itself prove correct object policies.
+- The local policy test proves only the draft policy behavior in that local fixture. It does not prove production policies were applied or that all production policy interactions are equivalent.
+
+### Stage A review gates — still open
+- [ ] Compare the draft receipt Storage migration with a fresh read-only production snapshot: bucket IDs/names, relevant Storage tables, current policy names and full USING/WITH CHECK expressions, role/grant assumptions, and exact guardian/payment-proof path formats. Resolve mismatches explicitly.
+- [ ] Reconcile repository migration files against the live migration ledger and deployed object definitions. Distinguish absent ledger entries, remote-only changes, changed historical files, and ordering conflicts. Do not replay or rewrite historical migrations just to align counts.
+- [ ] Expand policy tests for owner upload/read/list/update/delete, cross-user denial, school-finance positive access only with matching school/role/proof record, malformed paths, metadata/object-path mismatch, and unauthorized mutation. Test exact-object and folder-list operations separately.
+- [ ] Test the complete payment-proof write path: direct table writes, Storage upload, submit RPC, review/approve/reject/cancel, invoice/allocation links, tenant/student ownership, duplicate submission and rollback. Use actual disposable PostgreSQL roles and the complete relevant grant/RLS set; source-text assertions alone are insufficient.
+- [ ] Review trigger definitions/order against the full live schema, including payment status, receipt ownership, invoice allocation and audit history. Add disposable integration tests for relevant positive and negative transitions.
+- [ ] Finish Stage A acceptance/security review and record each test's environment, actor role, assertion, result and commit. Keep Stage A blocked until these gates pass and the owner explicitly approves merge.
+
+### Safety and workstream separation
+- Production remains unchanged: no production migration, receipt upload, production write probe, Render deployment, environment edit, or PR merge was performed as part of this handover update.
+- Do not introduce an unverified IP-based database security mechanism. Trusted-edge rate limiting must rely on verified gateway semantics, not caller-controlled forwarding headers.
+- Keep PR #106 (Stage A application/security work) separate from PR #107 (MySQL migration foundation). A green workflow for one branch does not certify the other.
+- Preserve the full SchoolPro release sequence A → B → C → D and E–J roadmap. Do not resume D until A/B/C are re-verified and accepted.
+- Next: inspect current Stage A migration, policy/test files and latest run/job logs on the exact branch head; perform read-only production/source reconciliation; add missing disposable runtime tests; then update this handover with exact paths, commit SHAs, run IDs and findings before changing merge readiness.
+

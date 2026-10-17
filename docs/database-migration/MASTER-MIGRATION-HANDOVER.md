@@ -1595,3 +1595,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 4. Rerun the tenant acceptance job/workflow only after fixture configuration is in place. Record the exact run, commit, job conclusion and own/foreign download assertions. If it fails, diagnose the actual response; do not weaken or skip the test.
 5. Stage A remains **BLOCKED / NOT MERGE-READY** until the mandatory receipt Storage test passes and the other release gates are satisfied.
 
+
+
+### Follow-up — receipt bucket confirmed empty by maintainer (2026-10-17)
+
+- The maintainer reports that the production Supabase Storage bucket `schoolpro-payment-receipts` is empty. This is user-reported confirmation; this assistant did not independently list the bucket.
+- Therefore there are currently no existing receipt objects available to populate `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` safely. Do not set these secrets to illustrative paths, and do not upload dummy receipts to the shared production bucket.
+- The prior “use existing test-owned objects” path is unavailable unless the maintainer later identifies valid non-customer fixtures. The next safe engineering action is to establish a no-additional-cost local/CI-compatible Storage test environment that applies the relevant receipt bucket policies and uses two disposable test users plus synthetic receipts. Verify that this actually exercises the same policy definitions used by the application before treating it as acceptance evidence.
+- If the required policy-level test cannot be run locally/within existing CI infrastructure, pause and present the owner with any hosted-environment cost before creating a separate Supabase project. The unrelated IoT project is not to be reused.
+- CI remains red and Stage A remains **BLOCKED / NOT MERGE-READY**. No secrets were changed, no production objects were created, and no production changes or merges were made.

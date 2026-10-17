@@ -1492,3 +1492,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 4. Inspect live schema and triggers read-only; reconcile source migrations against the live migration ledger/catalog without replaying historical versions or guessing.
 5. Treat live admissions gateway rollout and login source/deployment mismatch as operational gates requiring approved configuration and deployment. Do not revoke admissions RPC before the gateway works. Do not treat untrusted forwarded headers as client identity.
 6. Update this handover with every new test result. Stage A stays **BLOCKED / NOT MERGE-READY** until all gates pass and the owner explicitly approves the release. No production mutation/deployment was performed by this remediation.
+
+
+### Receipt Storage acceptance made non-skippable
+
+- Updated `scripts/test-schoolpro-tenant-isolation-live.mjs` on the isolated Stage A branch (latest commit `9c84946b10bf0dbef677418ab6f2cbffc4d4ed5b`) to require both `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` instead of silently skipping receipt isolation when either is absent.
+- The acceptance test now requires two distinct **existing** receipt objects rooted under each authenticated account's user ID, verifies each account can download its own object, and verifies each cannot download the other account's object. It remains read-only and explicitly does not create production fixtures.
+- This is a gate-strengthening change, **not a passed runtime test**. At the time of this note, GitHub did not return a workflow run for the newest PR head; CI execution is pending/unavailable through the queried run listing. The gate must not be called closed until the live acceptance job passes with the two valid path secrets configured.
+- If the paths are not available, use a dedicated disposable Supabase/Storage environment or create test-owned objects only in an approved test environment. Do not point these secrets at arbitrary customer receipts and do not upload dummy receipts into production.
+

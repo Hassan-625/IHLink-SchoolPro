@@ -1407,3 +1407,19 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Completed successfully so far: `tenant-acceptance` (read-only two-school acceptance), `payment-review-rls-integration`, `tenant-integrity-db-integration`, `result-verification-exposure-integration`, `public-admission-abuse-integration`, and `result-pin-rate-limit-integration`. The latter includes the new login rate-limit behavior fixture and concurrent-key assertion; both steps passed.
 - In `validate`, the new mocked Turnstile behavioral test and the no-unverified-forwarding-header login regression test both passed. The job is still running its combined Playwright/mobile-layout checks; artifact upload and `npm run build` have not yet run. Do not mark exact-head CI fully green until `validate` and the full workflow finish successfully.
 - The payment-page validation run [#1068](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469275) completed successfully.
+
+
+### Final result — Stage A exact-head CI #1341 (2026-10-17)
+
+- **Final outcome: SUCCESS.** GitHub Actions run [#1341](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469332) completed with all seven jobs successful on exact Stage A draft head `ea6186b400ec9ae0514641296f5c43f0cda30f86`.
+- Job results:
+  - `validate` — success, including the new Turnstile verifier behavior test, trusted-forwarding-header regression test, mobile/layout checks, artifact upload, and `npm run build`.
+  - `tenant-acceptance` — success; read-only two-school acceptance checks passed.
+  - `payment-review-rls-integration` — success.
+  - `tenant-integrity-db-integration` — success.
+  - `result-verification-exposure-integration` — success.
+  - `result-pin-rate-limit-integration` — success, including login-attempt throttling/cleanup fixture, 12 concurrent calls on one key, and wrong-PIN cooldown concurrency checks.
+  - `public-admission-abuse-integration` — success.
+- This closes the **draft exact-head CI validation checkpoint** for the listed tests. It does not establish live Cloudflare challenge/replay behavior, provider-native volumetric rate limiting, or production source-to-deployment parity.
+- Stage A remains **not production-complete**: live account/student login functions still use the deployed `X-Forwarded-For` implementation; the draft `schoolpro-public-admission` gateway is not deployed; and the live admissions RPC still permits `anon`/`authenticated` execution until the gateway and revocation migration are safely rolled out. No production change or merge was performed.
+- Next: review the exact Stage A diff and rollout sequence, obtain explicit approval before production actions, and reverify A/B/C at the required release gate before resuming D. The seven RLS-enabled/no-policy tables remain classified as intentionally server-only based on the observed grants and consumer/lifecycle trace; retention changes are not authorized by this audit.

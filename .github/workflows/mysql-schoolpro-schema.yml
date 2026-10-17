@@ -52,6 +52,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/002_schoolpro_guardians_finance_subscriptions.sql
+      - name: Apply assessment review, template and transcript schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/003_schoolpro_assessment_review_templates_transcripts.sql
       - name: Insert valid isolated core fixtures
         env:
           MYSQL_PWD: root-test-password
@@ -60,6 +64,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_finance_fixture.sql
+      - name: Insert valid assessment, result template and transcript fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_results_templates_fixture.sql
       - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password
@@ -102,6 +110,8 @@ jobs:
           assert_fk_rejection tests/mysql/cross_tenant_fee_payment_invoice_must_fail.sql fk_fee_payment_invoice_student
           assert_fk_rejection tests/mysql/cross_tenant_fee_allocation_invoice_must_fail.sql fk_fee_allocation_invoice_student
           assert_fk_rejection tests/mysql/subscription_receipt_cross_tenant_must_fail.sql fk_subscription_receipt_subscription
+          assert_fk_rejection tests/mysql/cross_school_result_approval_must_fail.sql fk_result_approval_result
+          assert_fk_rejection tests/mysql/cross_school_transcript_student_must_fail.sql fk_transcript_student
           assert_check_rejection() {
             local sql_file="$1"
             local constraint="$2"
@@ -122,6 +132,8 @@ jobs:
           }
           assert_check_rejection tests/mysql/receipt_owner_mismatch_must_fail.sql chk_fee_submission_receipt_owner
           assert_check_rejection tests/mysql/demo_plan_paid_amount_must_fail.sql chk_subscription_plan_price
+          assert_check_rejection tests/mysql/template_path_must_be_school_scoped.sql chk_result_template_owner_path
+          assert_check_rejection tests/mysql/grade_scale_above_100_must_fail.sql chk_grade_scale_range
           assert_enum_rejection() {
             local sql_file="$1"
             local output_file

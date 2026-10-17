@@ -52,3 +52,17 @@ No migration/cutover approval until G1–G4 are all **PASS** with attached repro
 
 ## Architecture correction
 The authoritative project handover sets the active target as **Supabase PostgreSQL → Aiven PostgreSQL**, with the existing SchoolPro frontend remaining on Render. The MySQL pilot/PR #107 is paused historical reference only and must not be continued as the active target. Aiven target correctness includes PostgreSQL extensions, roles/grants/RLS, routines, triggers, sequences and Supabase-managed service boundaries; a database-only restore does not replace Auth, Storage, Edge Functions, Realtime, jobs or secrets. No Aiven target is yet proven ready and no live source export/import or Render configuration change occurred.
+
+
+## 2026-10-17 destination-readiness checkpoint
+
+Aiven PostgreSQL destination is **NOT VERIFIED / BLOCKED**. The user has not established that a usable Aiven database is provisioned and accessible. The available connected-tool inventory has no Aiven account/database inspection or SQL-query integration; repository searches on the default branch found no Aiven endpoint/config artifacts. This does not prove no service exists in the user's Aiven account. No service was provisioned, no cost was incurred, and no secret was requested in chat.
+
+- G1 Tenant/role security: **BLOCKED** — issued-document policy tautology (st.school_id = st.school_id) remains open, as do adversarial role, RPC and Storage tests.
+- G2 Source completeness: **BLOCKED** — 397 SQL payloads recovered, but per-version semantic object reconciliation and independent provenance for the 35-version direct-to-production batch remain incomplete.
+- G3 Destination/schema/workflow correctness: **BLOCKED** — Aiven version, extensions, TLS/network access, role/privilege capability and isolated namespace have not been verified; Auth/Storage/Edge/cron disposition is unresolved.
+- G4 Isolated rehearsal/recovery: **BLOCKED / NOT RUN** — no authorized isolated Aiven-compatible target has been established; no rehearsal or restore test ran.
+
+Prepared sequence: verify an existing authorized Aiven endpoint; confirm version/extensions/roles/TLS/network and restore point; build only from reviewed current definitions; rehearse using approved synthetic/minimized fixtures; reconcile counts/keys/checksums/FKs/tenant ownership/business totals; run two-school negative role and Storage tests; test idempotency/interruption; restore a snapshot into a fresh isolated target. If no already-authorized isolated target exists, stop and request user-directed provisioning rather than creating paid infrastructure.
+
+Supabase Auth, Storage, Edge Functions, cron jobs, Realtime, secrets and shared identity/payment/email/academic-clock references must each be replaced or explicitly retained under a tested boundary before cutover. DataSub remains out of scope. No Supabase branch/charge, production mutation, export/import, migration replay, Render change, deployment, merge or cutover occurred. Overall decision remains **NO-GO**.

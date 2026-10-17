@@ -2432,3 +2432,10 @@ Added draft migration `database/mysql/004_schoolpro_admissions_progression.sql` 
 - Promotion decisions are represented separately from application of a promotion. A record starts as `previewed`/decision `hold`; applying requires `applied_by` and `applied_at`. This schema does not run automatic promotion when results publish; API logic must enforce preview, review and explicit apply.
 - Added synthetic fixtures and negative tests for cross-school admission documents, enrollment history student links, promotion target class, and foreign-school admission object paths. CI now installs migration 004 after migrations 001–003.
 - Validation pending: run MySQL schema, full SchoolPro CI, and payment-page validation on the migration 004 code-bearing commit. No production rows or routes have changed.
+
+
+### MySQL migration 004 first-run correction — 2026-10-17
+
+- MySQL schema workflow #339 caught a MySQL 8.4 DDL incompatibility in `student_promotions`: the `applied_by` column participated in a CHECK requiring a non-null actor for applied rows while its FK used `ON DELETE SET NULL`. MySQL rejects this combination because the referential action can violate the check.
+- Changed the applied-actor FK to `ON DELETE RESTRICT`. This is also the safer audit behavior: an actor cannot be deleted if doing so would erase the required actor on an applied promotion.
+- This was caught before acceptance; migration 004 is not yet accepted. Re-run the MySQL schema, SchoolPro CI and payment validation on the corrected source.

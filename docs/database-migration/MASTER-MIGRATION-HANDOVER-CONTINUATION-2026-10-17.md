@@ -177,3 +177,10 @@ A read-only count found zero rows in `schoolpro_payment_submissions`, so this is
 
 
 **Correction to batch 2 RLS note (commit `0ea6a73227880bfda18b816fb89a2fcead794451`):** a direct read of the current `private.schoolpro_module_allowed(uuid,text)` definition confirms that the old `20260929203846` implementation was superseded by `20261008152205 schoolpro_plan_access`. The live function does not use the older final `ELSE true` as its overall return path; it requires an authenticated non-null UID, active account, operational school, requested permission from `schoolpro_user_permissions`, and relevant plan feature gates. It remains a module/plan helper, not a substitute for every row-level ownership predicate. The batch 2 report now explicitly corrects this distinction.
+
+
+### Effective anonymous function ACL inventory expanded
+
+The [anonymous entry-point ACL report](LIVE-FUNCTION-ACL-ANONYMOUS-ENTRYPOINT-REVIEW-2026-10-17.md) (commit `6f944d20f4eb8511c69ff9028d6dd2711f9cc309`) records all 11 public-schema functions currently executable by `anon`, not only the six SchoolPro admission/result/document RPCs. Three additional SECURITY DEFINER endpoints provide candidate-CBT bearer-token access/read/write/submit; their bodies validate attempt token, state, question membership and deadlines, but token entropy/leakage, request throttling and concurrency/replay still require dedicated tests. Two other anon-executable functions are a pure result-comment helper and a trigger function, which are not equivalent to callable public business endpoints.
+
+The catalog also reports 29 `private` functions with anon EXECUTE at the function ACL level, but `anon` lacks `USAGE` on schema `private`; these are not ordinarily directly addressable via anon PostgREST calls. This is a current ACL baseline, not the version-by-version GRANT/REVOKE matrix. Do not copy function ACLs or default privileges into the target without reconciling schema reachability, trigger wiring and the trusted service boundary.

@@ -5,8 +5,10 @@ create schema if not exists auth;
 create schema if not exists private;
 do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role service_role nologin; exception when duplicate_object then null; end $$;
 do $$ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $$;
 do $$ begin create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.schoolpro_invoice_status as enum ('unpaid','part_paid','paid','waived'); exception when duplicate_object then null; end $$;
 
 create or replace function auth.uid()
 returns uuid language sql stable
@@ -30,7 +32,9 @@ returns boolean language sql stable
 as $$ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $$;
 
 create table public.schoolpro_invoices (
- id uuid primary key
+ id uuid primary key, school_id uuid not null, student_id uuid not null,
+ amount_due numeric not null, amount_paid numeric not null default 0,
+ status public.schoolpro_invoice_status not null default 'unpaid', updated_at timestamptz not null default now()
 );
 create table public.schoolpro_guardian_links (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
@@ -55,19 +59,20 @@ create table public.schoolpro_payment_submissions (
  id uuid primary key, school_id uuid not null, submitted_by uuid not null,
  bank_account_id uuid, total_amount numeric not null, payment_date date not null,
  payer_name text, bank_reference text, receipt_path text not null,
- receipt_mime text, status text not null default 'pending'
+ receipt_mime text, status text not null default 'pending', review_note text,
+ reviewed_by uuid, reviewed_at timestamptz, updated_at timestamptz not null default now()
 );
 create table public.schoolpro_payment_allocations (
  id uuid primary key, submission_id uuid not null, school_id uuid not null,
- student_id uuid not null, invoice_id uuid not null, amount numeric not null
+ student_id uuid not null, invoice_id uuid not null, amount numeric not null, payment_id uuid
 );
 create table public.schoolpro_payment_proofs (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  submitted_by uuid not null, receipt_path text
 );
 create table public.schoolpro_fee_payments (
- id uuid primary key, school_id uuid not null, student_id uuid not null, amount numeric not null,
- recorded_by uuid
+ id uuid primary key default gen_random_uuid(), school_id uuid not null, student_id uuid not null,
+ amount numeric not null, recorded_by uuid, invoice_id uuid, method text, reference text, notes text
 );
 
 -- Reproduce the broad legacy table grants observed on production so the migration
@@ -83,6 +88,9 @@ to anon, authenticated;
 insert into public.schoolpro_guardian_links values
  ('a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','active'),
  ('a0000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002','active');
+insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid,status) values
+ ('90000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',500,0,'unpaid'),
+ ('90000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',500,0,'unpaid');
 insert into public.schoolpro_payment_submissions values
  ('e0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001',null,100,current_date,'Guardian A','REF-A','path/a.pdf','application/pdf','pending'),
  ('e0000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000002',null,200,current_date,'Guardian B','REF-B','path/b.pdf','application/pdf','pending');
@@ -139,6 +147,73 @@ alter table public.schoolpro_fee_payments enable row level security;
 grant select,insert,update,delete on public.schoolpro_payment_submissions, public.schoolpro_payment_allocations, public.schoolpro_payment_proofs, public.schoolpro_fee_payments to authenticated;
 
 \ir ../supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql
+
+-- Snapshot of the currently deployed review RPC for disposable behavioral testing.
+-- This is intentionally test-only and must be refreshed when the deployed function changes.
+create or replace function public.review_schoolpro_payment_submission(p_submission uuid,p_decision text,p_note text default null)
+returns jsonb language plpgsql security definer set search_path=''
+as $$ 
+declare s public.schoolpro_payment_submissions%rowtype;
+ a public.schoolpro_payment_allocations%rowtype;
+ inv public.schoolpro_invoices%rowtype;
+ pid uuid;
+ np numeric;
+begin
+ if not private.schoolpro_module_allowed((select school_id from public.schoolpro_payment_submissions where id=p_submission),'finance') then
+  raise exception 'Module permission denied: finance';
+ end if;
+ if p_decision not in('confirmed','rejected') then raise exception 'Invalid decision'; end if;
+ select * into s from public.schoolpro_payment_submissions where id=p_submission for update;
+ if s.id is null then raise exception 'Submission not found'; end if;
+ if not private.has_school_access(s.school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[]) then
+  raise exception 'Permission denied';
+ end if;
+ if s.status<>'pending' then raise exception 'Already reviewed'; end if;
+ if p_decision='rejected' then
+  update public.schoolpro_payment_submissions set status='rejected',review_note=p_note,reviewed_by=auth.uid(),reviewed_at=now(),updated_at=now() where id=s.id;
+  return jsonb_build_object('status','rejected');
+ end if;
+ for a in select * from public.schoolpro_payment_allocations where submission_id=s.id for update loop
+  select * into inv from public.schoolpro_invoices where id=a.invoice_id for update;
+  if inv.id is null or inv.school_id<>s.school_id or inv.student_id<>a.student_id or inv.amount_paid+a.amount>inv.amount_due then
+   raise exception 'Allocation no longer matches invoice balance';
+  end if;
+  insert into public.schoolpro_fee_payments(school_id,invoice_id,student_id,amount,method,reference,notes,recorded_by)
+  values(s.school_id,inv.id,inv.student_id,a.amount,'transfer',coalesce(s.bank_reference,'SUB-'||s.id::text)||'-'||a.id::text,'Confirmed uploaded receipt: '||coalesce(p_note,''),auth.uid())
+  returning id into pid;
+  np:=inv.amount_paid+a.amount;
+  update public.schoolpro_invoices set amount_paid=np,status=case when np>=amount_due then 'paid'::public.schoolpro_invoice_status else 'part_paid'::public.schoolpro_invoice_status end,updated_at=now() where id=inv.id;
+  update public.schoolpro_payment_allocations set payment_id=pid where id=a.id;
+ end loop;
+ update public.schoolpro_payment_submissions set status='confirmed',review_note=p_note,reviewed_by=auth.uid(),reviewed_at=now(),updated_at=now() where id=s.id;
+ return jsonb_build_object('status','confirmed');
+end $function$;
+revoke all on function public.review_schoolpro_payment_submission(uuid,text,text) from public,anon;
+grant execute on function public.review_schoolpro_payment_submission(uuid,text,text) to authenticated,service_role;
+
+create function public.test_fail_payment_insert_for_rollback()
+returns trigger language plpgsql as $trigger$
+begin
+ if new.notes like '%force rollback%' then raise exception 'synthetic trigger failure for rollback assertion'; end if;
+ return new;
+end $trigger$;
+create trigger test_fail_payment_insert_for_rollback before insert on public.schoolpro_fee_payments
+for each row execute function public.test_fail_payment_insert_for_rollback();
+
+create function pg_temp.assert_rpc_rejected(p_name text,p_statement text,p_expected text)
+returns void language plpgsql as $assert$
+declare actual_message text;
+begin
+ begin
+  execute p_statement;
+ exception when others then
+  get stacked diagnostics actual_message=message_text;
+  if position(p_expected in actual_message)>0 then return; end if;
+  raise exception 'FAIL: % returned unexpected error: %',p_name,actual_message;
+ end;
+ raise exception 'FAIL: RPC rejection was not enforced: %',p_name;
+end;
+$assert$;
 
 do $assert$
 begin
@@ -260,14 +335,51 @@ insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorde
 values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50,'d0000000-0000-0000-0000-000000000099');
 select pg_temp.assert_count('finance can insert an intended school fee payment',(select count(*) from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000099'),1);
 
+select pg_temp.assert_rpc_rejected(
+ 'guardian cannot review a payment submission',
+ $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','unauthorized')$$,
+ 'Module permission denied');
+select pg_temp.assert_rpc_rejected(
+ 'review RPC does not treat cancellation as an accepted decision',
+ $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','cancelled','cancel request')$$,
+ 'Invalid decision');
+select pg_temp.assert_rpc_rejected(
+ 'trigger failure rolls back confirmation writes',
+ $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','force rollback')$$,
+ 'synthetic trigger failure for rollback assertion');
+select pg_temp.assert_count('failed confirmation leaves submission pending',
+ (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000001' and status='pending'),1);
+select pg_temp.assert_count('failed confirmation rolls invoice amount back',
+ (select count(*) from public.schoolpro_invoices where id='90000000-0000-0000-0000-000000000001' and amount_paid=0 and status='unpaid'),1);
+select pg_temp.assert_count('failed confirmation rolls allocation link back',
+ (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is null),1);
+select pg_temp.assert_count('failed confirmation rolls fee payment insert back',
+ (select count(*) from public.schoolpro_fee_payments where notes like '%force rollback%'),0);
+select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','synthetic rejection');
+select pg_temp.assert_count('authorized rejection transitions pending to rejected',
+ (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000002' and status='rejected' and review_note='synthetic rejection'),1);
+select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','synthetic confirmation');
+select pg_temp.assert_count('authorized confirmation transitions pending to confirmed',
+ (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000001' and status='confirmed'),1);
+select pg_temp.assert_count('confirmed payment updates invoice atomically',
+ (select count(*) from public.schoolpro_invoices where id='90000000-0000-0000-0000-000000000001' and amount_paid=100 and status='part_paid'),1);
+select pg_temp.assert_count('confirmed payment links allocation to ledger entry',
+ (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is not null),1);
+select pg_temp.assert_rpc_rejected(
+ 'duplicate review cannot re-confirm an already confirmed submission',
+ $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','duplicate')$$,
+ 'Already reviewed');
+
+select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000098',false);
+select set_config('test.finance_school','',false);
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000098',false);
 select set_config('test.finance_school','',false);
 select set_config('test.is_super_admin','true',false);
 select pg_temp.assert_count('Super Admin reads all submissions',(select count(*) from public.schoolpro_payment_submissions),2);
 select pg_temp.assert_count('Super Admin reads all allocations',(select count(*) from public.schoolpro_payment_allocations),2);
 select pg_temp.assert_count('Super Admin reads all proofs',(select count(*) from public.schoolpro_payment_proofs),2);
-select pg_temp.assert_count('Super Admin reads all fee payments',(select count(*) from public.schoolpro_fee_payments),3);
+select pg_temp.assert_count('Super Admin reads all fee payments',(select count(*) from public.schoolpro_fee_payments),4);
 select pg_temp.assert_no_rows_affected('Super Admin cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=888 where id='e0000000-0000-0000-0000-000000000001'$$);
 select pg_temp.assert_no_rows_affected('Super Admin cannot delete fee payment',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
 reset role;
-select 'PASS: payment-review RLS restricted guardian scope, denied direct finance edits to review/ledger fields, allowed intended finance INSERT, and kept Super Admin read-only.' as result;
+select 'PASS: payment-review RLS restricted guardian scope; finance direct edits are denied; intended finance INSERT, authorized RPC confirm/reject, invalid cancellation rejection, duplicate-review rejection and transaction rollback were exercised; Super Admin remains read-only.' as result;

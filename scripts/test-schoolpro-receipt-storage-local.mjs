@@ -67,7 +67,7 @@ try {
     '',
     '[storage]',
     'enabled = true',
-    'file_size_limit = "10MiB"',
+    'file_size_limit = "5MiB"',
     '',
     '[auth]',
     'enabled = true',
@@ -104,10 +104,14 @@ try {
   const suffix = Date.now().toString(36);
   const userA = await createTestUser(admin, 'receipt-a-' + suffix + '@example.test', password);
   const userB = await createTestUser(admin, 'receipt-b-' + suffix + '@example.test', password);
+  const financeA = await createTestUser(admin, 'receipt-finance-a-' + suffix + '@example.test', password);
+  const financeB = await createTestUser(admin, 'receipt-finance-b-' + suffix + '@example.test', password);
   assert.notEqual(userA.id, userB.id, 'Receipt isolation requires two distinct users');
 
   const a = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-a-' + suffix + '@example.test', password);
   const b = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-b-' + suffix + '@example.test', password);
+  const financeClientA = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-finance-a-' + suffix + '@example.test', password);
+  const financeClientB = await signIn(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, 'receipt-finance-b-' + suffix + '@example.test', password);
   const bytes = Buffer.from('%PDF-1.4\n% synthetic receipt fixture\n%%EOF\n', 'utf8');
   const pathA = a.user.id + '/receipt-a.pdf';
   const pathB = b.user.id + '/receipt-b.pdf';
@@ -145,6 +149,26 @@ try {
   });
   assert.ok(crossUpload.error, 'User A must not upload into User B UUID folder');
   console.log('PASS: cross-user receipt upload is denied by the live Storage API policy.');
+
+  const schoolA = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  const schoolB = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  const {error: memberInsertError} = await admin.from('schoolpro_test_storage_memberships').insert([
+    {user_id: financeClientA.user.id, school_id: schoolA, role: 'accountant'},
+    {user_id: financeClientB.user.id, school_id: schoolB, role: 'accountant'},
+  ]);
+  assert.ifError(memberInsertError);
+  const {error: submissionInsertError} = await admin.from('schoolpro_payment_submissions').insert([
+    {school_id: schoolA, submitted_by: userA.id, receipt_path: pathA},
+    {school_id: schoolB, submitted_by: userB.id, receipt_path: pathB},
+  ]);
+  assert.ifError(submissionInsertError);
+
+  const financeOwnReceipt = await financeClientA.client.storage.from(bucket).download(pathA);
+  assert.ifError(financeOwnReceipt.error);
+  assert.ok(financeOwnReceipt.data, 'School finance must read a receipt linked to its own school submission');
+  const financeForeignReceipt = await financeClientA.client.storage.from(bucket).download(pathB);
+  assert.ok(financeForeignReceipt.error || !financeForeignReceipt.data, 'School finance must not read another school submission receipt');
+  console.log('PASS: school finance can read a receipt linked to its own school submission and is denied another school receipt.');
 
   console.log('PASS: local Supabase Storage receipt-isolation integration completed using the repository policy migration.');
 } finally {

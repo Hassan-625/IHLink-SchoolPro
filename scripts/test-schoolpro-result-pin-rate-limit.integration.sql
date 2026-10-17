@@ -34,6 +34,19 @@ create table public.schoolpro_results (
 
 \ir ../supabase/migrations/20261016122000_schoolpro_result_pin_attempt_rate_limit.sql
 
+do $assert$
+begin
+  if has_function_privilege('anon','public.check_schoolpro_result_pin(text, text, text, text)','EXECUTE')
+     or has_function_privilege('authenticated','public.check_schoolpro_result_pin(text, text, text, text)','EXECUTE') then
+    raise exception 'Public or authenticated direct result-PIN RPC execution remains enabled';
+  end if;
+  if not has_function_privilege('service_role','public.check_schoolpro_result_pin(text, text, text, text)','EXECUTE') then
+    raise exception 'Service role cannot execute the result-PIN RPC through the protected Edge Function';
+  end if;
+end
+$assert$;
+
+
 insert into public.schoolpro_schools (id,name,address)
 values
   ('00000000-0000-0000-0000-000000000001','Fixture School','Test address'),

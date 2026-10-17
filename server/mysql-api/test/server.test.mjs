@@ -31,16 +31,21 @@ async function fixture() {
         return [[params[0] === user.email_normalized ? user : undefined].filter(Boolean), []];
       }
       if (query.startsWith('INSERT INTO user_sessions')) {
-        sessions.set(params[1], {id: params[0], userId: params[0] && user.id});
+        sessions.set(params[1], {id: params[0], userId: params[0] && user.id, revoked: false});
         return [{affectedRows: 1}, []];
       }
       if (query.startsWith('DELETE FROM auth_login_attempts WHERE identifier_hash')) {
         attempts.delete(params[0]);
         return [{affectedRows: 1}, []];
       }
+      if (query.startsWith('UPDATE user_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE token_hash = ? AND revoked_at IS NULL')) {
+        const session = sessions.get(params[0]);
+        if (session && !session.revoked) session.revoked = true;
+        return [{affectedRows: session && !session.revoked ? 1 : 0}, []];
+      }
       if (query.startsWith('SELECT u.id, u.email, u.display_name, u.status, s.id AS session_id, s.token_hash FROM user_sessions')) {
         const session = sessions.get(params[0]);
-        return [session ? [{id: user.id, email: user.email, display_name: user.display_name, status: user.status, session_id: session.id, token_hash: params[0]}] : [], []];
+        return [session && !session.revoked ? [{id: user.id, email: user.email, display_name: user.display_name, status: user.status, session_id: session.id, token_hash: params[0]}] : [], []];
       }
       if (query.startsWith('SELECT role_code FROM platform_roles')) return [[], []];
       if (query.startsWith('SELECT id, name, status FROM schools')) {
@@ -149,4 +154,44 @@ test('failed login uses a generic response and stores only a hashed identifier k
   const [key, row] = [...app.pool._attempts.entries()][0];
   assert.match(key, /^[0-9a-f]{64}$/);
   assert.equal(row.attempts, 1);
+});
+
+
+test('logout revokes the server-side session and clears the browser cookie', async (t) => {
+  const app = await fixture();
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({email: 'owner@example.test', password: PASSWORD}),
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const logout = await fetch(app.baseUrl + '/v1/auth/logout', {
+    method: 'POST',
+    headers: {Origin: 'http://localhost:5173', Cookie: cookie},
+  });
+  assert.equal(logout.status, 200);
+  assert.match(logout.headers.get('set-cookie'), /Max-Age=0/);
+  const me = await fetch(app.baseUrl + '/v1/me', {headers: {Cookie: cookie}});
+  assert.equal(me.status, 401);
+});
+
+test('native login returns an opaque bearer token without setting a browser cookie', async (t) => {
+  const app = await fixture();
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', 'X-Client-Platform': 'native'},
+    body: JSON.stringify({email: 'owner@example.test', password: PASSWORD}),
+  });
+  assert.equal(login.status, 200);
+  assert.equal(login.headers.get('set-cookie'), null);
+  const payload = await login.json();
+  assert.equal(typeof payload.sessionToken, 'string');
+  assert.ok(payload.sessionToken.length >= 32);
+  const me = await fetch(app.baseUrl + '/v1/me', {
+    headers: {Authorization: 'Bearer ' + payload.sessionToken},
+  });
+  assert.equal(me.status, 200);
 });

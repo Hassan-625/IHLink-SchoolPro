@@ -1851,3 +1851,23 @@ This is useful preflight evidence that the proposed tenant-integrity triggers sh
 - Commits: migration `e4e5e7435d7f04b51f3461da9f76fea81a938c87`; static test `96dae531b32a6589eb2f32e4b5b3d5b3f3d7bacc`; integration test `9c8b08589f572f71447ec8bdd68e867bf41144af`; workflow `45c63b6ba9bb07a34b2b5759fff65b1da0827d7b`.
 - Security trade-off: identical admission numbers across schools share one cooldown bucket because the current public RPC contract has no school identifier. A future UI/RPC change can scope the hash to school + admission while retaining protection against term/session switching. This limitation is explicit and should be weighed in release review; do not restore unverified IP headers as a workaround.
 - The previous section's admission-period-key wording is superseded by this entry. No production SQL was applied.
+
+
+## 33. CI #39025648709 failure analysis and follow-up fixes (2026-10-17)
+
+Run: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025648709
+
+| Job | Result | Evidence / action |
+|---|---|---|
+| Tenant acceptance | PASS | Live read-only two-school checks completed; production receipt-object checks remain explicitly skipped because the bucket has no safe fixture objects. |
+| Payment-review RLS integration | PASS | Disposable PostgreSQL executed the grants/policies and verified the intended role boundaries. |
+| Public-admission abuse integration | PASS | Disposable PostgreSQL assertions passed. |
+| Result-PIN cooldown integration | PASS | The no-IP, admission-key draft executed successfully; concurrent cooldown assertion is included in the job. |
+| Result-verification exposure integration | PASS | New aggregate and legacy snapshot sanitization assertions passed. |
+| Receipt Storage isolation (local Supabase) | PASS | Runtime API test passed for own upload/download, cross-user denial, and school-finance own-school/cross-school receipt reads. |
+| Tenant-integrity DB integration | FAIL | The receipt RPC test intentionally deactivated bank account `...0001`; the new race step reused it, so both requests failed before invoice locking. Added a second active disposable bank account `...0002` and switched the race step to that account. No production records were involved. |
+| Static validate | FAIL | `scripts/test-schoolpro-receipt-submission-guards.mjs` had an over-escaped regex that did not match the actual workflow step. Corrected the regex to use the intended any-character matcher. |
+
+- The fixes are on `release/stage-a-auth-tenant-isolation`; latest inspected PR head after the static-test correction is `33a2ef17155092290f55a9644e710e3720eabcc3`.
+- Run #39025751460 was queued on the immediately preceding head before the final static-test correction; its result cannot validate the current head. A new full CI run on `33a2ef1...` must confirm both fixes and re-run all jobs before the overall CI can be called green.
+- Current positive evidence from #39025648709: five security/integration jobs plus tenant acceptance and local Storage isolation passed. The overall run failed and Stage A remains **NOT MERGE-READY**.

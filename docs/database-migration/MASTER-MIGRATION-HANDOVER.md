@@ -2020,3 +2020,13 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - Preserve the full SchoolPro release sequence A → B → C → D and E–J roadmap. Do not resume D until A/B/C are re-verified and accepted.
 - Next: inspect current Stage A migration, policy/test files and latest run/job logs on the exact branch head; perform read-only production/source reconciliation; add missing disposable runtime tests; then update this handover with exact paths, commit SHAs, run IDs and findings before changing merge readiness.
 
+
+
+## 34. Payment RLS review found direct pending-row and legacy-proof receipt-path bypasses (2026-10-17)
+
+- A closer comparison of the live permissive and restrictive policies found a second issue beyond the missing RPC guard. The draft `20261016143000_schoolpro_payment_review_write_controls.sql` previously allowed a guardian to insert a `pending` row directly into `schoolpro_payment_submissions` with an arbitrary receipt path, bypassing the ownership/Storage-object validation in `submit_schoolpro_payment`. The migration now drops the direct guardian-submission policy and revokes authenticated INSERT privilege on `schoolpro_payment_submissions`; the SECURITY DEFINER RPC remains the intended guardian submission path.
+- The legacy `guardian submits proof` policy on `schoolpro_payment_proofs` previously checked the guardian link and submitter identity but did not check receipt object ownership. The draft now requires the receipt path's first segment to match `auth.uid()` and an object in `schoolpro-payment-receipts` owned by that user, in addition to the active guardian/student/school link.
+- Extended the disposable payment-review RLS fixture to model `storage.objects` ownership, assert authenticated direct submission INSERT is revoked, reject a pending fake-path submission, and reject attaching another account's receipt path to a legacy proof row. Existing guardian/finance/Super Admin read/write assertions remain.
+- Draft changes: migration commit `876916c9ba26c7f778c813186cdae5ae9e9718be`; integration test commit `7c087a8784464a626e8f5d348245f86ea5709168`.
+- Latest SchoolPro CI run [#1450](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026655882) and payment-page validation [#1177](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026656033) were queued at the time of writing. Do not count the new direct-insert/path-denial assertions as passed until run #1450 finishes and the `payment-review-rls-integration` job is inspected.
+- No production policies, grants, rows, Storage objects, secrets or deployments were changed. This forward migration remains part of the unresolved source/ledger drift and is not authorized for standalone application.

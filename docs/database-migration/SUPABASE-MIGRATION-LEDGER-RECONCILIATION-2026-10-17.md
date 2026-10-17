@@ -674,3 +674,6 @@ The source comparison was broadened from exact version matches to exact migratio
 
 
 The final five timestamp-different candidates are documented in [the source-candidate review supplement](LIVE-ONLY-SOURCE-CANDIDATE-REVIEW-REMAINDER-2026-10-17.md).
+
+## Remote-batch SQL recovery — 2026-10-17
+The 35 distinct versions listed by the remote sync marker have been recovered from the live `supabase_migrations.schema_migrations.statements` payload and saved under [recovered-remote-batch-sql](RECOVERED-REMOTE-BATCH-SQL-MANIFEST-2026-10-17.md). All 35 saved files were fetched back and byte-compared with the corresponding ledger statement payload; all matched. Each ledger row records the same `created_by` identity and a NULL `idempotency_key`; the ledger schema has no deployment timestamp field. No separate API request/response audit event with execution time/result was recovered. Therefore the exact SQL and applied-ledger membership are now evidenced, while independent timestamped deployment provenance remains unresolved.

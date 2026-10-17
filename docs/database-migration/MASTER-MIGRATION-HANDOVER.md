@@ -2719,3 +2719,15 @@ This is a CI harness correction, not yet a pass. The latest workflow change is c
 Stage A CI #1596 completed with 7 jobs passing and `tenant-acceptance` failing: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727021. Receipt Storage isolation, tenant-integrity DB integration, payment-review RLS integration, result-PIN rate limiting, public-admission abuse controls, result-verification exposure checks and general validation passed. The read-only live two-school acceptance probe failed after three retries on `schoolpro_result_approvals` with `canceling statement due to statement timeout`. Earlier checks in the same run did confirm foreign-school result-approval reads were blocked, own-school academic-period RPC was allowed, and foreign-school RPC was denied; nevertheless, the repeated timeout means full acceptance is incomplete.
 
 Do not label this a tenant leak or a pass. The six-index migration includes `schoolpro_result_approvals(school_id)`, but it has not been applied to production. The next safe gate is explicit approval for the production index migration (or a reviewed isolated production-like rehearsal), followed by read-only catalog verification and a repeat of the authenticated two-school probe. No production changes were made.
+
+
+### MySQL migration 007 and API tests — corrected harness passes — 2026-10-17
+
+On code-bearing commit `26e3ec065425cfbbfe07492b3ff20b4c0d0b2b2d`:
+- MySQL schema workflow #435 passed, applying migrations 001–007 and their synthetic fixtures/negative assertions: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034411770
+- Payment-page validation #1352 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034411749
+- New `mysql-api-test` job passed all 5 tests, including the existing disposable-MySQL integration test and four mocked contract tests: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034411801
+
+The API job initially failed because the MySQL service was absent. It now starts a disposable MySQL 8.4 service, applies migrations 001 and 007, loads synthetic core tenant fixtures, and runs the tests under Node 22. The earlier fixed `mysql2@3.15.3` install logged a high-severity audit finding; removing that exact-version pin and resolving the declared package range produced a successful test run with no audit warning in the observed log. This is not a formal full dependency audit; run `npm audit` on a lockfile-pinned dependency tree before release.
+
+SchoolPro's main `validate` job #1625 was still running at the time of this note: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034411801. Do not claim all CI green until it finishes. The migration remains schema/API-foundation work only; no production MySQL deployment or Supabase cutover has occurred.

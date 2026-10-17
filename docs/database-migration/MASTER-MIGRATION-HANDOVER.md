@@ -2302,3 +2302,12 @@ The Stage A proposal set is reconciled against the production ledger and deploye
 - CI #1493 on intermediate head `2ace61eafd070b3618d9f57ceaf3fdac606edd8e` correctly caught two defects in the newly added tests: the fixture's dollar-quoted DO block was reduced to a single dollar delimiter by the GitHub file-update replacement operation, and the static documentation assertion expected a phrase split across SQL comment lines.
 - Fixed the SQL delimiter and relaxed the static assertion to check the substantive documented limit (superusers/BYPASSRLS). The corrected current Stage A head is `70b779f45dcbe306a5f15b1abbecab343ac7620e`.
 - Do not count CI #1493 as passing: its tenant-integrity integration and validation jobs failed on the intermediate test defects. A new exact-head CI/payment-page run must pass on `70b779f45dcbe306a5f15b1abbecab343ac7620e` before this repair is accepted. No production state changed.
+
+
+### Expanded operational ownership invariant and final CI rerun — 2026-10-17
+
+- Read-only production trigger inspection confirms the eight operational tables already have activation guards; calendar and lesson notes also have activity/workflow triggers; promotions have an after-update progression-archive trigger; the result/member/class/student/subject tables have their own existing validation/lifecycle triggers. The forward repair adds distinct trigger names and does not drop existing activation/workflow triggers.
+- Tightened `20261016160000_schoolpro_repair_operational_tenant_integrity.sql`: `school_id` is now immutable not only on referenced parent entities but also on all eight operational tables. This prevents a privileged update from moving a row across schools even if the destination foreign keys would be valid. Added eight disposable-PostgreSQL negative reassignment cases and static trigger-contract assertions.
+- Current Stage A candidate head: `7110e0273001d07be1c09f673e90ee8653b6f2d3`.
+- SchoolPro CI run #1500 is in progress for that head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029802906. The prior corrected head's tenant-integrity job passed, but #1500 is the required run for the expanded immutability tests. Do not claim Stage A closed until all jobs and payment-page validation complete successfully on the final head.
+- Production remains read-only/unchanged. The forward migrations have not been applied to the production ledger. The historical source/ledger mismatch is reconciled as a deliberate forward-repair plan, not as proof that the historical migration ran.

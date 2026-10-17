@@ -95,3 +95,9 @@ The branch-only file histories also show that many files entered the current his
 ## Current live-catalog reconciliation — 2026-10-17
 
 The new [live tenant-relation reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md) records current alternate enforcement functions and trigger bindings for several validators absent by the exact names in branch-only files. Seventeen targeted tenant-relation joins found zero existing mismatched rows, but do not cover orphan/null rows, storage paths or future write/read bypasses. A live student-issued-document policy has a tautological school predicate (`st.school_id = st.school_id`); this remains an actionable security finding and no production policy was altered. Family-period/media and plan-attempt/answer table names absent from live schema correspond partly to a different JSONB-cache/CBT-helper implementation; exact history remains unresolved.
+
+## Follow-up live catalog reconciliation — 2026-10-17
+
+See [Live tenant-relation catalog reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md) for the current replacement trigger bindings and 17 read-only tenant-relation checks returning zero existing mismatches. Several absent named validator functions are replaced by differently named shared enforcement triggers; lesson notes, approvals and promotions still require adversarial semantic tests. The issued-document SELECT policy contains the tautology `st.school_id = st.school_id`; no production policy was changed.
+
+The remote synchronization marker's list contains **35 distinct versions**, not 33. See [Remote-batch SQL/deployment provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md). All 35 names match the live ledger, but source SQL and independent deployment audit events remain unavailable in inspected artifacts.

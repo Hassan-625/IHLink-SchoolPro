@@ -46,3 +46,13 @@ as $function$
 $function$;
 
 grant select on public.schoolpro_test_storage_memberships, public.schoolpro_payment_proofs to authenticated;
+
+
+create table public.schoolpro_payment_submissions (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null,
+  submitted_by uuid not null,
+  receipt_path text not null unique
+);
+
+grant select on public.schoolpro_payment_submissions to authenticated;

@@ -37,6 +37,7 @@ jobs:
       - run: node scripts/test-schoolpro-operational-tenant-integrity.mjs
       - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
       - run: node scripts/test-schoolpro-document-serial-uniqueness.mjs
+      - run: node scripts/test-schoolpro-login-rate-limit-trusted-ip.mjs
       - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
       - name: Check SchoolPro receipt-submission security guards
         run: node scripts/test-schoolpro-receipt-submission-guards.mjs

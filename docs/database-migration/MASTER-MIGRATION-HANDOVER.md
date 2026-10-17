@@ -2536,3 +2536,8 @@ Extended `scripts/test-schoolpro-tenant-isolation-live.mjs` so the optional read
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032935243
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032935258
 - Do not count these runs until complete. The live two-school job only runs when `RUN_LIVE_TENANT_ACCEPTANCE=true` is configured; static CI parsing alone is not evidence that production tenant queries were executed.
+
+
+### Live tenant acceptance retry correction — 2026-10-17
+
+The first run of expanded live acceptance (CI #1576) verified foreign-school reads were denied across the added operational tables for School A and for most of School B's table list, then failed on a single query to `schoolpro_result_approvals` with an empty error message and status 0. This is not yet classifiable as an authorization failure or a pass. Updated the read-only count query to select only `id` and retry empty, status-0 transport errors while continuing to fail immediately for explicit database/API errors. Corrected code head: `de02a07404ddc39c86fd3278fbed820227d399da`. Await a fresh exact-head run; do not count CI #1576 as passing.

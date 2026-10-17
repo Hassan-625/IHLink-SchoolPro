@@ -8,10 +8,10 @@
 ## Summary
 
 - Live ledger rows: **476**
-- Tracked `supabase/migrations/*.sql` files in original baseline: **123** (unique versions 123); current branch now has **124** including one draft-only policy correction
+- Tracked `supabase/migrations/*.sql` files on current migration branch: **123** (unique versions 123); the issued-document RLS draft is maintained separately in draft PR #108
 - Exact version intersection: **79**
 - Live ledger versions absent from branch: **397**
-- Branch versions absent from live ledger: **45** now (44 original unresolved entries plus one new draft-only RLS correction)
+- Branch versions absent from live ledger: **44**
 - Latest live record: `20261015161735 schoolpro_access_invitation_role_constraint`
 - Latest tracked file: `20261013100000 schoolpro_result_leaders_read_session_enrolment`
 

@@ -2399,3 +2399,13 @@ Read-only production schema inspection confirmed the source columns for assessme
 - This is relational schema coverage only. Application authorization, score calculations, approval transitions, immutable audit/event atomicity, actual Excel parsing/rendering, file-store permissions, transcript-level-specific content and source-row data reconciliation still need implementation and contract tests.
 - MySQL schema workflow #307, SchoolPro CI #1525 and payment-page validation #1252 passed on the prior finance-schema head `4579a7cf49b0112d3b783e903a64ee98dc263d87`. The new schema slice is not yet accepted; wait for fresh CI on this migration/fixture commit.
 - No production database, live files, Render configuration or production routes were changed.
+
+
+### MySQL migration 003 schema validation — 2026-10-17
+
+- Disposable MySQL schema workflow #321 passed after adding migration 003 and the assessment/template/transcript fixture suite: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138541
+- Payment-page validation #1259 passed on the same migration/fixture commit: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138556
+- SchoolPro CI #1532 was still running its final mobile-layout/build steps at the time of this entry: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138503. Do not call the complete application CI green until the terminal conclusion is confirmed.
+- The schema test proves that migration 003 creates in MySQL 8.4, valid synthetic rows insert, and selected cross-school result approval/transcript references, foreign-school template paths and grade values above 100 are rejected by the expected constraints.
+- This does not yet prove API authorization, result calculation, workflow transactionality, immutable event logging, workbook import/export/rendering, or transcript issuance/revocation parity. Migrations 001–003 remain draft proposals, not production schema changes.
+- Updated the schema-gap audit to reflect all three current draft migrations and the remaining application/parity gaps.

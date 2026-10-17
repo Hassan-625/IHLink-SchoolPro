@@ -23,6 +23,15 @@ create table public.schoolpro_guardian_links (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  guardian_user_id uuid not null, status text not null
 );
+
+create schema if not exists storage;
+create table storage.objects (
+ bucket_id text not null,
+ name text not null,
+ owner_id text,
+ owner text
+);
+grant select on storage.objects to authenticated;
 create table public.schoolpro_payment_submissions (
  id uuid primary key, school_id uuid not null, submitted_by uuid not null,
  bank_account_id uuid, total_amount numeric not null, payment_date date not null,
@@ -63,6 +72,10 @@ insert into public.schoolpro_payment_allocations values
 insert into public.schoolpro_payment_proofs values
  ('11000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','path/a.pdf'),
  ('11000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002','path/b.pdf');
+
+insert into storage.objects(bucket_id,name,owner_id,owner) values
+ ('schoolpro-payment-receipts','d0000000-0000-0000-0000-000000000001/receipt-a.pdf','d0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001'),
+ ('schoolpro-payment-receipts','d0000000-0000-0000-0000-000000000002/receipt-b.pdf','d0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002');
 insert into public.schoolpro_fee_payments values
  ('12000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',100),
  ('12000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',200);
@@ -123,8 +136,8 @@ begin
     raise exception 'FAIL: anonymous direct privileges remain on SchoolPro financial tables';
   end if;
   if not has_table_privilege('authenticated','public.schoolpro_payment_submissions','select')
-    or not has_table_privilege('authenticated','public.schoolpro_payment_submissions','insert') then
-    raise exception 'FAIL: authenticated submission privileges were unintentionally removed';
+    or has_table_privilege('authenticated','public.schoolpro_payment_submissions','insert') then
+    raise exception 'FAIL: submission read privilege should remain but direct insert must be revoked';
   end if;
 end
 $assert$;
@@ -167,6 +180,29 @@ select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001'
      'd0000000-0000-0000-0000-000000000001',
      100, current_date, 'd0000000-0000-0000-0000-000000000001/not-a-verified-upload.pdf',
      'reviewed')$insert$
+);
+
+select pg_temp.assert_rejected(
+  'guardian cannot bypass the receipt RPC with a pending fake-path submission',
+  $insert$ insert into public.schoolpro_payment_submissions
+    (id, school_id, submitted_by, total_amount, payment_date, receipt_path, status)
+    values
+    ('e0000000-0000-0000-0000-000000000098',
+     'b0000000-0000-0000-0000-000000000001',
+     'd0000000-0000-0000-0000-000000000001',
+     100, current_date, 'd0000000-0000-0000-0000-000000000002/receipt-b.pdf',
+     'pending')$insert$
+);
+select pg_temp.assert_rejected(
+  'guardian cannot attach another account receipt to a legacy proof row',
+  $insert$ insert into public.schoolpro_payment_proofs
+    (id, school_id, student_id, submitted_by, receipt_path)
+    values
+    ('11000000-0000-0000-0000-000000000099',
+     'b0000000-0000-0000-0000-000000000001',
+     'c0000000-0000-0000-0000-000000000001',
+     'd0000000-0000-0000-0000-000000000001',
+     'd0000000-0000-0000-0000-000000000002/receipt-b.pdf')$insert$
 );
 
 select set_config('test.finance_school','',false);

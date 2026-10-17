@@ -230,7 +230,7 @@ select pg_temp.assert_count('guardian sees own allocation only',(select count(*)
 select pg_temp.assert_count('guardian sees own proof only',(select count(*) from public.schoolpro_payment_proofs),1);
 select pg_temp.assert_count('guardian sees linked fee payment only',(select count(*) from public.schoolpro_fee_payments),1);
 select pg_temp.assert_no_rows_affected('guardian cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=999 where id='e0000000-0000-0000-0000-000000000001'$$);
-select pg_temp.assert_no_rows_affected('guardian cannot delete allocation',$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('guardian cannot delete allocation',$$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$$);
 
 insert into public.schoolpro_payment_proofs
   (id,school_id,student_id,submitted_by,receipt_path)
@@ -250,11 +250,11 @@ select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001'
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
 select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);
 select pg_temp.assert_count('finance can read all school submissions',(select count(*) from public.schoolpro_payment_submissions),2);
-select pg_temp.assert_no_rows_affected('finance cannot directly change submission review status',$update public.schoolpro_payment_submissions set status='reviewed' where id='e0000000-0000-0000-0000-000000000001'$);
-select pg_temp.assert_no_rows_affected('finance cannot directly alter invoice allocation amount',$update public.schoolpro_payment_allocations set amount=101 where id='f0000000-0000-0000-0000-000000000001'$);
-select pg_temp.assert_no_rows_affected('finance cannot directly replace proof receipt path',$update public.schoolpro_payment_proofs set receipt_path='reviewed/path.pdf' where id='11000000-0000-0000-0000-000000000001'$);
-select pg_temp.assert_no_rows_affected('finance cannot directly edit fee-payment ledger amount',$update public.schoolpro_fee_payments set amount=101 where id='12000000-0000-0000-0000-000000000001'$);
-select pg_temp.assert_no_rows_affected('finance cannot delete fee-payment ledger row',$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('finance cannot directly change submission review status',$$update public.schoolpro_payment_submissions set status='reviewed' where id='e0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('finance cannot directly alter invoice allocation amount',$$update public.schoolpro_payment_allocations set amount=101 where id='f0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('finance cannot directly replace proof receipt path',$$update public.schoolpro_payment_proofs set receipt_path='reviewed/path.pdf' where id='11000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('finance cannot directly edit fee-payment ledger amount',$$update public.schoolpro_fee_payments set amount=101 where id='12000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('finance cannot delete fee-payment ledger row',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
 insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorded_by)
 values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50,'d0000000-0000-0000-0000-000000000099');
 select pg_temp.assert_count('finance can insert an intended school fee payment',(select count(*) from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000099'),1);

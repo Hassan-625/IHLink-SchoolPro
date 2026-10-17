@@ -177,6 +177,18 @@ jobs:
           psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
       - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql
+      - name: Exercise login-attempt throttling and cleanup in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-login-rate-limit.integration.sql
+      - name: Verify concurrent login attempts serialize through one key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 12); do
+            (psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT public.schoolpro_take_login_attempt('parallel-login-key', 60);" >/dev/null) &
+          done
+          wait
+          attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT attempts FROM public.schoolpro_login_attempts WHERE key='parallel-login-key'")"
+          test "$attempts" = "12"
       - name: Enforce globally unique document serials in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-document-serial-uniqueness.integration.sql
       - name: Verify concurrent wrong-PIN requests serialize into one cooldown key

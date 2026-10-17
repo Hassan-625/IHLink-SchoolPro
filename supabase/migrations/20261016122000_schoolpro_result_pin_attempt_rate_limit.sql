@@ -76,15 +76,12 @@ declare
   v_client_ip text;
 begin
   v_headers := nullif(current_setting('request.headers', true), '')::jsonb;
-  v_client_ip := split_part(
-    coalesce(
-      v_headers ->> 'x-forwarded-for',
-      v_headers ->> 'cf-connecting-ip',
-      v_headers ->> 'x-real-ip',
-      ''
-    ),
-    ',',
-    1
+  -- On Supabase-hosted requests, prefer the Cloudflare edge's client-IP header.
+  -- X-Forwarded-For is caller-influenced and may contain a spoofed leftmost value;
+  -- do not use it as the security rate-limit identity.
+  v_client_ip := coalesce(
+    nullif(trim(v_headers ->> 'cf-connecting-ip'), ''),
+    'unknown'
   );
   v_attempt_key := encode(
     extensions.digest(

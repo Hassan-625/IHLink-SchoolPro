@@ -335,10 +335,14 @@ insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorde
 values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50,'d0000000-0000-0000-0000-000000000099');
 select pg_temp.assert_count('finance can insert an intended school fee payment',(select count(*) from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000099'),1);
 
+select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);
+select set_config('test.finance_school','',false);
 select pg_temp.assert_rpc_rejected(
  'guardian cannot review a payment submission',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','unauthorized')$$,
  'Module permission denied');
+select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
+select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);
 select pg_temp.assert_rpc_rejected(
  'review RPC does not treat cancellation as an accepted decision',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','cancelled','cancel request')$$,

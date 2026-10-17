@@ -390,4 +390,22 @@ select pg_temp.assert_count('Super Admin reads all fee payments',(select count(*
 select pg_temp.assert_no_rows_affected('Super Admin cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=888 where id='e0000000-0000-0000-0000-000000000001'$$);
 select pg_temp.assert_no_rows_affected('Super Admin cannot delete fee payment',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
 reset role;
-select 'PASS: payment-review RLS restricted guardian scope; finance direct edits are denied; intended finance INSERT, authorized RPC confirm/reject, invalid cancellation rejection, duplicate-review rejection and transaction rollback were exercised; Super Admin remains read-only.' as result;
+-- Seed a third pending submission for a real two-connection review race in the CI workflow.
+insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid,status)
+values ('90000000-0000-0000-0000-000000000003','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',500,0,'unpaid');
+insert into public.schoolpro_payment_submissions(id,school_id,submitted_by,total_amount,payment_date,payer_name,bank_reference,receipt_path,receipt_mime,status)
+values ('e0000000-0000-0000-0000-000000000003','b0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001',100,current_date,'Guardian A','REF-RACE','d0000000-0000-0000-0000-000000000001/race.pdf','application/pdf','pending');
+insert into public.schoolpro_payment_allocations(id,submission_id,school_id,student_id,invoice_id,amount)
+values ('f0000000-0000-0000-0000-000000000003','e0000000-0000-0000-0000-000000000003','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001','90000000-0000-0000-0000-000000000003',100);
+create function public.test_delay_review_commit()
+returns trigger language plpgsql as $race$
+begin
+ if new.id='e0000000-0000-0000-0000-000000000003' and new.status='confirmed' and old.status is distinct from new.status then
+   perform pg_sleep(2);
+ end if;
+ return new;
+end
+$race$;
+create trigger test_delay_review_commit before update on public.schoolpro_payment_submissions
+for each row execute function public.test_delay_review_commit();
+select 'PASS: payment-review RLS behavior and concurrency fixture prepared.' as result;

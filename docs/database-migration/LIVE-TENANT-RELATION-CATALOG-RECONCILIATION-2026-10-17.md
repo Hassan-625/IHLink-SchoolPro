@@ -62,3 +62,15 @@ These discrepancies are best classified as **different current architecture / pr
 ## Related ledger work
 
 The [live-only migration version inventory](LIVE-ONLY-MIGRATION-VERSION-INVENTORY-2026-10-17.md) contains all 397 live-only versions with provisional product-scope triage. The [remote-batch SQL/deployment provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md) corrects the marker count to 35 distinct versions and records the unresolved original SQL/deployment evidence. These links are supporting handover artifacts; no production changes were applied.
+
+## Additional orphan and storage-ownership checks — 2026-10-17
+Read-only live queries added explicit LEFT JOIN orphan counts (not just inner-join mismatch checks):
+- `schoolpro_document_issues`: 141 rows; student references: 0 orphans, 0 nulls, 0 school mismatches; template references: 0 orphans, 0 nulls, 0 school mismatches.
+- `schoolpro_document_issue_events`: 83 rows; 0 orphan issue references and 0 event/issue school mismatches.
+- `schoolpro_academic_documents`: 96 rows; 0 orphan student references and 0 school mismatches.
+- `schoolpro_admission_documents`: 0 rows; application orphan count is therefore vacuously zero, not a meaningful exercised test.
+- `schoolpro_document_issues.output_storage_path`: 83/83 non-null paths match an object in the `schoolpro-document-outputs` bucket; 0 missing objects, 0 wrong-bucket matches.
+- `schoolpro-admission-documents` and `schoolpro-admissions` each currently have zero stored objects; admission-document storage access remains untested on real objects.
+- Storage bucket catalog: `schoolpro-document-outputs` is private with 83 objects; `schoolpro-document-templates` private with 9; `schoolpro-demo-documents` private with 2; `schoolpro-result-outputs` private with 1; `school-result-templates` private with 8; `schoolpro-admissions` private with 0; `schoolpro-payment-receipts` private with 0; `schoolpro-branding` is marked public but has 0 objects.
+- Storage policy definitions include school-scoped folder checks for admission objects, issue-path-based checks for document outputs, and school-scoped checks for document templates. Definition inspection does not replace authenticated two-school negative read/write/delete tests.
+- **Not yet proven:** cross-tenant reads via PostgREST and download endpoints, object-key tampering, path-prefix spoofing, service-role bypass, RPC/view side channels, and behavior under non-member roles. No adversarial identities were used against production.

@@ -1,6 +1,6 @@
 # Master migration handover status addendum — 2026-10-17
 
-> **Current target clarification (2026-10-17):** The active SchoolPro migration is **Supabase PostgreSQL → Aiven PostgreSQL**, with the app/API remaining on Render. Earlier MySQL-oriented backlog and PR #107 are historical/pause-only, not the active target. DataSub remains on Supabase and is out of scope. The migration-ledger, tenant, RLS and storage evidence below is retained as risk/reconciliation evidence; it does not authorize production export/import or cutover.
+> **Current target clarification (2026-10-17):** The active SchoolPro migration is **Supabase PostgreSQL → Aiven PostgreSQL**, with the existing frontend remaining on Render; the inspected Render workspace lists SchoolPro as a static site and no dedicated SchoolPro backend/API service, so a safe server-side API/auth boundary must be identified or built before Aiven can serve application requests. Earlier MySQL-oriented backlog and PR #107 are historical/pause-only, not the active target. DataSub remains on Supabase and is out of scope. The migration-ledger, tenant, RLS and storage evidence below is retained as risk/reconciliation evidence; it does not authorize production export/import or cutover.
 
 
 This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master file itself has not been rewritten in this pass.

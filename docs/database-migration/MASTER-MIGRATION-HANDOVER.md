@@ -2826,3 +2826,15 @@ The corrected workflow commit `93060c0a929ec2eff8873b80f8f00b43320f344a` has now
 - At handover update time, SchoolPro CI's separate `validate` job was still running; therefore overall CI was not yet recorded as green.
 
 This confirms the student credential fixture ordering correction resolved the observed login-test failure. The migration/schema workflow now applies migrations 001–008, inserts the required synthetic fixtures before API tests, then exercises cross-school relationship constraints. This remains disposable CI only; migrations 001–008 have not been applied to production, and the MySQL application cutover is not approved.
+
+
+### Production catalog read-only reconciliation — Stage A remains blocked — 2026-10-17
+
+Read-only catalog inspection of Supabase project `lnqsroyiybutkfngbyge` confirmed all eight targeted operational tables have RLS enabled but **FORCE ROW LEVEL SECURITY is false**. The following tables have no tenant-leading `school_id` index: `schoolpro_library_books`, `schoolpro_transport_routes`, `schoolpro_hostel_rooms`, `schoolpro_inventory_assets`, and `schoolpro_result_approvals`; `schoolpro_promotions` has only its primary key and student/session unique index. `schoolpro_calendar_events` and `schoolpro_lesson_notes` have other non-tenant-leading indexes, but not the proposed general `school_id` index. This catalog evidence matches the read-only two-school acceptance failure: all prior table probes passed until `schoolpro_result_approvals`, where the request timed out three times.
+
+The draft forward repair is correctly separated into:
+1. `20261017170000_schoolpro_forward_operational_tenant_isolation.sql` — enables and forces RLS on the eight target tables while preserving existing feature-specific policies;
+2. `20261017180000_schoolpro_operational_tenant_indexes.sql` — adds six tenant-leading indexes to support RLS query plans;
+3. `20261016160000_schoolpro_repair_operational_tenant_integrity.sql` — adds relationship/immutable-tenant trigger guards.
+
+The live migration ledger still ends at `20261015161735`; none of these proposed repairs is recorded as applied. No production DDL was executed. Stage A is **not accepted**: CI #1596 has a real timeout in the live two-school probe on `schoolpro_result_approvals`, despite the other Stage A security jobs passing. A forward-only migration rehearsal, table-owner/BYPASSRLS/SECURITY DEFINER role tests, post-migration catalog reconciliation and a successful authenticated two-school probe remain required. Production application is still pending explicit approval and a controlled rollout window; do not infer success from source tests alone.

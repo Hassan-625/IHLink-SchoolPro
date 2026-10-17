@@ -1,5 +1,5 @@
 -- Database-level rate limiting for the public result-PIN checker.
--- Store only a digest of normalized admission, term and session identifiers.
+-- Store only a digest of the normalized admission identifier.
 -- Do not trust request-supplied forwarding headers as a security boundary.
 create table if not exists private.schoolpro_result_pin_attempts (
   attempt_key text primary key,
@@ -73,14 +73,13 @@ declare
   v_attempt_key text;
   v_blocked_until timestamptz;
 begin
-  -- Key the cooldown by the requested result period and admission identifier.
-  -- This deliberately avoids trusting client-supplied IP/forwarding headers until
-  -- trusted gateway provenance is independently verified.
+  -- Key by admission identifier alone so callers cannot evade cooldown by
+  -- changing the requested term/session or spoofing request network headers.
+  -- Cross-school duplicate admission numbers share a bucket until the public
+  -- contract includes an explicit school identifier.
   v_attempt_key := encode(
     extensions.digest(
-      lower(trim(coalesce(p_admission, ''))) || '|' ||
-      lower(trim(coalesce(p_term, ''))) || '|' ||
-      lower(trim(coalesce(p_session, ''))),
+      lower(trim(coalesce(p_admission, ''))),
       'sha256'
     ),
     'hex'

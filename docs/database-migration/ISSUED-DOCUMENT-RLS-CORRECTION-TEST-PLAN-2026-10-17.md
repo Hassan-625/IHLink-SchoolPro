@@ -29,3 +29,13 @@ Storage buckets observed: `schoolpro-document-outputs` (83 objects), `schoolpro-
 
 ## Gate
 **Not approved for production.** No cross-tenant authenticated negative test has yet been executed because the current tools do not provide a safe authenticated two-user test harness against production, and no disposable rehearsal has been proven available in this run. Do not use production data mutations to simulate adversarial cases.
+
+## Additional live checks completed after drafting
+- `schoolpro_document_issues`: 141 rows; all 141 have a matching student and template, with zero orphan/null references and zero school mismatches.
+- `schoolpro_document_issue_events`: 83 rows; zero orphan issue references and zero event/issue school mismatches.
+- `schoolpro_academic_documents`: 96 rows; zero orphan student references and zero student/document school mismatches.
+- `schoolpro_admission_documents`: 0 rows; this is an empty table, so it provides no positive evidence that admission upload/download ownership works.
+- `schoolpro_document_issues.output_storage_path`: 83 non-null paths, all 83 match an object in `schoolpro-document-outputs`; no missing objects or wrong-bucket matches.
+- `schoolpro-admission-documents` bucket has 0 objects; `schoolpro-admissions` bucket has 0 objects. Thus no current admission-upload objects could be tested.
+- Storage RLS catalog has school-folder scoping for admissions objects and school-scoped output-path reads. This is policy-definition evidence only; no authenticated adversarial object read/upload/delete test was run.
+- A second repository (`Hassan-625/IHLink_Design_System_1`) has 139 migration files, but none of the 35 exact marker version timestamps is present in that branch tree. It is a divergent history, not recovery of those 35 original SQL files.

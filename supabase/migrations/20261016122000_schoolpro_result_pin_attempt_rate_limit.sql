@@ -79,7 +79,9 @@ begin
   -- contract includes an explicit school identifier.
   v_attempt_key := encode(
     extensions.digest(
-      lower(trim(coalesce(p_admission, ''))),
+      lower(trim(coalesce(p_admission, ''))) || '|' ||
+      lower(trim(coalesce(p_term, ''))) || '|' ||
+      lower(trim(coalesce(p_session, ''))),
       'sha256'
     ),
     'hex'

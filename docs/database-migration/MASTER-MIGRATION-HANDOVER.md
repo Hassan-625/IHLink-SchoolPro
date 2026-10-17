@@ -2758,3 +2758,18 @@ Added configuration contract tests confirming:
 - Production MySQL pool construction fails if `MYSQL_SSL=true` is absent, preserving the verified-TLS requirement.
 
 These tests exercise fail-closed configuration branches without connecting to a production host. They do not verify a live TLS handshake, certificate rotation, secret provisioning, or deployment environment. Exact-head CI is pending; no production configuration was changed.
+
+
+## MySQL student portal authentication foundation — 2026-10-17
+
+Added draft migration `database/mysql/008_schoolpro_student_credentials_sessions.sql` with a separate `student_credentials` table and opaque `student_sessions` table. Student identity remains linked to the school-scoped student row using composite foreign keys. The schema records a server-generated password hash, initial-password-change requirement, credential status, and revocable/expiring sessions. The roster/bootstrap service must hash the student's surname before storage; plaintext surnames/passcodes must never be written as credentials.
+
+Added a synthetic MySQL fixture and a negative cross-school credential FK test, then wired migration 008 and its fixture into disposable MySQL 8.4 CI. Removed the duplicate migration-007 apply step from that workflow while wiring migration 008.
+
+Added server API endpoints:
+- `POST /v1/student/auth/login`: school code + admission number + password; checks active school, active student and active credential; uses the shared hashed-identifier throttle; issues a separate student cookie or native bearer token.
+- `GET /v1/student/me`: resolves the student session and reports `mustChangePassword`.
+- `POST /v1/student/password`: verifies the current password and requires a new password of at least 12 characters, then stores a scrypt hash and clears the initial-change flag.
+- `POST /v1/student/auth/logout`: revokes the student session and clears the separate student cookie.
+
+Added mock-pool API tests for student admission login, separate student cookie namespace, mandatory password-change state and rejection of the old initial password after a change. These are starter contracts only. Remaining hardening: atomic/locked password-change transaction, revoke other sessions on password change, login abuse tests against disposable MySQL, account provisioning that hashes surname at roster import, native secure-vault integration, student authorization for future data endpoints, and explicit integration tests for inactive/locked students and schools. Migration 008 and routes are draft-only, not deployed, and no production data was changed. Exact-head schema/API CI, SchoolPro CI and payment validation are required before acceptance.

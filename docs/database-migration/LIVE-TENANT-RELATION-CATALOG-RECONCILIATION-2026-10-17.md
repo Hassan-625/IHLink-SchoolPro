@@ -74,3 +74,9 @@ Read-only live queries added explicit LEFT JOIN orphan counts (not just inner-jo
 - Storage bucket catalog: `schoolpro-document-outputs` is private with 83 objects; `schoolpro-document-templates` private with 9; `schoolpro-demo-documents` private with 2; `schoolpro-result-outputs` private with 1; `school-result-templates` private with 8; `schoolpro-admissions` private with 0; `schoolpro-payment-receipts` private with 0; `schoolpro-branding` is marked public but has 0 objects.
 - Storage policy definitions include school-scoped folder checks for admission objects, issue-path-based checks for document outputs, and school-scoped checks for document templates. Definition inspection does not replace authenticated two-school negative read/write/delete tests.
 - **Not yet proven:** cross-tenant reads via PostgREST and download endpoints, object-key tampering, path-prefix spoofing, service-role bypass, RPC/view side channels, and behavior under non-member roles. No adversarial identities were used against production.
+
+## Authenticated two-identity read probe — 2026-10-17
+A read-only transaction-scoped probe set `ROLE authenticated`, supplied the JWT subject claim for two existing student-only identities from different schools, queried issue rows and document-output objects, and rolled each transaction back. No rows were changed.
+- School `7a340a27-9184-420a-b566-8fc0d3dac555`: 0 visible document issues and 0 visible document-output objects.
+- School `d342eb87-8d6a-477a-a380-7fab83f586b7`: 1 visible issue and 1 visible document-output object; no visible issue rows or output objects belonging to another school.
+- This is a positive, sampled current-policy read-isolation result. It does **not** prove the proposed policy fix: existing data has no mismatched issue/student school rows, and no synthetic adversarial fixture, write/update/delete, guardian/staff role, RPC, or download-endpoint test was run. Production was not modified.

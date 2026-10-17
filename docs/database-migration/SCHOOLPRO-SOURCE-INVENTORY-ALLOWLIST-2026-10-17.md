@@ -489,3 +489,67 @@ The following are catalog-derived names from the current Supabase source. This i
 - `schoolpro_transport_routes` → trigger `schoolpro_activation_before_write` → function `guard_schoolpro_operational_write` (enabled code: `O`)
 
 **Interpretation:** preserve the behavior only after inspecting each complete function body, its dependencies, callers, grants, RLS assumptions, external side effects and transaction semantics. Triggers such as operational-write guards, activity/session stamping, assessment/attendance validation, tenant-relation enforcement, result locking, automatic admission documents and notification hooks are likely behavior-critical. Do not bulk-copy them before replacing Supabase-specific helpers and validating isolation. Catalog names can change as production evolves; refresh this inventory immediately before any export.
+
+
+## 10. Active-branch application dependency scan — targeted findings
+
+**Branch inspected:** `migration/mysql-schoolpro-foundation`. Source files were fetched and inspected in batches across the `src/` tree, with particular attention to authentication context, school context/permissions, academic/result workflows, fee/payment, staff/invitations, document rendering, storage, student login, and subscription pages. This was a static source scan; no app behavior was executed. The following is a dependency map of confirmed call sites, not a claim that every indirect/dynamic call or non-`src/` script has been exhaustively resolved.
+
+### Direct browser-side database access is a migration blocker
+
+- `src/lib/supabase.ts` initializes `@supabase/supabase-js` in the Vite client using `VITE_SUPABASE_URL` and the public publishable/anon key. This is expected for Supabase public APIs, but it cannot be repointed at a private Aiven database. **Never place Aiven credentials in Vite variables or a mobile bundle.**
+- `src/context/AuthContext.tsx` reads shared `profiles`, `admin_product_access`, and `customer_service_access`, and uses Supabase Auth state changes, password sign-in, sign-up, sign-out and password-reset APIs.
+- `src/hooks/useSchoolProContext.ts` reads `schoolpro_schools`, `schoolpro_students`, and `schoolpro_guardian_links`; permissions/entitlements/class-scope hooks call `schoolpro_user_permissions`, `schoolpro_subscription_entitlements`, and `schoolpro_coordinator_classes` RPCs.
+- Academic screens directly select/insert/update/delete SchoolPro records as well as calling RPCs: examples confirmed include `schoolpro_results`, `schoolpro_classes`, `schoolpro_students`, `schoolpro_subjects`, `schoolpro_assessment_schemes`, `schoolpro_grade_scale`, `schoolpro_result_domain_ratings`, `schoolpro_result_term_settings`, `schoolpro_enrollment_history`, `schoolpro_result_approvals`, and result publication/review/pin RPCs. Direct table calls are widespread, so an API layer will require a systematic adapter/refactor, not just a connection-string change.
+- Fee/subscription paths use `schoolpro_invoices`, `schoolpro_fee_payments`, `schoolpro_fee_structures`, `schoolpro_fee_exceptions`, `schoolpro_fee_bank_accounts`, `schoolpro_payment_submissions`, `schoolpro_subscription_catalog`, `schoolpro_plan_catalog`, `schoolpro_subscriptions`, and `schoolpro_subscription_intents`; they call `record_schoolpro_payment`, `generate_schoolpro_class_invoices`, `review_schoolpro_payment_submission`, and related RPCs.
+- Other confirmed direct domains include admissions/enrollment, attendance, guardian links, staff/member permissions, assignments/submissions, CBT questions/tests/attempts, question bank, discipline/health, lesson notes, timetable/calendar, hostel/library/transport/payroll, document issues/templates, result templates, transcript settings/issues, notifications, branding and public result/admission paths.
+- Shared-profile writes are present: `SchoolProProfile.tsx` updates `profiles`; platform profile/access reads also occur in auth and admin paths. These must remain under the shared identity contract and cannot be indiscriminately moved with SchoolPro tables.
+
+### Confirmed Auth, Storage and Edge Function call sites
+
+- Auth/session: `auth.getUser`, `onAuthStateChange`, `signInWithPassword`, `signUp`, `signOut`, `resetPasswordForEmail`, `setSession`, `verifyOtp`, and `getSession` are used in browser/native flows. Preserve Supabase Auth in the first rehearsal and design server-side token validation before moving database access.
+- Storage buckets seen in app source include `direct-transfer-proofs`, `schoolpro-document-templates`, `schoolpro-document-outputs`, `school-result-templates`, and SchoolPro branding/document paths. Storage calls include upload, download and signed URL creation. Bucket/policy/key ownership needs a separate complete inventory.
+- Edge Function invokes confirmed include `invite-school-staff`, `schoolpro-student-login`, `schoolpro-account-login`, `schoolpro-email-worker`, `schoolpro-render-document`, `schoolpro-transfer-ownership`, and `auth-handoff`. Additional public-form and operational functions need to be reconciled from the remaining repository and Edge Function list.
+- Read-only source retrieval of deployed Edge Function code confirmed `schoolpro-payment` and `schoolpro-subscription` currently return HTTP 410 with a bank-transfer/Finance-review message; their current deployed behavior must be preserved as a contract until deliberately changed. `invite-school-staff` and `auth-handoff` have `verify_jwt=false` but implement explicit token/user validation in code; the flag alone is not a vulnerability verdict. `schoolpro-email-worker` and `schoolpro-render-document` are configured with JWT verification and perform additional identity/record checks. Each still needs full endpoint authorization, storage-ownership, idempotency and side-effect review before porting.
+
+## 11. Foreign-key boundary and tenant ownership
+
+A read-only catalog query found **274 foreign-key constraints involving SchoolPro-prefixed tables**, of which **79 cross the simple SchoolPro-only boundary** (including relationships to shared schemas/tables or tables without a SchoolPro prefix). Examples include:
+
+- SchoolPro actors/owners to `auth.users` and `public.profiles`.
+- `schoolpro_payment_intents.virtual_account_id` and subscription payment paths to shared `public.virtual_accounts`.
+- Shared `public.payment_transactions` referencing `schoolpro_payment_intents`.
+- Shared `public.ihlink_email_queue` referencing `schoolpro_schools`.
+- `private.schoolpro_academic_clock` referencing `public.schoolpro_schools`.
+
+This proves the boundary is not a clean prefix-only table dump. For first rehearsal, retain Auth, profiles, virtual accounts, shared payment/queue services and Storage in Supabase. The payment/queue references need an explicit integration contract or narrowly scoped data mapping; do not copy entire shared tables. Preserve stable user UUID references only as IDs, not by cloning Auth credential/session rows.
+
+A column-level scan found 107 public `schoolpro_*` tables; **89 contain a direct `school_id` column and 18 do not**. Missing direct `school_id` does not mean unrelated: some are child tables whose tenant is inherited through a parent FK (e.g. assignment submissions, admission offers/documents, CBT answers, fee items). Others are global/platform catalogs or account-level controls (e.g. `schoolpro_plan_catalog`, `schoolpro_subscription_catalog`, `schoolpro_subscription_plans`, `schoolpro_login_attempts`, `schoolpro_account_challenges`). These need explicit classification rather than being auto-included as tenant data. `schoolpro_schools` is the tenant root and is owner-scoped via `owner_id`.
+
+## 12. Routines, triggers, policies, views, grants and jobs — inspection status
+
+- Live catalog counts: 127 public routines whose names contain `schoolpro`; 160 non-internal triggers on `schoolpro_*` tables or calling a routine whose name contains `schoolpro`; 293 RLS policy rows on SchoolPro-prefixed tables; all 107 SchoolPro-prefixed tables have RLS enabled, but `FORCE ROW LEVEL SECURITY` is false on those tables in the observed catalog.
+- Full definitions were fetched and reviewed for a targeted set of 20 high-impact routines, including result-total calculation, result workflow locking, tenant-relation enforcement, result lifecycle logging, subscription expiry, result PIN creation/checking, result review/publication, payment finalization/recording, access invitation acceptance, login throttling, user permissions, subscription entitlements and coordinator class scope. The broader routine/trigger inventories include names/flags, but **all 127 function bodies and all 160 trigger bindings have not yet received complete semantic review**.
+- Important observed behavior to preserve: published result score changes are blocked by a trigger; result totals validate component maxima and require assessment scheme school match; tenant relation guards validate result student/subject/scheme and CBT question/test relationships; result publication checks role/module access and writes audit records; fee payment locks the invoice row and checks balance/method/reference; payment gateway finalization routines currently raise a bank-transfer/Finance-review exception.
+- 293 SchoolPro RLS policies need full expression/grant semantic review before any Aiven equivalent is accepted. Policies rely on Supabase helpers including `auth.uid()` and `private.*` authorization routines; copying them unchanged to vanilla Aiven would not preserve security. Grants, object owners, default privileges, sequences, types and non-SchoolPro-named views that depend on SchoolPro are still open review items.
+- The current `cron.job` inspection returned 7 matching jobs: `schoolpro-expiry-grace-daily` (daily), `schoolpro-academic-calendar` (hourly), shared `ihlink-email-delivery-2m`, and four DataSub/BillStack jobs. DataSub/BillStack jobs are excluded; SchoolPro jobs must be ported only after the target routine/API exists and duplicate execution/side effects are controlled. Supabase Vault and `pg_net` are dependencies in the job commands and are not assumed available on Aiven.
+
+## 13. Migration-ledger drift — blocking discrepancy
+
+A live `list_migrations` read returned **476 recorded Supabase migrations**, latest `20261015161735 schoolpro_access_invitation_role_constraint`. The active branch contains **123 tracked `supabase/migrations/*.sql` files**, latest `20261013100000_schoolpro_result_leaders_read_session_enrolment`. Comparing version strings found **397 live migration versions absent from the branch** and **44 branch migration versions not present in the live ledger**. These sets overlap only partially, so this is not safely explained as a simple lag. Do not replay migrations or generate a dump from repository files as if this branch were a complete source snapshot. Reconcile missing/applied history, deployment provenance and actual catalog schema before creating the final export plan. This discrepancy is a P0 blocker for allowlist approval.
+
+## 14. Allowlist review decision
+
+**Decision: NOT APPROVED FOR EXPORT/IMPORT.** The candidate boundary is sufficiently documented to plan the next reconciliation, but it cannot responsibly be called finalized for migration while (1) migration-ledger drift is unresolved, (2) application call sites have not yet been transformed into a complete machine-readable table/RPC/Auth/Storage/Edge Function manifest, (3) all routine bodies/trigger bindings/policies/grants/dependent views have not been semantically reviewed, and (4) row ownership for inherited-child and global-catalog tables is not signed off.
+
+Before export, complete these exact gates:
+- [ ] Reconcile 476 live migration records against 123 branch files; explain all 397 live-only and 44 branch-only versions.
+- [ ] Generate a complete application call-site manifest (static scan + review dynamic table/function names), including file/line, operation, role context and owning domain.
+- [ ] Export/read all relevant live function definitions, trigger definitions, policies, grants, dependent views/types/sequences and extension dependencies to an audit artifact; review security-definer search paths and callers.
+- [ ] Approve a per-table row policy: tenant-owned rows, inherited child rows, global plan/catalog rows, account-level challenge/throttle rows, audit/history, and shared-system references.
+- [ ] Resolve all 79 boundary-crossing FKs and define how references to Auth/profiles/virtual accounts/payment transactions/shared queue are preserved without cross-database FK assumptions.
+- [ ] Approve a separate Storage decision and object/policy map; keep Supabase Storage for the first rehearsal.
+- [ ] Restrict the Aiven target's reported open public allowlist before importing any real data or credentials.
+- [ ] Obtain explicit review approval of the allowlist, then rehearse only on the isolated target. No production cutover without separate approval.
+
+No source export, Aiven import, production DDL/DML, Render configuration change, deployment, or PR merge was performed for this review. Supabase remains production source of truth; Render remains application host; DataSub/BillStack remain on Supabase and out of scope.

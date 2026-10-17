@@ -1548,3 +1548,29 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Fresh SchoolPro CI [run 39022424247](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022424247) and payment-page validation [run 39022424240](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022424240) were triggered for this exact commit and remained in progress at the latest query. No success is claimed yet.
 - The previous payment integration failure was diagnosed as a malformed test string; the current run is the required proof that the corrected SQL executes and reaches the policy assertion. Recheck the payment job's final logs and the overall run conclusion before closing that sub-gate.
 - Receipt Storage remains blocked: the latest live acceptance log showed both required receipt-path secrets empty and exited before sending a request. A prior run's green tenant acceptance is not evidence for receipts because it skipped the receipt-download portion. No safe test-owned receipt paths are currently available through the observed workflow environment. Do not weaken the required test or use customer objects.
+
+
+## 16. CI result established — payment RLS passes; receipt Storage still blocked (2026-10-17)
+
+### Exact-head run 39022424247
+
+- PR #106 head `641625cb84a2cc97000391e915d0d3578b446ba4`, still open and unmerged.
+- SchoolPro CI [run 39022424247](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022424247) completed with overall **failure**, because the required live tenant acceptance job failed on missing fixture configuration.
+- Completed successful jobs:
+  - `payment-review-rls-integration` — passed. PostgreSQL executed the corrected test and emitted: `PASS: payment-review RLS restricted guardian scope, allowed school-finance review, and kept Super Admin read-only.`
+  - `tenant-integrity-db-integration` — passed.
+  - `result-verification-exposure-integration` — passed.
+  - `public-admission-abuse-integration` — passed.
+  - `result-pin-rate-limit-integration` — passed.
+  - `validate` — passed, including static source guards and mobile/build checks.
+  - `tenant-acceptance` — failed before receipt Storage requests because both `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` are empty/missing.
+- Payment-page validation [run 39022424240](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022424240) passed.
+- This resolves the previous payment-test syntax failure. The RLS integration assertions now execute successfully. This is still a focused disposable-schema RLS test; it does not by itself prove every receipt object ownership, invoice concurrency, duplicate allocation, or reject/cancel lifecycle path. Source-level guards for receipt ownership, invoice locks, pending reservations and amount reconciliation passed in the validation job, but these are static checks, not live end-to-end payment settlement evidence.
+
+### Receipt Storage isolation: remaining action is fixture provisioning
+
+- The live tenant acceptance job reports the two receipt-path environment variables as blank and exits with `Missing required environment variables: SCHOOL_A_RECEIPT_PATH, SCHOOL_B_RECEIPT_PATH`.
+- It successfully verifies school A's own template download and blocks school B from that foreign template object, but this is **not** receipt-object isolation evidence.
+- Required next step: configure the two GitHub Actions secrets to distinct, existing test-owned receipt object paths for the matching configured school test accounts. Each path must be rooted at that account's authenticated user UUID, as required by `scripts/test-schoolpro-tenant-isolation-live.mjs`. Validate that the paths exist and correspond to the expected account before rerunning CI. Do not record path values or credentials in the handover.
+- If no suitable test-owned receipt objects exist, use a dedicated disposable Supabase/Storage environment and fixture accounts. Do not create dummy objects in production or use customer receipts. The mandatory test must remain fail-closed and must not be converted to a skip.
+- Until the runtime receipt test passes, overall CI is red and Stage A remains **BLOCKED / NOT MERGE-READY**. No production mutation, migration application, deployment, secret change, or PR merge was performed by this work.

@@ -68,6 +68,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/006_schoolpro_learning_cbt_library_transport_payroll.sql
+      - name: Apply authentication login throttling schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/007_schoolpro_auth_login_throttling.sql
       - name: Insert valid isolated core fixtures
         env:
           MYSQL_PWD: root-test-password
@@ -92,6 +96,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_learning_cbt_library_transport_payroll_fixture.sql
+      - name: Insert valid authentication throttling fixture
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_auth_login_throttling_fixture.sql
       - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password
@@ -169,6 +177,7 @@ jobs:
           assert_fk_rejection tests/mysql/cross_school_assignment_submission_must_fail.sql fk_submission_student
           assert_fk_rejection tests/mysql/cross_school_cbt_question_must_fail.sql fk_cbt_tq_question
           assert_fk_rejection tests/mysql/cross_school_library_loan_book_must_fail.sql fk_library_loan_book
+          assert_check_rejection tests/mysql/auth_login_identifier_hash_must_fail.sql chk_auth_login_identifier_hash
           assert_enum_rejection() {
             local sql_file="$1"
             local output_file

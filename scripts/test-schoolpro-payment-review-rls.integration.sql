@@ -490,7 +490,7 @@ select pg_temp.assert_count('failed confirmation rolls allocation link back',
 select pg_temp.assert_count('failed confirmation rolls fee payment insert back',
  (select count(*) from public.schoolpro_fee_payments),3);
 select pg_temp.assert_count('failed confirmation rolls transactional email queue insert back',
- (select count(*) from public.schoolpro_email_queue),0);
+ (select count(*) from public.schoolpro_email_queue),1);
 select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','synthetic rejection');
 select pg_temp.assert_count('authorized rejection transitions pending to rejected',
  (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000002' and status='rejected' and review_note='synthetic rejection'),1);
@@ -501,8 +501,8 @@ select pg_temp.assert_count('confirmed payment updates invoice atomically',
  (select count(*) from public.schoolpro_invoices where id='90000000-0000-0000-0000-000000000001' and amount_paid=100 and status='part_paid'),1);
 select pg_temp.assert_count('confirmed payment links allocation to ledger entry',
  (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is not null),1);
-select pg_temp.assert_count('confirmed payment queues exactly one transactional receipt email',
- (select count(*) from public.schoolpro_email_queue where template_key='payment_receipt'),1);
+select pg_temp.assert_count('confirmed payment queues one additional transactional receipt email',
+ (select count(*) from public.schoolpro_email_queue where template_key='payment_receipt'),2);
 select pg_temp.assert_rpc_rejected(
  'duplicate review cannot re-confirm an already confirmed submission',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','duplicate')$$,

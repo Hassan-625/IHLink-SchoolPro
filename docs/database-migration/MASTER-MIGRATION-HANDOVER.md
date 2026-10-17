@@ -2625,3 +2625,12 @@ The corrected MySQL schema workflow #400 has now completed successfully on code-
 The schema job log confirms the expected cross-school FK/check rejection tests passed, including the corrected `fk_submission_student` assertion, foreign-school CBT question, foreign-school library book, and annual-only subscription check. The schema workflow's negative-test helper prints MySQL ERROR lines as expected; each is followed by a PASS assertion naming the expected constraint. This is not a schema failure.
 
 Acceptance is partial until SchoolPro CI #1597 completes. The run was triggered on code head `1964131...`; this handover-only update does not change the tested schema/code. Migrations 001–006 remain proposals for disposable MySQL CI only; no production database has been modified.
+
+
+### Stage A current-head verification refresh — 2026-10-17
+
+The Stage A PR #106 head has advanced to `eeac24a9e1820272ef673f59afd053a81408f193`. On this exact head:
+- Payment-page validation #1323 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727069
+- SchoolPro CI #1596 was still running at the last check: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727021
+
+This is a separate branch from the MySQL migration PR #107. Stage A is still not closed: the production catalog gap and live authenticated two-school smoke-test timeout remain unresolved; no production migration is authorized or applied. Wait for #1596, then inspect the result-approval probe rather than treating timeout as a pass or assuming a leak. The reviewed forward-only tenant-index migration remains pending explicit production approval.

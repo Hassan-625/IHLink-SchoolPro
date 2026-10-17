@@ -37,7 +37,8 @@ create policy "school finance read payment receipts"
 on storage.objects for select to authenticated
 using (
   bucket_id = 'schoolpro-payment-receipts'
-  and exists (
+  and (
+    exists (
     select 1
     from public.schoolpro_payment_proofs p
     where p.receipt_path = objects.name
@@ -50,8 +51,8 @@ using (
           'bursar'::public.school_member_role
         ]
       )
-  )
-  or exists (
+    )
+    or exists (
     select 1
     from public.schoolpro_payment_submissions s
     where s.receipt_path = objects.name
@@ -64,5 +65,6 @@ using (
           'bursar'::public.school_member_role
         ]
       )
+    )
   )
 );

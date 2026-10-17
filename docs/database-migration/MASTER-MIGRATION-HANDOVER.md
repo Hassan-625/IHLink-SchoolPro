@@ -2134,3 +2134,10 @@ Read-only catalog inspection found:
   - SchoolPro CI run [#1463](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39027087463) progressed further and then failed because `private.schoolpro_owns_invoice_student` was declared before its referenced fixture table existed; its helper body also retained one malformed dollar quote.
   - Corrected dependency ordering and SQL delimiters in follow-up commits; current PR #106 head at this note is `cca3ada552bdcc86919a4da95f396e75e3d42258`. The exact-head CI for this commit must be inspected before treating the fixture as executable or passing. No test failure was hidden or marked successful.
 - This reinforces that the payment RLS fixture is still under construction. Do not claim direct-write denial, authorized RPC behavior, cancellation, trigger rollback or duplicate-review concurrency as proven until the corrected exact-head disposable PostgreSQL tests actually pass and cover those assertions.
+
+
+## 39. Payment RLS fixture reached role assertions; count corrected (2026-10-17)
+
+- On SchoolPro CI run [#1466](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39027225164), the payment-review integration fixture successfully progressed through setup, role switching, guardian isolation checks, finance direct-write denials, and the authorized finance fee-payment INSERT. It then failed at the Super Admin fee-payment visibility count because the fixture correctly contained three fee-payment rows after the authorized INSERT while the assertion still expected two.
+- This is a test expectation error, not a production behavior finding. Corrected the assertion to expect three rows in commit `87ecedd9fabb51a8d7e522ae9038b176091600a0`. The exact-head SchoolPro CI/payment validation for this commit is still required; no pass is claimed yet.
+- The failed run is retained as evidence and was not reclassified as a pass. Continue to inspect the exact `payment-review-rls-integration` logs; once this count is corrected, any next failure must be diagnosed from the SQL/runtime evidence rather than weakening the security assertions.

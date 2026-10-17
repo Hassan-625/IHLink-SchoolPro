@@ -1922,3 +1922,10 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - Confirmed the concurrent receipt-submission test uses the second active fixture bank account `30000000-0000-0000-0000-000000000002`; the receipt-RPC integration fixture inserts that account before its intentional deactivation of the first account. The static workflow assertion now uses a valid JavaScript any-character matcher and targets the concurrency step.
 - SchoolPro CI run #39026167994 is queued for the exact current PR head `cb2fe8ad841b0b2699859750e215b9b905d81114`; payment-page validation #39026168066 is in progress. No pass is attributed to the current head until its CI jobs complete and logs are checked.
 - No production change or merge occurred. PR #106 remains draft/open; migration-ledger reconciliation, full payment lifecycle review, family media-policy runtime/performance review and trusted-edge/public-RPC review remain release gates.
+
+
+## 29. Result-PIN cooldown key scope clarification (2026-10-17)
+
+- The latest Stage A draft now intentionally hashes **normalized admission number only** for the 8-failure / 15-minute cooldown. It does not use request headers or any client-IP value. The migration comments, static assertion, SQL integration fixture and concurrent test use the same admission-only key.
+- This scope prevents attackers from varying term/session inputs to obtain separate failure counters, but it also means a targeted attacker who passes Turnstile can temporarily block result checks for that admission across all periods. That is a known residual denial-of-service trade-off; the new Turnstile gateway and service-role-only RPC grant reduce direct automation/bypass but do not eliminate targeted lockout.
+- Keep this behavior as a release-review item. Before production deployment, decide whether the broader lockout scope is acceptable or whether a verified, non-spoofable edge identity is available and can be proven end-to-end. Do not substitute an unverified request header. No production grant or cooldown was changed.

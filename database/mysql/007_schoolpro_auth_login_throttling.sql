@@ -12,12 +12,7 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
   PRIMARY KEY (identifier_hash),
   KEY idx_auth_login_attempts_blocked (blocked_until),
   CONSTRAINT chk_auth_login_attempts_nonnegative CHECK (attempts >= 0),
-  CONSTRAINT chk_auth_login_identifier_hash CHECK (identifier_hash REGEXP '^[0-9a-f]{64}) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO schema_migrations(version,description)
-VALUES ('007_schoolpro_auth_login_throttling','Persistent per-identifier authentication throttling state for MySQL API foundation') AS incoming
-ON DUPLICATE KEY UPDATE description=incoming.description;
-)
+  CONSTRAINT chk_auth_login_identifier_hash CHECK (identifier_hash REGEXP '^[0-9a-f]{64}$')
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO schema_migrations(version,description)

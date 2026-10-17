@@ -97,3 +97,11 @@ A separate inventory document was added at `docs/database-migration/SCHOOLPRO-SO
 The document explicitly excludes bulk copying of `auth.*`, shared `public.profiles`, virtual accounts/payment/shared ledger, DataSub/BillStack, other IHLink products, shared Storage internals, and shared queues by default. It records cross-database foreign-key/identity concerns, SchoolPro RPC/trigger/RLS/grant review, relevant Edge Functions and cron side effects, and the required code-call-graph and schema-drift checks.
 
 **Status:** inventory started and draft allowlist documented; full application call graph, complete routine/trigger/policy/grant dependency capture, row-ownership review, and final allowlist approval remain open. No export/import or production change occurred. The Aiven fork still does not represent a Supabase restore. Supabase remains production source of truth; Render remains the app host; DataSub stays on Supabase; acceptance gates A/B/C remain NOT APPROVED.
+
+
+### Catalog-level routine and trigger names added to the inventory — 2026-10-17
+The source inventory document was expanded using read-only Supabase catalog queries. It now records 127 public routines whose names contain `schoolpro` (including SECURITY DEFINER flags and identity arguments) and 160 non-internal triggers on `schoolpro_*` tables or calling routines with `schoolpro` in their names. These are **catalog name/flag inventories only**; complete function bodies, grants, dependency closure and behavior have not yet been audited. SECURITY DEFINER routines, operational-write guards, tenant-relation guards, result-locking, activity stamping, validation, automatic document creation and notification hooks require special review before porting.
+
+- Inventory document: https://github.com/Hassan-625/IHLink-SchoolPro/blob/migration/mysql-schoolpro-foundation/docs/database-migration/SCHOOLPRO-SOURCE-INVENTORY-ALLOWLIST-2026-10-17.md
+- Inventory commit containing the routine/trigger appendix: `754721cf88159e43f375cd81b5438b218f1729a8`.
+- The draft remains **NOT APPROVED FOR EXPORT** until application call-site scan, full DDL/dependency review, shared-row ownership mapping and schema-drift reconciliation are complete.

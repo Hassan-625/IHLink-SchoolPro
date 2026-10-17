@@ -134,3 +134,10 @@ The new [semantic triage report](LIVE-ONLY-MIGRATION-SEMANTIC-TRIAGE-BATCH-1-202
 A direct comparison of `20261013181250 secure_schoolpro_ownership_transfer` found a material live evolution: current `schoolpro_transfer_ownership(uuid,uuid)` upserts `schoolpro_leadership_settings`, while the recovered version only updates an existing row. Live ACL additionally permits `service_role` execution while denying `anon`; the recovered payload explicitly grants `authenticated` and revokes `PUBLIC/anon`. That later grant and the function's `SECURITY DEFINER` behavior need provenance review. No DDL or grants were changed.
 
 This is progress across the whole 397-version set, but it **does not close task 1**: every unresolved function overload/body, policy expression, effective grant, trigger wiring and cron command still needs a version-specific disposition. The parser's dynamic-policy/trigger false positives are not treated as actual missing objects.
+
+
+### Separate live tenant-authorization test evidence
+
+The [read-only two-school RLS test report](SCHOOLPRO-TENANT-AUTHORIZATION-READ-ONLY-TESTS-2026-10-17.md) (commit `96fe190bf93107e6a672a08f5893a6dae4c34fbb`) tested SELECT behavior as `authenticated` for two school proprietors in a rolled-back, read-only context. Both identities saw their own school root and zero rows from the other school for the tested root/student/result/invoice queries. Targeted sample-row checks also returned one visible row for the IH Academy owner and zero for the HASSAN ACADEMY owner across assignment submissions, CBT attempts, CBT answers and fee items.
+
+This is distinct from the 79 validated foreign keys and therefore provides actual, limited source-side authorization evidence. It remains a **partial** test: no writes were attempted, no broad role matrix was tested, and no Aiven trusted-API tenant tests have run. A wide aggregate child-table join timed out while evaluating `is_admin` / `schoolpro_can_read_student`; targeted row checks completed. Record this as an RLS query-performance signal, not as proof of disclosure.

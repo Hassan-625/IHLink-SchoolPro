@@ -32,3 +32,6 @@ This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master fil
 - [Live-only version inventory](LIVE-ONLY-MIGRATION-VERSION-INVENTORY-2026-10-17.md)
 - [Tenant/catalog reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md)
 - [Issued-document RLS test plan](ISSUED-DOCUMENT-RLS-CORRECTION-TEST-PLAN-2026-10-17.md)
+
+## New live read-probe evidence
+A read-only authenticated two-identity probe against current production RLS returned no cross-school document issue rows and no cross-school output objects for either sampled student identity. One identity could see one own issue/output object; the other saw none. Both transactions rolled back. This validates only sampled current-policy reads and does not exercise a deliberately mismatched issue/student row or test the proposed policy correction. Write/delete, guardian/staff, RPC, and download-endpoint adversarial tests remain open.

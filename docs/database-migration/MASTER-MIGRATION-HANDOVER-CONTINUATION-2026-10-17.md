@@ -113,3 +113,15 @@ A read-only query against `supabase_migrations.schema_migrations` confirmed 476 
 2. Reconcile every target-internal FK action/column tuple and nullable data relationship against the proposed Aiven schema; then run tenant-authorization tests separately from FK/orphan checks.
 3. Finish line-level diffs for `invite-school-staff` v16 and `schoolpro-render-document` v14; rerun `schoolpro-email-worker` v10 parity using its actual deployed nested filename; compare deployed source with callers and environment configuration.
 4. Execute approved two-school Storage API/signed-URL adversarial tests for the result-output bucket mismatch. Do not mutate bucket names, objects, or production function versions before evidence and review.
+
+
+### Edge Function source comparison corrected after exact diff
+
+The detailed [Edge Function source parity report](SCHOOLPRO-EDGE-FUNCTION-SOURCE-PARITY-2026-10-17.md) (commit `ea300ca9ed345fa5c6e8315d4732184480b045de`) refines the earlier preliminary comparison:
+
+- `invite-school-staff` v16 has an actual source diff, but the inspected changes are request/stage diagnostics and sanitized error logging/response correlation; no changed authorization/data-operation expression was identified in the diff. This still needs full security review, not an automatic “safe” conclusion.
+- `schoolpro-render-document` v14 differs only by one trailing newline; normalized source is identical. This is not a behavioral drift.
+- `schoolpro-email-worker` v10 is now confirmed exact after using its actual deployed nested file name.
+- `schoolpro-student-login` v3 and `schoolpro-account-login` v2 are exact matches.
+
+Thus, among these five functions there is one instrumentation-only source difference and four source matches after whitespace normalization; deployment config/runtime parity remains unverified.

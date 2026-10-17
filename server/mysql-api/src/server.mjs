@@ -330,19 +330,37 @@ export function createAppServer({pool, env = process.env}) {
         if (!currentPassword || newPassword.length < 12 || newPassword.length > 1024) {
           return sendJson(response, 400, {error: 'Current password and a new password of at least 12 characters are required'});
         }
-        const [credentialRows] = await pool.execute(
-          'SELECT password_hash FROM student_credentials WHERE school_id = ? AND student_id = ? AND status = \'active\' LIMIT 1',
-          [student.school_id, student.student_id],
-        );
-        if (!credentialRows[0] || !(await verifyPassword(currentPassword, credentialRows[0].password_hash))) {
-          return sendJson(response, 401, {error: 'Current password is incorrect'});
+        const connection = await pool.getConnection();
+        try {
+          await connection.beginTransaction();
+          const [credentialRows] = await connection.execute(
+            'SELECT password_hash FROM student_credentials WHERE school_id = ? AND student_id = ? AND status = \'active\' LIMIT 1 FOR UPDATE',
+            [student.school_id, student.student_id],
+          );
+          if (!credentialRows[0] || !(await verifyPassword(currentPassword, credentialRows[0].password_hash))) {
+            await connection.rollback();
+            return sendJson(response, 401, {error: 'Current password is incorrect'});
+          }
+          const newHash = await hashPassword(newPassword);
+          await connection.execute(
+            'UPDATE student_credentials SET password_hash = ?, must_change_password = FALSE, password_changed_at = UTC_TIMESTAMP(6) WHERE school_id = ? AND student_id = ? AND status = \'active\'',
+            [newHash, student.school_id, student.student_id],
+          );
+          const activeToken = requestToken(request, STUDENT_SESSION_COOKIE);
+          if (activeToken) {
+            await connection.execute(
+              'UPDATE student_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE school_id = ? AND student_id = ? AND token_hash <> ? AND revoked_at IS NULL',
+              [student.school_id, student.student_id, sha256(activeToken)],
+            );
+          }
+          await connection.commit();
+          return sendJson(response, 200, {ok: true, mustChangePassword: false});
+        } catch (error) {
+          await connection.rollback();
+          throw error;
+        } finally {
+          connection.release();
         }
-        const newHash = await hashPassword(newPassword);
-        await pool.execute(
-          'UPDATE student_credentials SET password_hash = ?, must_change_password = FALSE, password_changed_at = UTC_TIMESTAMP(6) WHERE school_id = ? AND student_id = ? AND status = \'active\'',
-          [newHash, student.school_id, student.student_id],
-        );
-        return sendJson(response, 200, {ok: true, mustChangePassword: false});
       }
 
       if (request.method === 'POST' && url.pathname === '/v1/student/auth/logout') {

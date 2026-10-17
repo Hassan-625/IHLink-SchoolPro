@@ -3,9 +3,9 @@
 This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master file itself has not been rewritten in this pass.
 
 ## Evidence status
-- Production Supabase ledger: 476 versions. The original comparison found 397 live-only versions against the 123-file branch snapshot. A draft RLS correction was subsequently added on the migration branch; it is not deployed.
+- Production Supabase ledger: 476 versions. The current migration branch has 123 numbered files, 79 exact version intersections, 397 live-only versions and 44 branch-only versions. The issued-document RLS correction is tracked separately in [draft PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108), branch `security/issued-document-rls-fix-2026-10-17`; it is not deployed.
 - The remote marker enumerates 35 distinct versions, all matching the live ledger by exact version/name. No exact-version SQL source for those 35 was found in the inspected SchoolPro branch or related repository tree.
-- The related `Hassan-625/IHLink_Design_System_1` repository contains 139 migrations. Eleven exact-version source candidates for live-only versions were recovered there and documented in the inventory. They are corroborating source candidates, not proof of deployment.
+- The related `Hassan-625/IHLink_Design_System_1` repository contains 139 migrations. Eleven exact-version/name source candidates and 95 timestamp-different same-name candidates were reviewed and documented. They are corroborating source candidates, not proof of deployment.
 - No authoritative migration API audit event with actor/time/request/result has been recovered.
 
 ## Tenant and storage evidence
@@ -15,14 +15,14 @@ This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master fil
 - 96 academic documents: no orphan student refs or school mismatch. Admission-document table has zero rows.
 - All 83 document output paths match an object in `schoolpro-document-outputs`; all 83 first path segments match the corresponding issue `school_id`.
 - Three document-template rows match storage objects and school prefixes; the bucket contains nine objects total, so six objects remain to be classified.
-- Admission and payment-receipt buckets have zero objects. Policy definitions were inspected, but authenticated adversarial storage tests have not run.
-- The live `students read own issued documents` policy contains `st.school_id = st.school_id`. A correction is drafted on the branch only.
+- Admission and payment-receipt buckets have zero objects. Read-only authenticated probes of student, registrar, proprietor and anonymous roles found no cross-school issue/output/template/invoice objects in the sampled paths; these do not test writes, signed URLs, path tampering, or the proposed policy correction.
+- The live `students read own issued documents` policy contains `st.school_id = st.school_id`. A correction is proposed in draft PR #108 only.
 
 ## Approval gates remain open
 1. Recover original SQL and authoritative deployment evidence for all 35 marker versions.
-2. Complete object/dependency review for all 397 live-only versions. Eleven source candidates have been reviewed; the remaining 386 lack exact-version source in inspected repositories. Unresolved scope buckets remain provisional.
+2. Complete object/dependency review for all 397 live-only versions. 106 live-only versions have same-name source candidates reviewed (11 exact-version and 95 timestamp-different); 291 have no same-name SQL candidate in inspected repositories. Unresolved scope buckets remain provisional.
 3. Test the draft policy correction in a disposable rehearsal with two authenticated school identities, including full policy composition, PostgREST reads and document-download paths. Do not apply to production before explicit rollout approval.
-4. Complete orphan/null checks across all SchoolPro child relationships, classify every storage object, and run adversarial cross-tenant read/write/update/delete and RPC/path-tampering tests in rehearsal.
+4. Generated checks cover 221 public FK constraints (0 orphan rows) and 86 school-paired FK relationships (0 school mismatches). Classify remaining unreferenced storage objects and run adversarial cross-tenant write/update/delete, signed URL/download, RPC and path-tampering tests in rehearsal.
 5. Verify target network restrictions before any rehearsal import.
 
 **Export/import is not approved.** No production DDL, migration replay, data export/import, Render configuration change, deployment or merge occurred.

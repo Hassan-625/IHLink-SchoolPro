@@ -104,3 +104,7 @@ All tests below were read-only and transaction-scoped; each transaction was roll
 - A proprietor in that same school: 7 visible objects in `schoolpro-document-templates`, all with the proprietor's own school prefix and 0 with the other school's prefix; 2 visible `schoolpro-invoice-templates` objects, both own-school prefix; 8 visible `school-result-templates` objects, all own-school prefix and 0 other-school prefix.
 - The same registrar had 0 visible objects in `schoolpro-document-templates`, consistent with the manager-only read policy for that bucket.
 - These sampled reads support current-policy school scoping for the tested roles/buckets. They do not test upload/update/delete, object-key tampering, direct signed/public URL exposure, or the proposed issued-document policy on a deliberately mismatched fixture. The two document-output buckets have existing data; the admissions/payment-receipt buckets are empty and remain untested on actual objects.
+
+
+## Expanded recovery scope
+The 35 individually recovered marker files are byte-equal to the production ledger payload. Beyond those, all 397 live-only ledger records are now preserved in [eight JSONL bundles](recovered-live-only-sql/) and linked from the [SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md). This manifest remains focused on the marker's 35 exact SQL payloads and their ledger metadata; the 397-row dependency register is a separate static-analysis artifact.

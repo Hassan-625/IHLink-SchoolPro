@@ -47,3 +47,17 @@ jobs:
           name: mobile-layout-checks
           path: mobile-ui-evidence/
       - run: npm run build
+
+  mysql-api-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install MySQL API runtime dependency
+        working-directory: server/mysql-api
+        run: npm install --no-save --package-lock=false mysql2@3.15.3
+      - name: Test authentication, origin protection and tenant context
+        working-directory: server/mysql-api
+        run: npm test

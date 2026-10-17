@@ -599,3 +599,32 @@ This is one verified comparison sample, not a full comparison of all 397 live-on
 
 - [Machine-readable application call-site manifest](APPLICATION-CALLSITE-MANIFEST-INDEX-2026-10-17.md)
 - [Per-table ownership decision register](SCHOOLPRO-PER-TABLE-OWNERSHIP-REGISTER-2026-10-17.md)
+
+
+## Additional provenance checks — 2026-10-17
+
+### Main-branch and workflow comparison
+
+A read-only Git tree comparison found that `main` and `migration/mysql-schoolpro-foundation` each contain 123 numbered `supabase/migrations/*.sql` files, with no version present in one tree but absent from the other. Switching between those two branches therefore does not recover the missing migration SQL. The current branch's `.github/workflows/` inventory contains application CI, MySQL draft-schema CI, payment validation and mobile workflows; the inspected `.github/workflows/ci.yml` runs typecheck, application tests/build and a disposable MySQL API/schema test. It does not apply Supabase migrations to production and does not provide a historical production migration deployment record.
+
+### Immutable commit evidence for the known remote-sync boundary
+
+- [Commit `a6da195`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/a6da195be8f969652b2f05135af04145f1122b82) added `20260926114500_schoolpro_remote_migration_sync_ledger.sql`. The committed file explicitly says the preceding batch was applied directly to production through the Supabase migration API, and intentionally omits the DDL rather than reconstructing it. It lists 33 applied remote migration versions from `20260925210820` through `20260926102630`. This is evidence of an out-of-band application path for that named batch, but it is **not** the SQL artifact for those migrations and does not account for the remaining 397 live-only versions.
+- [Commit `0724640`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/0724640b24e3415b3f282b329d38090d9ca2a74e), associated with merged PR #79, shows only a trailing blank-line deletion in the commit diff. PR #79's description says four operational migration filenames were aligned with live applied history and SQL contents were unchanged. This is evidence for a narrow filename reconciliation only; it cannot be used to classify all 44 branch-only versions.
+- [Commit `61afde6`](https://github.com/Hassan-625/IHLink-SchoolPro/commit/61afde65f27623ec51e8fdd0e661ad248ad13678) added a production-parity marker with function SQL and comments about live result/CBT hardening. It is evidence that some live behavior was later captured into repository migration history, but its comments alone do not prove which production deployment job applied every related object or when.
+
+### Version disposition status
+
+| Set | Evidence found | Current defensible disposition |
+|---|---|---|
+| 397 live-only versions | Live ledger names; 33-version out-of-band sync batch documented for a subset; live catalog snapshots for current object state | The explicitly named 33-version subset has **documented out-of-band application provenance**, but original deployment artifacts are still missing from this branch. Remaining versions are **unresolved** until their own SQL/CI or direct-application evidence is found. Non-SchoolPro/DataSub/platform versions must be scope-tagged rather than included in the SchoolPro target. |
+| 44 branch-only versions | SQL files exist on both main and the migration branch; one branch-only tenant-isolation migration has been compared against live catalog and is not reflected as written | The eight-table tenant-isolation migration is **absent as written from current live catalog; historical disposition unresolved** (possibly not applied or superseded/reverted). Other branch-only versions remain **unresolved individually**; no broad “unapplied” or “superseded” classification is justified from filenames alone. |
+
+### Next required evidence
+
+1. For the 33-version remote-sync batch, seek original SQL from Supabase migration history/export artifacts, developer workstation/CI artifacts, or the commit/PR that created each original migration before the sync marker. The marker is not a replay source.
+2. For other live-only versions, search all repository branches, PR patches, commit blobs, workflow logs/artifacts and any recorded direct SQL operations; save exact artifact SHA/commit and deployment run or direct-application record per version.
+3. For each branch-only version, compare its full SQL object-by-object with live catalog snapshots and source history, then assign a reviewed status. The live catalog comparison identifies present state, not historical deployment chronology.
+4. Keep scope boundaries explicit: SchoolPro target objects only; shared identity/payment/email dependencies require separately approved mapping; DataSub/BillStack migrations are outside this SchoolPro migration scope.
+
+This adds provenance evidence but does not close the discrepancy. No SQL was executed against production and no migration was replayed.

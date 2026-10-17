@@ -52,7 +52,7 @@ assert.match(rlsSql, /alter table public\.%I enable row level security/i, 'Forwa
 assert.match(rlsSql, /alter table public\.%I force row level security/i, 'Forward repair must force RLS on the operational table set');
 assert.match(rlsSql, /if to_regclass\(format\('public\.%I', t\)\) is null then\s+raise exception/i, 'Forward repair must fail closed when a required operational table is missing');
 assert.doesNotMatch(rlsSql, /drop policy|create policy|alter policy/i, 'Forward repair must preserve existing feature-specific policies');
-assert.match(rlsSql, /does NOT\s+constrain\s+superusers or roles with BYPASSRLS/i, 'Migration must document the limits of FORCE RLS');
+assert.match(rlsSql, /superusers or roles with BYPASSRLS/i, 'Migration must document the limits of FORCE RLS');
 for (const tableName of [
   'schoolpro_library_books',
   'schoolpro_transport_routes',

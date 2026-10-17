@@ -2504,3 +2504,8 @@ Corrected the assignment-submission negative-test assertion to expect the actual
 The earlier failed schema run #385 remains recorded as a failed test-harness expectation and is not counted as acceptance. Migration 006 is validated only at the MySQL schema/fixture/selected relational-constraint level once the stated schema run completed; it does not establish application authorization or full behavior parity. Do not claim all workflows green until #1572 completes on this same code-bearing commit.
 
 Next MySQL work should be driven by the source-to-target parity matrix and actual application call paths, not by expanding tables without mapped source behavior. Highest-value gaps after schema slice: API authorization and transaction contracts, assessment calculation/publication parity, admissions/promotion preview/apply, receipt/storage authorization, result template import/export, and operational role restrictions. Preserve A→B→C→D acceptance order; MySQL schema CI does not close Stage A's separate production operational RLS/catalog blocker.
+
+
+### Migration 006 exact-head CI closed — 2026-10-17
+
+SchoolPro CI #1572 completed successfully on code-bearing commit `1e4ac4940a315717969baec8d64f3e25bbd89fdf`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032356436. Together with MySQL schema #389 and payment-page validation #1299, all three workflows passed on that code-bearing commit. The subsequent handover/PR documentation commit does not change schema code. Migration 006 therefore passes the current disposable MySQL 8.4 schema/fixture/selected constraint CI gate. This is not an application/API authorization acceptance or a production migration approval.

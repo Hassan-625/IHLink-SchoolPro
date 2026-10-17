@@ -61,3 +61,49 @@ CREATE POLICY "authorized staff read document issues"
         AND st.school_id = public.schoolpro_document_issues.school_id
     )
   );
+
+
+-- Storage read policy is another permissive path to the same issued document.
+-- Use an inner join so every accessible output has a student in the issue's school,
+-- and require guardian-link school to match the issue school.
+DROP POLICY IF EXISTS "schoolpro document outputs read" ON storage.objects;
+CREATE POLICY "schoolpro document outputs read"
+  ON storage.objects
+  FOR SELECT TO authenticated
+  USING (
+    bucket_id = 'schoolpro-document-outputs'
+    AND EXISTS (
+      SELECT 1
+      FROM public.schoolpro_document_issues AS d
+      JOIN public.schoolpro_students AS st
+        ON st.id = d.student_id
+       AND st.school_id = d.school_id
+      WHERE d.output_storage_path = objects.name
+        AND (
+          schoolpro_member_can_manage(d.school_id)
+          OR private.is_admin(ARRAY['super_admin'::user_role])
+          OR EXISTS (
+            SELECT 1
+            FROM public.schoolpro_members AS m
+            WHERE m.school_id = d.school_id
+              AND m.user_id = auth.uid()
+              AND m.role::text IN ('registrar', 'head_teacher', 'vice_principal')
+          )
+          OR (
+            d.status IN ('issued', 'revoked')
+            AND st.user_id = auth.uid()
+          )
+          OR (
+            d.status IN ('issued', 'revoked')
+            AND EXISTS (
+              SELECT 1
+              FROM public.schoolpro_guardian_links AS g
+              WHERE g.student_id = d.student_id
+                AND g.school_id = d.school_id
+                AND g.guardian_user_id = auth.uid()
+                AND g.status = 'active'
+            )
+          )
+        )
+    )
+  );

@@ -55,6 +55,7 @@ create table public.schoolpro_notifications(
 create table public.schoolpro_email_queue(
  school_id uuid,recipient_email text,recipient_name text,template_key text,subject text,payload jsonb,status text
 );
+grant select on public.schoolpro_email_queue to authenticated;
 
 create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
 returns boolean language sql stable security definer set search_path=''

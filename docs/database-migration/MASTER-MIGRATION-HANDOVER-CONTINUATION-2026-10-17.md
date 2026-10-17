@@ -125,3 +125,12 @@ The detailed [Edge Function source parity report](SCHOOLPRO-EDGE-FUNCTION-SOURCE
 - `schoolpro-student-login` v3 and `schoolpro-account-login` v2 are exact matches.
 
 Thus, among these five functions there is one instrumentation-only source difference and four source matches after whitespace normalization; deployment config/runtime parity remains unverified.
+
+
+### 397-version SQL semantic triage batch 1
+
+The new [semantic triage report](LIVE-ONLY-MIGRATION-SEMANTIC-TRIAGE-BATCH-1-2026-10-17.md) (commit `78f6e91f6b8487f3a21f971bb0f73de69e77d194`) ran a catalog-oriented pass over the exact 397 versions in the recovered SQL dependency register. It found 504 parsed function declarations across 240 versions; 263 had a current function body substring match, 236 had a current overload name but no such match, and five names were absent. It also counted 144 parsed policy declarations, 43 trigger declarations, 256 versions containing GRANT/REVOKE, and five versions containing cron scheduling calls. These are **triage signals only**, not semantic pass counts; dynamic SQL and overloads make the basic parser incomplete.
+
+A direct comparison of `20261013181250 secure_schoolpro_ownership_transfer` found a material live evolution: current `schoolpro_transfer_ownership(uuid,uuid)` upserts `schoolpro_leadership_settings`, while the recovered version only updates an existing row. Live ACL additionally permits `service_role` execution while denying `anon`; the recovered payload explicitly grants `authenticated` and revokes `PUBLIC/anon`. That later grant and the function's `SECURITY DEFINER` behavior need provenance review. No DDL or grants were changed.
+
+This is progress across the whole 397-version set, but it **does not close task 1**: every unresolved function overload/body, policy expression, effective grant, trigger wiring and cron command still needs a version-specific disposition. The parser's dynamic-policy/trigger false positives are not treated as actual missing objects.

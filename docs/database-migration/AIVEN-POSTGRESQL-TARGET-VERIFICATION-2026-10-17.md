@@ -113,3 +113,14 @@ The source inventory was expanded in commit `56b15b7f9560576de6603064028607e9cd1
 **P0 blocking discrepancy:** live Supabase reports 476 migration-ledger records (latest `20261015161735`); active branch has 123 tracked `supabase/migrations/*.sql` files (latest `20261013100000`). Version comparison found 397 live-ledger versions absent from branch and 44 branch versions absent from live ledger. Do not replay the branch migrations or treat the branch migration directory as a complete source snapshot until reconciled.
 
 The review decision is **NOT APPROVED FOR EXPORT/IMPORT**. The current document is a draft/candidate allowlist plus a concrete reconciliation checklist, not permission to export. No source export, Aiven import, production write, Render change, deployment, or merge was performed. Supabase remains production source of truth; DataSub/BillStack remain out of scope.
+
+
+### Full catalog evidence artifacts and allowlist decision — 2026-10-17
+The draft allowlist now links to separate read-only catalog artifacts, all verified by re-fetch after commit:
+- `SCHOOLPRO-BOUNDARY-CATALOG-SNAPSHOT-2026-10-17.md`: 293 RLS policy expressions, 274 FKs, 2,816 table-grant rows, seven relevant cron jobs, seven extensions.
+- `LIVE-SCHOOLPRO-ROUTINE-DEFINITIONS-2026-10-17.md`: 127 public routine overload definitions, 95 SECURITY DEFINER.
+- `LIVE-SCHOOLPRO-TRIGGER-DEFINITIONS-2026-10-17.md`: 160 trigger bindings and 39 handler definitions.
+- `SCHOOLPRO-ROUTINE-ACL-OWNERSHIP-SEQUENCES-2026-10-17.md`: 512 routine ACL entries and relation ownership/RLS flags.
+- `SUPABASE-MIGRATION-LEDGER-RECONCILIATION-2026-10-17.md`: complete migration-version diff.
+
+**Final review disposition: export/import approval withheld.** The table boundary is a candidate planning allowlist, not an approved data-export list. The 476-vs-123 migration-ledger mismatch (79 versions matching, 397 live-only, 44 branch-only) is P0. The application source confirms widespread direct browser-side Supabase table/RPC use; a machine-readable file/line call-site manifest and complete semantic authorization review are still open. No data export/import, production write, Render change, deployment, or merge occurred.

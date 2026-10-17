@@ -1045,3 +1045,10 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Fresh SchoolPro CI/payment-page validation for the corrected head must complete before this test can be marked passing. The prior tenant-acceptance, tenant-integrity, payment-review RLS jobs had passed on the earlier head.
 - Header provenance/trusted-proxy validation and true concurrent-request testing remain open; this sequential fixture does not prove either.
 - No production migration, data write, Render deployment, or merge occurred.
+
+
+## Result-PIN fixture SQL syntax correction — 2026-10-17
+
+- The follow-up run on `56657886334889c95c810e1fb43ac32013db9374` failed at fixture setup because the generated SQL contained malformed dollar-quoted role creation statements (`DO $` rather than a valid tagged block). The migration logic still was not reached.
+- Removed role creation from the SQL fixture and moved it to explicit idempotency-by-fresh-database `psql --command` steps in CI before the fixture executes. Since each job receives a new disposable database, `CREATE ROLE anon NOLOGIN` and `CREATE ROLE authenticated NOLOGIN` are expected to run once. Changes: fixture commit `5f614fa5ab6dfed2a8958d8d0a49a49a7613960a`; workflow commit `2a9110523860a68e95881b039f307564963deb96`.
+- The next CI run must validate the correction; do not treat the result-PIN runtime test as passed yet. No production migration/deployment or merge occurred.

@@ -2885,3 +2885,28 @@ Given the production query plan and existing live policy semantics, the proposed
 5. Re-read the migration ledger, RLS flags, index definitions, trigger definitions, and policy names; run the two-school acceptance suite and all Stage A CI jobs against the resulting live catalog.
 
 This order is a proposed runbook, not an execution record. All three migrations remain unapplied in production. Because the table owner `postgres` has `BYPASSRLS`, FORCE RLS is defense in depth for non-bypass table owners, not a replacement for the authenticated policies or a constraint on privileged service credentials. If the live query still times out after indexes, stop and optimize the exact policy/helper path with role-equivalence tests before accepting Stage A.
+
+### Continuation checkpoint — 2026-10-17 (session resumed)
+
+This entry preserves the current stopping point; it does not mark any blocked gate as complete.
+
+**Stage A production security acceptance**
+- **Status: BLOCKED / awaiting explicit owner authorization for production DDL.** The latest documented live authenticated two-school probe timed out on `schoolpro_result_approvals`; the pre-change authenticated query plan was a sequential scan with estimated cost approximately `0.00..2456622.25`.
+- Production catalog evidence in this handover shows the eight targeted operational tables have RLS enabled but FORCE RLS disabled; six tenant-leading indexes are proposed, not applied. The live table owner `postgres` has `rolbypassrls=true`, so FORCE RLS is not a control against superuser/BYPASSRLS access.
+- The reviewed forward-only repair remains a proposal: (1) six tenant-leading indexes, (2) FORCE RLS posture on the eight reviewed tables while preserving existing policies, and (3) same-school relationship/immutable-tenant trigger guards. The previously recorded rollout sequence is operational guidance only; reconcile the migration files, live catalog and ledger before execution.
+- Do not run the production migrations, change policies, or report Stage A accepted without explicit authorization. After authorized execution, capture the resulting catalog/ledger, inspect the new authenticated query plan, rerun the complete two-school test (including the result-approvals table), and require exact-head CI. If the probe still times out, stop and investigate equivalent policy/helper optimization rather than weakening or skipping tenant checks.
+
+**MySQL foundation / PR #107**
+- The documented exact-head validation for migrations 001–008 passed disposable MySQL 8.4 schema/API workflow #470, SchoolPro CI #1654, and payment-page validation #1381 on the code-bearing state then tested. Those runs prove only the listed draft schema/API test scope; they do not establish complete feature parity, production migration, or cutover readiness.
+- MySQL migration PR #107 remains draft and unmerged. The application is not fully migrated to MySQL: production SchoolPro remains on Supabase and Render, with no production database changes, environment changes, deployment, live-data copy, or cutover performed.
+- Continue by refreshing PR #106/#107 heads and exact-head CI before changing code. Keep Stage A release-branch evidence separate from migration-branch evidence. Do not reuse earlier run numbers as current status without checking them.
+- The initial MySQL foundation remains incomplete for full application parity, including authorization coverage across every data endpoint, operational workflows, result/template modules, payment/subscription flows, storage/file handling, jobs/webhooks, migration reconciliation, performance, backup/restore and rollback rehearsal.
+
+**Next actions**
+1. Refresh the current PR heads and workflow outcomes for Stage A PR #106 and MySQL PR #107; record exact commit SHAs and links.
+2. Complete the Stage A migration-source review against live schema, policies, role semantics, trigger definitions and migration ledger before any production execution.
+3. Obtain explicit owner authorization for the narrowly scoped three-migration production rollout. Until then, keep production read-only.
+4. After the security blocker is resolved and A/B/C are re-verified, continue MySQL parity work without treating the pilot as a cutover.
+5. Keep this handover append-only for material evidence and update status claims only when supported by exact artifacts.
+
+**Safety statement:** No production DDL, production data writes, Render deployment, environment-variable changes, PR merge, or MySQL cutover was performed as part of this continuation checkpoint.

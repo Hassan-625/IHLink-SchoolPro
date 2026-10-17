@@ -103,3 +103,14 @@ drop policy if exists "Super admin read fee payments" on public.schoolpro_fee_pa
 create policy "Super admin read fee payments"
   on public.schoolpro_fee_payments for select to authenticated
   using (private.is_admin(ARRAY['super_admin']::public.user_role[]));
+
+
+-- These financial tables are never a public/anonymous REST surface. RLS remains the
+-- row-level boundary for authenticated users; remove the unnecessary anonymous table grants.
+revoke all privileges on table
+  public.schoolpro_invoices,
+  public.schoolpro_payment_allocations,
+  public.schoolpro_payment_proofs,
+  public.schoolpro_payment_submissions,
+  public.schoolpro_fee_payments
+from public, anon;

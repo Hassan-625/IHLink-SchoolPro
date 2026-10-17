@@ -100,3 +100,54 @@ begin
   return code;
 end
 $function$;
+
+
+-- Sanitize the public reader as well as the issuer. Existing valid codes may contain
+-- legacy subject/assessment detail snapshots; never return those raw JSON documents.
+-- Derive only aggregate totals for legacy snapshots and preserve aggregate snapshots
+-- issued by the new issuer. Revoked records never expose a snapshot.
+create or replace function public.schoolpro_verify_result_code(p_code text)
+returns table(
+  status text,
+  school_name text,
+  student_name text,
+  admission_number text,
+  class_name text,
+  term text,
+  session text,
+  issued_at timestamptz,
+  snapshot jsonb
+)
+language sql
+stable
+security definer
+set search_path to ''
+as $function$
+  select
+    case when v.revoked_at is null and v.status = 'valid' then 'valid' else 'revoked' end,
+    s.name,
+    st.first_name || ' ' || st.last_name,
+    st.admission_number,
+    st.class_name,
+    v.term,
+    v.session,
+    v.issued_at,
+    case
+      when v.revoked_at is not null or v.status <> 'valid' then null::jsonb
+      when v.snapshot ? 'total' and v.snapshot ? 'average' then
+        jsonb_build_object('total', v.snapshot->'total', 'average', v.snapshot->'average')
+      when jsonb_typeof(v.snapshot->'results') = 'array' then (
+        select jsonb_build_object(
+          'total', coalesce(sum(nullif(item->>'total_score','')::numeric), 0),
+          'average', coalesce(round(avg(nullif(item->>'total_score','')::numeric), 2), 0)
+        )
+        from jsonb_array_elements(v.snapshot->'results') as item
+      )
+      else null::jsonb
+    end
+  from public.schoolpro_result_verifications v
+  join public.schoolpro_schools s on s.id = v.school_id
+  join public.schoolpro_students st on st.id = v.student_id
+  where v.verification_code = upper(trim(p_code))
+  limit 1
+$function$;

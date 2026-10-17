@@ -158,7 +158,7 @@ async function authenticateRequest(pool, request) {
   const [rows] = await pool.execute(
     'SELECT u.id, u.email, u.display_name, u.status, s.id AS session_id, s.token_hash ' +
     'FROM user_sessions s JOIN users u ON u.id = s.user_id ' +
-    'WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP(6) AND u.status = \\'active\\' LIMIT 1',
+    "WHERE s.token_hash = ? AND s.revoked_at IS NULL AND s.expires_at > UTC_TIMESTAMP(6) AND u.status = 'active' LIMIT 1",
     [tokenHash],
   );
   return rows[0] || null;
@@ -272,15 +272,15 @@ export function createAppServer({pool, env = process.env}) {
         const [schools] = await pool.execute('SELECT id, name, status FROM schools WHERE id = ? LIMIT 1', [schoolId]);
         if (!schools[0]) return sendJson(response, 404, {error: 'School not found'});
         const [platformRoles] = await pool.execute(
-          'SELECT role_code FROM platform_roles WHERE user_id = ? AND role_code IN (\\'super_admin\\', \\'platform_admin\\') ' +
-          'ORDER BY CASE role_code WHEN \\'super_admin\\' THEN 0 ELSE 1 END LIMIT 1',
+          "SELECT role_code FROM platform_roles WHERE user_id = ? AND role_code IN ('super_admin', 'platform_admin') " +
+          "ORDER BY CASE role_code WHEN 'super_admin' THEN 0 ELSE 1 END LIMIT 1",
           [session.id],
         );
         if (platformRoles[0]) {
           return sendJson(response, 200, {school: schools[0], access: {kind: 'platform', role: platformRoles[0].role_code}});
         }
         const [memberships] = await pool.execute(
-          'SELECT role_code FROM school_memberships WHERE school_id = ? AND user_id = ? AND status = \\'active\\' LIMIT 1',
+          "SELECT role_code FROM school_memberships WHERE school_id = ? AND user_id = ? AND status = 'active' LIMIT 1",
           [schoolId, session.id],
         );
         if (!memberships[0]) return sendJson(response, 404, {error: 'School not found'});

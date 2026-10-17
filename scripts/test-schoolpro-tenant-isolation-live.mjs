@@ -43,11 +43,17 @@ function describeError(error) {
   try { return JSON.stringify(error); } catch { return String(error); }
 }
 
-async function countRows(client, table, schoolId, maxAttempts = 3) {
+async function assertNoForeignRows(client, table, schoolId, accountName, maxAttempts = 3) {
   let result;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    result = await client.from(table).select('id', {count: 'exact', head: true}).eq('school_id', schoolId);
-    if (!result.error) return result.count ?? 0;
+    // A bounded row probe is enough to prove denial; exact COUNT(*) can be expensive
+    // under layered RLS policies and adds no value to this negative assertion.
+    result = await client.from(table).select('id').eq('school_id', schoolId).limit(1);
+    if (!result.error) {
+      assert.equal(result.data?.length ?? 0, 0, accountName + ' must not read foreign-school rows from ' + table);
+      console.log('PASS', accountName, 'foreign-school read blocked:', table);
+      return;
+    }
 
     const message = describeError(result.error);
     const status = Number(result.error.statusCode || result.error.status || 0);
@@ -55,13 +61,13 @@ async function countRows(client, table, schoolId, maxAttempts = 3) {
       || [429, 502, 503, 504].includes(status)
       || (status === 0 && !String(result.error.message || '').trim() && !result.error.code);
     if (!transient || attempt === maxAttempts) {
-      throw new Error('Read-only tenant count failed for ' + table + ' (attempt ' + attempt + '/' + maxAttempts + ', status ' + status + '): ' + message);
+      throw new Error('Read-only tenant probe failed for ' + table + ' (attempt ' + attempt + '/' + maxAttempts + ', status ' + status + '): ' + message);
     }
     const delayMs = 1000 * attempt;
-    console.warn('WARN', table, 'transient count error on attempt', attempt + '/' + maxAttempts, '- retrying in', delayMs + 'ms');
+    console.warn('WARN', table, 'transient probe error on attempt', attempt + '/' + maxAttempts, '- retrying in', delayMs + 'ms');
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
-  throw new Error('Read-only tenant count failed for ' + table + ': no result');
+  throw new Error('Read-only tenant probe failed for ' + table + ': no result');
 }
 
 async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId) {
@@ -76,9 +82,7 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     'schoolpro_inventory_assets', 'schoolpro_calendar_events', 'schoolpro_lesson_notes',
     'schoolpro_result_approvals', 'schoolpro_promotions',
   ]) {
-    const count = await countRows(client, table, otherSchoolId);
-    assert.equal(count, 0, accountName + ' must not read foreign-school rows from ' + table);
-    console.log('PASS', accountName, 'foreign-school read blocked:', table);
+    await assertNoForeignRows(client, table, otherSchoolId, accountName);
   }
 
   const {data: ownPeriod, error: ownPeriodError} = await client.rpc('schoolpro_current_academic_period', {p_school: ownSchoolId});

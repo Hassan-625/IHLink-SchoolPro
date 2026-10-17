@@ -2804,3 +2804,14 @@ Exact-head schema run #463 exposed a genuine disposable-MySQL integration-test f
 - SchoolPro CI was still running when that failure was first inspected; it is not counted as green until its final result is checked.
 - Prior cross-school assignment test assertion was also corrected to expect the actual MySQL constraint name `fk_submission_student`; do not treat the earlier failed schema run as acceptance.
 - No production migration, credential, data or deployment was changed.
+
+
+### Corrected root cause: MySQL schema workflow fixture ordering — 2026-10-17
+
+Follow-up investigation of schema run #465 found the primary reason the student admission login integration test returned 401: the workflow ran `npm test --prefix server/mysql-api` **before** inserting `schoolpro_student_credentials_fixture.sql`. The API test's `before()` setup attempted to update the synthetic credential row before it existed, so no credential was available for login. This is a workflow ordering defect; the hash correction alone could not fix it.
+
+Moved both the synthetic login-throttling fixture and student credential/session fixture before the MySQL API test step. This makes the test database setup deterministic and ensures the test's `before()` hash update affects an existing credential row. The fixture's static scrypt hash for `One` was also made mathematically correct, but the test setup regenerates the password hash with the API's own `hashPassword` helper.
+
+- Workflow correction commit: `93060c0a929ec2eff8873b80f8f00b43320f344a`.
+- Corrected schema/API workflow, SchoolPro CI and payment-page validation must be checked on the new code-bearing commit. Previous failed run #465 is not acceptance evidence.
+- No production database, credential, or deployment was changed.

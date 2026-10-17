@@ -86,27 +86,18 @@ create policy guardian_or_finance_read_submissions on public.schoolpro_payment_s
  private.schoolpro_module_allowed(school_id,'finance') or submitted_by=auth.uid());
 create policy guardian_own_insert_submissions on public.schoolpro_payment_submissions for insert to authenticated with check (
  submitted_by=auth.uid() and exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_payment_submissions.school_id and g.guardian_user_id=auth.uid() and g.status='active'));
-create policy finance_update_submissions on public.schoolpro_payment_submissions for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_delete_submissions on public.schoolpro_payment_submissions for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));
 
 create policy guardian_or_finance_read_allocations on public.schoolpro_payment_allocations for select to authenticated using (
  private.schoolpro_module_allowed(school_id,'finance') or exists(select 1 from public.schoolpro_payment_submissions s where s.id=submission_id and s.submitted_by=auth.uid()));
-create policy finance_insert_allocations on public.schoolpro_payment_allocations for insert to authenticated with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_update_allocations on public.schoolpro_payment_allocations for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_delete_allocations on public.schoolpro_payment_allocations for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));
 
 create policy guardian_or_finance_read_proofs on public.schoolpro_payment_proofs for select to authenticated using (
  private.schoolpro_module_allowed(school_id,'finance') or submitted_by=auth.uid());
 create policy "guardian submits proof" on public.schoolpro_payment_proofs for insert to authenticated with check (
  submitted_by=auth.uid() and exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_payment_proofs.school_id and g.student_id=schoolpro_payment_proofs.student_id and g.guardian_user_id=auth.uid() and g.status='active'));
-create policy finance_update_proofs on public.schoolpro_payment_proofs for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_delete_proofs on public.schoolpro_payment_proofs for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));
 
 create policy guardian_finance_read_fee_payments on public.schoolpro_fee_payments for select to authenticated using (
  private.schoolpro_module_allowed(school_id,'finance') or exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_fee_payments.school_id and g.student_id=schoolpro_fee_payments.student_id and g.guardian_user_id=auth.uid() and g.status='active'));
 create policy finance_insert_fee_payments on public.schoolpro_fee_payments for insert to authenticated with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_update_fee_payments on public.schoolpro_fee_payments for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
-create policy finance_delete_fee_payments on public.schoolpro_fee_payments for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));
 
 alter table public.schoolpro_guardian_links enable row level security;
 create policy guardian_reads_own_link on public.schoolpro_guardian_links for select to authenticated
@@ -231,11 +222,15 @@ select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001'
 
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
 select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);
-select pg_temp.assert_count('finance can review all school submissions',(select count(*) from public.schoolpro_payment_submissions),2);
-update public.schoolpro_payment_submissions set status='reviewed' where id='e0000000-0000-0000-0000-000000000001';
-update public.schoolpro_payment_allocations set amount=101 where id='f0000000-0000-0000-0000-000000000001';
-update public.schoolpro_payment_proofs set receipt_path='reviewed/path.pdf' where id='11000000-0000-0000-0000-000000000001';
-update public.schoolpro_fee_payments set amount=101 where id='12000000-0000-0000-0000-000000000001';
+select pg_temp.assert_count('finance can read all school submissions',(select count(*) from public.schoolpro_payment_submissions),2);
+select pg_temp.assert_no_rows_affected('finance cannot directly change submission review status',$update public.schoolpro_payment_submissions set status='reviewed' where id='e0000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('finance cannot directly alter invoice allocation amount',$update public.schoolpro_payment_allocations set amount=101 where id='f0000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('finance cannot directly replace proof receipt path',$update public.schoolpro_payment_proofs set receipt_path='reviewed/path.pdf' where id='11000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('finance cannot directly edit fee-payment ledger amount',$update public.schoolpro_fee_payments set amount=101 where id='12000000-0000-0000-0000-000000000001'$);
+select pg_temp.assert_no_rows_affected('finance cannot delete fee-payment ledger row',$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$);
+insert into public.schoolpro_fee_payments(id,school_id,student_id,amount)
+values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50);
+select pg_temp.assert_count('finance can insert an intended school fee payment',(select count(*) from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000099'),1);
 
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000098',false);
 select set_config('test.finance_school','',false);
@@ -247,4 +242,4 @@ select pg_temp.assert_count('Super Admin reads all fee payments',(select count(*
 select pg_temp.assert_no_rows_affected('Super Admin cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=888 where id='e0000000-0000-0000-0000-000000000001'$$);
 select pg_temp.assert_no_rows_affected('Super Admin cannot delete fee payment',$$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$$);
 reset role;
-select 'PASS: payment-review RLS restricted guardian scope, allowed school-finance review, and kept Super Admin read-only.' as result;
+select 'PASS: payment-review RLS restricted guardian scope, denied direct finance edits to review/ledger fields, allowed intended finance INSERT, and kept Super Admin read-only.' as result;

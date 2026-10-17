@@ -97,7 +97,7 @@ create policy finance_delete_allocations on public.schoolpro_payment_allocations
 
 create policy guardian_or_finance_read_proofs on public.schoolpro_payment_proofs for select to authenticated using (
  private.schoolpro_module_allowed(school_id,'finance') or submitted_by=auth.uid());
-create policy guardian_own_insert_proofs on public.schoolpro_payment_proofs for insert to authenticated with check (
+create policy "guardian submits proof" on public.schoolpro_payment_proofs for insert to authenticated with check (
  submitted_by=auth.uid() and exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_payment_proofs.school_id and g.student_id=schoolpro_payment_proofs.student_id and g.guardian_user_id=auth.uid() and g.status='active'));
 create policy finance_update_proofs on public.schoolpro_payment_proofs for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
 create policy finance_delete_proofs on public.schoolpro_payment_proofs for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));

@@ -2243,3 +2243,27 @@ No production DDL/DML, receipt upload, deployment, migration replay or merge occ
 ### Acceptance decision after run #1487
 
 CI on `e21d52b` passes the disposable runtime assertions, including Storage policy behavior and concurrent review. Stage A is nevertheless **NOT MERGE-READY** until run #1488 validates the additional activation-guard test and remaining full-schema/source-history caveats are either closed or explicitly accepted. The migration source/ledger comparison for Stage A is complete: the eleven listed 2026-10-15 20:30 through 2026-10-17 files are unapplied PR proposals, while older historical filename mismatches remain possible supersession cases requiring object-level equivalence review. No production migration, DML, receipt upload, deployment or merge occurred.
+
+
+## 46. Latest exact-head acceptance and historical source/ledger comparison (2026-10-17)
+
+### Exact-head results
+
+- SchoolPro CI [#1488](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39028829240) completed all functional jobs successfully on tested commit `499fe19aa476723f1e6a3d151e71eedc13e12ea4`: validation/build, local Supabase receipt Storage isolation, payment-review RLS plus two-session review concurrency, tenant-integrity DB integration, result-PIN rate-limit integration, tenant acceptance, public-admission abuse controls and result-verification exposure.
+- Payment-page validation [#1215](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39028829224) passed on the same head.
+- The payment-review integration now also tests that the actual activation-guard function body rejects a review transition when the test school is inactive; that test passed. The active-state helper is deliberately stubbed via a session setting, while the production guard body is the copied live definition. This is not a live production write.
+- The local Storage job passed with uploader-owned object-path checks on both proof and submission branches, cross-school finance denial, own-school finance access, guardian folder isolation, and active Super Admin helper bypass.
+
+### Older repository migration name mismatches
+
+Read-only comparison of the three historical source files with current production catalog definitions gives the following classification; none should be replayed simply to match names:
+
+1. `20261003000500_schoolpro_guardian_tenant_hardening.sql` is not an exact ledger entry. Its same-school guardian/student relation intent is currently enforced by live `private.schoolpro_guardian_school_scope()` trigger on `schoolpro_guardian_links`; current guardian policies also use active links and the invoice/payment ownership helper. This is evidence of later/alternate implementation, not proof that the old migration itself ran.
+2. `20261003002000_schoolpro_cbt_permission_tenant_integrity.sql` is not an exact ledger entry. Current live triggers use `private.enforce_schoolpro_tenant_relations()` on CBT question relations and eligibility, `private.validate_schoolpro_cbt_eligibility()`, and `private.validate_candidate_cbt_tenant()` for candidate application/test school matching. Their deployed function bodies cover the central same-school invariants in the historical source migration under different names.
+3. `20261002234500_schoolpro_operational_tenant_isolation.sql` is not an exact ledger entry. Its current target tables have RLS enabled, but **FORCE ROW LEVEL SECURITY is false** and the exact trigger function `private.schoolpro_validate_operational_tenant()` is absent from the inspected catalog. Existing activation/workflow triggers and current policies provide some protection, but are not proven equivalent to that migration's policy replacement and FORCE-RLS posture. This is a genuine enforcement-posture difference that requires an explicit design decision and tests, not blind replay of a migration that drops and recreates policies.
+
+### Final Stage A decision
+
+The Stage A proposal set is reconciled against the production ledger and deployed definitions; unapplied PR migrations are classified as expected pending changes, not ledger corruption. Historical filename mismatches are now classified into two likely superseded cases (guardian and CBT relation guards) and one unresolved operational-RLS posture difference. Do not replay historical migrations or hand-edit the ledger. If Stage A is to ship, explicitly review the operational RLS/FORCE-RLS gap and the pending repair migration as a forward-only change with role/owner-trigger tests.
+
+**Stage A remains NOT MERGE-READY.** The exact-head CI is green, but CI success is not equivalent to production migration acceptance. Outstanding release decision: approve a safe forward-only operational tenant integrity repair and verify its full schema/trigger interactions; confirm migration history/provenance for the historical operational isolation migration; and keep all production changes behind explicit approval. No production migration, DML, receipt upload, deployment or merge occurred.

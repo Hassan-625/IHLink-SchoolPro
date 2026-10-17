@@ -13,6 +13,10 @@ INSERT INTO question_bank
  (id,school_id,subject_id,class_id,question_type,question_text,options,correct_answer,marks,created_by)
 VALUES
  ('e3000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','70000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','multiple_choice','What is 2 + 2?',JSON_ARRAY('3','4','5'),'4',1,'00000000-0000-4000-8000-000000000001');
+INSERT INTO question_bank
+ (id,school_id,subject_id,class_id,question_type,question_text,options,correct_answer,marks,created_by)
+VALUES
+ ('e3000000-0000-4000-8000-000000000002','10000000-0000-4000-8000-000000000002','70000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000002','multiple_choice','Foreign-school fixture question',JSON_ARRAY('A','B'),'A',1,'00000000-0000-4000-8000-000000000002');
 
 INSERT INTO cbt_tests
  (id,school_id,title,subject_id,class_id,session_id,duration_minutes,total_marks,status,created_by,opens_at,closes_at,attempts_allowed)

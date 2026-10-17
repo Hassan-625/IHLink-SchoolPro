@@ -2571,3 +2571,25 @@ The repository already contains a dedicated forward-only index migration, `supab
 ### Operational tenant index regression-test correction — 2026-10-17
 
 The first CI attempt for the index repair caught two harness-only defects: a dollar-quoted SQL assertion block was authored with a single `$` delimiter, and the static JavaScript regex over-escaped its pattern. Corrected the SQL block to use `$assert$` delimiters and replaced the brittle regex with exact DDL-string assertions. These failed attempts are not accepted. Latest code-bearing Stage A head is `7416aa218634e5e095b46ef4a6ac328718db9346`; SchoolPro CI #1590 and payment-page validation #1317 are queued. The six-index migration is still draft-only; production remains unchanged.
+
+
+### MySQL migrations 001–006 exact-head revalidation — 2026-10-17
+
+Current PR #107 head 627a163fbad728c0665d56cffe965edb60de7a64 has:
+- MySQL schema workflow #394 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033057013
+- SchoolPro CI #1579 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033056969
+- Payment-page validation #1306 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033057076
+
+This confirms the current draft MySQL 8.4 migration chain 001–006 installs and selected synthetic/negative relational tests pass. It does NOT mean the React application is using MySQL: the current frontend still imports the Supabase browser client and Supabase Auth. A SchoolPro-only server-side API/data-access boundary is the next migration phase; do not point browser/mobile clients directly at MySQL, and do not switch DataSub or other IHLink products off Supabase. Existing Supabase-auth password hashes must not be copied into MySQL as if they were portable; plan explicit account migration/reset or a controlled transition.
+
+### Stage A post-index test harness correction — 2026-10-17
+
+A Stage A CI run after the canonical operational index migration was added to the integration test caught two test-harness defects before production deployment:
+1. Static regex assertions overescaped \s/\S, so they did not match the actual tenant-leading index DDL even though the canonical migration contains the expected indexes.
+2. The SQL index assertion block used an inconsistent dollar-quote delimiter and failed parsing.
+
+Corrected the static regexes to use [\s\S] and normalized the SQL block to DO $$ ... $$;. This is a test-only correction; the canonical forward-only migration remains supabase/migrations/20261017180000_schoolpro_operational_tenant_indexes.sql. The failed run #1585 is not counted as acceptance. New exact-head Stage A CI #1592 and payment validation #1319 were queued at the time of this note:
+- https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033592982
+- https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033592955
+
+Production still lacks the reviewed indexes, and the live RLS probe has not passed due to the result-approval query timing out. No production changes were made. Keep Stage A open until exact-head local integration passes and production deployment is explicitly authorized, followed by catalog verification and a successful two-school authenticated smoke test.

@@ -1929,3 +1929,11 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - The latest Stage A draft now intentionally hashes **normalized admission number only** for the 8-failure / 15-minute cooldown. It does not use request headers or any client-IP value. The migration comments, static assertion, SQL integration fixture and concurrent test use the same admission-only key.
 - This scope prevents attackers from varying term/session inputs to obtain separate failure counters, but it also means a targeted attacker who passes Turnstile can temporarily block result checks for that admission across all periods. That is a known residual denial-of-service trade-off; the new Turnstile gateway and service-role-only RPC grant reduce direct automation/bypass but do not eliminate targeted lockout.
 - Keep this behavior as a release-review item. Before production deployment, decide whether the broader lockout scope is acceptable or whether a verified, non-spoofable edge identity is available and can be proven end-to-end. Do not substitute an unverified request header. No production grant or cooldown was changed.
+
+
+## 36. Family report-media path-index production preflight (2026-10-17)
+
+- Read-only schema/index inspection confirmed all four path columns referenced by the draft optimization exist. Production has no existing index on `photo_storage_path`, `principal_signature_path`, `form_teacher_signature_path`, or `logo_storage_path`; the workbook `storage_path` column is already covered by a separate unique index and is not the same lookup column.
+- Aggregate counts on the active production data returned: student photo paths 0; principal signature paths 0; form-teacher signature paths 0; result-template logo paths 0; workbook storage paths 1. No path values were retrieved.
+- These counts suggest low current data volume for the four indexed media lookups, but they do not prove policy evaluation is cheap: Storage policy checks can run against the bucket's object population and the authorization helper still contains nested result-access checks. Keep the draft indexes/policy change subject to disposable query-plan/runtime testing, especially at representative bucket-object scale; do not benchmark destructively or create fake objects in production.
+- No production change was made.

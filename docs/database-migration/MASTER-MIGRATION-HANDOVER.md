@@ -2815,3 +2815,14 @@ Moved both the synthetic login-throttling fixture and student credential/session
 - Workflow correction commit: `93060c0a929ec2eff8873b80f8f00b43320f344a`.
 - Corrected schema/API workflow, SchoolPro CI and payment-page validation must be checked on the new code-bearing commit. Previous failed run #465 is not acceptance evidence.
 - No production database, credential, or deployment was changed.
+
+
+### MySQL schema/auth fixture-order correction validated — 2026-10-17
+
+The corrected workflow commit `93060c0a929ec2eff8873b80f8f00b43320f344a` has now passed the disposable MySQL 8.4 schema/API workflow:
+- MySQL schema draft run #468 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035805926
+- The `mysql-api-test` job in SchoolPro CI #1652 passed, including the real-MySQL student authentication/session integration tests: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035805864
+- Payment-page validation #1379 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035805877
+- At handover update time, SchoolPro CI's separate `validate` job was still running; therefore overall CI was not yet recorded as green.
+
+This confirms the student credential fixture ordering correction resolved the observed login-test failure. The migration/schema workflow now applies migrations 001–008, inserts the required synthetic fixtures before API tests, then exercises cross-school relationship constraints. This remains disposable CI only; migrations 001–008 have not been applied to production, and the MySQL application cutover is not approved.

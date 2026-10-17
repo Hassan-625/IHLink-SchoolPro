@@ -1,0 +1,16 @@
+{
+  "name": "schoolpro-mysql-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "mysql2": "^3.15.3"
+  }
+}

@@ -1952,3 +1952,11 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
   - result-PIN: eight concurrent wrong-PIN requests serialized into one cooldown key in that run.
 - **Latest-head qualification:** subsequent commits changed the result-PIN cooldown key from admission+period to admission-only, aligned the static/integration assertions, and corrected the migration comments. The passing run above predates that final key-scope choice. The corresponding latest-code SchoolPro CI run `39026135034` was queued when checked, and run `39026200592` for the comment-only follow-up was also queued. Do not call the latest head fully green until the queued latest-code run executes and passes.
 - The successful run validates the draft/local acceptance suite only. It does not prove the draft migrations have been applied to production or reconcile the missing production migration-ledger entries. The live payment-submission guard gap, direct public RPC bypasses, and remaining schema/ledger review are still release blockers. PR #106 remains draft/unmerged and Stage B remains blocked.
+
+
+## 37. Added explicit result-PIN cooldown period-switch regression (2026-10-17)
+
+- Strengthened `scripts/test-schoolpro-result-pin-rate-limit.integration.sql` so its eight wrong-PIN attempts deliberately alternate caller-supplied term/session values. This verifies that a caller cannot evade the admission-only cooldown by changing the period parameters between attempts.
+- Test commit: `290803b74cce2e41ac4e34fa023b7bb0e2b87ee9`.
+- SchoolPro CI #39026357858 and payment-page validation #39026357837 are queued for the current head. This test is not considered passed until the SQL integration job runs and the logs confirm success.
+- The cooldown's known cross-school duplicate-admission trade-off remains documented in section 32. Do not add an IP component without verified trusted-edge provenance; if the trade-off is unacceptable, redesign the public RPC/UI contract to include an explicit school identifier and scope the key to school + normalized admission.

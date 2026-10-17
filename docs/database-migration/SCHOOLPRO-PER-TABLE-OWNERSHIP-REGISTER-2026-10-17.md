@@ -46,3 +46,8 @@ For each child table above, a simple FK to a parent UUID does not prove tenant a
 - **Schema-level ownership classification:** proposed for all 107 tables (89 direct-key candidates; 18 exceptions classified above).
 - **Row-level inclusion and referential-integrity sign-off:** pending read-only row audits, parent consistency checks, data-retention review, and authoritative SQL provenance reconciliation.
 - **Export/import:** not approved.
+
+
+## Read-only tenant integrity follow-up — 2026-10-17
+
+The [live tenant-relation catalog reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md) documents 17 targeted cross-school consistency joins returning zero mismatches and maps current trigger enforcement to each affected relationship. This is not a complete ownership sign-off: orphan/null checks, storage object ownership, future cross-tenant negative read/write tests and routine/trigger ACL review remain. The issued-document SELECT policy's tautological `st.school_id = st.school_id` predicate is flagged for approved correction and adversarial tests. No production writes were made.

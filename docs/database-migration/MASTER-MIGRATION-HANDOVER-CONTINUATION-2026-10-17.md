@@ -155,3 +155,6 @@ The [anonymous SECURITY DEFINER RPC review](SCHOOLPRO-ANON-SECURITY-DEFINER-RPC-
 Highest priority is `check_schoolpro_result_pin(text,text,text,text)`: it accepts anonymous RPC calls, has no in-body failed-attempt throttle, and the PIN table has no attempt-count/lockout column. A frontend-only throttle would be bypassable by direct PostgREST RPC calls. The ledger explicitly granted anon execution in `20260924144655 harden_rpc_and_customer_platform_access`. Result-code verification also returns the stored snapshot for valid codes and needs field minimization, entropy and enumeration/rate-limit review. Public admission/document flows require abuse-control review as well.
 
 No grants or functions were changed. This is a current security blocker to reproduce the same public RPC surface in the target; remediation should use a trusted, rate-limited endpoint and avoid unverified client-supplied IP-based database identity.
+
+
+A follow-up read-only count found zero rows in `schoolpro_result_verifications` and zero rows in `schoolpro_result_access_pins`. No current result snapshot/PIN data was exposed during this review; the concern is a latent public endpoint/grant design risk before these tables are populated, not evidence of exploitation.

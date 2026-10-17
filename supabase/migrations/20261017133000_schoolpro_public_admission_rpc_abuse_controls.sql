@@ -32,6 +32,8 @@ declare
   v_previous text := nullif(btrim(p_previous), '');
   v_hour_count integer;
   v_day_count integer;
+  v_phone_lock bigint;
+  v_email_lock bigint;
 begin
   if p_school is null or not exists (
     select 1 from public.schoolpro_site_settings s
@@ -83,9 +85,16 @@ begin
 
   -- A transaction-scoped lock serializes requests for the same school/contact.
   -- It uses normalized form values, never a caller-controlled network header.
-  perform pg_catalog.pg_advisory_xact_lock(
-    pg_catalog.hashtextextended(p_school::text || '|' || v_phone_digits, 0)
-  );
+  v_phone_lock := pg_catalog.hashtextextended(p_school::text || '|phone|' || v_phone_digits, 0);
+  v_email_lock := pg_catalog.hashtextextended(p_school::text || '|email|' || coalesce(v_email, ''), 0);
+  -- Acquire both normalized contact locks in a stable order to avoid deadlocks.
+  if v_phone_lock < v_email_lock then
+    perform pg_catalog.pg_advisory_xact_lock(v_phone_lock);
+    perform pg_catalog.pg_advisory_xact_lock(v_email_lock);
+  else
+    perform pg_catalog.pg_advisory_xact_lock(v_email_lock);
+    perform pg_catalog.pg_advisory_xact_lock(v_phone_lock);
+  end if;
 
   select
     count(*) filter (where a.submitted_at >= now() - interval '1 hour')::integer,

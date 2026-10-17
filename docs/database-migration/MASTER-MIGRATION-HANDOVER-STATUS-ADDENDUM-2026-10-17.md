@@ -101,3 +101,21 @@ The 397 SQL-derived scope labels are deliberately **non-exclusive** because a si
 
 ## Latest issued-document policy regression status — 2026-10-17
 GitHub reports all three workflows completed successfully on PR #108 head commit `018af841733e094a634955b199ac590bac9f95ff`: Issued-document RLS regression run `39048638982`, SchoolPro CI run `39048638923`, and payment-page validation run `39048638917`. The dedicated regression uses disposable PostgreSQL 17 with synthetic two-school data and tests the exact draft migration. PR #108 remains **open and draft**, has no recorded reviews, and is not approved for merge or production rollout. The test still does not emulate Supabase Storage API/signed URLs or prove the production app's complete RPC/download route behavior.
+
+## Live catalog name reconciliation for extracted dependencies — 2026-10-17
+A catalog comparison of the 634 distinct schema-qualified names extracted from the 397 recovered SQL payloads found 622 names present in current catalog relations, routines, types, sequences and other queried objects, and 12 absent names. Historical migration evidence resolves 11 of the absences as intentional removals in later ledger payloads:
+- `public.datasub_payment_intents` and `public.finalize_datasub_payment` — removed by `20261002143824_remove_legacy_flutterwave_datasub_payment`.
+- `public.datasub_public_catalog` — removed by `20260920195305_remove_security_definer_catalog_view`.
+- `public.datasub_admin_set_provider_state` — removed by `20261002144053_remove_obsolete_manual_datasub_provider_activation`.
+- `public.schoolpro_one_pending_billstack_per_account` — index explicitly dropped by `20260927105705_schoolpro_direct_school_bank_collection`.
+- `public.academy_course_orders` and `public.finalize_academy_payment` — removed by `20261002132735_academy_use_shared_commerce`.
+- `public.finalize_academy_course_order` — removed by `20261002135612_remove_obsolete_academy_order_finalizer`.
+- `public.create_datasub_purchase` and `private.create_datasub_purchase` — removed by `20261002143940_remove_obsolete_datasub_purchase_rpc`.
+- `private.validate_schoolpro_demo_window` — removed by `20261003161802_schoolpro_once_only_four_month_demo_and_expiry_grace`.
+
+The remaining absent name is `public.activity_logs`. The extracted SQL historically references it in shared/service lifecycle migrations, but no current relation with that name exists and the current stored routine bodies inspected did not contain an exact `public.activity_logs` reference. The present live shared log table is `public.audit_logs`, while product-specific logs also exist (e.g. `public.consult_activity_logs`). Treat the historical `public.activity_logs` reference as an unresolved compatibility/history question until the exact ledger SQL and application call sites are traced end-to-end; do not create a replacement table just to satisfy a historical reference.
+
+This name-level comparison is not a full semantic equivalence proof: overload signatures, dropped/recreated routines, dynamic SQL, row-level data ownership, grants and runtime call paths require separate checks. All 397 migration payloads remain unexecuted.
+
+## Security PR current state
+PR #108 (`security/issued-document-rls-fix-2026-10-17`) is open, draft, mergeable, and has no recorded reviews. Its current head is `018af841733e094a634955b199ac590bac9f95ff`; the dedicated RLS regression, SchoolPro CI, and payment-page validation all passed on that head. This is a tested proposal, not production approval. Real Supabase Storage API/signed URL and app endpoint checks remain open.

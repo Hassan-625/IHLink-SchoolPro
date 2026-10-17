@@ -138,3 +138,13 @@ Empty relevant buckets at the time of check: `schoolpro-admissions`, `schoolpro-
 3. For rows with NULL owner metadata, establish the service-side writer and verify Storage policy/API behavior rather than inferring access from `owner_id`.
 4. Run real authenticated Storage API tests for read, upload, update/move, delete and signed URL issuance, including cross-school path substitution. SQL-level policy regression is not a substitute for Storage API behavior.
 5. Do not use this register as export authorization. The unresolved objects remain excluded from automatic export.
+
+## Authenticated result-output object access and deployed Edge Function alignment — 2026-10-17
+Read-only transaction-scoped `authenticated` probes (each rolled back) checked the one existing object referenced by `schoolpro_generated_result_outputs`:
+- Same-school exam officer: **1 visible object**.
+- Same-school teacher with no subject assignment: **0 visible objects**.
+- Teacher from another school: **0 visible objects**.
+- The linked student identity: **0 visible objects**, consistent with `schoolpro_can_view_result_output(student_id, term, session)=false` for this current record (result not released); this is not evidence of an unintended denial for a released result.
+These are SQL RLS checks, not actual Storage API download tests.
+
+A separate high-priority compatibility finding: the only current `schoolpro_generated_result_outputs.storage_path` points to an object in bucket `schoolpro-result-outputs`, but the deployed `schoolpro-render-result` function writes generated PDFs to `school-result-templates`, and `schoolpro-result-access` attempts to create signed URLs from `school-result-templates`. The existing path was not found in that bucket. This suggests the deployed writer/accessor bucket and the stored output object's bucket are out of sync; signed retrieval for this row is likely to fail. In addition, `school-result-templates` has a broad `School users download result templates` policy based on school membership, which is suitable for template access but would be too broad for generated student-result outputs if those continue to be written into the same bucket. Do not change the production Edge Functions or bucket policies during this audit; resolve by restoring the exact deployed source into version control, choosing one canonical output bucket, and testing student/guardian/reviewer/unassigned-teacher/cross-school access through the real Storage API and signed-URL path.

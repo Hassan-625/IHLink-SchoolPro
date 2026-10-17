@@ -2731,3 +2731,12 @@ On code-bearing commit `26e3ec065425cfbbfe07492b3ff20b4c0d0b2b2d`:
 The API job initially failed because the MySQL service was absent. It now starts a disposable MySQL 8.4 service, applies migrations 001 and 007, loads synthetic core tenant fixtures, and runs the tests under Node 22. The earlier fixed `mysql2@3.15.3` install logged a high-severity audit finding; removing that exact-version pin and resolving the declared package range produced a successful test run with no audit warning in the observed log. This is not a formal full dependency audit; run `npm audit` on a lockfile-pinned dependency tree before release.
 
 SchoolPro's main `validate` job #1625 was still running at the time of this note: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034411801. Do not claim all CI green until it finishes. The migration remains schema/API-foundation work only; no production MySQL deployment or Supabase cutover has occurred.
+
+
+## MySQL API session lifecycle contract tests — 2026-10-17
+
+Extended `server/mysql-api/test/server.test.mjs` with two focused runtime contracts:
+- Browser logout revokes the server-side session and returns a cookie-clearing header; a follow-up `/v1/me` request with the formerly valid cookie must return 401.
+- Native login returns an opaque bearer token without a browser `Set-Cookie` header, and that token authenticates `/v1/me`.
+
+The mock pool now tracks revoked session state so the logout test checks subsequent authentication behavior rather than only response formatting. These are mock-pool API contract tests, not a replacement for disposable-MySQL session-revocation integration or mobile secure-vault integration. Exact-head MySQL schema/API tests, SchoolPro CI and payment validation are required before acceptance. No production change or deployment.

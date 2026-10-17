@@ -2,3 +2,6 @@ project_id = "lnqsroyiybutkfngbyge"
 
 [functions.schoolpro-public-admission]
 verify_jwt = false
+
+[functions.schoolpro-result-pin-check]
+verify_jwt = false

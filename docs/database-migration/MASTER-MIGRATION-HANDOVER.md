@@ -2566,3 +2566,8 @@ The repository already contains a dedicated forward-only index migration, `supab
 - Current Stage A run: CI #1580 and payment-page validation #1307 were still running when this note was added. CI #1578 on the prior retry-only head failed at the same result-approval probe after a status-0 timeout. Exact-head run results must be checked before acceptance.
 - Next acceptance step: let the canonical index migration be included in disposable local migration tests, rerun the two-school acceptance only after authorized deployment (or use an isolated Supabase branch first), then verify the index definitions via read-only catalog query and repeat the same authenticated role/tenant matrix. Do not drop or weaken the result-approval policies to make the test pass.
 - No production schema, rows, or settings were changed by these catalog queries or repository edits.
+
+
+### Operational tenant index regression-test correction — 2026-10-17
+
+The first CI attempt for the index repair caught two harness-only defects: a dollar-quoted SQL assertion block was authored with a single `$` delimiter, and the static JavaScript regex over-escaped its pattern. Corrected the SQL block to use `$assert$` delimiters and replaced the brittle regex with exact DDL-string assertions. These failed attempts are not accepted. Latest code-bearing Stage A head is `7416aa218634e5e095b46ef4a6ac328718db9346`; SchoolPro CI #1590 and payment-page validation #1317 are queued. The six-index migration is still draft-only; production remains unchanged.

@@ -1171,3 +1171,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 
 - Latest Stage A head `ce11a747aefa5bb080489b61421af1770aa0ac77`: [SchoolPro CI #38992801989](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801989) has completed successfully for `result-pin-rate-limit-integration` (including the new global document-serial uniqueness integration step), `payment-review-rls-integration`, and `tenant-integrity-db-integration`.
 - At the last check, `validate` and `tenant-acceptance` were still running with no reported failure. Do not call the entire workflow green until those two jobs finish successfully. Payment-page validation for the same head is queued/running at [#38992801845](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801845).
+
+
+### CI completion update — 2026-10-17 (global document-serial uniqueness)
+
+- Rechecked [SchoolPro CI #38992801989](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801989) on Stage A head `ce11a747aefa5bb080489b61421af1770aa0ac77`. All five jobs are now **successful**: `validate`, `result-pin-rate-limit-integration` (including the global document-serial uniqueness integration and concurrent result-PIN cooldown test), `payment-review-rls-integration`, `tenant-integrity-db-integration`, and `tenant-acceptance`.
+- [Payment-page validation #38992801845](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801845) also completed successfully on the same head.
+- Scope of evidence: static checks, build/typecheck, disposable PostgreSQL integration fixtures, and the configured read-only two-school tenant acceptance checks. This does **not** establish production gateway provenance for `cf-connecting-ip`, apply draft migrations, or prove full production schema parity.
+- Next Stage A review item: audit service-role consumers and expected write paths for the seven RLS-enabled/no-policy tables; keep public verification RPC abuse controls and production result-PIN cooldown rollout under review. Continue A/B/C re-verification before D. SchoolPro MySQL migration remains incomplete; DataSub remains on Supabase.
+- No production SQL write/migration, merge, deployment, or paid branch creation occurred. PR #106 and PR #107 remain separate draft workstreams pending explicit owner approval.

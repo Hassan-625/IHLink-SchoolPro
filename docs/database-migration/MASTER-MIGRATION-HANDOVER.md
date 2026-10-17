@@ -2773,3 +2773,16 @@ Added server API endpoints:
 - `POST /v1/student/auth/logout`: revokes the student session and clears the separate student cookie.
 
 Added mock-pool API tests for student admission login, separate student cookie namespace, mandatory password-change state and rejection of the old initial password after a change. These are starter contracts only. Remaining hardening: atomic/locked password-change transaction, revoke other sessions on password change, login abuse tests against disposable MySQL, account provisioning that hashes surname at roster import, native secure-vault integration, student authorization for future data endpoints, and explicit integration tests for inactive/locked students and schools. Migration 008 and routes are draft-only, not deployed, and no production data was changed. Exact-head schema/API CI, SchoolPro CI and payment validation are required before acceptance.
+
+
+### Student authentication upgraded to disposable-MySQL integration coverage — 2026-10-17
+
+Added a real MySQL-backed API integration test in `server/mysql-api/test/api.test.mjs`. It sets a synthetic student's initial surname password as a server-generated scrypt hash, then verifies:
+- School-code + admission-number login succeeds and issues a separate `schoolpro_student_session` cookie.
+- The persisted student session stores only SHA-256 of the opaque token.
+- `/v1/student/me` reports the initial password-change requirement.
+- A short new password is rejected.
+- A strong password change clears the requirement; the old surname password is rejected and the new password succeeds.
+- Student logout revokes the session and subsequent `/v1/student/me` returns 401.
+
+Updated `.github/workflows/ci.yml` to apply migration 008 and the synthetic student credential fixture in the disposable MySQL 8.4 API job. This supplements the mock-pool tests with actual MySQL persistence and relational behavior. Exact-head CI/schema/payment validation is pending for this increment. Remaining student-auth security work: make password update + session invalidation transactional, revoke other student sessions on password change, enforce forced-change gate on all future student data routes, and test locked/inactive student/school states against MySQL. No production migration, deployment or cutover.

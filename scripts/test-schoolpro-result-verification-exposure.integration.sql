@@ -58,7 +58,7 @@ values
  ('c1000000-0000-0000-0000-000000000002','a1000000-0000-0000-0000-000000000001','First Term','2025/2026','published',true,70),
  ('c1000000-0000-0000-0000-000000000003','a1000000-0000-0000-0000-000000000001','First Term','2025/2026','draft',false,99);
 
-ir ../supabase/migrations/20261017120000_schoolpro_result_verification_minimal_snapshot.sql
+\ir ../supabase/migrations/20261017120000_schoolpro_result_verification_minimal_snapshot.sql
 
 select set_config('request.jwt.claim.sub','d1000000-0000-0000-0000-000000000001',false);
 

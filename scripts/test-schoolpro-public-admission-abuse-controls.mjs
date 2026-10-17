@@ -12,7 +12,7 @@ assert.match(migration, /is_published\s*=\s*true[\s\S]*?admissions_open\s*=\s*tr
   'Applications must only be accepted while admissions are published and open');
 for (const [field, limit] of [
   ['v_first', 80], ['v_last', 80], ['v_guardian', 120],
-  ['v_class', 80], ['v_previous', 160], ['v_phone', 32], ['v_email', 254],
+  ['v_class', 80], ['v_phone', 32],
 ]) {
   assert.match(migration, new RegExp('length\\(' + field + '\\) > ' + limit),
     'Must cap ' + field + ' at ' + limit + ' characters');

@@ -1,4 +1,7 @@
 # IHLink Master Database Migration Handover
+
+> **Latest audit checkpoint (2026-10-17):** Continue from [MASTER-MIGRATION-HANDOVER-STATUS-ADDENDUM-2026-10-17.md](MASTER-MIGRATION-HANDOVER-STATUS-ADDENDUM-2026-10-17.md). It records the 35-version provenance gap, 397 live-only inventory progress, the draft-only issued-document RLS correction, generated FK/tenant consistency checks, storage ownership findings, and current export/import gates. The addendum is supporting evidence; it does not authorize production changes or export/import.
+
 **Last updated:** 17 October 2026
 **Status:** Audit and isolated schema-pilot stage — NOT approved for production cutover  
 **Working PR:** https://github.com/Hassan-625/IHLink-SchoolPro/pull/107  

@@ -104,18 +104,20 @@ select public.submit_schoolpro_payment(
   :'receipt', 'application/pdf',
   jsonb_build_array(jsonb_build_object('invoice_id', :'invoice', 'amount', 400))
 ) as valid_submission_id \gset
-do $
+create function pg_temp.assert_submission_persisted(p_submission uuid, p_guardian uuid, p_invoice uuid)
+returns void language plpgsql as $assert$
 begin
   if not exists (
     select 1 from public.schoolpro_payment_submissions ps
     join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id
-    where ps.id=:'valid_submission_id'::uuid and ps.status='pending'
-      and ps.submitted_by=:'guardian'::uuid and pa.invoice_id=:'invoice'::uuid and pa.amount=400
+    where ps.id=p_submission and ps.status='pending'
+      and ps.submitted_by=p_guardian and pa.invoice_id=p_invoice and pa.amount=400
   ) then
     raise exception 'FAIL: valid guardian receipt submission did not persist';
   end if;
 end;
-$;
+$assert$;
+select pg_temp.assert_submission_persisted(:'valid_submission_id'::uuid, :'guardian'::uuid, :'invoice'::uuid);
 select 'PASS: valid guardian receipt submission persisted' as result;
 
 select pg_temp.assert_rejected('receipt owned by another user',

@@ -2409,3 +2409,13 @@ Read-only production schema inspection confirmed the source columns for assessme
 - The schema test proves that migration 003 creates in MySQL 8.4, valid synthetic rows insert, and selected cross-school result approval/transcript references, foreign-school template paths and grade values above 100 are rejected by the expected constraints.
 - This does not yet prove API authorization, result calculation, workflow transactionality, immutable event logging, workbook import/export/rendering, or transcript issuance/revocation parity. Migrations 001–003 remain draft proposals, not production schema changes.
 - Updated the schema-gap audit to reflect all three current draft migrations and the remaining application/parity gaps.
+
+
+### Final result for migration 003 validation — 2026-10-17
+
+The earlier “still running” status is superseded by terminal outcomes. On the code-bearing migration/fixture/workflow commit `21a8d7731c3dab9de27c7a91ab5ddbd0a34a52b4`:
+- MySQL schema workflow #321 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138541
+- SchoolPro CI #1532 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138503
+- Payment-page validation #1259 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138556
+
+Only documentation/PR description updates followed that code-bearing commit; no migration, fixture, or workflow source changed afterward. Therefore the tested schema code is unchanged, though the latest branch tip is a documentation-only descendant. Migrations 001–003 remain draft-only and do not authorize production cutover.

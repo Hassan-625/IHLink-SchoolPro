@@ -72,3 +72,11 @@ All tests below were read-only and transaction-scoped; each transaction was roll
 - A proprietor in that same school: 7 visible objects in `schoolpro-document-templates`, all with the proprietor's own school prefix and 0 with the other school's prefix; 2 visible `schoolpro-invoice-templates` objects, both own-school prefix; 8 visible `school-result-templates` objects, all own-school prefix and 0 other-school prefix.
 - The same registrar had 0 visible objects in `schoolpro-document-templates`, consistent with the manager-only read policy for that bucket.
 - These sampled reads support current-policy school scoping for the tested roles/buckets. They do not test upload/update/delete, object-key tampering, direct signed/public URL exposure, or the proposed issued-document policy on a deliberately mismatched fixture. The two document-output buckets have existing data; the admissions/payment-receipt buckets are empty and remain untested on actual objects.
+
+
+## Expanded issued-document and storage RLS regression — 2026-10-17
+The separate draft [PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) now hardens four permissive SELECT-policy paths: student issue reads, guardian issue reads, staff issue reads, and \`schoolpro-document-outputs\` object reads. The storage policy previously used a LEFT JOIN to students and a guardian-link predicate without school equality, allowing the synthetic mismatched issue/output to pass via alternate permissive branches.
+
+The updated [disposable PostgreSQL 17 regression](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048506722) passed on code commit \`1dfa6f73ebb8b3deb3c8dd5a203ee693f0632220\`. It demonstrated the old row/object visibility, applied the draft migration, and then verified that Student B, Guardian B and School A staff could not see the mismatched issue/object. It also passed own-school issued/revoked behavior, draft visibility rules, anonymous denial, cross-school storage insert denial, path-rename denial, and cross-school delete no-op.
+
+This is a synthetic RLS regression, not proof of actual Supabase Storage API behavior. Signed URLs, real upload/download endpoints, app RPC/view paths, helper ownership/ACLs and the full current production policy catalog still need review. PR #108 remains draft; no production changes or merge occurred.

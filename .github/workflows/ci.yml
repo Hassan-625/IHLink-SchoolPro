@@ -136,6 +136,308 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-online-payment-disable.integration.sql
       - name: Exercise receipt-submission RPC against disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-receipt-rpc.integration.sql
+      - name: Verify concurrent receipt submissions cannot over-reserve an invoice
+        shell: bash
+        run: |
+          set -euo pipefail
+          guardian="10000000-0000-0000-0000-000000000001"
+          school="00000000-0000-0000-0000-000000000001"
+          bank="30000000-0000-0000-0000-000000000001"
+          invoice="40000000-0000-0000-0000-000000000003"
+          receipt="${guardian}/receipt.pdf"
+          allocation="[{\\"invoice_id\\":\\"$invoice\\",\\"amount\\":600}]"
+          for attempt in 1 2; do
+            (
+              if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "select set_config('request.jwt.claim.sub','$guardian',false); select public.submit_schoolpro_payment('$school','$bank',600,current_date,'Concurrent Guardian','RACE-$attempt','$receipt','application/pdf','$allocation'::jsonb);" > "/tmp/schoolpro-receipt-race-$attempt.log" 2>&1; then
+                echo accepted > "/tmp/schoolpro-receipt-race-$attempt.result"
+              else
+                echo rejected > "/tmp/schoolpro-receipt-race-$attempt.result"
+              fi
+            ) &
+          done
+          wait
+          accepted="$(grep -l '^accepted
+  payment-review-rls-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_payment_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_payment_rls_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_payment_rls_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise payment-review RLS using authenticated role switching
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-review-rls.integration.sql
+
+  result-pin-rate-limit-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_pin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_pin_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_pin_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+      - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql
+      - name: Exercise login-attempt throttling and cleanup in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-login-rate-limit.integration.sql
+      - name: Verify concurrent login attempts serialize through one key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 12); do
+            (psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT public.schoolpro_take_login_attempt('parallel-login-key', 60);" >/dev/null) &
+          done
+          wait
+          attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT attempts FROM public.schoolpro_login_attempts WHERE key='parallel-login-key'")"
+          test "$attempts" = "12"
+      - name: Enforce globally unique document serials in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-document-serial-uniqueness.integration.sql
+      - name: Verify concurrent wrong-PIN requests serialize into one cooldown key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 8); do
+            (
+              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT set_config('request.headers', '{\"x-forwarded-for\":\"192.0.2.99, 198.51.100.20\",\"cf-connecting-ip\":\"198.51.100.20\"}', true); SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
+            ) &
+          done
+          wait
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
+
+  result-verification-exposure-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_verification_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_verification_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_verification_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Execute result-verification snapshot migration against disposable schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-verification-exposure.integration.sql
+
+  public-admission-abuse-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_admission_abuse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_admission_abuse_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_admission_abuse_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise public admissions RPC abuse controls in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-public-admission-abuse-controls.integration.sql
+ /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          rejected="$(grep -l '^rejected
+  payment-review-rls-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_payment_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_payment_rls_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_payment_rls_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise payment-review RLS using authenticated role switching
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-review-rls.integration.sql
+
+  result-pin-rate-limit-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_pin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_pin_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_pin_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+      - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql
+      - name: Exercise login-attempt throttling and cleanup in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-login-rate-limit.integration.sql
+      - name: Verify concurrent login attempts serialize through one key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 12); do
+            (psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT public.schoolpro_take_login_attempt('parallel-login-key', 60);" >/dev/null) &
+          done
+          wait
+          attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT attempts FROM public.schoolpro_login_attempts WHERE key='parallel-login-key'")"
+          test "$attempts" = "12"
+      - name: Enforce globally unique document serials in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-document-serial-uniqueness.integration.sql
+      - name: Verify concurrent wrong-PIN requests serialize into one cooldown key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 8); do
+            (
+              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT set_config('request.headers', '{\"x-forwarded-for\":\"192.0.2.99, 198.51.100.20\",\"cf-connecting-ip\":\"198.51.100.20\"}', true); SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
+            ) &
+          done
+          wait
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
+
+  result-verification-exposure-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_verification_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_verification_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_verification_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Execute result-verification snapshot migration against disposable schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-verification-exposure.integration.sql
+
+  public-admission-abuse-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_admission_abuse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_admission_abuse_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_admission_abuse_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise public admissions RPC abuse controls in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-public-admission-abuse-controls.integration.sql
+ /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          test "$accepted" -eq 1
+          test "$rejected" -eq 1
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \\$assert\\$ DECLARE n integer; reserved numeric; BEGIN SELECT count(*),coalesce(sum(pa.amount),0) INTO n,reserved FROM public.schoolpro_payment_submissions ps JOIN public.schoolpro_payment_allocations pa ON pa.submission_id=ps.id WHERE pa.invoice_id='$invoice' AND ps.bank_reference LIKE 'RACE-%'; IF n <> 1 OR reserved <> 600 THEN RAISE EXCEPTION 'Concurrent invoice reservation failed: submissions %, reserved amount %', n, reserved; END IF; END \\$assert\\$;"
+          echo "PASS: two concurrent 600-unit submissions for one invoice produced exactly one pending reservation."
 
   payment-review-rls-integration:
     runs-on: ubuntu-latest

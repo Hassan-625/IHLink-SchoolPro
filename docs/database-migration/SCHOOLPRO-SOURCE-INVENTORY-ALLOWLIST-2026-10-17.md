@@ -592,3 +592,13 @@ The **authoritative source for current object state is the live Supabase catalog
 For each version, add a row to the reconciliation register with: version/name; ledger status; exact SQL artifact URL + blob SHA if recovered; repository/branch/commit; CI run ID and deployment actor/time if available; target object(s); live catalog evidence; schema-diff result; scope (SchoolPro/shared/DataSub); disposition (already reflected, absent, superseded, intentionally draft, duplicate/renamed, or unresolved); reviewer and evidence link. Use “unresolved” rather than guessing when artifact or deployment proof is missing.
 
 Do not run historical SQL to “catch up”, replay any ledger entry, reset migration history, or reconstruct SQL from migration names. The safe path is read-only catalog-to-artifact reconciliation, then a reviewed forward-only target schema plan. Export/import remains blocked.
+
+
+## Follow-up artifacts added — 2026-10-17
+
+- [Application call-site manifest index](APPLICATION-CALLSITE-MANIFEST-INDEX-2026-10-17.md) links 13 machine-readable JSONL shards covering a static line scan of all 190 `src/` TypeScript/JavaScript files. This is a candidate manifest, not an exhaustive AST/runtime call graph; dynamic, aliased and multiline call sites remain a review item.
+- [Per-table ownership register](SCHOOLPRO-PER-TABLE-OWNERSHIP-REGISTER-2026-10-17.md) classifies the 89 direct-`school_id` candidate tables and records proposed ownership dispositions for all 18 tables without that column. It does not claim row-level validation is complete.
+- The 18 exceptions are classified as tenant root, inherited-parent child rows, platform-wide catalogues, account-level challenges, and unscoped security telemetry. Parent/child school consistency, secret/token handling, catalog source-of-truth and retention still require read-only validation before export.
+- Provenance investigation found no Supabase deploy workflow in the branch's workflow inventory. The current CI workflows do not prove historical production database deployment. The 397 live-only and 44 branch-only migration versions remain unresolved at artifact/commit/disposition level.
+
+**Decision unchanged:** no export/import, migration replay, production writes, Render changes, or cutover until provenance reconciliation and row-level ownership validation are approved.

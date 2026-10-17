@@ -94,3 +94,22 @@ The live `schoolpro-render-result` v6 and `schoolpro-result-access` v1 snapshots
 - **18 no-direct-school-id tables:** live counts and proposed dispositions are documented, but the identity/payment/security exceptions still need final target ownership and retention/bridge decisions.
 - **79 cross-boundary FKs:** all 79 are validated in the source catalog; this is referential integrity only, not tenant authorization. Exact target schema reconciliation and negative tenant tests remain open.
 - **Migration/cutover:** blocked. No SQL replay, export/import, Aiven writes, Render configuration change/deployment, merge, or cutover occurred.
+
+
+### Target ownership and FK target mapping added
+
+Two additional committed decision registers make the target dispositions explicit without treating them as cutover approval:
+
+- [18-table target ownership disposition register](SCHOOLPRO-TARGET-OWNERSHIP-DISPOSITION-2026-10-17.md) — commit `af65f673e91262ac2966a57f74cf8a8c00b4af7b`. Every no-direct-`school_id` table now has a target disposition category and an ownership/validation rule. The 27,440 assignment submissions, 2,800 CBT answers, 280 CBT attempts and 504 fee items require tenant-filtered reconciliation; transient credential challenges are excluded; plan/subscription catalogs require reviewed seeds; login telemetry is excluded by default.
+- [79-FK target-schema disposition](SCHOOLPRO-FK-TARGET-SCHEMA-DISPOSITION-2026-10-17.md) — commit `1d2fce24d13fd0bbc0d2e1737ae829ddc31835af`. Exact target distribution from the 79-row source register is 52 references to `auth.users`, 21 to `profiles`, 3 to `virtual_accounts`, 2 inbound references to `schoolpro_schools`, and 1 reference to `schoolpro_payment_intents`. These relationships cannot all remain physical FKs if identity/payment/email/clock services stay in Supabase. The register specifies the external-identity and idempotent-adapter disposition; exact target DDL and adversarial tenant tests remain open.
+
+### Additional ledger-level catalog baseline
+
+A read-only query against `supabase_migrations.schema_migrations` confirmed 476 total ledger rows and counted version payloads mentioning these SQL constructs: functions 301, policies 202, grants/revokes 289, triggers 78, schedule/cron 22. These are **overlapping category counts across all 476 ledger versions**, not semantic pass counts for the 397 live-only versions. They establish the scale of the remaining definition-level audit and are not a substitute for comparing overload signatures/bodies, effective grants, policy expressions, trigger wiring or active job commands.
+
+### Immediate remaining work
+
+1. Build and preserve a version-by-version semantic matrix for all 397 live-only SQL payloads, distinguishing exact, changed/superseded, absent, dropped, and unresolved definitions. Include function identity signatures and bodies, RLS policy expressions, effective grants/revokes, trigger-to-function wiring, cron command/schedule, and dependencies. Do not replay historical SQL.
+2. Reconcile every target-internal FK action/column tuple and nullable data relationship against the proposed Aiven schema; then run tenant-authorization tests separately from FK/orphan checks.
+3. Finish line-level diffs for `invite-school-staff` v16 and `schoolpro-render-document` v14; rerun `schoolpro-email-worker` v10 parity using its actual deployed nested filename; compare deployed source with callers and environment configuration.
+4. Execute approved two-school Storage API/signed-URL adversarial tests for the result-output bucket mismatch. Do not mutate bucket names, objects, or production function versions before evidence and review.

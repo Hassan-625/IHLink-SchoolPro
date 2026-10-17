@@ -2,24 +2,7 @@
 -- discipline/health, lesson notes, leave, inventory and hostel allocation.
 -- Draft only; apply to disposable MySQL 8.4 CI until source/API parity is accepted.
 
-CREATE TABLE IF NOT EXISTS attendance_records (
- id CHAR(36) NOT NULL, school_id CHAR(36) NOT NULL, student_id CHAR(36) NOT NULL,
- class_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, term_id CHAR(36) NOT NULL,
- attendance_date DATE NOT NULL,
- status ENUM('present','absent','late','excused') NOT NULL,
- notes VARCHAR(1000) NULL, marked_by CHAR(36) NULL,
- created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
- updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
- PRIMARY KEY(id), UNIQUE KEY uq_attendance_school_id(school_id,id),
- UNIQUE KEY uq_attendance_student_day(school_id,student_id,attendance_date,term_id),
- KEY idx_attendance_class_day(school_id,class_id,attendance_date,term_id,status),
- CONSTRAINT fk_attendance_student FOREIGN KEY(school_id,student_id) REFERENCES students(school_id,id) ON DELETE RESTRICT,
- CONSTRAINT fk_attendance_class FOREIGN KEY(school_id,class_id) REFERENCES school_classes(school_id,id) ON DELETE RESTRICT,
- CONSTRAINT fk_attendance_session FOREIGN KEY(school_id,session_id) REFERENCES academic_sessions(school_id,id) ON DELETE RESTRICT,
- CONSTRAINT fk_attendance_term FOREIGN KEY(school_id,term_id,session_id) REFERENCES academic_terms(school_id,id,session_id) ON DELETE RESTRICT,
- CONSTRAINT fk_attendance_marker FOREIGN KEY(marked_by) REFERENCES users(id) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
+-- Attendance is already defined by migration 001 as enrollment-scoped attendance_records.
 CREATE TABLE IF NOT EXISTS timetable_entries (
  id CHAR(36) NOT NULL, school_id CHAR(36) NOT NULL, class_id CHAR(36) NOT NULL,
  subject_id CHAR(36) NOT NULL, session_id CHAR(36) NOT NULL, weekday TINYINT UNSIGNED NOT NULL,
@@ -172,5 +155,5 @@ CREATE TABLE IF NOT EXISTS hostel_allocations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 INSERT INTO schema_migrations(version,description)
-VALUES ('005_schoolpro_operational_modules','Draft school-scoped attendance, timetable, calendar, announcements, discipline/health, lesson notes, leave, inventory and hostel tables; disposable test only') AS incoming
+VALUES ('005_schoolpro_operational_modules','Draft school-scoped timetable, calendar, announcements, discipline/health, lesson notes, leave, inventory and hostel tables; attendance remains in migration 001; disposable test only') AS incoming
 ON DUPLICATE KEY UPDATE description=incoming.description;

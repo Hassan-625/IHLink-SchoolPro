@@ -14,6 +14,7 @@ create policy "schoolpro_module_permission"
     private.schoolpro_module_allowed(school_id, 'finance')
     or (
       submitted_by = (select auth.uid())
+      and status = 'pending'
       and exists (
         select 1 from public.schoolpro_guardian_links g
         where g.school_id = public.schoolpro_payment_submissions.school_id

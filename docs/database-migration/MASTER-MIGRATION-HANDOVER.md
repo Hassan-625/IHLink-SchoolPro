@@ -1060,3 +1060,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - [SchoolPro CI run #38991451449](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451449) has started but is still in progress; its `result-pin-rate-limit-integration` job has not reported a final result yet. Do not mark this control tested until the job completes successfully.
 - [Payment-page validation #38991451545](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451545) was in progress when this note was added.
 - No production migration, data write, Render deployment, or merge occurred. Trusted-proxy/header provenance and concurrency acceptance remain separate open requirements.
+
+
+## Result-PIN rate-limit integration passed; concurrent-request assertion added — 2026-10-17
+
+- Confirmed [SchoolPro CI #38991451449](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451449) passed all five jobs on `2a9110523860a68e95881b039f307564963deb96`: validation, tenant acceptance, tenant-integrity DB integration, payment-review RLS integration, and result-PIN rate-limit integration. The separate [payment-page validation #38991451545](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991451545) also passed.
+- The rate-limit fixture now has verified sequential coverage for eight failed attempts, hashed key storage, cooldown rejection, unknown-admission failures, and clearing the failure counter after successful published-result access. This is a disposable minimal PostgreSQL fixture, not production-schema or gateway validation.
+- Added a CI assertion that launches eight independent concurrent PostgreSQL sessions with the same admission/network key and then verifies one serialized failure counter reaches eight and a cooldown is active. Workflow change commit is pending fresh CI: this check must not be described as passed until a new run succeeds.
+- Trusted proxy/header provenance is still unresolved. The function currently derives its network identifier from request headers including `x-forwarded-for`; database fixture success does not establish that the deployed gateway overwrites or safely normalizes client-supplied values. Validate the deployed request path before treating IP-based throttling as spoof-resistant.
+- No merge, production migration, or deployment was performed.

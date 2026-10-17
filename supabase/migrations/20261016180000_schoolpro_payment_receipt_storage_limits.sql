@@ -5,7 +5,7 @@ values (
   'schoolpro-payment-receipts',
   'schoolpro-payment-receipts',
   false,
-  10485760,
+  5242880,
   array['image/jpeg', 'image/png', 'image/webp', 'application/pdf']::text[]
 )
 on conflict (id) do update

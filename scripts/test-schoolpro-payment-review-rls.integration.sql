@@ -81,6 +81,11 @@ create policy finance_insert_fee_payments on public.schoolpro_fee_payments for i
 create policy finance_update_fee_payments on public.schoolpro_fee_payments for update to authenticated using(private.schoolpro_module_allowed(school_id,'finance')) with check(private.schoolpro_module_allowed(school_id,'finance'));
 create policy finance_delete_fee_payments on public.schoolpro_fee_payments for delete to authenticated using(private.schoolpro_module_allowed(school_id,'finance'));
 
+alter table public.schoolpro_guardian_links enable row level security;
+create policy guardian_reads_own_link on public.schoolpro_guardian_links for select to authenticated
+using (guardian_user_id = auth.uid() or private.schoolpro_module_allowed(school_id,'finance'));
+grant select on public.schoolpro_guardian_links to authenticated;
+
 alter table public.schoolpro_payment_submissions enable row level security;
 alter table public.schoolpro_payment_allocations enable row level security;
 alter table public.schoolpro_payment_proofs enable row level security;

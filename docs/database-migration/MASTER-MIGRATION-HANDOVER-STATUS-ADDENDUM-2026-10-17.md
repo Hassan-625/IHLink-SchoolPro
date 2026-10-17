@@ -1,5 +1,8 @@
 # Master migration handover status addendum — 2026-10-17
 
+> **Current target clarification (2026-10-17):** The active SchoolPro migration is **Supabase PostgreSQL → Aiven PostgreSQL**, with the app/API remaining on Render. Earlier MySQL-oriented backlog and PR #107 are historical/pause-only, not the active target. DataSub remains on Supabase and is out of scope. The migration-ledger, tenant, RLS and storage evidence below is retained as risk/reconciliation evidence; it does not authorize production export/import or cutover.
+
+
 This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master file itself has not been rewritten in this pass.
 
 ## Evidence status
@@ -136,3 +139,16 @@ A separate high-priority compatibility finding: the only current `schoolpro_gene
 
 ## Storage-reference audit correction — 2026-10-17
 The first per-object pass used 25 path columns and did not include `schoolpro_demo_requests.calendar_path/letter_path`, JSON image paths in `schoolpro_document_templates.settings`, or result-term signature paths. The register was regenerated with bucket-aware matching across the additional fields. Corrected totals: 105 objects; 91 have an exact path reference in the expected bucket; 14 have no exact expected-bucket reference; 1 path has a reference that expects a different bucket; 97 have NULL Storage owner metadata. The two demo-document objects are now correctly matched to their demo-request rows. The invoice-bucket v2 logo is **not** counted as referenced by the document-template JSON path because that reference expects the document-template bucket.
+
+
+## Owner direction reaffirmed — PostgreSQL to Aiven (2026-10-17)
+The owner clarified that the main task is migrating the existing SchoolPro PostgreSQL database from Supabase to Aiven PostgreSQL, then progressing through Stage A to Stage D and onward through Stage J. Do not continue building MySQL conversion as the active path. PR #107 and its MySQL pilot remain paused historical artifacts and are not to be merged/deleted without a separately reviewed decision.
+
+Ordered work:
+1. Read-only inventory of the source PostgreSQL schema, full migration ledger, roles/grants, RLS/policies, functions/triggers/views/extensions, database footprint, application call sites, and Supabase-managed dependencies.
+2. Verify Aiven PostgreSQL version/plan, TLS/network access from Render, connection limits, storage headroom, backups/restore and least-privilege roles.
+3. Rehearse source-to-target restore on a separate empty Aiven database; reconcile schema, row counts, sequences, constraints, tenant ownership and application workflows. Do not assume Supabase Auth, Storage, Edge Functions, Realtime, secrets or scheduled jobs are included in a PostgreSQL database transfer.
+4. Re-verify Stage A (authentication and tenant isolation), then B (academic sessions, student population and class rosters), then C (assessment entry/save, calculations, review and publication). Resume D (Result Design Studio and custom Excel workbooks) only after A/B/C re-verification; continue E–J using their existing definitions in the product handover.
+5. Only after acceptance evidence and a rehearsed rollback, request explicit cutover approval. Until then Supabase remains the production source of truth; no production export/import, Render environment change, deployment, or cutover.
+
+No production operation was performed by this documentation correction.

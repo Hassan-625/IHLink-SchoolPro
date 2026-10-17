@@ -946,3 +946,14 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Corrected the assertion in commit `0e2ac8cd1618f2df41b6ead9a3d38526329989f7`. Rechecked all 12 guard patterns against the current migration source; all 12 match. Updated the CI step name in commit `143ed2aed9cd341e7d2234e4fedf89d2a7d9bf1a` to trigger fresh workflow validation.
 - Fresh SchoolPro CI [#38989637673](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637673) and payment-page validation [#38989637689](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637689) were still in progress when this note was written. Do not call the corrected test CI-green until both have final results.
 - Even if green, this test is static source-contract coverage only. It does not replace the pending real PostgreSQL/RLS/RPC receipt submission and payment review integration fixture. No production changes or PR merges were made.
+
+
+
+## Receipt guard CI confirmed green — 2026-10-17
+
+- Rechecked the completed runs after the last handover entry. SchoolPro CI [#38989637673](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637673) completed with conclusion **success** on head `0e2ac8cd1618f2df41b6ead9a3d38526329989f7`; all three jobs passed: `validate`, `tenant-integrity-db-integration`, and `tenant-acceptance`.
+- Payment-page validation [#38989637689](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637689) also completed with conclusion **success** on the same head.
+- These runs verify the corrected static receipt-submission guard and the existing disposable tenant/gateway checks on that commit. The later workflow-step naming commit `143ed2aed9cd341e7d2234e4fedf89d2a7d9bf1a` is newer than the head reported by these two runs, so do not claim those runs tested that newer commit.
+- PR #106 remains open, draft, and unmerged. No production migration, Storage bucket change, deployment, or live payment record change was performed.
+- Next: create a dedicated disposable PostgreSQL behavioral fixture for `submit_schoolpro_payment`, applying the actual migration to minimal test-only schemas and exercising both valid and rejected submissions. Keep static source assertions labelled as static. Then extend coverage to effective payment-review RLS policies/grants. Do not use production credentials or mutate the production Supabase project for this work.
+- MySQL migration remains incomplete at application/runtime level; the frontend still uses the Supabase browser client. This receipt-security task does not advance or imply MySQL cutover.

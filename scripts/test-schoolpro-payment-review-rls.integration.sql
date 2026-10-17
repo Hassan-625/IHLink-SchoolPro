@@ -122,7 +122,7 @@ end $assert$;
 set role authenticated;
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);select pg_temp.assert_rejected(
   'guardian cannot insert a pre-reviewed payment submission',
-  $insert$ into public.schoolpro_payment_submissions
+  $insert$ insert into public.schoolpro_payment_submissions
     (id, school_id, submitted_by, total_amount, payment_date, receipt_path, status)
     values
     ('e0000000-0000-0000-0000-000000000099',

@@ -1,5 +1,6 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
+import { verifyTurnstile } from './turnstile.mjs';
 
 const allowedOrigins = new Set(
   (Deno.env.get('SCHOOLPRO_ADMISSION_ALLOWED_ORIGINS') || '')
@@ -70,27 +71,12 @@ Deno.serve(async (req) => {
   const token = typeof body.turnstileToken === 'string' ? body.turnstileToken.trim() : '';
   if (!token || token.length > 2048) return reply({ error: 'Complete the secure verification before submitting.' }, 400, origin);
 
-  let verification: { success?: boolean; action?: string; hostname?: string; 'error-codes'?: string[] };
-  try {
-    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({ secret, response: token }),
-      signal: AbortSignal.timeout(8_000),
-    });
-    if (!response.ok) throw new Error('Siteverify unavailable');
-    verification = await response.json();
-  } catch {
+  const verification = await verifyTurnstile({ token, secret, action, hostnames });
+  if (verification.unavailable) {
     console.error('Turnstile Siteverify request failed.');
     return reply({ error: 'Secure verification is temporarily unavailable. Please try again.' }, 503, origin);
   }
-
-  if (
-    verification.success !== true ||
-    verification.action !== action ||
-    typeof verification.hostname !== 'string' ||
-    !hostnames.has(verification.hostname.toLowerCase())
-  ) {
+  if (!verification.ok) {
     return reply({ error: 'Secure verification failed. Please verify again and retry.' }, 403, origin);
   }
 

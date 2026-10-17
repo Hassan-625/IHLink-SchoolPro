@@ -166,7 +166,7 @@ jobs:
           assert_check_rejection tests/mysql/timetable_invalid_time_range_must_fail.sql chk_timetable_time
           assert_fk_rejection tests/mysql/cross_school_timetable_class_must_fail.sql fk_timetable_class
           assert_fk_rejection tests/mysql/cross_school_hostel_student_must_fail.sql fk_hostel_allocation_student
-          assert_fk_rejection tests/mysql/cross_school_assignment_submission_must_fail.sql fk_assignment_submission_student
+          assert_fk_rejection tests/mysql/cross_school_assignment_submission_must_fail.sql fk_submission_student
           assert_fk_rejection tests/mysql/cross_school_cbt_question_must_fail.sql fk_cbt_tq_question
           assert_fk_rejection tests/mysql/cross_school_library_loan_book_must_fail.sql fk_library_loan_book
           assert_enum_rejection() {

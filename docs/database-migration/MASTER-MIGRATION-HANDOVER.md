@@ -2866,3 +2866,10 @@ Additional read-only production inspection established why the live tenant accep
 - The live two-school acceptance still failed on the School B `schoolpro_result_approvals` probe after three statement-timeout attempts. The other Stage A jobs passed, but this prevents Stage A acceptance. A passing disposable test cannot substitute for live catalog/application evidence.
 
 No production DDL was executed. The forward RLS and six-index migrations remain unapplied proposals. Once explicitly approved for a controlled rollout, apply the reviewed migrations in the approved order, re-read the catalog and policy definitions, then rerun the live two-school acceptance. If the index alone does not remove the timeout, inspect the query plan and policy helper cost before claiming closure; do not weaken or skip the negative tenant probe.
+
+
+### Stage A query-plan evidence strengthens the timeout diagnosis — 2026-10-17
+
+Ran read-only `EXPLAIN (COSTS, VERBOSE, SETTINGS)` as the ordinary `authenticated` role against `schoolpro_result_approvals`. The current production plan is a sequential scan with estimated cost approximately `0.00..2456622.25` and 8,712 estimated qualifying rows. The filter combines the tenant predicate with `private.schoolpro_module_allowed(school_id, 'results')`, `private.has_school_access(school_id)`, `schoolpro_member_can_manage(school_id)`, and a membership subplan. The membership subplan itself estimates a small scan; the dominant risk is evaluating the policy/helper expression over many rows without a tenant-leading index.
+
+This confirms the six-index migration is a justified performance prerequisite, but **it is not yet proof that the live timeout will be resolved**. The query plan was captured before applying any index and no `EXPLAIN ANALYZE` or data-changing query was run. After approved rollout, re-run `EXPLAIN` and the live acceptance probe. If the indexed plan still times out, review the repeated row-dependent helper evaluation and consider a carefully equivalent policy optimization with role-parity tests; do not weaken access rules or skip the result-approvals probe.

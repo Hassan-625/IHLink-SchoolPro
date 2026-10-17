@@ -2793,3 +2793,14 @@ Updated `.github/workflows/ci.yml` to apply migration 008 and the synthetic stud
 Changed `POST /v1/student/password` to run inside a MySQL transaction: it locks the active credential row with `SELECT ... FOR UPDATE`, verifies the current password while holding the lock, updates the scrypt hash and initial-change state, revokes other active sessions for the same student while preserving the current session, then commits. Invalid current passwords roll back without changing credentials; exceptions roll back and release the connection.
 
 Added an assertion to the disposable-MySQL API integration test that the seeded second student session is revoked after a password change. The mock-pool transaction harness was extended to model credential update and sibling-session revocation. Exact-head MySQL schema/API tests, SchoolPro CI and payment validation are pending; no production deployment or cutover.
+
+
+### Student-auth MySQL CI failure diagnosis and fixture correction — 2026-10-17
+
+Exact-head schema run #463 exposed a genuine disposable-MySQL integration-test fixture issue in the student admission login test, not a production incident. The test expected `POST /v1/student/auth/login` to return 200 for initial password `One`, but the seeded scrypt hash did not correspond to that password, so the route correctly rejected the login. Recomputed the expected scrypt hash using the same parameters declared by the API (`N=16384, r=8, p=1, dklen=64`) and the fixture's fixed test salt, then updated only the synthetic fixture. This makes the fixture's stated initial password and stored hash consistent. The corrected schema/API workflow must pass before the change is accepted.
+
+- Latest failed schema workflow at diagnosis: #463, run https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035405442.
+- Payment-page validation on the same code head passed: #1376, https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035405408.
+- SchoolPro CI was still running when that failure was first inspected; it is not counted as green until its final result is checked.
+- Prior cross-school assignment test assertion was also corrected to expect the actual MySQL constraint name `fk_submission_student`; do not treat the earlier failed schema run as acceptance.
+- No production migration, credential, data or deployment was changed.

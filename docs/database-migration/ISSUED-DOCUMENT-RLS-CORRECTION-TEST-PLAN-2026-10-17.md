@@ -78,3 +78,11 @@ All tests below were read-only and transaction-scoped; each transaction was roll
 - 221 public foreign-key constraints touching SchoolPro-prefixed tables were checked with non-null orphan-reference queries: 0 orphan rows.
 - 86 FK relationships where both child and parent have `school_id` (excluding direct school_id-to-school_id constraints) were checked: 0 school mismatches.
 - Storage-path audit: 83/83 document-output paths match stored objects and school prefixes; 3/3 document-template table paths match objects; six other document-template bucket objects, seven unreferenced school-result-template objects, two invoice-template objects without direct table paths, and two demo-document objects require ownership/intent classification. Admissions and payment-receipt buckets are empty.
+
+## Expanded policy composition finding and regression test
+Review of the live SELECT policies found that the guardian policy also lacked a comparison between `schoolpro_guardian_links.school_id` and the document issue's `school_id`; the staff-read policy likewise authorized by issue school without confirming that the linked student belongs to that school. PostgreSQL permissive SELECT policies combine with OR, so correcting the student-only policy alone would leave alternate policies able to expose a deliberately mismatched issue row. The draft migration therefore now corrects all three read policies:
+- Student: student row school must equal issue school.
+- Guardian: active guardian-link school must equal issue school.
+- Staff: role/school authorization is retained and the linked student must belong to the issue school.
+
+A disposable PostgreSQL regression script installs the previous policies, seeds two synthetic schools and a deliberately mismatched issue/student relationship, proves that the old student, guardian and staff policy composition exposes that row, applies the exact draft migration, and asserts that the mismatch is no longer visible to any of those roles. It also checks own-school issued/revoked/draft behavior and anonymous denial. A dedicated GitHub Actions workflow runs this against PostgreSQL 17; this is isolated synthetic testing and does not access or mutate production. CI result is pending until the workflow actually runs.

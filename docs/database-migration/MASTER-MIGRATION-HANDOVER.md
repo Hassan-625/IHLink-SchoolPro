@@ -2115,3 +2115,10 @@ Read-only catalog inspection found:
 - Scope limit: this is a better disposable fixture with production policy names/core predicates and broad grants, not a full production schema restore. It does not establish runtime behavior of the live SECURITY DEFINER review RPCs, trigger order, rollback, cancellation or concurrent submissions. Those remain acceptance blockers.
 - The read-only production/source findings in section 36 remain in force: the live receipt submission RPC lacks the receipt object ownership check and deterministic invoice locking present in the draft forward migration; recent Stage A migrations are not present in the inspected production ledger; live table grants remain broad; and the Storage finance policy currently references proofs but not submissions.
 - No production mutation, migration application, storage upload, Render deployment or merge occurred. Stage A remains blocked.
+
+
+## 37. Final proof-positive test syntax correction (2026-10-17)
+
+- SchoolPro CI [run #1456](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026915662) exposed malformed dollar-quoted SQL in the expanded payment-review fixture. The issue came from a replacement that reduced PostgreSQL `$$...$` delimiters to single-dollar delimiters; the payment-review integration job failed before validating the positive proof case.
+- Restored all six affected `assert_no_rows_affected` statement delimiters in commit `f8355758d6a94a467b28f600d8c160a649743e20`. The latest SchoolPro CI [run #1461](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39027022726) is queued; it must pass the payment-review RLS job and the full suite before this correction is considered complete.
+- Run #1456's other jobs were not a basis for claiming full success because payment-review failed. No production changes were made.

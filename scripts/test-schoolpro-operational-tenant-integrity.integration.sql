@@ -13,6 +13,94 @@ create table public.schoolpro_result_approvals (id uuid primary key, school_id u
 create table public.schoolpro_promotions (id uuid primary key, school_id uuid not null, student_id uuid not null, from_class_id uuid, to_class_id uuid);
 create table public.schoolpro_member_permissions (id uuid primary key, school_id uuid not null, member_id uuid not null);
 
+-- Minimal fixtures for the forward-only RLS posture repair. Keep feature policy names
+-- representative of deployed semantics; the migration must not drop or rewrite policies.
+create table public.schoolpro_library_books (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_transport_routes (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_hostel_rooms (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_inventory_assets (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_calendar_events (id uuid primary key, school_id uuid not null);
+create policy "Families read borrowed book details" on public.schoolpro_library_books for select to authenticated
+  using (school_id::text = current_setting('test.school_id', true));
+create policy "library books authorized access" on public.schoolpro_library_books for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "transport routes authorized access" on public.schoolpro_transport_routes for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "hostel rooms authorized access" on public.schoolpro_hostel_rooms for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "inventory authorized access" on public.schoolpro_inventory_assets for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "calendar school read" on public.schoolpro_calendar_events for select to authenticated
+  using (school_id::text = current_setting('test.school_id', true));
+
+\ir ../supabase/migrations/20261016160000_schoolpro_repair_operational_tenant_integrity.sql
+\ir ../supabase/migrations/20261017170000_schoolpro_forward_operational_tenant_isolation.sql
+
+-- The repair must preserve the live policy names/feature paths, not replace the policies
+-- with the historical migration's narrower generic policy set.
+do $
+begin
+  if not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_library_books' and policyname='Families read borrowed book details')
+     or not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_calendar_events' and policyname='calendar school read')
+     or not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_transport_routes' and policyname='transport routes authorized access')
+     or not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_hostel_rooms' and policyname='hostel rooms authorized access')
+     or not exists (select 1 from pg_policies where schemaname='public' and tablename='schoolpro_inventory_assets' and policyname='inventory authorized access') then
+    raise exception 'FAIL: forward-only repair removed a pre-existing feature policy';
+  end if;
+  if exists (
+    select 1 from unnest(array[
+      'schoolpro_library_books','schoolpro_transport_routes','schoolpro_hostel_rooms',
+      'schoolpro_inventory_assets','schoolpro_calendar_events','schoolpro_lesson_notes',
+      'schoolpro_result_approvals','schoolpro_promotions'
+    ]) as x(tablename)
+    left join pg_class c on c.relname=x.tablename
+    left join pg_namespace n on n.oid=c.relnamespace and n.nspname='public'
+    where c.oid is null or not c.relrowsecurity or not c.relforcerowsecurity
+  ) then
+    raise exception 'FAIL: an operational table is missing ENABLE/FORCE ROW LEVEL SECURITY';
+  end if;
+end $;
+
+insert into public.schoolpro_library_books values
+ ('a1000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
+ ('a1000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_transport_routes values
+ ('a2000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
+ ('a2000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_hostel_rooms values
+ ('a3000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
+ ('a3000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_inventory_assets values
+ ('a4000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
+ ('a4000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_calendar_events values
+ ('a5000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
+ ('a5000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+grant select, insert on public.schoolpro_library_books, public.schoolpro_transport_routes,
+ public.schoolpro_hostel_rooms, public.schoolpro_inventory_assets, public.schoolpro_calendar_events to authenticated;
+
+-- Run the visibility assertion as the ordinary authenticated role, not as the table owner.
+set role authenticated;
+select set_config('test.school_id','00000000-0000-0000-0000-000000000001',false);
+select (
+  (select count(*) from public.schoolpro_library_books)=1 and
+  (select count(*) from public.schoolpro_transport_routes)=1 and
+  (select count(*) from public.schoolpro_hostel_rooms)=1 and
+  (select count(*) from public.schoolpro_inventory_assets)=1 and
+  (select count(*) from public.schoolpro_calendar_events)=1
+) as tenant_rows_scoped \gset
+\if :tenant_rows_scoped
+  \echo 'PASS: authenticated role sees only its own tenant rows across operational tables.'
+\else
+  \echo 'FAIL: authenticated role saw missing or cross-tenant operational rows.'
+  \quit 1
+\endif
+reset role;
+
 \ir ../supabase/migrations/20261016160000_schoolpro_repair_operational_tenant_integrity.sql
 
 insert into public.schoolpro_subjects values

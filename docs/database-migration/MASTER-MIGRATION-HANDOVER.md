@@ -2712,3 +2712,10 @@ The first new `mysql-api-test` job failed because it ran the existing `server/my
 The first install command also pinned `mysql2@3.15.3` despite the API package declaring a semver range; the workflow now resolves the declared dependency instead of forcing that older exact version. CI reported one high-severity npm audit finding during the pinned install; re-run dependency resolution and review the current resolved dependency audit before treating the runtime as security-accepted.
 
 This is a CI harness correction, not yet a pass. The latest workflow change is commit `26e3ec065425cfbbfe07492b3ff20b4c0d0b2b2d`; fresh exact-head SchoolPro CI, MySQL schema, and payment-page validation results are required.
+
+
+### Stage A CI #1596 final result — 2026-10-17
+
+Stage A CI #1596 completed with 7 jobs passing and `tenant-acceptance` failing: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727021. Receipt Storage isolation, tenant-integrity DB integration, payment-review RLS integration, result-PIN rate limiting, public-admission abuse controls, result-verification exposure checks and general validation passed. The read-only live two-school acceptance probe failed after three retries on `schoolpro_result_approvals` with `canceling statement due to statement timeout`. Earlier checks in the same run did confirm foreign-school result-approval reads were blocked, own-school academic-period RPC was allowed, and foreign-school RPC was denied; nevertheless, the repeated timeout means full acceptance is incomplete.
+
+Do not label this a tenant leak or a pass. The six-index migration includes `schoolpro_result_approvals(school_id)`, but it has not been applied to production. The next safe gate is explicit approval for the production index migration (or a reviewed isolated production-like rehearsal), followed by read-only catalog verification and a repeat of the authenticated two-school probe. No production changes were made.

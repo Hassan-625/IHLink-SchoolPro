@@ -191,28 +191,28 @@ select pg_temp.assert_rejected('member parent reassignment',
 
 
 select pg_temp.assert_rejected('library row tenant reassignment',
-  $update public.schoolpro_library_books set school_id='00000000-0000-0000-0000-000000000002' where id='a1000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_library_books set school_id='00000000-0000-0000-0000-000000000002' where id='a1000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('transport row tenant reassignment',
-  $update public.schoolpro_transport_routes set school_id='00000000-0000-0000-0000-000000000002' where id='a2000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_transport_routes set school_id='00000000-0000-0000-0000-000000000002' where id='a2000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('hostel row tenant reassignment',
-  $update public.schoolpro_hostel_rooms set school_id='00000000-0000-0000-0000-000000000002' where id='a3000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_hostel_rooms set school_id='00000000-0000-0000-0000-000000000002' where id='a3000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('inventory row tenant reassignment',
-  $update public.schoolpro_inventory_assets set school_id='00000000-0000-0000-0000-000000000002' where id='a4000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_inventory_assets set school_id='00000000-0000-0000-0000-000000000002' where id='a4000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('calendar row tenant reassignment',
-  $update public.schoolpro_calendar_events set school_id='00000000-0000-0000-0000-000000000002' where id='a5000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_calendar_events set school_id='00000000-0000-0000-0000-000000000002' where id='a5000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('lesson-note row tenant reassignment',
-  $update public.schoolpro_lesson_notes set school_id='00000000-0000-0000-0000-000000000002' where id='60000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_lesson_notes set school_id='00000000-0000-0000-0000-000000000002' where id='60000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('result-approval row tenant reassignment',
-  $update public.schoolpro_result_approvals set school_id='00000000-0000-0000-0000-000000000002' where id='70000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_result_approvals set school_id='00000000-0000-0000-0000-000000000002' where id='70000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 select pg_temp.assert_rejected('promotion row tenant reassignment',
-  $update public.schoolpro_promotions set school_id='00000000-0000-0000-0000-000000000002' where id='80000000-0000-0000-0000-000000000001'$,
+  $$update public.schoolpro_promotions set school_id='00000000-0000-0000-0000-000000000002' where id='80000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');
 
 select 'PASS: PostgreSQL rejected cross-tenant child writes and unsafe parent reassignment.' as result;

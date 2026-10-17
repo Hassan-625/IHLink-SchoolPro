@@ -57,3 +57,8 @@ These discrepancies are best classified as **different current architecture / pr
 3. Compare full current RLS policies and routine ACLs against the original migration SQL once recovered; don't treat matching table names or current helper names as exact historical equivalence.
 4. Identify how family report media is stored and how its storage object keys are tied to school/student ownership.
 5. For lesson notes, approvals and promotions, confirm current RLS role predicates plus write triggers with targeted adversarial tests. No equivalent named trigger validator should be assumed.
+
+
+## Related ledger work
+
+The [live-only migration version inventory](LIVE-ONLY-MIGRATION-VERSION-INVENTORY-2026-10-17.md) contains all 397 live-only versions with provisional product-scope triage. The [remote-batch SQL/deployment provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md) corrects the marker count to 35 distinct versions and records the unresolved original SQL/deployment evidence. These links are supporting handover artifacts; no production changes were applied.

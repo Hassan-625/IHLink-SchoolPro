@@ -2448,3 +2448,14 @@ Added draft migration `database/mysql/004_schoolpro_admissions_progression.sql` 
 - SchoolPro CI #1545 was still running its final application build checks at this checkpoint: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031583118
 - Schema CI verifies migrations 001–004 install on disposable MySQL 8.4, the synthetic admissions/progression fixtures insert, and selected cross-school application/document/student/class references and foreign-school object paths are rejected.
 - This is not production acceptance. Admissions APIs, public-token protections, offer/acceptance transactions, explicit promotion preview/review/apply, result workflow authorization, and complete source parity remain outstanding.
+
+
+## MySQL operational modules slice — 2026-10-17
+
+Added draft migration `database/mysql/005_schoolpro_operational_modules.sql` using the production source's read-only column inventory. It adds timetable entries, calendar events, announcements, discipline records, student health records, lesson notes/review state, leave requests, inventory assets, hostel rooms and hostel allocations. Attendance already exists in migration 001 as enrollment-scoped `attendance_records`, so migration 005 intentionally does not redefine it.
+
+- Domain rows carry `school_id`; student, class, subject, session, term and membership relations use school-scoped composite foreign keys where the target model supports them.
+- Added synthetic fixtures for timetable, calendar, announcements, discipline, health, lesson notes, leave, inventory and hostel. Attendance fixture asserts the existing core enrollment link.
+- Added negative tests for cross-school timetable class, cross-school hostel student and invalid timetable weekday/time. MySQL 8.4 workflow now applies migration 005 and runs the fixtures/negative tests.
+- Important limitation: schema constraints do not replace application authorization. Health and discipline require particularly strict role-level access; timetable overlap, hostel capacity/occupancy, attendance batch rules, leave review permissions, and notification/audit transaction behavior need service-level tests.
+- Migrations 001–005 are draft-only. No production schema or records were changed. Awaiting exact-head MySQL schema workflow, SchoolPro CI and payment-page validation for this slice.

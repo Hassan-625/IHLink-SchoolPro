@@ -156,7 +156,14 @@ jobs:
             ) &
           done
           wait
-          accepted="$(grep -l '^accepted
+          accepted="$(grep -l '^accepted' /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          rejected="$(grep -l '^rejected' /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          test "$accepted" -eq 1
+          test "$rejected" -eq 1
+          actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select count(*)::text || ':' || coalesce(sum(pa.amount),0)::text from public.schoolpro_payment_submissions ps join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id where pa.invoice_id='$invoice' and ps.bank_reference like 'RACE-%'")"
+          test "$actual" = "1:600"
+          echo "PASS: two concurrent 600-unit submissions for one invoice produced exactly one pending reservation."
+
   payment-review-rls-integration:
     runs-on: ubuntu-latest
     services:

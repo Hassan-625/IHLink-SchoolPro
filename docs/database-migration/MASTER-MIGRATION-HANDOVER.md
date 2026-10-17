@@ -2311,3 +2311,13 @@ The Stage A proposal set is reconciled against the production ledger and deploye
 - Current Stage A candidate head: `7110e0273001d07be1c09f673e90ee8653b6f2d3`.
 - SchoolPro CI run #1500 is in progress for that head: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029802906. The prior corrected head's tenant-integrity job passed, but #1500 is the required run for the expanded immutability tests. Do not claim Stage A closed until all jobs and payment-page validation complete successfully on the final head.
 - Production remains read-only/unchanged. The forward migrations have not been applied to the production ledger. The historical source/ledger mismatch is reconciled as a deliberate forward-repair plan, not as proof that the historical migration ran.
+
+
+### Latest test-harness correction — 2026-10-17
+
+- CI #1500 failed only in the new eight-case tenant-reassignment test block because its SQL statement delimiters were emitted as single-dollar delimiters. The production migration logic and earlier relational cases passed up to that point; do not record #1500 as green.
+- Corrected the SQL dollar quoting in commit `78b6db3368ae24f5c02d8af9e2a557701084024d`.
+- Exact-head SchoolPro CI #1502 and payment-page validation #1229 are queued:
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917432
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917397
+- Final acceptance is pending these exact-head results. The handover remains deliberately explicit that no production migration has been applied.

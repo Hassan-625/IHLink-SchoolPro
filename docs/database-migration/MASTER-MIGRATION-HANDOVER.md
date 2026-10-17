@@ -1,5 +1,5 @@
 # IHLink Master Database Migration Handover
-**Last updated:** 2026-10-16  
+**Last updated:** 2026-10-17  
 **Status:** Audit and isolated schema-pilot stage — NOT approved for production cutover  
 **Working PR:** https://github.com/Hassan-625/IHLink-SchoolPro/pull/107  
 **Working branch:** `migration/mysql-schoolpro-foundation`  
@@ -1399,3 +1399,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The live Edge Function inventory does not include `schoolpro-public-admission`; the draft revocation migration `20261017133000_schoolpro_public_admission_rpc_abuse_controls.sql` is absent from the live migration ledger. Therefore the Turnstile gateway and service-role-only RPC boundary are **not active in production**. Do not claim the public admissions abuse gap is closed for production.
 - **Do not apply the revoke migration before the gateway is deployed and verified**, or the existing public admissions form may fail. A separately approved rollout must: (1) confirm actual customer-facing hostname/origins and configure `VITE_TURNSTILE_SITE_KEY` plus server-side `TURNSTILE_SECRET_KEY`, `TURNSTILE_ALLOWED_HOSTNAMES`, and `SCHOOLPRO_ADMISSION_ALLOWED_ORIGINS`; (2) deploy the Edge Function and frontend in a controlled sequence; (3) exercise valid/invalid/replayed token and legitimate application paths; (4) only then apply the RPC revocation/validation migration and confirm anon/authenticated cannot execute the RPC while service_role can. No production action was taken in this audit.
 - This is a confirmed production exposure/abuse-control gap based on live ACL and source inspection, not a claim that a data breach occurred. Keep it at the top of the Stage A rollout checklist and obtain explicit approval before any production deployment or migration.
+
+
+### Exact-head CI progress — 2026-10-17
+
+- SchoolPro CI [#1341](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469332) is running for Stage A commit `ea6186b400ec9ae0514641296f5c43f0cda30f86`.
+- Completed successfully so far: `tenant-acceptance` (read-only two-school acceptance), `payment-review-rls-integration`, `tenant-integrity-db-integration`, `result-verification-exposure-integration`, `public-admission-abuse-integration`, and `result-pin-rate-limit-integration`. The latter includes the new login rate-limit behavior fixture and concurrent-key assertion; both steps passed.
+- In `validate`, the new mocked Turnstile behavioral test and the no-unverified-forwarding-header login regression test both passed. The job is still running its combined Playwright/mobile-layout checks; artifact upload and `npm run build` have not yet run. Do not mark exact-head CI fully green until `validate` and the full workflow finish successfully.
+- The payment-page validation run [#1068](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39021469275) completed successfully.

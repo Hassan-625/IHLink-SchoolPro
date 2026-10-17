@@ -86,7 +86,9 @@ jobs:
         run: |
           mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/001_schoolpro_core.sql
           mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/007_schoolpro_auth_login_throttling.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/008_schoolpro_student_credentials_sessions.sql
           mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
+          mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_student_credentials_fixture.sql
       - name: Install MySQL API runtime dependency
         working-directory: server/mysql-api
         run: npm install --no-save --package-lock=false

@@ -283,6 +283,9 @@ CREATE TABLE IF NOT EXISTS school_subscription_plans (
   CONSTRAINT chk_subscription_plan_price CHECK (
     (is_demo = TRUE AND annual_price IS NULL)
     OR (is_demo = FALSE AND annual_price IS NOT NULL AND annual_price >= 0)
+  ),
+  CONSTRAINT chk_subscription_demo_code CHECK (
+    (code = 'demo' AND is_demo = TRUE) OR (code <> 'demo' AND is_demo = FALSE)
   )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

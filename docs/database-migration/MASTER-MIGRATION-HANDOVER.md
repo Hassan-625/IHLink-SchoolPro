@@ -1284,3 +1284,9 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 
 - Corrected-fixture run [SchoolPro CI #38994246728](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38994246728), head `e9eafa043845e5500f17e508161c11e12c40f8f0`, has **passed** the new `result-verification-exposure-integration` job on disposable PostgreSQL 16. The same run's `payment-review-rls-integration` and `result-pin-rate-limit-integration` jobs also passed. At the time of this note, `validate`, `tenant-integrity-db-integration`, and live `tenant-acceptance` were still running; the run is not yet a full CI pass.
 - The disposable fixture validates 192-bit token format and minimal aggregate snapshot against actual migration SQL. It does not apply the migration to production or prove production behavior until approved migration rollout.
+
+
+### Latest CI checkpoint — 2026-10-17
+
+- On corrected fixture head `e9eafa043845e5500f17e508161c11e12c40f8f0`, [SchoolPro CI #38994246728](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38994246728) now reports successful `tenant-acceptance`, `payment-review-rls-integration`, `result-verification-exposure-integration`, `result-pin-rate-limit-integration`, and `tenant-integrity-db-integration` jobs. This run's `validate` job remains in progress at the mobile-layout/browser test step, so do not mark the entire workflow green until that job finishes.
+- The intermittent tenant HTTP status 0 seen in the prior attempt did not recur in this corrected-fixture run; the live two-school acceptance job completed successfully.

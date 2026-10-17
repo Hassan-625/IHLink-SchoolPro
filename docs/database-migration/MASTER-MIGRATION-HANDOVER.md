@@ -1768,3 +1768,12 @@ This is a read-only comparison of key behaviors in production against the draft 
 - Production has no receipt objects in `schoolpro-payment-receipts`; all production receipt-object tests remain skipped. Local tests must cover guardian own/cross-user access and finance own-school/cross-school reads without adding production fixtures.
 - The production migration ledger still ends at `20261015161735 / schoolpro_access_invitation_role_constraint`; the source/ledger mismatch is not resolved by these object-presence checks. Several proposed behaviors are absent, while others appear to exist from unrecorded/manual/overlapping SQL. Reconstruct provenance and compare full live definitions before any application.
 - **Priority order:** (1) receipt-submission RPC ownership/locking guard; (2) latest CI including local Storage, payment RLS and result snapshot integration; (3) public RPC abuse/data-minimization and trusted-edge review; (4) family Storage policy performance; (5) full trigger/index/migration-ledger reconciliation. Stage A remains draft/open and no production change is authorized.
+
+
+## 26. Receipt RPC transaction-concurrency acceptance added (2026-10-17)
+
+- Extended the disposable PostgreSQL receipt-submission fixture with a third isolated invoice that has a 1,000-unit balance, separate from invoices used by the ordinary positive/negative cases.
+- Added a CI step that launches two independent PostgreSQL sessions concurrently, each attempting a 600-unit allocation against that same invoice. Acceptance requires exactly one submission to succeed and exactly one pending allocation totaling 600; the losing request must not over-reserve the invoice.
+- Test changes: fixture commit `4ba918d26770a900efbe0937b5b398b700567b41`; workflow commit `b8b29feb02930e6662b94aacf21423903fa807e9`. The current PR head inspected is `dc6ac60f325620097cbcb6ada200c6374e0e72aa`.
+- At the time of this entry, payment-page validation run #39025103288 was still in progress. The latest confirmed passing runtime evidence remains the earlier local receipt-Storage isolation run; this newly added concurrency assertion is **not yet counted as passing** until the PostgreSQL integration job has run and its log/result has been inspected.
+- The new concurrency test is disposable-only and does not create or alter production payment rows. No production migration was applied and PR #106 remains draft/open.

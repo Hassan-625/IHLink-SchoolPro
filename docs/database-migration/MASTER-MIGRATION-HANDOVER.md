@@ -1970,3 +1970,11 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - The draft receipt Storage policy was checked against the actual `school_member_role` enum values and `private.has_school_access(uuid, school_member_role[])` helper. The live finance-read policy uses the same proprietor/administrator/accountant/bursar role set but references only `schoolpro_payment_proofs`; the draft extends it to the active `schoolpro_payment_submissions` workflow.
 - The current live finance table policies include a restrictive `schoolpro_module_permission` policy and role-scoped policies for invoice, allocation, proof and submission reads/writes. The extra `anon` table ACLs are not an authorization grant to see rows while RLS has no anon policy, but they are excess privileges and are explicitly revoked by the draft migration.
 - These are observed current-state facts, not proof that all draft migrations have been applied. No production grants or function definitions were changed.
+
+
+## 32. Latest result-PIN period-switching regression test and CI queue (2026-10-17)
+
+- Added a regression to `scripts/test-schoolpro-result-pin-rate-limit.integration.sql` that deliberately alternates term/session values across eight wrong-PIN attempts for the same admission. The cooldown must still count all eight against one admission-wide key; varying caller-selected period inputs must not bypass the lockout.
+- Latest Stage A PR head at this checkpoint: `290803b74cce2e41ac4e34fa023b7bb0e2b87ee9`. SchoolPro CI [run #1443](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026357858) is queued; payment-page validation [run #1170](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026357837) completed successfully.
+- Previous full SchoolPro CI [run #1421](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908106) passed all eight jobs, including the Turnstile gateway static checks, direct-RPC grant assertions, local Storage finance/guardian isolation, and concurrent payment reservation. That run predates the latest period-switching regression, so run #1443 must execute before this latest test is considered proven.
+- Continue to treat admission-wide lockout as an explicit residual trade-off and production migrations as unapplied. No production change has been made.

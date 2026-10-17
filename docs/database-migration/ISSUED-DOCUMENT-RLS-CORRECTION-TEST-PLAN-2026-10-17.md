@@ -1,7 +1,7 @@
 # Issued-document RLS correction — review and adversarial test plan (2026-10-17)
 
 ## Status
-- Draft SQL is committed on `migration/mysql-schoolpro-foundation` only.
+- The SQL draft is in separate [draft PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108), branch `security/issued-document-rls-fix-2026-10-17`. This audit copy remains on the migration branch as supporting evidence only.
 - No production DDL or policy change was executed.
 - The existing live policy `students read own issued documents` contains the tautology `st.school_id = st.school_id`.
 - Proposed predicate replaces it with `st.school_id = schoolpro_document_issues.school_id` while preserving issued/revoked status and authenticated student ownership checks.
@@ -28,7 +28,7 @@
 Storage buckets observed: `schoolpro-document-outputs` (83 objects), `schoolpro-document-templates` (9), `schoolpro-demo-documents` (2), `schoolpro-result-outputs` (1), `school-result-templates` (8), and `schoolpro-admissions` (0). These counts are not proof of object ownership. A naive UUID-prefix scan is only a heuristic; bucket policy definitions and each database storage path must be correlated exactly before clearance.
 
 ## Gate
-**Not approved for production.** No cross-tenant authenticated negative test has yet been executed because the current tools do not provide a safe authenticated two-user test harness against production, and no disposable rehearsal has been proven available in this run. Do not use production data mutations to simulate adversarial cases.
+**Not approved for production.** Read-only authenticated probes of existing production data found no cross-school issue/output rows for two sampled student identities and a registrar, and anonymous access returned zero issue/output rows. These probes test current policy only; they do not test the proposed correction with a deliberately mismatched fixture. No production data was changed. A disposable two-school rehearsal is still required for the proposed fix, full policy composition, and write/update/delete/RPC/download tests. Do not use production data mutations to simulate adversarial cases.
 
 ## Additional live checks completed after drafting
 - `schoolpro_document_issues`: 141 rows; all 141 have a matching student and template, with zero orphan/null references and zero school mismatches.

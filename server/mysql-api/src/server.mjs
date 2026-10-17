@@ -299,7 +299,9 @@ export function createPoolFromEnv(env = process.env) {
   const required = ['MYSQL_HOST', 'MYSQL_DATABASE', 'MYSQL_USER', 'MYSQL_PASSWORD'];
   const missing = required.filter((key) => !env[key]);
   if (missing.length) throw new Error('Missing MySQL configuration: ' + missing.join(', '));
-  const ssl = String(env.MYSQL_SSL || '').toLowerCase() === 'true' ? {rejectUnauthorized: true} : undefined;
+  const sslEnabled = String(env.MYSQL_SSL || '').toLowerCase() === 'true';
+  if (env.NODE_ENV === 'production' && !sslEnabled) throw new Error('MYSQL_SSL=true is required in production');
+  const ssl = sslEnabled ? {rejectUnauthorized: true} : undefined;
   return mysql.createPool({
     host: env.MYSQL_HOST,
     port: Number(env.MYSQL_PORT || 3306),

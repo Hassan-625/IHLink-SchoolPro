@@ -1,6 +1,6 @@
 -- Database-level rate limiting for the public result-PIN checker.
--- Store only a digest of the normalized admission number plus request network identifier.
--- This avoids locking every user out of a student's result based only on the admission number.
+-- Store only a digest of normalized admission, term and session identifiers.
+-- Do not trust request-supplied forwarding headers as a security boundary.
 create table if not exists private.schoolpro_result_pin_attempts (
   attempt_key text primary key,
   window_started_at timestamptz not null default now(),
@@ -72,20 +72,15 @@ declare
   payload jsonb;
   v_attempt_key text;
   v_blocked_until timestamptz;
-  v_headers jsonb;
-  v_client_ip text;
 begin
-  v_headers := nullif(current_setting('request.headers', true), '')::jsonb;
-  -- On Supabase-hosted requests, prefer the Cloudflare edge's client-IP header.
-  -- X-Forwarded-For is caller-influenced and may contain a spoofed leftmost value;
-  -- do not use it as the security rate-limit identity.
-  v_client_ip := coalesce(
-    nullif(trim(v_headers ->> 'cf-connecting-ip'), ''),
-    'unknown'
-  );
+  -- Key the cooldown by the requested result period and admission identifier.
+  -- This deliberately avoids trusting client-supplied IP/forwarding headers until
+  -- trusted gateway provenance is independently verified.
   v_attempt_key := encode(
     extensions.digest(
-      lower(trim(coalesce(p_admission, ''))) || '|' || coalesce(nullif(trim(v_client_ip), ''), 'unknown'),
+      lower(trim(coalesce(p_admission, ''))) || '|' ||
+      lower(trim(coalesce(p_term, ''))) || '|' ||
+      lower(trim(coalesce(p_session, ''))),
       'sha256'
     ),
     'hex'

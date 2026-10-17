@@ -62,3 +62,11 @@ The source comparison was broadened from exact version matches to exact migratio
 
 
 See the [five-entry source-candidate review supplement](LIVE-ONLY-SOURCE-CANDIDATE-REVIEW-REMAINDER-2026-10-17.md) for the final timestamp-different candidates and their blob SHAs.
+
+## Additional authenticated storage and anonymous probes — 2026-10-17
+All tests below were read-only and transaction-scoped; each transaction was rolled back:
+- Anonymous role: 0 visible `schoolpro_document_issues` rows and 0 visible `schoolpro-document-outputs` objects.
+- A school registrar in school `d342eb87-8d6a-477a-a380-7fab83f586b7`: 141 visible document issues for that school and 0 for the other sampled school; 83 visible document-output objects and 0 objects with the other school's path prefix.
+- A proprietor in that same school: 7 visible objects in `schoolpro-document-templates`, all with the proprietor's own school prefix and 0 with the other school's prefix; 2 visible `schoolpro-invoice-templates` objects, both own-school prefix; 8 visible `school-result-templates` objects, all own-school prefix and 0 other-school prefix.
+- The same registrar had 0 visible objects in `schoolpro-document-templates`, consistent with the manager-only read policy for that bucket.
+- These sampled reads support current-policy school scoping for the tested roles/buckets. They do not test upload/update/delete, object-key tampering, direct signed/public URL exposure, or the proposed issued-document policy on a deliberately mismatched fixture. The two document-output buckets have existing data; the admissions/payment-receipt buckets are empty and remain untested on actual objects.

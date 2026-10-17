@@ -60,11 +60,11 @@ before(async () => {
 
   const adminHash = await hashPassword('Platform-Admin-Test-Password-2026!');
   await pool.execute(
-    'INSERT INTO users (id,email,email_normalized,display_name,password_hash,status,email_verified_at) VALUES (?,?,?,?,?,\\'active\\',UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash), status=\\'active\\', email_verified_at=UTC_TIMESTAMP(6)',
+    "INSERT INTO users (id,email,email_normalized,display_name,password_hash,status,email_verified_at) VALUES (?,?,?,?,?,'active',UTC_TIMESTAMP(6)) ON DUPLICATE KEY UPDATE password_hash=VALUES(password_hash), status='active', email_verified_at=UTC_TIMESTAMP(6)",
     [adminId, 'platform-admin@example.test', 'platform-admin@example.test', 'Synthetic Platform Admin', adminHash],
   );
   await pool.execute(
-    'INSERT INTO platform_roles (user_id,role_code) VALUES (?,\\'super_admin\\') ON DUPLICATE KEY UPDATE role_code=VALUES(role_code)',
+    "INSERT INTO platform_roles (user_id,role_code) VALUES (?,'super_admin') ON DUPLICATE KEY UPDATE role_code=VALUES(role_code)",
     [adminId],
   );
 

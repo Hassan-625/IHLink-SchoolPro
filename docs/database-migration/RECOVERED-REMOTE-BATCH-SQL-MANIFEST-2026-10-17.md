@@ -43,3 +43,7 @@ The live ledger also records `created_by` (the same account for all 35) and `ide
 | `20260926102010` | `schoolpro_results_finance_operations_completion` | `hassanisahassan12@gmail.com` | `NULL` | 1 | 6507 | [20260926102010_schoolpro_results_finance_operations_completion.sql](recovered-remote-batch-sql/20260926102010_schoolpro_results_finance_operations_completion.sql) |
 | `20260926102055` | `schoolpro_result_lock_enforcement` | `hassanisahassan12@gmail.com` | `NULL` | 1 | 546 | [20260926102055_schoolpro_result_lock_enforcement.sql](recovered-remote-batch-sql/20260926102055_schoolpro_result_lock_enforcement.sql) |
 | `20260926102147` | `schoolpro_transactional_email_events` | `hassanisahassan12@gmail.com` | `NULL` | 1 | 1741 | [20260926102147_schoolpro_transactional_email_events.sql](recovered-remote-batch-sql/20260926102147_schoolpro_transactional_email_events.sql) |
+
+
+## Expanded recovery scope
+The 35 individually recovered marker files are byte-equal to the production ledger payload. Beyond those, all 397 live-only ledger records are now preserved in [eight JSONL bundles](recovered-live-only-sql/) and linked from the [SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md). This manifest remains focused on the marker's 35 exact SQL payloads and their ledger metadata; the 397-row dependency register is a separate static-analysis artifact.

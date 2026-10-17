@@ -2956,3 +2956,37 @@ This entry preserves the current stopping point; it does not mark any blocked ga
 5. Only after all gates pass, proceed in the owner's authorized order and stop immediately on unexpected catalog/ledger differences or a failed acceptance probe.
 
 **Current decision:** Owner authorization is on record, but the conditional safety gate has not passed. Stage A remains blocked and the three migrations remain unapplied in production. Preserve the authorization for a future retry; do not ask the owner to authorize the same planned scope again unless the scope materially changes.
+
+### Architecture decision proposal — SchoolPro PostgreSQL on Aiven, application on Render (2026-10-17)
+
+**Owner's requested direction:** Stop spending effort on the draft MySQL migration and evaluate moving SchoolPro's existing PostgreSQL data from Supabase to Aiven PostgreSQL, while keeping the SchoolPro frontend and application/API hosted on Render. This is a SchoolPro-only decision; DataSub and its Supabase project remain untouched.
+
+**Recommended direction: APPROVE AS THE TARGET ARCHITECTURE, but migrate only through a staged, verified cutover.** PostgreSQL-to-PostgreSQL avoids the ongoing MySQL schema/application translation work and preserves PostgreSQL features such as RLS, PL/pgSQL functions, triggers, UUIDs, and relational constraints. It does not automatically make the application portable away from Supabase.
+
+#### Important service boundaries
+
+- **Render:** host the website/frontend and backend/API. The backend should own database access and enforce authentication/authorization; do not expose Aiven credentials or a privileged database connection to browser/mobile clients.
+- **Aiven PostgreSQL:** target for SchoolPro application data after schema/extension/role/RLS compatibility review and verified migration. The stated $5/month Developer plan and 8 GB storage are the owner's intended budget/plan, not independently verified here. Confirm the exact Aiven service plan, current data size, CPU/RAM, connection cap, backup/recovery features, network reachability, TLS and storage headroom in the console before committing to production.
+- **Supabase:** source remains the production system until cutover acceptance. Determine which Supabase services SchoolPro currently uses. PostgreSQL dump/restore does not migrate Supabase Auth users/configuration, Storage objects/buckets/policies, Edge Functions, secrets, Realtime configuration, scheduled jobs, or dashboard settings as a complete working service.
+- **DataSub:** out of scope. Do not change its Supabase project, database, secrets, deployment or data.
+- **MySQL draft PR #107 and migrations 001–008:** pause further feature/schema work pending this pivot; keep the branch, draft PR, tests and documentation for audit/history. Do not merge or delete it until the PostgreSQL/Aiven replacement path is proven and the owner explicitly approves cleanup.
+
+#### Required implementation discovery before coding/cutover
+
+1. Inventory the production SchoolPro code for Supabase JS/client usage, direct REST/RPC calls, auth.uid() and Supabase role assumptions, Auth/admin APIs, Storage buckets and signed URLs, Edge Functions, Realtime, cron/jobs, webhooks and environment variables.
+2. Verify Aiven's actual plan/cluster details and network connection from Render. Confirm supported PostgreSQL major version, required extensions, connection/TLS settings and database-size headroom.
+3. Build a dedicated Aiven migration path using the existing PostgreSQL schema and source migrations. Reconcile source schema, full migration ledger, extensions, roles/grants, policies, functions, triggers, sequences and storage-related references. Do not assume a generic full-cluster dump can recreate Supabase-managed roles or platform services.
+4. Choose explicitly whether to keep Supabase Auth/Storage temporarily or replace those dependencies. Keeping Supabase Auth while the application data moves to Aiven is possible only with an intentionally designed trust boundary and server-side authorization; database policies relying on Supabase JWT claims and auth.uid() must not be assumed to work unchanged on Aiven.
+5. Restore into a separate empty Aiven database for rehearsal, compare schema and per-table row counts, validate constraints/indexes/sequences/RLS/functions/triggers, run tenant isolation and role tests, test results/publication, payment/subscription workflows, receipts/storage references, backup/restore and performance.
+6. Use a rehearsed cutover plan: freeze writes for final snapshot or use a supported continuous migration only after verifying its prerequisites; take a source backup; run final reconciliation; change Render server-side secrets only after acceptance; smoke-test; keep a documented rollback to the source database. Never dual-write casually or let both databases accept independent production writes.
+7. After Aiven target tests pass, return to Stage A security review against the actual target architecture. The current live Supabase timeout and proposed Supabase-specific migrations must not be blindly executed on Aiven or declared resolved merely because the provider changed.
+
+#### Current status and guardrails
+
+- No Aiven database has been provisioned or connected by this action.
+- No source dump/restore, production database change, Render environment change, deployment, PR merge or cutover has been performed.
+- Supabase remains the live SchoolPro source of truth. Do not disable it or change Render's production database URL until a verified rollback-capable cutover is explicitly approved.
+- The previous Stage A production rollout remains unexecuted. Its Supabase-specific three-migration plan must be re-evaluated against the Aiven target rather than applied blindly.
+- This architecture pivot supersedes continuing active development on the MySQL migration as the preferred path, but does not erase its audit trail or the unfinished SchoolPro feature-parity/security requirements. A/B/C acceptance and the later Result Design Studio/custom Excel work remain required.
+
+**Next step:** read-only inventory of application Supabase dependencies and current source database footprint; then prepare the Aiven PostgreSQL rehearsal/cutover plan. Do not request credentials in chat; use Render/Aiven dashboards or approved secret-management controls.

@@ -108,8 +108,30 @@ exception when insufficient_privilege then
  return;
 end $assert$;
 
+create function pg_temp.assert_rejected(p_name text, p_statement text)
+returns void language plpgsql as $assert$
+begin
+  begin
+    execute p_statement;
+  exception when insufficient_privilege then
+    return;
+  end;
+  raise exception 'FAIL: unauthorized action was accepted: %', p_name;
+end $assert$;
+
 set role authenticated;
-select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);
+select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);select pg_temp.assert_rejected(
+  'guardian cannot insert a pre-reviewed payment submission',
+  $insert into public.schoolpro_payment_submissions
+    (id, school_id, submitted_by, total_amount, payment_date, receipt_path, status)
+    values
+    ('e0000000-0000-0000-0000-000000000099',
+     'b0000000-0000-0000-0000-000000000001',
+     'd0000000-0000-0000-0000-000000000001',
+     100, current_date, 'd0000000-0000-0000-0000-000000000001/not-a-verified-upload.pdf',
+     'reviewed')$
+);
+
 select set_config('test.finance_school','',false);
 select set_config('test.is_super_admin','false',false);
 select pg_temp.assert_count('guardian sees own submission only',(select count(*) from public.schoolpro_payment_submissions),1);

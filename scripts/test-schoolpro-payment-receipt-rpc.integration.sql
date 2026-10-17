@@ -104,13 +104,19 @@ select public.submit_schoolpro_payment(
   :'receipt', 'application/pdf',
   jsonb_build_array(jsonb_build_object('invoice_id', :'invoice', 'amount', 400))
 ) as valid_submission_id \gset
-select case when exists (
-  select 1 from public.schoolpro_payment_submissions ps
-  join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id
-  where ps.id=:'valid_submission_id'::uuid and ps.status='pending'
-    and ps.submitted_by=:'guardian'::uuid and pa.invoice_id=:'invoice'::uuid and pa.amount=400
-) then 'PASS: valid guardian receipt submission persisted' else
-  (select 1/0)::text end;
+do $
+begin
+  if not exists (
+    select 1 from public.schoolpro_payment_submissions ps
+    join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id
+    where ps.id=:'valid_submission_id'::uuid and ps.status='pending'
+      and ps.submitted_by=:'guardian'::uuid and pa.invoice_id=:'invoice'::uuid and pa.amount=400
+  ) then
+    raise exception 'FAIL: valid guardian receipt submission did not persist';
+  end if;
+end;
+$;
+select 'PASS: valid guardian receipt submission persisted' as result;
 
 select pg_temp.assert_rejected('receipt owned by another user',
   $$select public.submit_schoolpro_payment(

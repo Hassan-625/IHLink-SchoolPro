@@ -246,3 +246,9 @@ The only listed Supabase branch remains main with status MIGRATIONS_FAILED. A ne
 ### Target-platform correction to the gate register — 2026-10-17
 
 The authoritative [Master Database Migration Handover](MASTER-MIGRATION-HANDOVER.md) sets the active target to **Supabase PostgreSQL → Aiven PostgreSQL**, while SchoolPro's frontend remains on Render. The MySQL pilot/PR #107 is paused historical reference only. The new gate register has been corrected accordingly (commit 01ba5ae11912c3be102541447fe19912dc02b151). G3 now requires proof for an Aiven PostgreSQL target, including extensions, roles/grants/RLS, functions, triggers, sequences, scheduled jobs and the explicit Supabase Auth/Storage/Edge boundary. The migration decision remains **NO-GO**; target readiness is not established.
+
+
+### Isolated Supabase branch cost quote — 2026-10-17
+
+Using the organization ID supplied by the user, the Supabase cost endpoint returned a branch estimate of **$0.01344/hour** (approximately **$0.32256 per 24 hours** and **$9.81504 per 30 days** at continuous runtime). These are arithmetic projections from the quoted hourly amount, not a total-bill guarantee; additional usage charges and the organization's reported “Exceeding usage limits” status may affect billing. The quote was retrieved successfully. **No cost confirmation ID was requested, no branch was created, and no production change occurred.** Creation remains blocked until the user explicitly approves the quoted recurring hourly cost; after approval, confirm the exact amount/recurrence and then create only a disposable test branch. The existing `main` branch remains unsuitable as an adversarial test target because its status is `MIGRATIONS_FAILED`.
+

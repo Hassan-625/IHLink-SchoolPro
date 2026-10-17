@@ -2910,3 +2910,49 @@ This entry preserves the current stopping point; it does not mark any blocked ga
 5. Keep this handover append-only for material evidence and update status claims only when supported by exact artifacts.
 
 **Safety statement:** No production DDL, production data writes, Render deployment, environment-variable changes, PR merge, or MySQL cutover was performed as part of this continuation checkpoint.
+
+
+### Authorized Stage A rollout preflight — STOPPED before production changes (2026-10-17)
+
+**Authorization:** The project owner explicitly authorized the reviewed three-migration Stage A production rollout, conditional on checking exact source contents, live schema and migration ledger, rollback implications, and current CI, and stopping on any material discrepancy.
+
+**Outcome: NO MIGRATION EXECUTED.** The authorization was honored, but the preflight found blockers that fail the owner's stop condition. No production DDL, data writes, policy changes, deployments, environment changes, merges, or cutover were performed.
+
+#### Exact-head CI status checked
+
+- Stage A security commit checked: `eeac24a9e1820272ef673f59afd053a81408f193`.
+- SchoolPro CI #1596 failed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727021. The documented `tenant-acceptance` job exhausted retries and timed out on the authenticated `schoolpro_result_approvals` probe. This is a live acceptance blocker, not a pass.
+- Payment-page validation #1323 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033727069. This does not override the failed tenant-acceptance gate.
+- The separate migration-branch handover commit `fe0346c39a104fc1c4172a95d305dd1b682765fb` has green documentation-triggered runs: SchoolPro CI #1662 (including `mysql-api-test` and `validate`) https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39036911633; MySQL schema draft #477 https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39036911606; payment-page validation #1389 https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39036911676. These test the MySQL migration branch's draft scope and do **not** constitute Stage A production acceptance or prove the Stage A migration set is ready.
+
+#### Read-only production catalog and ledger review
+
+- All six index-target tables exist: `schoolpro_library_books`, `schoolpro_transport_routes`, `schoolpro_hostel_rooms`, `schoolpro_inventory_assets`, `schoolpro_result_approvals`, and `schoolpro_promotions`.
+- None currently has a valid, ready index whose leading column is `school_id`, per the read-only catalog query. `schoolpro_result_approvals` is estimated at 33,603 rows; `schoolpro_promotions` at 1,160. The four remaining index targets are currently small.
+- The eight RLS-target tables are present and RLS is enabled, but FORCE RLS is false on the sampled target tables. Their owner is `postgres`; it has `BYPASSRLS`, so FORCE RLS does not constrain that privileged owner or other bypass roles.
+- Existing feature-specific policies are present, including the library family-read policy, calendar access policies, lesson-note author/leadership policies, and result-approval read/write policies. The RLS migration's stated policy-preservation approach is important; do not substitute the historical policy-replacing migration.
+- The live migration ledger currently ends at version `20261015161735` in the sampled latest 15 entries; no `20261016%` or `20261017%` versions were returned. This supports that the three proposed migrations are not recorded as applied. Do not infer a clean ledger reconciliation from this alone; verify the full ledger/source parity immediately before any later execution.
+- The previously observed owner `postgres` with `BYPASSRLS` and the unresolved live result-approval timeout remain explicit acceptance risks.
+
+#### Exact migration source reviewed
+
+- Index migration `20261017180000_schoolpro_operational_tenant_indexes.sql`, source blob `a0db0fa32de1ee1368cf4fc380cc56b36bcd4be6`: https://github.com/Hassan-625/IHLink-SchoolPro/blob/2aa67f6f4715e9e8653041a313bda4e4ea2e6ceb/supabase/migrations/20261017180000_schoolpro_operational_tenant_indexes.sql. It checks the six target tables and creates six ordinary (non-concurrent) indexes. The ordinary index builds can take table locks; schedule and monitor this impact, especially on `schoolpro_result_approvals`. No index was created during this preflight.
+- RLS migration `20261017170000_schoolpro_forward_operational_tenant_isolation.sql`, source blob `8018c92bd1196ff9d85a05fec44fe608897768eb`: https://github.com/Hassan-625/IHLink-SchoolPro/blob/2aa67f6f4715e9e8653041a313bda4e4ea2e6ceb/supabase/migrations/20261017170000_schoolpro_forward_operational_tenant_isolation.sql. It enables and forces RLS on eight named tables and does not replace policies. No RLS flags were changed during this preflight.
+- Integrity migration `20261016160000_schoolpro_repair_operational_tenant_integrity.sql`, source blob `5bcf64a155aee9a92fb2b6cbfcd3b6c3a634473a`: https://github.com/Hassan-625/IHLink-SchoolPro/blob/2aa67f6f4715e9e8653041a313bda4e4ea2e6ceb/supabase/migrations/20261016160000_schoolpro_repair_operational_tenant_integrity.sql. All 13 directly referenced core/operational tables were confirmed present, and `schoolpro_member_permissions` also exists. Static review flagged its final trigger declaration, `BEFORE INSERT OR UPDATE OF school_id, member_id`, for explicit PostgreSQL grammar/runtime validation in disposable CI before production; do not assume the migration is executable merely because some prior tenant-integrity assertions passed. The target guard functions do not yet exist in production, as expected for an unapplied migration. No functions or triggers were created.
+
+#### Rollback and operational implications
+
+- Indexes are individually removable, but dropping them would restore the known slow access path; ordinary index creation can hold locks while building. Prefer a reviewed lock/timeout plan and observe the production impact before proceeding.
+- RLS posture can technically be reverted with `NO FORCE ROW LEVEL SECURITY` / `DISABLE ROW LEVEL SECURITY`, but doing so may reduce defense in depth. Treat rollback as an emergency, reviewed action only; preserve current policies and capture catalog state first.
+- Trigger/function rollback requires exact object-name inventory and a tested rollback script. Removing tenant-integrity guards reopens cross-school reference and tenant-ownership mutation risks. The current migration uses `CREATE OR REPLACE FUNCTION` and drops/recreates named triggers, so pre-existing trigger definitions and ordering must be captured and compared before application.
+- The three migrations have timestamp names whose lexical order differs from the authorized operational sequence. Apply only by explicit, reviewed per-migration order (indexes, then RLS posture, then integrity triggers), and verify the resulting ledger entries; never bulk-apply by filename order.
+
+#### Required gates before retrying
+
+1. Fix or conclusively validate the trigger-event syntax in a disposable PostgreSQL environment, then rerun the full migration application and operational tenant-integrity tests against the exact Stage A head.
+2. Re-run Stage A CI and resolve the live `schoolpro_result_approvals` tenant-acceptance timeout; a passing payment workflow alone is insufficient.
+3. Reconcile the full production migration ledger against the exact release branch and inspect the existing triggers/functions and trigger ordering before touching any object.
+4. Prepare and rehearse per-migration rollback/lock handling. Re-run the read-only catalog snapshot immediately before execution.
+5. Only after all gates pass, proceed in the owner's authorized order and stop immediately on unexpected catalog/ledger differences or a failed acceptance probe.
+
+**Current decision:** Owner authorization is on record, but the conditional safety gate has not passed. Stage A remains blocked and the three migrations remain unapplied in production. Preserve the authorization for a future retry; do not ask the owner to authorize the same planned scope again unless the scope materially changes.

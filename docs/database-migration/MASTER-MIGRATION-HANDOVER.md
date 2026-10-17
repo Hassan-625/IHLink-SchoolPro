@@ -2321,3 +2321,8 @@ The Stage A proposal set is reconciled against the production ledger and deploye
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917432
   - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917397
 - Final acceptance is pending these exact-head results. The handover remains deliberately explicit that no production migration has been applied.
+
+
+### Production role semantics confirmed — 2026-10-17
+
+Read-only `pg_roles` inspection confirms `anon`, `authenticated` and `authenticator` have neither SUPERUSER nor BYPASSRLS; `postgres` and `service_role` have BYPASSRLS. This supports the migration's explicit caveat: FORCE RLS governs non-bypass owners, but it is not a substitute for scoped RLS policies, explicit RPC authorization, and keeping service-role credentials server-side. The new disposable integration tests exercise visibility as `authenticated`; they do not claim to constrain the privileged service role.

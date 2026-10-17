@@ -1720,3 +1720,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 5. Finish authenticated invitations/first-login checks and the nine anonymous-callable SECURITY DEFINER RPC abuse/data-minimization review; keep the seven policy-less RLS tables fail-closed because production confirms anon/authenticated direct table privileges are absent.
 6. Review the full trigger/constraint set and actual trigger order against operational workflows. CI success alone is not production migration parity.
 7. Keep PR #106 draft/open and Stage A **NOT MERGE-READY** until all required evidence is reviewed and the user explicitly approves the release. Stage B remains blocked.
+
+
+## 23. Additional production grant audit — anonymous finance-table grants (2026-10-17)
+
+- A read-only ACL audit of production showed explicit `anon` grants for SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES and TRIGGER on each of `schoolpro_invoices`, `schoolpro_payment_allocations`, `schoolpro_payment_proofs`, and `schoolpro_payment_submissions`. `schoolpro_fee_payments` is also included in the same financial-workflow hardening scope.
+- These tables have RLS enabled, and the reviewed policies for these finance/payment workflows target `authenticated`; this observation alone is **not evidence that anonymous requests currently read or mutate rows**. However, the grants are unnecessary excess privilege and create avoidable dependence on every RLS policy remaining correct.
+- Updated the draft `20261016143000_schoolpro_payment_review_write_controls.sql` to revoke table privileges from `PUBLIC` and `anon` for invoices, allocations, proofs, submissions and fee-payment ledger rows while retaining explicit authenticated grants. No production grant was changed.
+- Extended the disposable payment-review RLS integration fixture to simulate the broad grants observed in production, then assert that the migration removes anonymous SELECT/INSERT access while authenticated submission SELECT/INSERT privileges remain. CI on the latest code head must pass before this remediation can be considered validated.
+- This finding is added to the Stage A risk register. The migration is still draft/unapplied; do not apply it independently of the full source/ledger reconciliation and reviewed release plan.

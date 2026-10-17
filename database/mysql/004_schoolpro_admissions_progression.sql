@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS student_promotions (
   CONSTRAINT fk_student_promotion_to_class FOREIGN KEY (school_id,to_class_id) REFERENCES school_classes(school_id,id) ON DELETE RESTRICT,
   CONSTRAINT fk_student_promotion_session FOREIGN KEY (school_id,session_id) REFERENCES academic_sessions(school_id,id) ON DELETE RESTRICT,
   CONSTRAINT fk_student_promotion_decider FOREIGN KEY (decided_by) REFERENCES users(id) ON DELETE SET NULL,
-  CONSTRAINT fk_student_promotion_applier FOREIGN KEY (applied_by) REFERENCES users(id) ON DELETE SET NULL,
+  CONSTRAINT fk_student_promotion_applier FOREIGN KEY (applied_by) REFERENCES users(id) ON DELETE RESTRICT,
   CONSTRAINT chk_student_promotion_apply_state CHECK ((status='applied' AND applied_at IS NOT NULL AND applied_by IS NOT NULL) OR (status<>'applied')),
   CONSTRAINT chk_student_promotion_target CHECK (
     (decision='promote' AND to_class_id IS NOT NULL)

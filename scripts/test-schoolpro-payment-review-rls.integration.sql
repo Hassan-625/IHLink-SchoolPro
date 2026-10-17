@@ -2,8 +2,8 @@
 -- Applies the actual policy migration to minimal test-only tables and switches to authenticated.
 create schema if not exists auth;
 create schema if not exists private;
-do $ begin create role authenticated nologin; exception when duplicate_object then null; end $;
-do $ begin create role anon nologin; exception when duplicate_object then null; end $;
+do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
+do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
 do $$ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $$;
 
 create or replace function auth.uid()

@@ -1,10 +1,12 @@
 -- Isolated disposable PostgreSQL test for effective payment-review RLS.
--- Applies the actual policy migration to minimal test-only tables and switches to authenticated.
+-- Uses a reduced schema but mirrors the current production policy names/predicates and broad grants;
+-- it is not a full production schema restore. Applies the actual draft migration and switches roles.
 create schema if not exists auth;
 create schema if not exists private;
 do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
-do $$ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $$;
+do $ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $;
+do $ begin create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar'); exception when duplicate_object then null; end $;
 
 create or replace function auth.uid()
 returns uuid language sql stable
@@ -12,9 +14,25 @@ as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$
 create or replace function private.is_admin(p_roles public.user_role[])
 returns boolean language sql stable
 as $$ select coalesce(current_setting('test.is_super_admin', true), 'false') = 'true' $$;
+create table public.schoolpro_test_memberships (
+ user_id uuid not null, school_id uuid not null, role public.school_member_role not null,
+ primary key (user_id,school_id,role)
+);
+create or replace function private.has_school_access(p_school uuid, p_roles public.school_member_role[] default null)
+returns boolean language sql stable security definer set search_path=''
+as $ select exists (
+ select 1 from public.schoolpro_test_memberships m
+ where m.user_id=(select auth.uid()) and m.school_id=p_school
+ and (p_roles is null or m.role=any(p_roles))
+) $;
 create or replace function private.schoolpro_module_allowed(p_school uuid, p_module text)
 returns boolean language sql stable
-as $$ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $$;
+as $ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $;
+create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
+returns boolean language sql stable security definer set search_path=''
+as $ select exists(select 1 from public.schoolpro_guardian_links g
+ where g.school_id=p_school and g.student_id=p_student
+ and g.guardian_user_id=(select auth.uid()) and g.status='active') $;
 
 create table public.schoolpro_invoices (
  id uuid primary key
@@ -47,7 +65,8 @@ create table public.schoolpro_payment_proofs (
  submitted_by uuid not null, receipt_path text
 );
 create table public.schoolpro_fee_payments (
- id uuid primary key, school_id uuid not null, student_id uuid not null, amount numeric not null
+ id uuid primary key, school_id uuid not null, student_id uuid not null, amount numeric not null,
+ recorded_by uuid
 );
 
 -- Reproduce the broad legacy table grants observed on production so the migration
@@ -76,28 +95,36 @@ insert into public.schoolpro_payment_proofs values
 insert into storage.objects(bucket_id,name,owner_id,owner) values
  ('schoolpro-payment-receipts','d0000000-0000-0000-0000-000000000001/receipt-a.pdf','d0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001'),
  ('schoolpro-payment-receipts','d0000000-0000-0000-0000-000000000002/receipt-b.pdf','d0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002');
-insert into public.schoolpro_fee_payments values
- ('12000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',100),
- ('12000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',200);
+insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorded_by) values
+ ('12000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',100,'d0000000-0000-0000-0000-000000000099'),
+ ('12000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000002',200,'d0000000-0000-0000-0000-000000000099');
+insert into public.schoolpro_test_memberships(user_id,school_id,role) values
+ ('d0000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','accountant');
 
--- Representative pre-existing permissive policies. The migration under test adds restrictive guards
--- and Super Admin SELECT policies; these permissive policies model the established guardian/finance scope.
-create policy guardian_or_finance_read_submissions on public.schoolpro_payment_submissions for select to authenticated using (
- private.schoolpro_module_allowed(school_id,'finance') or submitted_by=auth.uid());
-create policy guardian_own_insert_submissions on public.schoolpro_payment_submissions for insert to authenticated with check (
+-- Reproduce the names and core predicates of the live production permissive policies.
+create policy "submitter or finance reads submissions" on public.schoolpro_payment_submissions for select to authenticated using (
+ submitted_by=auth.uid() or private.has_school_access(school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[]));
+create policy "guardian inserts submissions" on public.schoolpro_payment_submissions for insert to authenticated with check (
  submitted_by=auth.uid() and exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_payment_submissions.school_id and g.guardian_user_id=auth.uid() and g.status='active'));
 
-create policy guardian_or_finance_read_allocations on public.schoolpro_payment_allocations for select to authenticated using (
- private.schoolpro_module_allowed(school_id,'finance') or exists(select 1 from public.schoolpro_payment_submissions s where s.id=submission_id and s.submitted_by=auth.uid()));
+create policy "submitter or finance reads allocations" on public.schoolpro_payment_allocations for select to authenticated using (
+ exists(select 1 from public.schoolpro_payment_submissions s where s.id=submission_id and
+ (s.submitted_by=auth.uid() or private.has_school_access(s.school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[]))));
 
-create policy guardian_or_finance_read_proofs on public.schoolpro_payment_proofs for select to authenticated using (
- private.schoolpro_module_allowed(school_id,'finance') or submitted_by=auth.uid());
+create policy "guardian reads own proofs" on public.schoolpro_payment_proofs for select to authenticated using (
+ submitted_by=auth.uid() or private.has_school_access(school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[]));
 create policy "guardian submits proof" on public.schoolpro_payment_proofs for insert to authenticated with check (
  submitted_by=auth.uid() and exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_payment_proofs.school_id and g.student_id=schoolpro_payment_proofs.student_id and g.guardian_user_id=auth.uid() and g.status='active'));
 
-create policy guardian_finance_read_fee_payments on public.schoolpro_fee_payments for select to authenticated using (
- private.schoolpro_module_allowed(school_id,'finance') or exists(select 1 from public.schoolpro_guardian_links g where g.school_id=schoolpro_fee_payments.school_id and g.student_id=schoolpro_fee_payments.student_id and g.guardian_user_id=auth.uid() and g.status='active'));
-create policy finance_insert_fee_payments on public.schoolpro_fee_payments for insert to authenticated with check(private.schoolpro_module_allowed(school_id,'finance'));
+create policy "School members guardians and corporate finance read payments" on public.schoolpro_fee_payments for select to authenticated using (
+ private.has_school_access(school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[])
+ or private.schoolpro_owns_invoice_student(school_id,student_id));
+create policy "School finance records payments" on public.schoolpro_fee_payments for insert to authenticated with check (
+ private.has_school_access(school_id,array['proprietor','administrator','accountant','bursar']::public.school_member_role[])
+ and recorded_by=auth.uid());
+create policy "Super admin full access schoolpro_fee_payments" on public.schoolpro_fee_payments for all to authenticated using (
+ private.is_admin(array['super_admin']::public.user_role[])) with check (
+ private.is_admin(array['super_admin']::public.user_role[]));
 
 alter table public.schoolpro_guardian_links enable row level security;
 create policy guardian_reads_own_link on public.schoolpro_guardian_links for select to authenticated
@@ -228,8 +255,8 @@ select pg_temp.assert_no_rows_affected('finance cannot directly alter invoice al
 select pg_temp.assert_no_rows_affected('finance cannot directly replace proof receipt path',$update public.schoolpro_payment_proofs set receipt_path='reviewed/path.pdf' where id='11000000-0000-0000-0000-000000000001'$);
 select pg_temp.assert_no_rows_affected('finance cannot directly edit fee-payment ledger amount',$update public.schoolpro_fee_payments set amount=101 where id='12000000-0000-0000-0000-000000000001'$);
 select pg_temp.assert_no_rows_affected('finance cannot delete fee-payment ledger row',$delete from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000001'$);
-insert into public.schoolpro_fee_payments(id,school_id,student_id,amount)
-values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50);
+insert into public.schoolpro_fee_payments(id,school_id,student_id,amount,recorded_by)
+values('12000000-0000-0000-0000-000000000099','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001',50,'d0000000-0000-0000-0000-000000000099');
 select pg_temp.assert_count('finance can insert an intended school fee payment',(select count(*) from public.schoolpro_fee_payments where id='12000000-0000-0000-0000-000000000099'),1);
 
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000098',false);

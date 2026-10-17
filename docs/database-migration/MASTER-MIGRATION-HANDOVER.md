@@ -3113,3 +3113,14 @@ The owner manually triggered `SchoolPro migration control preflight` in private 
 **Evidence boundary:** this confirms only that the manual, no-database workflow path executes. It does not test Aiven network connectivity, CA-verified TLS, database credentials/privileges, source completeness, schema compatibility, tenant isolation, or restore/rollback. No database connection or schema/data change was attempted. The Aiven target `pg-316d7ad1` is still reported as open to all IPv4/IPv6; do not add secrets, register a runner, probe/connect to the database, export/import data, or change production configuration until the network and trust boundary is resolved. Migration remains **NO-GO**.
 
 **Next safe action:** inspect the actual workflow run log and repository workflow definition for the exact verified output; then choose a trusted, restricted execution/network design before any database connectivity test. The two runner/action warnings can be handled as a separate workflow-maintenance item; do not treat upgrading the runner image or action as a database security fix.
+
+
+## Aiven inbound allowlist hardening — owner-reported save success — 2026-10-17
+
+The owner reported that the Aiven Networking → IP allowlist change for target `pg-316d7ad1` saved successfully. The change prepared in the editor was to retain `102.91.103.132/32` (comment: `Temporary SchoolPro migration access - local workstation`) and remove the unrestricted `0.0.0.0/0` and `::/0` entries.
+
+**Evidence and verification boundary:** this is owner-reported console confirmation, not an independent read-back of Aiven's saved configuration. Before relying on the restriction, verify in the console that both unrestricted entries are absent and the intended /32 is present. The same public IPv4 address was returned by two checks, but that does not establish that it is static or exclusive to this workstation. If it changes, access may need a controlled update. Other legitimate clients could lose connectivity when broad entries are removed.
+
+No Aiven database connection/probe, database read, schema/data change, export/import, production configuration change, runner registration, or secret addition was performed. TLS certificate verification, database identity/privilege scope, source completeness, tenant-isolation security, isolated rehearsal, and recovery gates remain unverified. Migration remains **NO-GO**.
+
+**Next safe action:** owner verifies the saved allowlist by re-opening the Aiven IP allowlist page and confirming the two open-access entries are gone and `102.91.103.132/32` is the only intended entry. Do not add credentials or run a database probe until this read-back and the trusted execution/network design are reviewed.

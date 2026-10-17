@@ -1,0 +1,22 @@
+{"path":"src/context/AuthContext.tsx","line":12,"operation":"ClientReference","object":"dynamic","snippet":"import type { Session, User } from \"@supabase/supabase-js\";"}
+{"path":"src/context/AuthContext.tsx","line":13,"operation":"ClientReference","object":"dynamic","snippet":"import { isSupabaseConfigured, supabase } from \"@/lib/supabase\";"}
+{"path":"src/context/AuthContext.tsx","line":69,"operation":"","object":"dynamic","snippet":"const [loading, setLoading] = useState(isSupabaseConfigured);"}
+{"path":"src/context/AuthContext.tsx","line":72,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase) return;"}
+{"path":"src/context/AuthContext.tsx","line":73,"operation":"ClientReference","object":"dynamic","snippet":"const client = supabase;"}
+{"path":"src/context/AuthContext.tsx","line":86,"operation":"TableOrBucket","object":"profiles","snippet":"client.from(\"profiles\").select(\"*\").eq(\"id\", current.user.id).maybeSingle(),"}
+{"path":"src/context/AuthContext.tsx","line":87,"operation":"TableOrBucket","object":"admin_product_access","snippet":"client.from(\"admin_product_access\").select(\"product,can_view,can_edit,can_approve,can_delete,can_manage,can_use_website_builder,can_use_command_center\").eq(\"user_id\", current.user.id),"}
+{"path":"src/context/AuthContext.tsx","line":88,"operation":"TableOrBucket","object":"customer_service_access","snippet":"client.from(\"customer_service_access\").select(\"product,status,plan_name\").eq(\"user_id\", current.user.id),"}
+{"path":"src/context/AuthContext.tsx","line":98,"operation":"Auth","object":"dynamic","snippet":"const { data: listener } = client.auth.onAuthStateChange("}
+{"path":"src/context/AuthContext.tsx","line":128,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase || !session?.user || !profile) return;"}
+{"path":"src/context/AuthContext.tsx","line":129,"operation":"ClientReference","object":"dynamic","snippet":"const client = supabase;"}
+{"path":"src/context/AuthContext.tsx","line":131,"operation":"Auth","object":"dynamic","snippet":"const expire=()=>{if(androidVault&&profile.role==='customer')void NativeVault.status().then(status=>{if(status.enabled)window.dispatchEvent(new Event('ihlink:lock-app'));else void client.auth.signOut({scope:'local'});});else void client.auth.signOut({scope:'local'});};"}
+{"path":"src/context/AuthContext.tsx","line":159,"operation":"","object":"dynamic","snippet":"configured: isSupabaseConfigured,"}
+{"path":"src/context/AuthContext.tsx","line":161,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase)"}
+{"path":"src/context/AuthContext.tsx","line":163,"operation":"Auth","object":"dynamic","snippet":"const { error } = await supabase.auth.signInWithPassword({"}
+{"path":"src/context/AuthContext.tsx","line":171,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase)"}
+{"path":"src/context/AuthContext.tsx","line":173,"operation":"Auth","object":"dynamic","snippet":"const { data, error } = await supabase.auth.signUp({"}
+{"path":"src/context/AuthContext.tsx","line":195,"operation":"ClientReference","object":"dynamic","snippet":"if (supabase) {"}
+{"path":"src/context/AuthContext.tsx","line":196,"operation":"Auth","object":"dynamic","snippet":"await supabase.auth.signOut({ scope: \"local\" });"}
+{"path":"src/context/AuthContext.tsx","line":208,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase)"}
+{"path":"src/context/AuthContext.tsx","line":210,"operation":"Auth","object":"dynamic","snippet":"const { error } = await supabase.auth.resetPasswordForEmail(email, {"}
+{"path":"src/hooks/useManagedFeatures.ts","line":1,"operation":"TableOrBucket","object":"platform_feature_content","snippet":"import{useEffect,useState}from'react';import{supabase}from'@/lib/supabase';export type ManagedFeature={id:string;module_key:string;feature_key:string;title:string;description:string|null;badge_text:string|null;help_text:string|null;cta_label:string|null;cta_link:string|null;sort_"}

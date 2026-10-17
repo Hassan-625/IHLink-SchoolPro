@@ -1,0 +1,4 @@
+project_id = "lnqsroyiybutkfngbyge"
+
+[functions.schoolpro-public-admission]
+verify_jwt = false

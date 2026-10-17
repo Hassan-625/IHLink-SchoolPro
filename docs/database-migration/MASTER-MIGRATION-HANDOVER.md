@@ -3124,3 +3124,12 @@ The owner reported that the Aiven Networking → IP allowlist change for target 
 No Aiven database connection/probe, database read, schema/data change, export/import, production configuration change, runner registration, or secret addition was performed. TLS certificate verification, database identity/privilege scope, source completeness, tenant-isolation security, isolated rehearsal, and recovery gates remain unverified. Migration remains **NO-GO**.
 
 **Next safe action:** owner verifies the saved allowlist by re-opening the Aiven IP allowlist page and confirming the two open-access entries are gone and `102.91.103.132/32` is the only intended entry. Do not add credentials or run a database probe until this read-back and the trusted execution/network design are reviewed.
+
+
+## Aiven allowlist saved-state read-back — owner confirmed — 2026-10-17
+
+After the preceding owner-reported save, the owner re-opened the saved Aiven IP allowlist and confirmed that `102.91.103.132/32` is present and both unrestricted ranges, `0.0.0.0/0` and `::/0`, are absent. This is an owner-observed console read-back; no direct Aiven API/configuration evidence was available to this workflow.
+
+This narrows inbound access at the Aiven service allowlist, but does not prove the workstation IP is static/exclusive, validate the TLS certificate chain, establish database least privilege, or authorize connectivity. Database connection/probe, credentials/secrets, runner registration, data export/import, and schema/data changes remain unperformed. Tenant-isolation and migration/recovery gates remain open; migration is still **NO-GO**.
+
+**Next safe action:** prepare and review a workstation-only, read-only connectivity validation plan that uses the downloaded Aiven CA certificate and TLS hostname verification (`sslmode=verify-full`), with the connection string kept local and never pasted into chat or workflow logs. Before running it, verify the workstation public IP has not changed and review the exact probe commands. Do not use `sslmode=require` as a substitute for certificate/hostname verification, and do not use an administrative account for any later migration work.

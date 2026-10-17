@@ -177,7 +177,7 @@ jobs:
           set -euo pipefail
           for i in $(seq 1 8); do
             (
-              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT set_config('request.headers', '{\"x-forwarded-for\":\"198.51.100.20\"}', true); SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
+              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT set_config('request.headers', '{\"x-forwarded-for\":\"192.0.2.99, 198.51.100.20\",\"cf-connecting-ip\":\"198.51.100.20\"}', true); SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
             ) &
           done
           wait

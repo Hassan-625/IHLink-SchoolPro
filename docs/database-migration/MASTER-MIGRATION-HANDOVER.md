@@ -2993,3 +2993,28 @@ This entry preserves the current stopping point; it does not mark any blocked ga
 - This architecture pivot supersedes continuing active development on the MySQL migration as the preferred path, but does not erase its audit trail or the unfinished SchoolPro feature-parity/security requirements. A/B/C acceptance and the later Result Design Studio/custom Excel work remain required.
 
 **Next step:** read-only inventory of application Supabase dependencies and current source database footprint; then prepare the Aiven PostgreSQL rehearsal/cutover plan. Do not request credentials in chat; use Render/Aiven dashboards or approved secret-management controls.
+
+
+---
+
+## Migration audit checkpoint — 2026-10-17 16:xx WAT
+
+This checkpoint supersedes earlier status statements about source recovery and storage counts. Keep this audit-first; do not replay recovered SQL or move data.
+
+### Original SQL and deployment provenance
+- The live Supabase migration ledger contains 476 versions. All **397 live-only** entries have non-empty SQL payloads recovered from the ledger and preserved in eight JSONL evidence bundles under `recovered-live-only-sql/`; the SQL-derived review has one row per version. None was executed.
+- All **35 remote-marker versions** have individual SQL evidence files under `recovered-remote-batch-sql/`; the saved files were byte-compared against their corresponding live-ledger statement payloads and all 35 matched.
+- The live ledger is authoritative evidence that those versions are recorded as applied. A separate API/deployment audit event with execution timestamp, request and result remains unrecovered. Ledger `created_by` is available but the ledger has no execution timestamp column.
+
+### Scope and object/dependency review
+- The [397-row SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md) extracts DDL targets and explicit references for all live-only versions. Scope labels are **non-exclusive** and provisional: they are not an export allowlist. A name-level catalog comparison covered 634 distinct schema-qualified references; 622 are present in the queried live catalog and 12 are absent. Eleven absences correspond to explicit later drops; historical `public.activity_logs` remains an unresolved compatibility reference.
+- Existing-row audit: **0 orphan non-null FK references across 221 constraints** and **0 school-ID mismatches across 86 tenant-pair relationships**. These checks do not prove future-write enforcement, RLS bypass resistance or complete row ownership.
+- The [per-object storage ownership register](SCHOOLPRO-STORAGE-OBJECT-OWNERSHIP-REGISTER-2026-10-17.md) enumerates 105 objects in the audited SchoolPro/result buckets: 91 have a path reference in the expected bucket; 14 do not; one path is referenced by a record that expects another bucket; 97 have NULL Storage owner metadata. Do not treat NULL owner metadata as automatic failure or unreferenced objects as safe to delete/export. Empty admission, payment-receipt and branding buckets still need real upload tests.
+
+### Issued-document RLS correction and tenant checks
+- Draft PR [#108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) fixes the student-policy tautology and also closes related guardian/staff policy and document-output Storage read paths. Its disposable PostgreSQL 17 two-school adversarial regression passed, as did SchoolPro CI and payment-page validation on head `018af841733e094a634955b199ac590bac9f95ff`. PR #108 remains **open, draft, unreviewed and not approved for production**.
+- Read-only production probes found no cross-school document issue/output rows for sampled identities. Result-output Storage RLS probes returned: same-school exam officer 1 visible object; same-school teacher with no assignment 0; other-school teacher 0; student for the current unreleased result 0.
+- A separate compatibility blocker remains: deployed `schoolpro-render-result` writes to `school-result-templates` and `schoolpro-result-access` signs from that bucket, while the sole `schoolpro_generated_result_outputs` row points to an object in `schoolpro-result-outputs`. Restore/version the deployed Edge Function source and reconcile the canonical bucket before relying on generated-result download. Real Supabase Storage API, signed-URL and application download-path adversarial tests remain outstanding.
+
+### Current gate
+**SchoolPro export/import remains NOT APPROVED.** Before approval: recover independent deployment audit evidence where available; complete semantic object/row ownership and live-catalog parity review; disposition all 14 unreferenced storage objects and the wrong-bucket path; test real Storage API/signed URL and RPC/download paths; verify target-network restrictions. No production DDL, migration replay, data export/import, Render configuration change, deployment or merge occurred during this checkpoint. The separate master status addendum and detailed evidence registers are linked above and remain the source for detailed test output.

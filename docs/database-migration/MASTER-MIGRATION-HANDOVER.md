@@ -2593,3 +2593,8 @@ Corrected the static regexes to use [\s\S] and normalized the SQL block to DO $$
 - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39033592955
 
 Production still lacks the reviewed indexes, and the live RLS probe has not passed due to the result-approval query timing out. No production changes were made. Keep Stage A open until exact-head local integration passes and production deployment is explicitly authorized, followed by catalog verification and a successful two-school authenticated smoke test.
+
+
+### Final index assertion harness adjustment — 2026-10-17
+
+A concurrent branch edit normalized the PL/pgSQL dollar delimiter to a single `$`, which caused PostgreSQL syntax failure in the previous CI run. To avoid delimiter/escaping fragility entirely, replaced the procedural assertion with a psql `\gset / \if / \quit` check requiring all six expected indexes. Static assertions now use literal DDL-string checks for the two critical index definitions. Corrected code head: `2aa67f6f4715e9e8653041a313bda4e4ea2e6ceb`. Fresh exact-head CI and payment-page validation are required; previous failures remain unaccepted. Production is unchanged.

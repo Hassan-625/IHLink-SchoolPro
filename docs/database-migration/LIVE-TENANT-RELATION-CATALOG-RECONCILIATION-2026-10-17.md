@@ -108,3 +108,11 @@ All tests below were read-only and transaction-scoped; each transaction was roll
 
 ## Expanded recovery scope
 The 35 individually recovered marker files are byte-equal to the production ledger payload. Beyond those, all 397 live-only ledger records are now preserved in [eight JSONL bundles](recovered-live-only-sql/) and linked from the [SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md). This manifest remains focused on the marker's 35 exact SQL payloads and their ledger metadata; the 397-row dependency register is a separate static-analysis artifact.
+
+
+## Expanded issued-document and storage RLS regression — 2026-10-17
+The separate draft [PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) now hardens four permissive SELECT-policy paths: student issue reads, guardian issue reads, staff issue reads, and \`schoolpro-document-outputs\` object reads. The storage policy previously used a LEFT JOIN to students and a guardian-link predicate without school equality, allowing the synthetic mismatched issue/output to pass via alternate permissive branches.
+
+The updated [disposable PostgreSQL 17 regression](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048506722) passed on code commit \`1dfa6f73ebb8b3deb3c8dd5a203ee693f0632220\`. It demonstrated the old row/object visibility, applied the draft migration, and then verified that Student B, Guardian B and School A staff could not see the mismatched issue/object. It also passed own-school issued/revoked behavior, draft visibility rules, anonymous denial, cross-school storage insert denial, path-rename denial, and cross-school delete no-op.
+
+This is a synthetic RLS regression, not proof of actual Supabase Storage API behavior. Signed URLs, real upload/download endpoints, app RPC/view paths, helper ownership/ACLs and the full current production policy catalog still need review. PR #108 remains draft; no production changes or merge occurred.

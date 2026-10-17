@@ -79,7 +79,7 @@ for (const tableName of [
 
 assert.ok(indexSql.includes('create index if not exists schoolpro_result_approvals_school_id_idx\n  on public.schoolpro_result_approvals (school_id)'), 'Result approvals needs a tenant-leading index for RLS query plans');
 assert.ok(indexSql.includes('create index if not exists schoolpro_promotions_school_id_idx\n  on public.schoolpro_promotions (school_id)'), 'Promotions needs a tenant-leading index');
-assert.match(indexSql, /to_regclass[\\s\\S]*?raise exception/i, 'Index repair must fail closed if a required table is absent');
+assert.match(indexSql, /to_regclass[\s\S]*?raise exception/i, 'Index repair must fail closed if a required table is absent');
 for (const indexName of [
   'schoolpro_library_books_school_id_idx',
   'schoolpro_transport_routes_school_id_idx',

@@ -82,7 +82,14 @@ declare
 begin
   -- Seven wrong PINs remain ordinary failures; the eighth starts a 15-minute block.
   for i in 1..8 loop
-    result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin');
+    -- Deliberately vary caller-selected periods: the cooldown must not be bypassed
+    -- by rotating term/session inputs between attempts.
+    result := public.check_schoolpro_result_pin(
+      'SP-TEST-001',
+      case when i % 2 = 0 then 'Second Term' else 'First Term' end,
+      case when i % 2 = 0 then '2024/2025' else '2025/2026' end,
+      'wrong-pin'
+    );
     if coalesce((result->>'ok')::boolean,false) then
       raise exception 'Wrong PIN unexpectedly succeeded on attempt %', i;
     end if;

@@ -974,3 +974,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The CI workflow's disposable PostgreSQL job ran the new receipt-submission RPC integration fixture. This establishes that the fixture and its valid/rejected RPC cases pass against its minimal test schema; it does **not** establish full production schema parity or effective RLS behavior, because the fixture uses a test `auth.uid()` implementation and setup superuser.
 - Next priority: add a separate isolated PostgreSQL job to exercise effective payment-review RLS policies using authenticated role switching and stubbed, test-only authorization helpers, while clearly recording the fixture's scope. Include SELECT/INSERT/UPDATE/DELETE checks for guardian, school-finance, and Super Admin identities on submissions, allocations, proofs, and fee-payment ledger rows.
 - No production changes or merges occurred. PR #106 remains draft/open/unmerged. MySQL migration is still incomplete; no production data cutover has been performed.
+
+
+## Payment-review RLS runtime fixture added — 2026-10-17
+
+- Added `scripts/test-schoolpro-payment-review-rls.integration.sql` on the Stage A branch and added a separate `payment-review-rls-integration` GitHub Actions job using its own ephemeral PostgreSQL 16 service database.
+- The fixture applies the actual `20261016143000_schoolpro_payment_review_write_controls.sql` migration against minimal test-only tables and switches to the `authenticated` role with row-level security enabled. Test-only authorization helpers model three identities: a linked guardian, school finance access, and platform Super Admin.
+- Intended coverage: guardian reads only their own submission/allocation/proof and linked fee-payment row; guardian cannot alter payment-review records; school finance can review/update the school's rows; Super Admin can read across the fixture but cannot mutate ledger/submission records. This is a focused policy behavior fixture, not a full application schema/auth integration or a substitute for two-school live acceptance.
+- CI was triggered by the fixture/workflow addition. A follow-up adjustment now checks affected row counts for denied UPDATE/DELETE actions, because RLS can silently filter rows instead of raising an exception. Verify the newest run's head SHA matches the final fixture commit before treating this test as passed.
+- No production database, storage bucket, payment records, or deployments were changed. PR #106 remains draft/open/unmerged; MySQL migration/cutover remains incomplete.

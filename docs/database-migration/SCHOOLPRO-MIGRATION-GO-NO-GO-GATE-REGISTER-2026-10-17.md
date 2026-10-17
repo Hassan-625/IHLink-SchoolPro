@@ -74,3 +74,7 @@ The active audit branch contains AIVEN-POSTGRESQL-TARGET-VERIFICATION-2026-10-17
 
 ### Read-only rehearsal probe prepared — 2026-10-17
 The branch now contains AIVEN-READONLY-REHEARSAL-PROBE-2026-10-17.sql and scripts/database-migration/verify-aiven-rehearsal-readonly.sh. They inspect only metadata, enforce a read-only transaction/session, and require TLS hostname verification via sslmode=verify-full. They have **not** been run. Execution is blocked until the owner secures the existing candidate fork's network allowlist and confirms a least-privilege read-only credential and correct CA setup. No new Aiven service or Supabase branch was created.
+
+
+### 397-version scope classification reminder — 2026-10-17
+A static recount of the SQL-derived register labels SchoolPro in 208/397 versions, Shared platform/core in 232, DataSub/BillStack in 90, Hosting in 35, Consult in 35, Engineering in 29, Business/commerce in 57, IHLink Academy in 20 and Print in 30 (overlapping categories). These are provisional labels, not an approved export list. G2 remains BLOCKED until every version's affected object/action has a semantic disposition and the exact SchoolPro/shared-service target allowlist is reviewed. Do not replay the 397 payloads wholesale.

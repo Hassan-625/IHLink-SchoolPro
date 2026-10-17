@@ -2643,3 +2643,13 @@ Extended the existing draft `database/mysql/007_schoolpro_auth_login_throttling.
 - This is persistence/schema support only; it does not implement rate limiting by itself. Server-side atomic counter/window updates, lockout behavior, enumeration-safe responses, password reset/first-login limits, audit events, concurrency tests and API authorization remain to be implemented and verified in `server/mysql-api`.
 - The previous exact-head MySQL migration 006 run #400 passed, and payment validation #1324 passed; SchoolPro CI #1597 subsequently completed successfully. Those results do not cover migration 007, whose exact-head validation is now required.
 - No production schema, users, login attempts or credentials were changed. Migrations remain draft-only, PR #107 remains open/draft, and Supabase remains authoritative until explicit migration/cutover acceptance.
+
+
+### Migration 007 DDL failure and correction — 2026-10-17
+
+The first migration-007 validation attempt (#415) failed at `Apply authentication login throttling schema`. Inspection of the exact file showed the previous automated text edit had malformed the CHECK expression and duplicated part of the table/ledger DDL. This was a real migration-file defect, not a test-only mismatch. Replaced the whole file with a clean, single CREATE TABLE plus ledger upsert, including:
+- `CHECK (attempts >= 0)`
+- `CHECK (identifier_hash REGEXP '^[0-9a-f]{64}$')`
+- one InnoDB table definition and one `schema_migrations` upsert.
+
+Corrected code commit: `2575687c7440a7d4d054901dab9131b0896a2718`. The corrected exact-head workflow results have not yet been returned at the time of this entry. Do not count #415 as a pass. The valid fixture and malformed-hash negative test remain wired to the MySQL schema workflow. No production database was touched.

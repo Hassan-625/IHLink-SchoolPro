@@ -32,13 +32,18 @@ function clientFor(email, password) {
   })();
 }
 
+function describeError(error) {
+  if (typeof error?.message === 'string' && error.message.length) return error.message;
+  try { return JSON.stringify(error); } catch { return String(error); }
+}
+
 async function countRows(client, table, schoolId, maxAttempts = 3) {
   let result;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     result = await client.from(table).select('*', {count: 'exact', head: true}).eq('school_id', schoolId);
     if (!result.error) return result.count ?? 0;
 
-    const message = String(result.error.message || result.error);
+    const message = describeError(result.error);
     const status = Number(result.error.statusCode || result.error.status || 0);
     const transient = /timeout|timed out|temporar|fetch failed|network|connection reset|ECONNRESET|ETIMEDOUT|502|503|504|429/i.test(message)
       || [429, 502, 503, 504].includes(status);

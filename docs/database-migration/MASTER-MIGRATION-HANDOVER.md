@@ -1,5 +1,8 @@
 # IHLink Master Database Migration Handover
 
+> **AUTHORITATIVE DIRECTION RESET — 2026-10-17:** The target for SchoolPro is **PostgreSQL-to-PostgreSQL: Supabase PostgreSQL → Aiven PostgreSQL**. Keep the SchoolPro application/frontend and API on Render. **Do not continue MySQL conversion as the active migration path.** PR #107 and its MySQL schema pilot are paused for historical reference only; do not merge, delete, or use them as the target implementation without a fresh explicit decision. DataSub and other products remain on their existing Supabase-backed architecture and are out of scope. Supabase remains the live SchoolPro source of truth until an Aiven rehearsal passes schema/data/feature/security checks, a rollback is proven, and the owner explicitly approves cutover. No production export/import, Render environment change, deployment, or cutover is authorized by this direction reset.
+
+
 > **Latest audit checkpoint (2026-10-17):** Continue from [MASTER-MIGRATION-HANDOVER-STATUS-ADDENDUM-2026-10-17.md](MASTER-MIGRATION-HANDOVER-STATUS-ADDENDUM-2026-10-17.md). It records the 35-version provenance gap, 397 live-only inventory progress, the draft-only issued-document RLS correction, generated FK/tenant consistency checks, storage ownership findings, and current export/import gates. The addendum is supporting evidence; it does not authorize production changes or export/import.
 
 **Last updated:** 17 October 2026
@@ -11,10 +14,10 @@
 ## 1. Non-negotiable operating rules
 - Preserve current application behaviour and repositories. No wholesale rewrite or PHP rewrite as a shortcut.
 - Production remains unchanged during this work: no production schema/data edits, no environment-variable changes, no deployment, no migration of live records, and no PR merge without explicit approval.
-- **Platform-specific database direction (owner decision, 2026-10-16): SchoolPro is the only platform in the current migration scope targeting MySQL. DataSub and the other existing IHLink platforms remain on their current Supabase-backed architecture.** Supabase remains the production source of truth for SchoolPro until its MySQL target passes acceptance and the owner explicitly approves a platform-specific cutover. MySQL work must use disposable CI/local databases and synthetic fixtures until then.
+- **Historical direction note (superseded 2026-10-17):** The earlier decision to target MySQL is no longer the active plan. The current target is Aiven PostgreSQL, as stated in the authoritative direction reset at the top of this document. Keep the MySQL pilot/PR #107 as historical evidence only; do not continue it as the active implementation.
 - Do not treat repository migration files as proof that the same migrations are deployed. Compare file contents, applied migration ledger, deployed Edge Function code/versions, triggers, routines, RLS, storage policies and application call sites.
 - Do not place all platform data into one undifferentiated schema with broad credentials. Keep platform-owned data and least-privilege access boundaries; share a narrowly defined identity/account interface only where dependency evidence justifies it.
-- Do not expose MySQL credentials to browser or mobile code. Use authenticated server-side APIs.
+- Do not expose Aiven/PostgreSQL credentials or privileged database connections to browser or mobile code. Use authenticated server-side APIs.
 - Cost matters: prefer the lowest sustainable cost, but do not assume cPanel webspace quota equals database quota or that a shared hosting plan supports long-running API/webhook workloads. Verify actual limits and backup/restore capability before choosing a host.
 - DataSub preserves the existing frontend and backend behaviour during migration; no rewrite as a prerequisite. BillStack is DataSub-only. SchoolPro subscription payments remain receipt upload plus IHLink admin verification; school-fee payments remain school-managed.
 - Never claim completion from a passing schema-only CI run. State exact scope tested.
@@ -3018,3 +3021,11 @@ This checkpoint supersedes earlier status statements about source recovery and s
 
 ### Current gate
 **SchoolPro export/import remains NOT APPROVED.** Before approval: recover independent deployment audit evidence where available; complete semantic object/row ownership and live-catalog parity review; disposition all 14 unreferenced storage objects and the wrong-bucket path; test real Storage API/signed URL and RPC/download paths; verify target-network restrictions. No production DDL, migration replay, data export/import, Render configuration change, deployment or merge occurred during this checkpoint. The separate master status addendum and detailed evidence registers are linked above and remain the source for detailed test output.
+
+
+## Direction correction log — 2026-10-17
+The owner reiterated that the intended work is to move the existing SchoolPro PostgreSQL database from Supabase to Aiven PostgreSQL, not to MySQL. The active sequence is: (1) read-only source and target discovery plus a rehearsed PostgreSQL-to-PostgreSQL migration plan; (2) Stage A authentication and tenant isolation; (3) Stage B academic sessions, student population and class rosters; (4) Stage C assessment entry/save, calculations, review and publication; (5) Stage D Result Design Studio and custom Excel workbooks; then continue through Stages E–J using their existing definitions in the product handover. Re-verify A/B/C before resuming D as previously requested.
+
+The migration-ledger and storage/RLS audit findings remain relevant only as evidence and safety gates for this PostgreSQL move; they must not displace the main migration objective. The Supabase-specific three-migration Stage A rollout remains unexecuted and must not be applied blindly to Aiven. First determine which Supabase-managed services SchoolPro continues to depend on (Auth, Storage, Edge Functions, Realtime, jobs/secrets), since moving PostgreSQL alone does not migrate those services.
+
+**Current next step:** inventory the live SchoolPro application/database dependencies and verify the Aiven target/service/network configuration using read-only evidence; then build a disposable Aiven PostgreSQL rehearsal and reconciliation plan. No live data has been exported or imported and no production configuration has been changed.

@@ -39,9 +39,9 @@ create table public.schoolpro_guardian_links (
 
 create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
 returns boolean language sql stable security definer set search_path=''
-as $ select exists(select 1 from public.schoolpro_guardian_links g
+as $$ select exists(select 1 from public.schoolpro_guardian_links g
  where g.school_id=p_school and g.student_id=p_student
- and g.guardian_user_id=(select auth.uid()) and g.status='active') $;
+ and g.guardian_user_id=(select auth.uid()) and g.status='active') $$;
 
 create schema if not exists storage;
 create table storage.objects (

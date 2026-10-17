@@ -1265,3 +1265,10 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The result-snapshot data-exposure review is complete at source/schema level, with a targeted draft remediation and test. Production rows could not be inspected for actual snapshot shape because the table was empty.
 - The public abuse-control review is complete enough to rank gaps, but remediation remains open: prioritize rate limiting and input bounds for anonymous admission submission, then trusted-edge throttling/monitoring for document and offer/result-code verification. Do not derive a DB security key from an unverified request header. Prefer a trusted edge/gateway rate limit or a server/Edge Function boundary until header provenance is verified.
 - No production migration, data write, deployment, merge, or paid development branch was performed. All changes remain on the open draft Stage A PR. Do not mark production remediated until approved migrations are applied and verified.
+
+
+### Result-verification remediation test coverage added — 2026-10-17
+
+- Added disposable PostgreSQL integration fixture `scripts/test-schoolpro-result-verification-exposure.integration.sql`, which executes the actual draft migration `20261017120000_schoolpro_result_verification_minimal_snapshot.sql` against minimal test-only dependencies. It checks 48-character uppercase hex codes, aggregate snapshot equals the locked/published rows only, absence of detailed assessment keys, and rejection when no locked published results exist.
+- Added CI job `result-verification-exposure-integration` in `.github/workflows/ci.yml` to run that fixture against PostgreSQL 16, in addition to the static source/UI guard. CI must complete successfully on the commit containing the workflow wiring before calling this test coverage verified.
+- Code is still draft-only on `release/stage-a-auth-tenant-isolation`; the master handover is updated on `migration/mysql-schoolpro-foundation`. No production schema or rows were changed.

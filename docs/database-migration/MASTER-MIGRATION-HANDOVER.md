@@ -1008,3 +1008,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Fix commit: `82cc647d71014db1683e4d0f13a8a2cd1ff56efc`. Fresh CI will run on push; the RLS test remains pending until that run completes.
 - The tenant acceptance and tenant-integrity database jobs passed on the prior run `38990776439`; only `payment-review-rls-integration` failed. That failure is now treated as a product-policy defect, not merely fixture setup.
 - No production migration was applied, no deployment occurred, and no PR was merged.
+
+
+## Guardian fee-payment RLS fix — integration results — 2026-10-17
+
+- On Stage A head `82cc647d71014db1683e4d0f13a8a2cd1ff56efc`, CI run [#38990991453](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990991453) now reports **success** for `payment-review-rls-integration`, `tenant-integrity-db-integration`, and `tenant-acceptance`.
+- The runtime RLS fixture now verifies guardian visibility is scoped to linked student fee-payment rows; it also exercises submission/allocation/proof visibility and mutation restrictions for guardian, finance, and Super Admin roles. This is a minimal disposable PostgreSQL fixture applying the actual review-policy migration, not a full production database/auth stack.
+- The overall workflow is not yet complete: `validate` was still running at the time of this update. Do not mark the whole workflow green until the final result is confirmed.
+- The separate payment-page validation run [#38990991474](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990991474) passed on the same commit.
+- No production migration, deployment, or merge occurred.

@@ -28,11 +28,6 @@ as $$ select exists (
 create or replace function private.schoolpro_module_allowed(p_school uuid, p_module text)
 returns boolean language sql stable
 as $$ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $$;
-create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
-returns boolean language sql stable security definer set search_path=''
-as $$ select exists(select 1 from public.schoolpro_guardian_links g
- where g.school_id=p_school and g.student_id=p_student
- and g.guardian_user_id=(select auth.uid()) and g.status='active') $$;
 
 create table public.schoolpro_invoices (
  id uuid primary key
@@ -41,6 +36,12 @@ create table public.schoolpro_guardian_links (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  guardian_user_id uuid not null, status text not null
 );
+
+create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
+returns boolean language sql stable security definer set search_path=''
+as $ select exists(select 1 from public.schoolpro_guardian_links g
+ where g.school_id=p_school and g.student_id=p_student
+ and g.guardian_user_id=(select auth.uid()) and g.status='active') $;
 
 create schema if not exists storage;
 create table storage.objects (

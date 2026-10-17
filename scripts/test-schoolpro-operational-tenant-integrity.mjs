@@ -77,8 +77,8 @@ for (const tableName of [
 }
 
 
-assert.match(indexSql, /schoolpro_result_approvals_school_id_idx[\\s\\S]*?on public\\.schoolpro_result_approvals \\(school_id\\)/i, 'Result approvals needs a tenant-leading index for RLS query plans');
-assert.match(indexSql, /schoolpro_promotions_school_id_idx[\\s\\S]*?on public\\.schoolpro_promotions \\(school_id\\)/i, 'Promotions needs a tenant-leading index');
+assert.match(indexSql, /schoolpro_result_approvals_school_id_idx[\s\S]*?on public\.schoolpro_result_approvals \(school_id\)/i, 'Result approvals needs a tenant-leading index for RLS query plans');
+assert.match(indexSql, /schoolpro_promotions_school_id_idx[\s\S]*?on public\.schoolpro_promotions \(school_id\)/i, 'Promotions needs a tenant-leading index');
 assert.match(indexSql, /to_regclass[\\s\\S]*?raise exception/i, 'Index repair must fail closed if a required table is absent');
 for (const indexName of [
   'schoolpro_library_books_school_id_idx',

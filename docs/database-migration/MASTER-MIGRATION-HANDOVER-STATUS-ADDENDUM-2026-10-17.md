@@ -87,3 +87,11 @@ The [35-version provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGI
 
 ## Complete live-only SQL evidence index
 The [SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md) now has 397 rows, one per live-only version. Exact ledger payloads for all 397 versions are preserved in eight JSONL bundles under [recovered-live-only-sql](recovered-live-only-sql/); all bundles were fetched back and validated as 397 valid JSONL records with one statement-array entry each. The 35 marker versions also have individual SQL copies and a dedicated provenance manifest. This is source recovery plus static dependency extraction, not final semantic export approval. All migration payloads remain unexecuted.
+
+
+## Expanded issued-document and storage RLS regression — 2026-10-17
+The separate draft [PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) now hardens four permissive SELECT-policy paths: student issue reads, guardian issue reads, staff issue reads, and \`schoolpro-document-outputs\` object reads. The storage policy previously used a LEFT JOIN to students and a guardian-link predicate without school equality, allowing the synthetic mismatched issue/output to pass via alternate permissive branches.
+
+The updated [disposable PostgreSQL 17 regression](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048506722) passed on code commit \`1dfa6f73ebb8b3deb3c8dd5a203ee693f0632220\`. It demonstrated the old row/object visibility, applied the draft migration, and then verified that Student B, Guardian B and School A staff could not see the mismatched issue/object. It also passed own-school issued/revoked behavior, draft visibility rules, anonymous denial, cross-school storage insert denial, path-rename denial, and cross-school delete no-op.
+
+This is a synthetic RLS regression, not proof of actual Supabase Storage API behavior. Signed URLs, real upload/download endpoints, app RPC/view paths, helper ownership/ACLs and the full current production policy catalog still need review. PR #108 remains draft; no production changes or merge occurred.

@@ -2749,3 +2749,12 @@ Added two more isolated API contract tests in `server/mysql-api/test/server.test
 - A user whose only school membership is suspended receives the same not-found response for that tenant as a user with no active membership.
 
 The fixture now supports explicit platform-role and membership-status variants. These tests check the API's role-branching logic with a mock pool; they do not establish that the deployed production role catalog is migrated or that every data endpoint enforces the same boundary. Exact-head SchoolPro CI, MySQL schema workflow, and payment validation are required. PR #107 remains draft/unmerged; no production migration or deployment.
+
+
+### MySQL API production fail-closed configuration tests — 2026-10-17
+
+Added configuration contract tests confirming:
+- Production API construction fails if `WEB_ORIGIN` is not explicitly configured.
+- Production MySQL pool construction fails if `MYSQL_SSL=true` is absent, preserving the verified-TLS requirement.
+
+These tests exercise fail-closed configuration branches without connecting to a production host. They do not verify a live TLS handshake, certificate rotation, secret provisioning, or deployment environment. Exact-head CI is pending; no production configuration was changed.

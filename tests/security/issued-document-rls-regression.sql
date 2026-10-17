@@ -58,13 +58,13 @@ AS $$ SELECT EXISTS (
 ) $$;
 CREATE FUNCTION private.is_admin(p_roles public.user_role[]) RETURNS boolean
 LANGUAGE sql STABLE
-AS $ SELECT false $;
+AS $body$ SELECT false $body$;
 CREATE FUNCTION private.schoolpro_module_allowed(p_school uuid, p_module text) RETURNS boolean
 LANGUAGE sql STABLE
-AS $ SELECT EXISTS (SELECT 1 FROM public.schoolpro_members m WHERE m.school_id=p_school AND m.user_id=auth.uid()) $;
+AS $body$ SELECT EXISTS (SELECT 1 FROM public.schoolpro_members m WHERE m.school_id=p_school AND m.user_id=auth.uid()) $body$;
 CREATE FUNCTION storage.foldername(p_name text) RETURNS text[]
 LANGUAGE sql IMMUTABLE
-AS $ SELECT CASE WHEN array_length(parts,1)>1 THEN parts[1:array_length(parts,1)-1] ELSE ARRAY[]::text[] END FROM (SELECT string_to_array(p_name,'/') AS parts) s $;
+AS $body$ SELECT CASE WHEN array_length(parts,1)>1 THEN parts[1:array_length(parts,1)-1] ELSE ARRAY[]::text[] END FROM (SELECT string_to_array(p_name,'/') AS parts) s $body$;
 
 ALTER TABLE public.schoolpro_students ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.schoolpro_guardian_links ENABLE ROW LEVEL SECURITY;
@@ -218,7 +218,7 @@ GRANT EXECUTE ON FUNCTION public.assert_visible_issue_ids(uuid[]) TO authenticat
 
 CREATE FUNCTION public.assert_visible_output_names(p_expected text[]) RETURNS void
 LANGUAGE plpgsql
-AS $
+AS $body$
 DECLARE actual text[];
 BEGIN
   SELECT COALESCE(array_agg(name ORDER BY name), ARRAY[]::text[])
@@ -230,7 +230,7 @@ END
 $;
 CREATE FUNCTION public.assert_insert_denied(p_name text, p_owner text) RETURNS void
 LANGUAGE plpgsql
-AS $
+AS $body$
 BEGIN
   BEGIN
     INSERT INTO storage.objects(id,bucket_id,name,owner_id)
@@ -243,7 +243,7 @@ END
 $;
 CREATE FUNCTION public.assert_update_path_denied(p_id uuid, p_name text) RETURNS void
 LANGUAGE plpgsql
-AS $
+AS $body$
 DECLARE changed integer;
 BEGIN
   BEGIN
@@ -259,7 +259,7 @@ END
 $;
 CREATE FUNCTION public.assert_delete_noop(p_id uuid) RETURNS void
 LANGUAGE plpgsql
-AS $
+AS $body$
 DECLARE changed integer;
 BEGIN
   DELETE FROM storage.objects WHERE id=p_id;

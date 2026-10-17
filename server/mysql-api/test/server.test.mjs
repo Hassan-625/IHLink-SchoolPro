@@ -9,8 +9,12 @@ const PASSWORD = 'Test-password-2026!';
 
 async function fixture({platformRole = null, membershipStatus = 'active'} = {}) {
   const passwordHash = await hashPassword(PASSWORD);
+  const studentPasswordHash = await hashPassword('Hassan');
   const sessions = new Map();
+  const studentSessions = new Map();
   const attempts = new Map();
+  const studentCredential = {password_hash: studentPasswordHash, must_change_password: true, status: 'active'};
+  const student = {student_id: '50000000-0000-4000-8000-000000000001', school_id: SCHOOL_A, admission_number: 'STU-001', first_name: 'Amina', last_name: 'Hassan', student_status: 'active', school_status: 'active', credential_status: 'active'};
   const user = {
     id: USER_ID,
     email: 'owner@example.test',
@@ -32,6 +36,35 @@ async function fixture({platformRole = null, membershipStatus = 'active'} = {}) 
       }
       if (query.startsWith('INSERT INTO user_sessions')) {
         sessions.set(params[1], {id: params[0], userId: params[0] && user.id, revoked: false});
+        return [{affectedRows: 1}, []];
+      }
+      if (query.startsWith('SELECT st.id AS student_id') && query.includes('FROM student_sessions ss')) {
+        const session = studentSessions.get(params[0]);
+        return [session && !session.revoked && studentCredential.status === 'active'
+          ? [{...student, must_change_password: studentCredential.must_change_password, credential_status: studentCredential.status, session_id: session.id}]
+          : [], []];
+      }
+      if (query.startsWith('SELECT st.id AS student_id') && query.includes('FROM students st JOIN schools sc')) {
+        return [[params[0] === 'SP-TEST-A' && params[1] === student.admission_number
+          ? {...student, password_hash: studentCredential.password_hash, must_change_password: studentCredential.must_change_password, credential_status: studentCredential.status}
+          : undefined].filter(Boolean), []];
+      }
+      if (query.startsWith('INSERT INTO student_sessions')) {
+        studentSessions.set(params[2], {id: 'student-session-' + studentSessions.size, schoolId: params[0], studentId: params[1], revoked: false});
+        return [{affectedRows: 1}, []];
+      }
+      if (query.startsWith('UPDATE student_sessions SET revoked_at = UTC_TIMESTAMP(6)')) {
+        const session = studentSessions.get(params[0]);
+        if (session) session.revoked = true;
+        return [{affectedRows: session && !session.revoked ? 1 : 0}, []];
+      }
+      if (query.startsWith('SELECT password_hash FROM student_credentials')) {
+        return [[params[0] === student.school_id && params[1] === student.student_id && studentCredential.status === 'active'
+          ? {password_hash: studentCredential.password_hash} : undefined].filter(Boolean), []];
+      }
+      if (query.startsWith('UPDATE student_credentials SET password_hash = ?, must_change_password = FALSE')) {
+        studentCredential.password_hash = params[0];
+        studentCredential.must_change_password = false;
         return [{affectedRows: 1}, []];
       }
       if (query.startsWith('DELETE FROM auth_login_attempts WHERE identifier_hash')) {
@@ -245,4 +278,51 @@ test('production MySQL pool refuses to connect without verified TLS enabled', ()
     MYSQL_USER: 'schoolpro_api',
     MYSQL_PASSWORD: 'test-only-placeholder',
   }), /MYSQL_SSL=true is required in production/);
+});
+
+
+test('student admission login creates a separate student session and requires password change', async (t) => {
+  const app = await fixture();
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/student/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({schoolCode: 'sp-test-a', admissionNumber: 'STU-001', password: 'Hassan'}),
+  });
+  assert.equal(login.status, 200);
+  const cookie = login.headers.get('set-cookie');
+  assert.match(cookie, /schoolpro_student_session=/);
+  assert.doesNotMatch(cookie, /schoolpro_session=/);
+  const payload = await login.json();
+  assert.equal(payload.student.admissionNumber, 'STU-001');
+  assert.equal(payload.mustChangePassword, true);
+  const me = await fetch(app.baseUrl + '/v1/student/me', {headers: {Cookie: cookie.split(';')[0]}});
+  assert.equal(me.status, 200);
+  assert.equal((await me.json()).mustChangePassword, true);
+});
+
+test('student must change initial surname password to a strong password', async (t) => {
+  const app = await fixture();
+  t.after(app.close);
+  const login = await fetch(app.baseUrl + '/v1/student/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({schoolCode: 'SP-TEST-A', admissionNumber: 'STU-001', password: 'Hassan'}),
+  });
+  const cookie = login.headers.get('set-cookie').split(';')[0];
+  const changed = await fetch(app.baseUrl + '/v1/student/password', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173', Cookie: cookie},
+    body: JSON.stringify({currentPassword: 'Hassan', newPassword: 'New-Student-Password-2026!'}),
+  });
+  assert.equal(changed.status, 200);
+  assert.equal((await changed.json()).mustChangePassword, false);
+  const me = await fetch(app.baseUrl + '/v1/student/me', {headers: {Cookie: cookie}});
+  assert.equal((await me.json()).mustChangePassword, false);
+  const oldPasswordLogin = await fetch(app.baseUrl + '/v1/student/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Origin: 'http://localhost:5173'},
+    body: JSON.stringify({schoolCode: 'SP-TEST-A', admissionNumber: 'STU-001', password: 'Hassan'}),
+  });
+  assert.equal(oldPasswordLogin.status, 401);
 });

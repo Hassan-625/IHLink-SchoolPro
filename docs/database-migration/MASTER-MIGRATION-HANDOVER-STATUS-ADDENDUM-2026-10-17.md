@@ -51,3 +51,11 @@ Bucket/object-to-record matching found:
 - `schoolpro-document-outputs`, `schoolpro-document-templates`, `schoolpro-invoice-templates`, and `school-result-templates` are private buckets; `schoolpro-branding` is marked public but empty.
 
 These counts are not export clearance. Enumerate all paths and determine their owning record/tenant, purpose, retention, and access policy before copying objects. Authenticated adversarial read probes are still required for each distinct storage policy and each download route.
+
+## Expanded migration-source matching — 2026-10-17
+The source comparison was broadened from exact version matches to exact migration-name matches across both the current SchoolPro branch and `Hassan-625/IHLink_Design_System_1`. Of the 397 live-only ledger entries, 106 have a same-name SQL candidate in one of those trees: 11 exact-version/name candidates and 95 candidates whose timestamp differs from the live ledger version. Detailed object/reference notes were added for 11 exact-version candidates and 90 timestamp-different candidates. Five timestamp-different candidates remain to be reviewed, and 291 live-only versions have no same-name SQL candidate in the inspected trees. A timestamp-different file is only a source candidate, not proof of the deployed payload; source differences and authoritative deployment evidence remain unresolved.
+
+## Broader generated integrity checks — 2026-10-17
+- Enumerated 221 public foreign-key constraints where the child or parent table is SchoolPro-prefixed. Generated LEFT/NOT EXISTS checks found **0 orphan rows with non-null FK values across all 221 constraints**.
+- Enumerated 86 FK relationships where both child and parent have a `school_id` column, excluding direct school-id-to-school-id FK constraints. All 86 returned **0 child/parent school mismatches**.
+- These are read-only current-row checks. Optional null FK values are not treated as orphan defects. They do not prove tenant isolation for future writes, RPC/service-role paths, or storage access.

@@ -938,3 +938,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The new test is explicitly a **static regression guard**, not a live RPC/RLS integration test. It cannot prove runtime policy interaction, file-byte/MIME integrity, transaction behavior, or real Storage configuration.
 - CI run [#38950847321](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38950847321) for `15930b6655cf5ab75edfc9fcd62f8fa1de6d65dd` was still in progress at this handover update. Wait for a final result before describing the new test as passing.
 - MySQL migration remains a draft foundation only. Source review confirmed the frontend still instantiates `@supabase/supabase-js` against the current Supabase project; a server-side API/auth layer and complete parity/cutover remain prerequisite work. Production remains on Render + Supabase until an approved migration plan and rollback gate are satisfied.
+
+
+## Receipt guard CI failure diagnosed and corrected — 2026-10-17
+
+- The first CI run for the newly added receipt guard test, [#38950847321](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38950847321), failed only in `validate` at `scripts/test-schoolpro-receipt-submission-guards.mjs`. The two tenant integration/acceptance jobs passed. Root cause was a test-regex typo: it expected SQL `count()` while the migration correctly uses `count(*)`; this was a test defect, not a detected production failure.
+- Corrected the assertion in commit `0e2ac8cd1618f2df41b6ead9a3d38526329989f7`. Rechecked all 12 guard patterns against the current migration source; all 12 match. Updated the CI step name in commit `143ed2aed9cd341e7d2234e4fedf89d2a7d9bf1a` to trigger fresh workflow validation.
+- Fresh SchoolPro CI [#38989637673](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637673) and payment-page validation [#38989637689](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38989637689) were still in progress when this note was written. Do not call the corrected test CI-green until both have final results.
+- Even if green, this test is static source-contract coverage only. It does not replace the pending real PostgreSQL/RLS/RPC receipt submission and payment review integration fixture. No production changes or PR merges were made.

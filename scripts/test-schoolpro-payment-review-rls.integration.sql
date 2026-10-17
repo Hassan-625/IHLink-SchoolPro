@@ -2,7 +2,8 @@
 -- Applies the actual policy migration to minimal test-only tables and switches to authenticated.
 create schema if not exists auth;
 create schema if not exists private;
-do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
+do $ begin create role authenticated nologin; exception when duplicate_object then null; end $;
+do $ begin create role anon nologin; exception when duplicate_object then null; end $;
 do $$ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $$;
 
 create or replace function auth.uid()
@@ -36,6 +37,16 @@ create table public.schoolpro_payment_proofs (
 create table public.schoolpro_fee_payments (
  id uuid primary key, school_id uuid not null, student_id uuid not null, amount numeric not null
 );
+
+-- Reproduce the broad legacy table grants observed on production so the migration
+-- must prove it removes anonymous direct access while preserving authenticated tests.
+grant all privileges on table
+ public.schoolpro_invoices,
+ public.schoolpro_payment_allocations,
+ public.schoolpro_payment_proofs,
+ public.schoolpro_payment_submissions,
+ public.schoolpro_fee_payments
+to anon, authenticated;
 
 insert into public.schoolpro_guardian_links values
  ('a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','active'),
@@ -93,6 +104,29 @@ alter table public.schoolpro_fee_payments enable row level security;
 grant select,insert,update,delete on public.schoolpro_payment_submissions, public.schoolpro_payment_allocations, public.schoolpro_payment_proofs, public.schoolpro_fee_payments to authenticated;
 
 \ir ../supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql
+
+do $assert$
+begin
+  if has_table_privilege('anon','public.schoolpro_invoices','select')
+    or has_table_privilege('anon','public.schoolpro_invoices','insert')
+    or has_table_privilege('anon','public.schoolpro_payment_allocations','select')
+    or has_table_privilege('anon','public.schoolpro_payment_allocations','insert')
+    or has_table_privilege('anon','public.schoolpro_payment_proofs','select')
+    or has_table_privilege('anon','public.schoolpro_payment_proofs','insert')
+    or has_table_privilege('anon','public.schoolpro_payment_submissions','select')
+    or has_table_privilege('anon','public.schoolpro_payment_submissions','insert')
+    or has_table_privilege('anon','public.schoolpro_fee_payments','select')
+    or has_table_privilege('anon','public.schoolpro_fee_payments','insert') then
+    raise exception 'FAIL: anonymous direct privileges remain on SchoolPro financial tables';
+  end if;
+  if not has_table_privilege('authenticated','public.schoolpro_payment_submissions','select')
+    or not has_table_privilege('authenticated','public.schoolpro_payment_submissions','insert') then
+    raise exception 'FAIL: authenticated submission privileges were unintentionally removed';
+  end if;
+end
+$assert$;
+select 'PASS: anonymous direct table grants revoked from SchoolPro financial tables.' as result;
+
 
 create function pg_temp.assert_count(p_name text, p_actual bigint, p_expected bigint)
 returns void language plpgsql as $$

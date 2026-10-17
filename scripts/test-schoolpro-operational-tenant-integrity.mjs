@@ -21,6 +21,14 @@ for (const triggerName of [
   'validate_schoolpro_students_tenant',
   'validate_schoolpro_results_tenant',
   'validate_schoolpro_members_tenant',
+  'immutable_schoolpro_library_books_tenant',
+  'immutable_schoolpro_transport_routes_tenant',
+  'immutable_schoolpro_hostel_rooms_tenant',
+  'immutable_schoolpro_inventory_assets_tenant',
+  'immutable_schoolpro_calendar_events_tenant',
+  'immutable_schoolpro_lesson_notes_tenant',
+  'immutable_schoolpro_result_approvals_tenant',
+  'immutable_schoolpro_promotions_tenant',
 ]) {
   assert.match(sql, new RegExp('create trigger ' + triggerName, 'i'), 'Missing tenant-integrity trigger: ' + triggerName);
 }
@@ -41,8 +49,8 @@ assert.match(sql, /ref_school is distinct from new\.school_id/i, 'Cross-tenant r
 assert.match(sql, /member_school is null or member_school is distinct from new\.school_id/i, 'Missing or cross-school members must be rejected');
 assert.match(
   sql,
-  /tg_table_name in \(\s*'schoolpro_subjects',\s*'schoolpro_classes',\s*'schoolpro_students',\s*'schoolpro_results',\s*'schoolpro_members'\s*\)/i,
-  'Tenant ownership must be immutable on referenced parent tables'
+  /tg_table_name in \([\s\S]*'schoolpro_library_books'[\s\S]*'schoolpro_promotions'[\s\S]*'schoolpro_members'[\s\S]*\)/i,
+  'Tenant ownership must be immutable on operational and referenced parent tables'
 );
 assert.match(sql, /new\.school_id is distinct from old\.school_id/i, 'Parent tenant reassignment must be rejected');
 assert.match(sql, /raise exception 'School ownership cannot be reassigned'/i, 'Parent tenant reassignment must fail closed');

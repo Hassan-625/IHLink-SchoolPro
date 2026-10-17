@@ -241,11 +241,11 @@ jobs:
           set -euo pipefail
           for i in $(seq 1 8); do
             (
-              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT set_config('request.headers', '{\"x-forwarded-for\":\"192.0.2.99, 198.51.100.20\",\"cf-connecting-ip\":\"198.51.100.20\"}', true); SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
+              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
             ) &
           done
           wait
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
           echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
 
   result-verification-exposure-integration:
@@ -384,7 +384,7 @@ jobs:
             ) &
           done
           wait
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
           echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
 
   result-verification-exposure-integration:
@@ -527,7 +527,7 @@ jobs:
             ) &
           done
           wait
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|198.51.100.20','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
           echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
 
   result-verification-exposure-integration:

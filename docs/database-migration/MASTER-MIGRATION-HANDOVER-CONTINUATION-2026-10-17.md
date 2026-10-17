@@ -146,3 +146,12 @@ This is distinct from the 79 validated foreign keys and therefore provides actua
 ### Scheduled-job reconciliation batch
 
 The [scheduled-job semantic review](LIVE-ONLY-MIGRATION-CRON-SEMANTIC-REVIEW-2026-10-17.md) (commit `18b49bcba3a1b45959e96ede43204778515464ed`) compared all seven current `cron.job` rows to the live migration ledger. Six jobs match a specific version by name, schedule and command text, including both active SchoolPro jobs. The active `datasub-provider-health-5m` job has no matching job-name source in the 476 ledger payloads; its provenance remains unresolved. This is an out-of-band/provenance blocker, not evidence that the job is malfunctioning. The expiry function body has evolved, so the matching schedule source does not authorize replay of the historical function SQL.
+
+
+### Effective anonymous RPC grants: high-priority security gate
+
+The [anonymous SECURITY DEFINER RPC review](SCHOOLPRO-ANON-SECURITY-DEFINER-RPC-GRANT-REVIEW-2026-10-17.md) (commit `38415c1a7d2fbe279e4e35e224b795a96d284650`) identified six live public SchoolPro `SECURITY DEFINER` RPCs with `anon` EXECUTE: result PIN checking, result-code verification, public admissions submission, document verification, admission-offer retrieval and offer acceptance.
+
+Highest priority is `check_schoolpro_result_pin(text,text,text,text)`: it accepts anonymous RPC calls, has no in-body failed-attempt throttle, and the PIN table has no attempt-count/lockout column. A frontend-only throttle would be bypassable by direct PostgREST RPC calls. The ledger explicitly granted anon execution in `20260924144655 harden_rpc_and_customer_platform_access`. Result-code verification also returns the stored snapshot for valid codes and needs field minimization, entropy and enumeration/rate-limit review. Public admission/document flows require abuse-control review as well.
+
+No grants or functions were changed. This is a current security blocker to reproduce the same public RPC surface in the target; remediation should use a trusted, rate-limited endpoint and avoid unverified client-supplied IP-based database identity.

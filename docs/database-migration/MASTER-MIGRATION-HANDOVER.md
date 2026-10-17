@@ -2525,3 +2525,14 @@ Read-only catalog checks were repeated against production Supabase project `lnqs
 **Source and CI status:** Stage A PR #106 head `78b6db3368ae24f5c02d8af9e2a557701084024d` passed SchoolPro CI #1502 and payment-page validation #1229. The forward-only migration `20261017170000_schoolpro_forward_operational_tenant_isolation.sql` changes only RLS flags, fails closed if a required table is missing, and preserves all current policies. The separate `20261016160000_schoolpro_repair_operational_tenant_integrity.sql` adds tenant relationship/ownership triggers. Disposable integration tests verify eight ENABLE/FORCE flags, representative policy preservation, authenticated tenant-scoped reads, cross-school relationship rejection, and tenant immutability.
 
 **Release decision:** source/test acceptance is green, but Stage A is **not production-closed**. Production remains on the prior catalog: neither repair migration has been applied, and no post-deployment catalog/behavior verification exists. Do not mark A closed until the owner explicitly authorizes applying the two reviewed forward-only migrations in the intended order, followed by read-only catalog reconciliation and authenticated cross-school smoke tests. No production writes were made during this audit. This is the sole outstanding operational tenant-isolation release blocker before the project can treat Stage A as complete; other Stage A security checks remain subject to the release gate's full checklist.
+
+
+### Stage A live tenant smoke-test expansion — 2026-10-17
+
+Extended `scripts/test-schoolpro-tenant-isolation-live.mjs` so the optional read-only two-school acceptance checks now test foreign-school row visibility for the eight operational tables as well as students, members, invoices and results: library books, transport routes, hostel rooms, inventory assets, calendar events, lesson notes, result approvals and promotions. This does not write production rows. It is intended to catch policy regressions against real School A/School B authenticated sessions after the reviewed migrations are deployed.
+
+- New code-bearing head: `9c43acd268c4edd7a3c6422e66bd9d8627763588`.
+- SchoolPro CI #1576 and payment-page validation #1303 were running when this entry was prepared:
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032935243
+  - https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032935258
+- Do not count these runs until complete. The live two-school job only runs when `RUN_LIVE_TENANT_ACCEPTANCE=true` is configured; static CI parsing alone is not evidence that production tenant queries were executed.

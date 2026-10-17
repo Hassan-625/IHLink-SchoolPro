@@ -1533,3 +1533,10 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The syntax correction is committed to the isolated PR branch; its validation is pending the new CI run.
 - Receipt Storage runtime isolation remains **BLOCKED** until valid test-owned fixture paths or a dedicated disposable Storage test environment are available and the test passes.
 - Stage A remains **BLOCKED / NOT MERGE-READY**. No production migration, production row/object mutation, Render deployment, Supabase function/secret change, or PR merge was performed. Keep the full A–J roadmap and A → B → C → D release order intact.
+
+
+### Follow-up correction — payment RLS regression statement body
+
+- Follow-up run [#1345](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39022362975) showed the first delimiter correction still omitted the SQL keyword `INSERT` from the dynamic statement body; PostgreSQL failed at `into`. This is a test-harness defect, and the assertion still had not reached the RLS policy.
+- Corrected the dynamic body to `$insert$ insert into ... $insert$` in commit `641625cb84a2cc97000391e915d0d3578b446ba4`. Await the newly triggered CI on this exact head and inspect the payment job logs before considering the assertion passed.
+- The same run's tenant-acceptance job again failed because both receipt path secrets remain empty; no Supabase request was sent by that test. The older successful tenant acceptance run [#1328](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990160428) explicitly logged **SKIP payment-receipt Storage download test** and therefore is not receipt Storage-isolation evidence. The non-skippable check is correctly surfacing a missing fixture configuration.

@@ -1937,3 +1937,18 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - Aggregate counts on the active production data returned: student photo paths 0; principal signature paths 0; form-teacher signature paths 0; result-template logo paths 0; workbook storage paths 1. No path values were retrieved.
 - These counts suggest low current data volume for the four indexed media lookups, but they do not prove policy evaluation is cheap: Storage policy checks can run against the bucket's object population and the authorization helper still contains nested result-access checks. Keep the draft indexes/policy change subject to disposable query-plan/runtime testing, especially at representative bucket-object scale; do not benchmark destructively or create fake objects in production.
 - No production change was made.
+
+
+## 30. Full Stage A CI evidence after receipt/payment/result hardening (2026-10-17)
+
+- SchoolPro CI [run #1390](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908106) completed **successfully** on code head `4b13a0dce42890448d34ae11b78223d4c9cb7899`; payment-page validation [run #1115](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908128) also passed.
+- All eight SchoolPro CI jobs passed: `validate`, `tenant-acceptance`, `tenant-integrity-db-integration`, `payment-review-rls-integration`, `public-admission-abuse-integration`, `result-pin-rate-limit-integration`, `result-verification-exposure-integration`, and `Receipt Storage isolation (local Supabase)`.
+- Verified log evidence includes:
+  - local Storage: own-user synthetic upload/download works; cross-user download/upload is denied; finance can read its own school's linked submission receipt and is denied another school's receipt;
+  - payment RPC: valid receipt submission persisted; six invalid cases were rejected; two concurrent 600-unit submissions against the same 1,000-unit invoice produced exactly one pending reservation;
+  - tenant integration: cross-tenant child writes/unsafe parent reassignment were rejected, legacy online finalizer is fail-closed, and the disposable receipt RPC tests passed;
+  - result verification: aggregate-only snapshot and legacy-snapshot sanitization integration passed;
+  - payment RLS: anonymous finance-table grants were revoked in the disposable migration fixture while authenticated access remained;
+  - result-PIN: eight concurrent wrong-PIN requests serialized into one cooldown key in that run.
+- **Latest-head qualification:** subsequent commits changed the result-PIN cooldown key from admission+period to admission-only, aligned the static/integration assertions, and corrected the migration comments. The passing run above predates that final key-scope choice. The corresponding latest-code SchoolPro CI run `39026135034` was queued when checked, and run `39026200592` for the comment-only follow-up was also queued. Do not call the latest head fully green until the queued latest-code run executes and passes.
+- The successful run validates the draft/local acceptance suite only. It does not prove the draft migrations have been applied to production or reconcile the missing production migration-ledger entries. The live payment-submission guard gap, direct public RPC bypasses, and remaining schema/ledger review are still release blockers. PR #106 remains draft/unmerged and Stage B remains blocked.

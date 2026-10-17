@@ -579,3 +579,23 @@ The **authoritative source for current object state is the live Supabase catalog
 For each version, add a row to the reconciliation register with: version/name; ledger status; exact SQL artifact URL + blob SHA if recovered; repository/branch/commit; CI run ID and deployment actor/time if available; target object(s); live catalog evidence; schema-diff result; scope (SchoolPro/shared/DataSub); disposition (already reflected, absent, superseded, intentionally draft, duplicate/renamed, or unresolved); reviewer and evidence link. Use “unresolved” rather than guessing when artifact or deployment proof is missing.
 
 Do not run historical SQL to “catch up”, replay any ledger entry, reset migration history, or reconstruct SQL from migration names. The safe path is read-only catalog-to-artifact reconciliation, then a reviewed forward-only target schema plan. Export/import remains blocked.
+
+
+## Direct schema-to-migration comparison sample — 2026-10-17
+
+The branch-only migration `20261002234500_schoolpro_operational_tenant_isolation.sql` is a concrete example of why version names cannot be treated as deployment proof. Its SQL says it will set `FORCE ROW LEVEL SECURITY` on eight operational tables, drop existing policies on those tables, and create policies named `tenant read library`, `tenant manage library`, and corresponding tenant policies for transport, hostel, inventory, calendar, lesson notes, result approvals and promotions.
+
+A fresh read-only query of the live Supabase catalog for those same eight tables found:
+
+- RLS is enabled on all eight, but `relforcerowsecurity=false` on all eight.
+- Current policy names are different from the policy names the migration creates. Examples: library has `Families read borrowed book details` and `library books authorized access`; calendar has `calendar management write` and `calendar school read`; lesson notes has `lesson notes author access` and `lesson notes leadership access`.
+- The migration version is in the branch-only set (absent from the live ledger).
+
+**Disposition for this version:** not reflected as written in the current live catalog, or later superseded/reverted. The exact historical path is unresolved until the deployment artifact/history is recovered. Do not apply it to production or replay it on a target as a historical migration. Instead, compare the intended authorization semantics with the live policy expressions and design a reviewed forward migration for the target.
+
+This is one verified comparison sample, not a full comparison of all 397 live-only and 44 branch-only versions. Continue the same object-level check for each recoverable artifact: columns/types/defaults, indexes/constraints, routines/security settings, triggers, policies/grants, storage policies and scheduled jobs.
+
+## Cross-links to current audit artifacts
+
+- [Machine-readable application call-site manifest](APPLICATION-CALLSITE-MANIFEST-INDEX-2026-10-17.md)
+- [Per-table ownership decision register](SCHOOLPRO-PER-TABLE-OWNERSHIP-REGISTER-2026-10-17.md)

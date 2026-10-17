@@ -2598,3 +2598,8 @@ Production still lacks the reviewed indexes, and the live RLS probe has not pass
 ### Final index assertion harness adjustment — 2026-10-17
 
 A concurrent branch edit normalized the PL/pgSQL dollar delimiter to a single `$`, which caused PostgreSQL syntax failure in the previous CI run. To avoid delimiter/escaping fragility entirely, replaced the procedural assertion with a psql `\gset / \if / \quit` check requiring all six expected indexes. Static assertions now use literal DDL-string checks for the two critical index definitions. Corrected code head: `2aa67f6f4715e9e8653041a313bda4e4ea2e6ceb`. Fresh exact-head CI and payment-page validation are required; previous failures remain unaccepted. Production is unchanged.
+
+
+### Index migration static-check correction — 2026-10-17
+
+The static assertion that the index migration fails closed had an over-escaped regular expression and was corrected to match `to_regclass` through `raise exception`. Latest code-bearing Stage A head is now `eeac24a9e1820272ef673f59afd053a81408f193`; SchoolPro CI #1596 is queued and payment validation #1323 is running. The live acceptance probe is still expected to be sensitive to the index deployment state; no production migration has been applied.

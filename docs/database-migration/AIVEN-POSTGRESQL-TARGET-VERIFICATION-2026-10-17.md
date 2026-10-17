@@ -105,3 +105,11 @@ The source inventory document was expanded using read-only Supabase catalog quer
 - Inventory document: https://github.com/Hassan-625/IHLink-SchoolPro/blob/migration/mysql-schoolpro-foundation/docs/database-migration/SCHOOLPRO-SOURCE-INVENTORY-ALLOWLIST-2026-10-17.md
 - Inventory commit containing the routine/trigger appendix: `754721cf88159e43f375cd81b5438b218f1729a8`.
 - The draft remains **NOT APPROVED FOR EXPORT** until application call-site scan, full DDL/dependency review, shared-row ownership mapping and schema-drift reconciliation are complete.
+
+
+### Expanded boundary review: repository, FKs, catalog routines and migration drift (2026-10-17)
+The source inventory was expanded in commit `56b15b7f9560576de6603064028607e9cd188d13` and re-fetched to verify. The review confirms 274 foreign keys involving SchoolPro-prefixed tables, with 79 crossing the simple SchoolPro-only boundary; 89 of 107 prefixed tables have a direct `school_id` column and 18 require inherited-parent or global/account-level classification. It records the direct browser-side Supabase dependency, relevant auth/storage/Edge Function call sites, a targeted 20-routine definition review, 127 routine names, 160 trigger bindings, 293 SchoolPro RLS policy rows, and 7 relevant scheduled jobs (four DataSub/BillStack jobs excluded).
+
+**P0 blocking discrepancy:** live Supabase reports 476 migration-ledger records (latest `20261015161735`); active branch has 123 tracked `supabase/migrations/*.sql` files (latest `20261013100000`). Version comparison found 397 live-ledger versions absent from branch and 44 branch versions absent from live ledger. Do not replay the branch migrations or treat the branch migration directory as a complete source snapshot until reconciled.
+
+The review decision is **NOT APPROVED FOR EXPORT/IMPORT**. The current document is a draft/candidate allowlist plus a concrete reconciliation checklist, not permission to export. No source export, Aiven import, production write, Render change, deployment, or merge was performed. Supabase remains production source of truth; DataSub/BillStack remain out of scope.

@@ -1036,3 +1036,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Trusted network-header provenance remains open. The SQL currently prefers `x-forwarded-for`; this fixture simulates request metadata and cannot prove that the production gateway overwrites spoofable client-supplied headers. Verify gateway behavior before treating network-scoped throttling as a security boundary.
 - The previous exact-head Stage A workflow passed fully at `82cc647d71014db1683e4d0f13a8a2cd1ff56efc` (all four jobs). The new commit adds the runtime fixture and CI job; it has not yet been verified.
 - No production migration, data write, Render deployment, or merge occurred. PR #106 remains draft/open/unmerged.
+
+
+## Result-PIN runtime fixture first-run failure and correction — 2026-10-17
+
+- First runtime attempt on commit `13e24eae6c3de863ff042e1f477cf63251a6b93f` failed before exercising the rate limiter because the minimal PostgreSQL fixture had not created the Supabase API roles `anon` and `authenticated` required by the actual migration's REVOKE statements. The failure is fixture setup, not evidence of a result-PIN logic failure.
+- Added idempotent creation of those two test roles before applying the actual migration in commit `56657886334889c95c810e1fb43ac32013db9374`.
+- Fresh SchoolPro CI/payment-page validation for the corrected head must complete before this test can be marked passing. The prior tenant-acceptance, tenant-integrity, payment-review RLS jobs had passed on the earlier head.
+- Header provenance/trusted-proxy validation and true concurrent-request testing remain open; this sequential fixture does not prove either.
+- No production migration, data write, Render deployment, or merge occurred.

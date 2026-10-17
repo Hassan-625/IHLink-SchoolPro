@@ -48,10 +48,18 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/001_schoolpro_core.sql
-      - name: Insert valid isolated fixtures
+      - name: Apply guardian, finance and annual subscription schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/002_schoolpro_guardians_finance_subscriptions.sql
+      - name: Insert valid isolated core fixtures
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_core_fixture.sql
+      - name: Insert valid guardian, finance and subscription fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_finance_fixture.sql
       - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password
@@ -86,3 +94,49 @@ jobs:
           assert_fk_rejection tests/mysql/cross_school_assignment_session_must_fail.sql fk_csa_session
           assert_fk_rejection tests/mysql/cross_school_assignment_membership_must_fail.sql fk_csa_membership
           assert_fk_rejection tests/mysql/assessment_component_requires_class_subject_assignment.sql fk_ac_class_subject_session
+          assert_fk_rejection tests/mysql/cross_tenant_guardian_link_must_fail.sql fk_guardian_link_student
+          assert_fk_rejection tests/mysql/cross_tenant_fee_structure_class_must_fail.sql fk_fee_structure_class
+          assert_fk_rejection tests/mysql/cross_tenant_invoice_student_must_fail.sql fk_invoice_student
+          assert_fk_rejection tests/mysql/invoice_enrollment_student_mismatch_must_fail.sql fk_invoice_enrollment_student_session
+          assert_fk_rejection tests/mysql/cross_tenant_fee_submission_bank_must_fail.sql fk_fee_submission_bank
+          assert_fk_rejection tests/mysql/cross_tenant_fee_payment_invoice_must_fail.sql fk_fee_payment_invoice_student
+          assert_fk_rejection tests/mysql/cross_tenant_fee_allocation_invoice_must_fail.sql fk_fee_allocation_invoice_student
+          assert_fk_rejection tests/mysql/subscription_receipt_cross_tenant_must_fail.sql fk_subscription_receipt_subscription
+          assert_check_rejection() {
+            local sql_file="$1"
+            local constraint="$2"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected $constraint rejection" >&2
+              exit 1
+            fi
+            cat "$output_file"
+            if grep -Fq 'ERROR 3819' "$output_file" && grep -Fq "$constraint" "$output_file"; then
+              echo "PASS: $sql_file rejected by $constraint"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected $constraint" >&2
+              exit 1
+            fi
+          }
+          assert_check_rejection tests/mysql/receipt_owner_mismatch_must_fail.sql chk_fee_submission_receipt_owner
+          assert_check_rejection tests/mysql/demo_plan_paid_amount_must_fail.sql chk_subscription_plan_price
+          assert_enum_rejection() {
+            local sql_file="$1"
+            local output_file
+            output_file="$(mktemp)"
+            if mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < "$sql_file" >"$output_file" 2>&1; then
+              cat "$output_file"
+              echo "FAIL: $sql_file was accepted; expected annual-only billing cycle rejection" >&2
+              exit 1
+            fi
+            cat "$output_file"
+            if grep -Fq 'ERROR 1265' "$output_file" || grep -Fq 'ERROR 1366' "$output_file"; then
+              echo "PASS: $sql_file rejected non-annual billing cycle"
+            else
+              echo "FAIL: $sql_file failed for an unexpected reason; expected invalid ENUM value" >&2
+              exit 1
+            fi
+          }
+          assert_enum_rejection tests/mysql/termly_subscription_cycle_must_fail.sql

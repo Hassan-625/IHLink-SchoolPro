@@ -60,9 +60,6 @@ values
   ('40000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',
    '30000000-0000-0000-0000-000000000001','First Term','2025/2026','published',85,'{"ca":25,"exam":60}');
 
--- Simulate request metadata as PostgREST would expose it to the SQL function.
-select set_config('request.headers','{"x-forwarded-for":"198.51.100.99, 203.0.113.10","cf-connecting-ip":"203.0.113.10"}',false);
-
 do $test$
 declare
   i integer;
@@ -103,14 +100,14 @@ begin
     select 1 from private.schoolpro_result_pin_attempts a
     where length(a.attempt_key)=64 and a.failed_attempts=8 and a.blocked_until > now()
   ) then
-    raise exception 'Unknown admission did not trigger hashed-key cooldown';
+    raise exception 'Unknown admission did not trigger hashed admission-period cooldown';
   end if;
 
   -- After an expired cooldown, a valid published-result lookup succeeds and clears its key.
   update private.schoolpro_result_pin_attempts
     set blocked_until = now() - interval '1 second',
         window_started_at = now() - interval '16 minutes'
-  where attempt_key = encode(extensions.digest('sp-test-001|203.0.113.10','sha256'),'hex');
+  where attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex');
   result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','1234');
   if not coalesce((result->>'ok')::boolean,false) then
     raise exception 'Valid PIN should succeed after cooldown expires: %', result;
@@ -120,7 +117,7 @@ begin
     raise exception 'Duplicate admission number resolved to the wrong tenant/student: %', result;
   end if;
   if exists (select 1 from private.schoolpro_result_pin_attempts
-             where attempt_key = encode(extensions.digest('sp-test-001|203.0.113.10','sha256'),'hex')) then
+             where attempt_key = encode(extensions.digest('sp-test-001|first term|2025/2026','sha256'),'hex')) then
     raise exception 'Successful result access did not clear the failure counter';
   end if;
 end

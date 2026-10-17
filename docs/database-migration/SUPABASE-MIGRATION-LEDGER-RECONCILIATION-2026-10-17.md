@@ -628,3 +628,14 @@ A read-only Git tree comparison found that `main` and `migration/mysql-schoolpro
 4. Keep scope boundaries explicit: SchoolPro target objects only; shared identity/payment/email dependencies require separately approved mapping; DataSub/BillStack migrations are outside this SchoolPro migration scope.
 
 This adds provenance evidence but does not close the discrepancy. No SQL was executed against production and no migration was replayed.
+
+
+## Individual branch-only dispositions — 2026-10-17
+
+Created [Branch-only migration disposition register](BRANCH-ONLY-MIGRATION-DISPOSITION-REGISTER-2026-10-17.md), with a row for each of the 44 branch-only versions, source-history commit evidence, current live-catalog checks, and a provisional classification/next action. The register also separates the 33-version remote-sync boundary from the missing original executable SQL.
+
+Read-only catalog comparisons found significant partial matches but do not establish exact deployment provenance. Specifically, the operational tenant-isolation file `20261002234500` does not match the current catalog as written: targeted validator names are absent, live policy names differ, and FORCE RLS is false on the eight target tables. Additional discrepancies include absent validator names for guardian/CBT/document integrity and absent family-result/plan tables under names referenced by some source files. Conversely, several expected tables, columns and routines are present; these are classified as object matches only, not proof that the branch-only version deployed.
+
+The 33 versions named by `20260926114500_schoolpro_remote_migration_sync_ledger.sql` are listed in the live ledger and are declared by that marker as directly applied through the Supabase migration API, but the marker intentionally contains no DDL. Original SQL blobs and authoritative deployment audit records remain outstanding. A “Restore … migration” commit only establishes restoration into Git history, not the original production artifact or deployment event.
+
+**Gate unchanged:** no replay, production write, export/import, production configuration change, or merge. Per-version dispositions remain provisional pending original SQL + deployment evidence and full semantic catalog comparison.

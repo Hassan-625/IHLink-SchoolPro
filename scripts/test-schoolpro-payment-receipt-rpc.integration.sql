@@ -92,7 +92,8 @@ insert into public.schoolpro_guardian_links(school_id,student_id,guardian_user_i
 insert into public.schoolpro_bank_accounts(id,school_id,active) values (:'bank', :'school', true);
 insert into public.schoolpro_invoices(id,school_id,student_id,amount_due,amount_paid) values
 (:'invoice', :'school', :'student', 1000, 0),
-(:'invoice2', :'school', :'other_student', 500, 0);
+(:'invoice2', :'school', :'other_student', 500, 0),
+('40000000-0000-0000-0000-000000000003', :'school', :'student', 1000, 0);
 insert into storage.objects(bucket_id,name,owner_id,owner)
 values ('schoolpro-payment-receipts', :'receipt', :'guardian', :'guardian');
 

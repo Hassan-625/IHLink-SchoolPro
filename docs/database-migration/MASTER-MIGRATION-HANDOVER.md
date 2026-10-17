@@ -2684,3 +2684,17 @@ Exact-head validation for this increment is pending on code-bearing commit `f25e
 - MySQL schema workflow #427: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221642
 - SchoolPro CI #1617: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221522
 - Payment-page validation #1344: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221613
+
+
+## MySQL API runtime-test gate — 2026-10-17
+
+Added `server/mysql-api/test/server.test.mjs` and a dedicated Node 22 `mysql-api-test` job to SchoolPro CI. The tests use a mocked MySQL pool and synthetic identities; they do not connect to production. Current coverage:
+- Web login normalizes email and returns an opaque HttpOnly/SameSite=Lax session cookie, not a bearer token in JSON.
+- `/v1/me` resolves an authenticated session.
+- School context allows an active own-school membership and hides a foreign school with 404.
+- Cross-origin login is rejected before credentials are processed.
+- Failed login returns a generic error and stores only a SHA-256-shaped identifier key in the mock throttling state.
+
+This is an initial contract test slice, not a full authentication acceptance suite. Still needed: session expiry/revocation tests, platform Super Admin access tests, inactive/suspended membership behavior, concurrent failed-login counter behavior, rate-limit threshold/reset tests, malformed/oversized body handling, CSRF/origin behavior for cookie-authenticated mutations, and API-backed role-by-role endpoint authorization. Migration 007 schema support is not a replacement for these behaviors.
+
+The test job is newly wired and awaits exact-head CI. Keep the MySQL API disconnected from production and do not switch SchoolPro away from Supabase until A/B/C acceptance, data reconciliation, backup/restore, and explicit cutover approval.

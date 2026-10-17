@@ -1941,7 +1941,7 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 
 ## 30. Full Stage A CI evidence after receipt/payment/result hardening (2026-10-17)
 
-- SchoolPro CI [run #1390](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908106) completed **successfully** on code head `4b13a0dce42890448d34ae11b78223d4c9cb7899`; payment-page validation [run #1115](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908128) also passed.
+- SchoolPro CI [run #1421](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908106) completed **successfully** on code head `4b13a0dce42890448d34ae11b78223d4c9cb7899`; payment-page validation [run #1148](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39025908128) also passed.
 - All eight SchoolPro CI jobs passed: `validate`, `tenant-acceptance`, `tenant-integrity-db-integration`, `payment-review-rls-integration`, `public-admission-abuse-integration`, `result-pin-rate-limit-integration`, `result-verification-exposure-integration`, and `Receipt Storage isolation (local Supabase)`.
 - Verified log evidence includes:
   - local Storage: own-user synthetic upload/download works; cross-user download/upload is denied; finance can read its own school's linked submission receipt and is denied another school's receipt;

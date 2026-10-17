@@ -1987,3 +1987,11 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - The latest PR head is `290803b74cce2e41ac4e34fa023b7bb0e2b87ee9`. Payment-page validation #39026357837 passed. SchoolPro CI #39026357858 is still queued; all eight jobs are queued, so there is no new runtime result to report yet. This is a runner/queue wait, not a pass or failure.
 - Source parity at the exact head was rechecked: result-PIN migration + static test + integration test + concurrent workflow assertion all use the admission-only hash; the SQL integration alternates term/session values during wrong-PIN attempts; the receipt race uses the second active account; the static workflow assertion regex is corrected.
 - Handover updated on `migration/mysql-schoolpro-foundation`; no production write, migration application, deployment or merge was performed. Keep PR #106 draft/open and do not advance to Stage B until the full current-head CI run completes and the remaining release gates are signed off.
+
+
+## 33. Family report-media Storage policy — exact production expression confirmed (2026-10-17)
+
+- The live policy `Families read their report images` is authenticated SELECT on `storage.objects` with the predicate `bucket_id = 'school-result-templates' AND private.schoolpro_family_report_media(name)`. It invokes the expensive authorization helper for every object in that bucket, including non-media workbook/template objects.
+- The draft optimization migration adds a path-shape `CASE` before calling the helper, so non-media paths short-circuit to false, and adds four partial exact-path indexes for student photos, principal signatures, form-teacher signatures and result-template logos.
+- Production currently has the helper and the policy but none of the four proposed indexes; the live policy has no path-shape `CASE`. The exact draft optimization is therefore **not present** despite matching policy/helper names. The production migration ledger has no exact entry for the draft version.
+- Do not apply the indexes/definition until the migration drift plan is reviewed. Keep a runtime test for template listing and guardian report-image access/performance; static CI alone does not establish production query-plan improvement.

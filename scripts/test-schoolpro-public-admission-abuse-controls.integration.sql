@@ -1,4 +1,22 @@
 -- Disposable PostgreSQL integration test for the actual public admissions RPC migration.
+do $roles$
+begin
+  create role anon nologin;
+exception when duplicate_object then null;
+end
+$roles$;
+do $roles$
+begin
+  create role authenticated nologin;
+exception when duplicate_object then null;
+end
+$roles$;
+do $roles$
+begin
+  create role service_role nologin;
+exception when duplicate_object then null;
+end
+$roles$;
 create table public.schoolpro_site_settings (
   school_id uuid primary key,
   is_published boolean not null,
@@ -35,6 +53,16 @@ declare
   result jsonb;
   n integer;
 begin
+  if has_function_privilege('anon', 'public.submit_schoolpro_application(uuid,text,text,text,date,text,text,text,text,text)', 'EXECUTE') then
+    raise exception 'Anonymous role must not call the admissions RPC directly';
+  end if;
+  if has_function_privilege('authenticated', 'public.submit_schoolpro_application(uuid,text,text,text,date,text,text,text,text,text)', 'EXECUTE') then
+    raise exception 'Authenticated role must not bypass the admissions gateway';
+  end if;
+  if not has_function_privilege('service_role', 'public.submit_schoolpro_application(uuid,text,text,text,date,text,text,text,text,text)', 'EXECUTE') then
+    raise exception 'Service role must be allowed to call the admissions RPC through the edge gateway';
+  end if;
+
   -- Three successful submissions for a contact in one hour.
   result := public.submit_schoolpro_application(
     'b1000000-0000-0000-0000-000000000001','Amina','Bello','female','2017-03-01',

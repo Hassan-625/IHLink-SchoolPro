@@ -80,3 +80,19 @@ A read-only transaction-scoped probe set `ROLE authenticated`, supplied the JWT 
 - School `7a340a27-9184-420a-b566-8fc0d3dac555`: 0 visible document issues and 0 visible document-output objects.
 - School `d342eb87-8d6a-477a-a380-7fab83f586b7`: 1 visible issue and 1 visible document-output object; no visible issue rows or output objects belonging to another school.
 - This is a positive, sampled current-policy read-isolation result. It does **not** prove the proposed policy fix: existing data has no mismatched issue/student school rows, and no synthetic adversarial fixture, write/update/delete, guardian/staff role, RPC, or download-endpoint test was run. Production was not modified.
+
+## Full FK and tenant-pair audit — 2026-10-17
+A generated read-only check enumerated 221 public foreign-key constraints where either child or parent table is SchoolPro-prefixed. For every constraint, the check counted non-null child keys without a matching parent row: **0 orphan FK rows across 221 constraints**. A second generated check covered 86 FK relationships where both child and parent have a `school_id` column (excluding direct school_id-to-school_id key constraints): **0 cross-school parent/child mismatches across all 86 relationships**. Null FK columns were separately observed but are not classified as defects because many are intentionally optional; they require column-nullability and workflow review. These are current-row consistency checks, not future-write or RLS-bypass proof.
+
+## Expanded storage object reconciliation — 2026-10-17
+Bucket/object-to-record matching found:
+- `schoolpro-document-outputs`: 83/83 objects reference `schoolpro_document_issues.output_storage_path`; all 83 path prefixes equal the issue `school_id`.
+- `schoolpro-document-templates`: 9 objects; 3 match `schoolpro_document_templates.storage_path`. The other 6 are not referenced by that table; 4 use a known school prefix and 2 use a prefix that is not a SchoolPro school ID. Seven objects in the bucket have null `owner_id`. These require manual record/intent classification before any export.
+- `school-result-templates`: 8 objects; only 1 matches a `schoolpro_result_templates` path. The other 7 are not referenced by that table; all 8 have null `owner_id`, though all path prefixes correspond to a known school. These are unresolved, not automatically orphaned because other media/report paths may exist.
+- `schoolpro-invoice-templates`: 2 objects with known school prefixes and null `owner_id`; all 4 `schoolpro_invoice_templates` rows have null `storage_path`, so no direct row-to-object mapping was established.
+- `schoolpro-demo-documents`: 2 objects; both first path segments correspond to profiles, consistent with the current bucket policy's user-ID path model rather than school-ID paths. They are not linked to a document issue row.
+- `schoolpro-result-outputs`: 1/1 object matches `schoolpro_generated_result_outputs.storage_path`.
+- `schoolpro-admissions`, `schoolpro-payment-receipts`, and `schoolpro-branding`: zero objects currently; no positive object-access test is possible for these buckets.
+- `schoolpro-document-outputs`, `schoolpro-document-templates`, `schoolpro-invoice-templates`, and `school-result-templates` are private buckets; `schoolpro-branding` is marked public but empty.
+
+These counts are not export clearance. Enumerate all paths and determine their owning record/tenant, purpose, retention, and access policy before copying objects. Authenticated adversarial read probes are still required for each distinct storage policy and each download route.

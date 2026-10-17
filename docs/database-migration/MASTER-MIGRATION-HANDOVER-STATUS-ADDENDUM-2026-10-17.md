@@ -77,3 +77,13 @@ The issued-document policy correction has been moved out of the MySQL migration 
 
 ## Remote-batch SQL recovery update
 The [35-version provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md) now records exact SQL recovery from the production migration ledger, creator metadata, NULL idempotency keys and the missing timestamped API audit event. The [recovered payload manifest](RECOVERED-REMOTE-BATCH-SQL-MANIFEST-2026-10-17.md) links all 35 non-executable evidence files. Export/import remains blocked by the unresolved deployment-time provenance, full object/dependency review, RLS regression tests and storage/adversarial access tests.
+
+
+## Issued-document policy correction and adversarial test — 2026-10-17
+- Live policy review found three SELECT-policy paths to harden because permissive policies are OR-combined: student self-read had the tautology \`st.school_id = st.school_id\`; guardian read lacked \`guardian_links.school_id = issue.school_id\`; staff read authorized by issue school without confirming the referenced student belongs to that school.
+- Draft PR #108 now changes all three policies while preserving role authorization: [PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108).
+- The disposable PostgreSQL 17 [adversarial RLS regression](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39048035679) passed on code commit \`bcdf42de6ea2c7b24b07618d904642f604634e5f\`. The test used two synthetic schools, demonstrated that the old policy composition exposed a deliberately mismatched issue/student row to Student B, Guardian B and School A staff, applied the exact draft migration, and then confirmed all three were denied the mismatched row. Own-school status behavior and anonymous denial also passed.
+- This validates the SQL predicates in the disposable test model only. Authenticated storage read/write/delete, signed URL/path tampering, PostgREST/RPC/download routes, live helper ACLs and production identity plumbing remain open. PR #108 remains draft; no production change or merge occurred.
+
+## Complete live-only SQL evidence index
+The [SQL-derived dependency review](LIVE-ONLY-MIGRATION-SQL-DEPENDENCY-REVIEW-2026-10-17.md) now has 397 rows, one per live-only version. Exact ledger payloads for all 397 versions are preserved in eight JSONL bundles under [recovered-live-only-sql](recovered-live-only-sql/); all bundles were fetched back and validated as 397 valid JSONL records with one statement-array entry each. The 35 marker versions also have individual SQL copies and a dedicated provenance manifest. This is source recovery plus static dependency extraction, not final semantic export approval. All migration payloads remain unexecuted.

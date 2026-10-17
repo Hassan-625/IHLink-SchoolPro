@@ -1093,3 +1093,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Retried only the failed live tenant-acceptance job (GitHub accepted the rerun request). Verify that job's final conclusion before treating this commit's full CI as green.
 - The spoofed-XFF fixture and concurrent cooldown test are covered in CI; however, the disposable fixture does not prove that the production Supabase/Cloudflare gateway always overwrites or securely supplies `cf-connecting-ip`. Treat the trusted-header provenance check as an open production-verification item. Do not apply the migration to production or merge PR #106 without explicit approval.
 - Roadmap remains unchanged and additive: finish Stage A evidence and production-safe review, then strengthen/reverify B and C before resuming D (Result Design Studio + custom Excel workbooks). SchoolPro-to-MySQL migration remains incomplete; DataSub remains on Supabase.
+
+
+## 2026-10-17 follow-up — trusted-header commit CI rerun confirmed green
+
+- Final status check for [SchoolPro CI run #38991905579](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991905579): **completed successfully** on Stage A head `764d990cf8c28e014ddc06ed96c9591049ad0f4f`. The previously failing `tenant-acceptance` job succeeded on retry; all five jobs are green: `validate`, `result-pin-rate-limit-integration`, `tenant-integrity-db-integration`, `tenant-acceptance`, and `payment-review-rls-integration`.
+- Payment-page validation on the same head also passed: [run #38991905578](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38991905578).
+- This closes the transient CI transport failure for this run only. Keep production verification of `cf-connecting-ip` provenance open: the disposable CI fixture does not prove the deployed Supabase/Cloudflare edge header cannot be caller-influenced. No production migration, merge, or deployment is authorized or recorded.
+- Continue with Stage A production-safe review and A/B/C verification before Stage D. The SchoolPro MySQL migration remains incomplete; DataSub remains on Supabase.

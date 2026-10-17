@@ -84,6 +84,13 @@ create policy "schoolpro_module_permission"
   using (
     private.is_admin(ARRAY['super_admin']::public.user_role[])
     or private.schoolpro_module_allowed(school_id, 'finance')
+    or exists (
+      select 1 from public.schoolpro_guardian_links g
+      where g.school_id = public.schoolpro_fee_payments.school_id
+        and g.student_id = public.schoolpro_fee_payments.student_id
+        and g.guardian_user_id = (select auth.uid())
+        and g.status = 'active'
+    )
   )
   with check (
     private.schoolpro_module_allowed(school_id, 'finance')

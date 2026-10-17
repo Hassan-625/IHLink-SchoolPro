@@ -2439,3 +2439,12 @@ Added draft migration `database/mysql/004_schoolpro_admissions_progression.sql` 
 - MySQL schema workflow #339 caught a MySQL 8.4 DDL incompatibility in `student_promotions`: the `applied_by` column participated in a CHECK requiring a non-null actor for applied rows while its FK used `ON DELETE SET NULL`. MySQL rejects this combination because the referential action can violate the check.
 - Changed the applied-actor FK to `ON DELETE RESTRICT`. This is also the safer audit behavior: an actor cannot be deleted if doing so would erase the required actor on an applied promotion.
 - This was caught before acceptance; migration 004 is not yet accepted. Re-run the MySQL schema, SchoolPro CI and payment validation on the corrected source.
+
+
+### MySQL migration 004 schema test passed — 2026-10-17
+
+- Corrected MySQL schema workflow #342 passed on the migration 004 code-bearing commit `870259ceec5c2bb8e0026ad6598a88f826c23a32`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031582992
+- Payment-page validation #1272 also passed on that commit: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031583006
+- SchoolPro CI #1545 was still running its final application build checks at this checkpoint: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031583118
+- Schema CI verifies migrations 001–004 install on disposable MySQL 8.4, the synthetic admissions/progression fixtures insert, and selected cross-school application/document/student/class references and foreign-school object paths are rejected.
+- This is not production acceptance. Admissions APIs, public-token protections, offer/acceptance transactions, explicit promotion preview/review/apply, result workflow authorization, and complete source parity remain outstanding.

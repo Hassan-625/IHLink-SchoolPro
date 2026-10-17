@@ -659,3 +659,7 @@ The branch-only file histories also show that many files entered the current his
 - Current missing family-period/media and CBT plan table names are not present; current result-period JSONB cache functions and CBT helper routines use a different model. Do not create or replay old table definitions based on names alone.
 
 No production writes, replay, export/import, configuration changes or merge were performed.
+## Expanded source search and current checkpoint — 2026-10-17
+A related repository, `Hassan-625/IHLink_Design_System_1`, was checked for missing history. Its `main` tree has 139 migration files. None matches the exact version timestamp or migration name of the 35-version remote marker batch. It does contain 11 exact-version/name source candidates among the 397 live-only versions; those candidates have been reviewed for object scope and dependencies and recorded individually in the [live-only inventory](LIVE-ONLY-MIGRATION-VERSION-INVENTORY-2026-10-17.md). These are source candidates only, not proof that the SQL was the exact payload deployed to production. The other 386 live-only versions remain without exact-version source recovered from inspected repositories.
+
+The [master handover status addendum](MASTER-MIGRATION-HANDOVER-STATUS-ADDENDUM-2026-10-17.md) records the current gate: the issued-document RLS fix is draft-only, initial orphan/storage path checks are clean for the checked relations, and authenticated adversarial tenant tests and original deployment evidence remain outstanding. Export/import remains unapproved.

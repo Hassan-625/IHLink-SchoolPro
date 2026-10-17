@@ -2037,3 +2037,61 @@ No production RPC grants, data, Storage objects, secrets, or deployments were ch
 - SchoolPro CI run [#1450](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026655882) exposed a test-fixture mismatch: the fixture called the legacy proof INSERT policy `guardian_own_insert_proofs`, while production and the migration use `guardian submits proof`. Consequently, the migration's `DROP POLICY` did not replace the fixture's permissive policy, and the synthetic foreign-receipt-path insert was incorrectly allowed by the test setup.
 - Corrected the fixture policy name to match production exactly in commit `26f013bd0d7589c24606d5abe930b2f0e773220c`. The failure is a fixture fidelity issue, not a reason to relax the receipt-owner assertion. The next CI run must prove the foreign-path insert is rejected under the correctly replaced policy.
 - Other completed jobs in run #1450 passed: tenant acceptance, tenant-integrity/RPC concurrency, result-verification exposure, and public-admission abuse controls. Local Storage isolation, result-PIN integration and general validation were still running at the last check; do not infer their outcomes from this partial status.
+
+
+## 36. Read-only production reconciliation — receipt Storage and payment controls (2026-10-17)
+
+**Status: Stage A remains BLOCKED. This is a production catalog/source comparison only; no production writes, migration applications, receipt uploads, deployments or merges were performed.** Production target was verified as active Supabase project `lnqsroyiybutkfngbyge` (IHLink Platform). PR #106 head inspected: `26f013bd0d7589c24606d5abe930b2f0e773220c`; PR #106 is open, draft and unmerged.
+
+### Receipt bucket and Storage policies — live catalog evidence
+
+Read-only queries against `storage.buckets` and `pg_policies` returned:
+
+- Bucket `schoolpro-payment-receipts` is private (`public=false`), with a 5,242,880-byte file limit and MIME allowlist `image/jpeg`, `image/png`, `image/webp`, `application/pdf`. These values match `supabase/migrations/20261017150000_schoolpro_payment_receipt_storage_policies.sql`.
+- Live policy `guardian upload payment receipts`: PERMISSIVE INSERT to `authenticated`; bucket must match and first `storage.foldername(name)` segment must equal `auth.uid()`.
+- Live policy `guardian read own payment receipts`: PERMISSIVE SELECT with the same bucket and first-folder ownership restriction.
+- Live policy `school finance read payment receipts`: PERMISSIVE SELECT currently checks only a matching `schoolpro_payment_proofs.receipt_path` plus `private.has_school_access(...)` for proprietor/administrator/accountant/bursar.
+- Draft migration SHA `1580d24656df0fb8b407dcb4e094ad61aadc54e0` adds a second finance-read branch through `schoolpro_payment_submissions.receipt_path`. That branch is **absent from the current live policy expression**. The deployed policy therefore differs from the draft; do not claim migration parity. This difference may cause legitimate submission-receipt access to depend on another path/role and must be verified against the UI/RPC workflow before applying any forward migration.
+- The local Storage fixture `scripts/receipt-storage-local/fixture.sql` models a reduced test membership table and minimal payment proof/submission tables; it is not the complete production schema or complete policy/grant inventory. The local Storage test proves disposable-user object isolation for the configured fixture only, not production object-level acceptance.
+- No valid, safe production receipt-object fixture was configured, so production receipt download/upload isolation remains deliberately untested. Do not create production dummy receipts.
+
+### Migration ledger versus source
+
+- Read-only query of `supabase_migrations.schema_migrations` found the newest production ledger entry among the inspected recent window was `20261015161735 / schoolpro_access_invitation_role_constraint`. No migration with a later 2026-10-16/17 timestamp from the current Stage A branch appears in the production ledger.
+- This means the Stage A migrations below are repository proposals, not deployed changes; the absence is not by itself corruption and must not be “fixed” by replaying historical migrations:
+  - `20261015203000_schoolpro_payment_receipt_tenant_guard.sql`
+  - `20261016143000_schoolpro_payment_review_write_controls.sql`
+  - `20261016170000_schoolpro_disable_online_payment_gateway.sql`
+  - `20261016180000_schoolpro_payment_receipt_storage_limits.sql`
+  - `20261017150000_schoolpro_payment_receipt_storage_policies.sql`
+  - and other later Stage A migrations visible in PR #106.
+- Next reconciliation must compare all repository migration filenames/versions to the complete production ledger and then compare deployed definitions for every discrepancy. Do not mark a migration “applied” or manually insert ledger rows without evidence of its exact effects.
+
+### Actual production payment table grants, RLS and RPCs
+
+Read-only catalog inspection found:
+
+- RLS is enabled on `schoolpro_payment_submissions`, `schoolpro_payment_allocations`, `schoolpro_payment_proofs`, `schoolpro_fee_payments` and `schoolpro_invoices`; `FORCE ROW LEVEL SECURITY` is false and the owner is `postgres`.
+- `anon`, `authenticated` and `service_role` each currently have broad table privileges (SELECT/INSERT/UPDATE/DELETE plus other table privileges) on the four payment tables inspected. RLS therefore remains critical, and the draft's forward revocation of `PUBLIC, anon` is not yet live. This audit did not attempt direct writes using production roles.
+- Live restrictive policy `schoolpro_module_permission` on submissions, allocations, proofs and fee payments uses `private.schoolpro_module_allowed(school_id,'finance')` in its effective predicates. Live permissive policies also exist, so the result is the intersection of the restrictive policy and applicable permissive policies, plus SQL grants. The draft test fixture must reproduce the relevant production policy set accurately.
+- Production `submit_schoolpro_payment(uuid,uuid,numeric,date,text,text,text,text,jsonb)` is SECURITY DEFINER, owned by `postgres`, with an empty search path; EXECUTE is granted to `authenticated` and `service_role`, not `anon` or PUBLIC. The deployed function definition is still the older implementation: it checks active guardian linkage, bank account, invoice/student linkage and allocation totals, but does **not** check that `p_receipt_path` exists in `storage.objects` and belongs to `auth.uid()`, does not reject duplicate invoice IDs, and does not lock invoice rows while checking/reserving pending balances. The forward migration `20261015203000...` adds these guards, but is not in the production ledger and its definition is not the deployed definition. Treat this as a high-priority live/source mismatch; do not describe the receipt-owner guard as production-enforced.
+- Production `review_schoolpro_payment_submission` and `review_schoolpro_payment_proof` are SECURITY DEFINER functions with empty search paths and EXECUTE granted to `authenticated` and `service_role`. The submission-review RPC locks the submission, checks finance-module access and an approved school role, accepts only `confirmed` or `rejected`, rejects non-pending submissions, locks invoice rows and writes fee payments/invoice balances within one transaction. These are useful transition guards, but no real-role disposable test has yet proven the full grant/RLS/function/trigger interaction.
+- No function named `cancel_schoolpro_payment_submission` or `cancel_schoolpro_payment` was found in the queried public function names. Cancellation semantics must be defined and tested against actual product workflow rather than assumed. The current review RPC decision set is confirm/reject, not cancel.
+- Trigger catalog shows `schoolpro_activation_before_write` on submissions, allocations, proofs, fee payments and invoices, plus the fee-payment transactional-email trigger and invoice notification/active-pupil triggers. Full trigger order and rollback behavior have not yet been runtime-tested with the complete schema.
+
+### Test-fidelity gaps and blockers
+
+- `scripts/test-schoolpro-payment-review-rls.integration.sql` is a disposable fixture, not a full production schema restore. Its simulated permissive policies include direct finance UPDATE policies on submissions, allocations and proofs; the script then directly updates submission status, allocation amount and proof receipt path as finance. That contradicts its own stated design intent that review-controlled mutations occur through the locked RPC. The test must be corrected to assert intended direct-write denial (or the product owner must explicitly define which finance fields may be edited directly); it must not silently pass by exercising broad direct updates.
+- The same fixture uses test-only `private.schoolpro_module_allowed` and `private.is_admin` implementations, so it cannot by itself prove the production role mapping. Use disposable PostgreSQL with the actual relevant DDL/policies/grants/functions and explicit JWT claim setup; no production role impersonation or mutation.
+- Existing `scripts/test-schoolpro-payment-receipt-rpc.integration.sql` executes the proposed receipt RPC migration against synthetic minimal tables and covers valid submission plus receipt owner, guardian/student, duplicate invoice, total mismatch, pending reservation and inactive-bank cases. It does not prove those guards are deployed to production, nor does its current scope test review/reject/cancel, real grants, trigger rollback or concurrent duplicate review end-to-end.
+- Need runtime tests for: (1) guardian direct INSERT/UPDATE/DELETE denial on protected submission/proof/allocation fields; (2) authorized RPC submission and cross-tenant denial; (3) finance review/reject through RPC and direct mutation denial; (4) Super Admin read-only; (5) fee-payment legitimate insert; (6) cancellation behavior if supported; (7) two-session duplicate submission/review and invoice allocation race; (8) trigger side effects rolled back on failure; and (9) exact object path/ownership across guardian, same-school finance and foreign-school finance.
+- Do not introduce caller-controlled `X-Forwarded-For` / forwarded-IP trust as a database security primitive. Trusted-edge controls remain gated on verified gateway semantics.
+
+### Acceptance decision and next actions
+
+1. **Do not merge PR #106.** Green CI does not close the production/source mismatch or the real-role runtime gaps.
+2. Build a disposable PostgreSQL fixture that reproduces the relevant production schema, table grants, all applicable permissive/restrictive policies, SECURITY DEFINER functions and triggers. Correct the existing fixture's direct-finance-write expectations first.
+3. Reconcile the complete repository migration inventory against the production ledger and deployed catalog. Separate expected unapplied draft migrations from genuine source/ledger drift; do not replay history or write the production ledger.
+4. Verify and test the draft Storage policy's submission-based finance branch, exact object-path semantics and role enum/access helper against the actual schema. Do not apply the migration to production as part of this audit.
+5. Run and inspect the resulting CI jobs on the exact updated PR #106 head, then append exact commit/run/job evidence here.
+6. Stage A remains BLOCKED until these gates pass and the owner explicitly approves merge. No production writes, migration applications, receipt object creation, deployment or merge occurred during this session. Preserve A→B→C→D and E–J; do not resume D until A/B/C are re-verified and accepted.

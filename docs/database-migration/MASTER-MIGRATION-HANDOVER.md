@@ -1165,3 +1165,9 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Stage A code commits: migration `c3095b439560ec0979628843997890d60013b81b`, static guard `03532f4b7040ced6737899687c84fd28902cd320`, workflow/static wiring `facb54d2a103a0de8640eb0e52d70c155fff0f20`, integration fixture `21964022fc132266dac245d25505eb3b4b97a5d4`, and integration workflow wiring `ce11a747aefa5bb080489b61421af1770aa0ac77`. Latest changes are draft-only and must be validated by the latest-head CI before treating the hardening as complete.
 - Prior result-PIN duplicate-admission fix was confirmed green on head `47d966c1bcb3a5210b442ca70cf224e3f5cae344` with all five CI jobs successful and payment-page validation successful. The newer document-serial migration has its own pending CI run and does not change production until separately reviewed and approved.
 - No production migration, database write, merge, or deployment occurred. Do not apply the global index to production until latest-head CI passes and the migration plan is explicitly approved.
+
+
+### CI progress update — 2026-10-17 (latest document-serial migration head)
+
+- Latest Stage A head `ce11a747aefa5bb080489b61421af1770aa0ac77`: [SchoolPro CI #38992801989](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801989) has completed successfully for `result-pin-rate-limit-integration` (including the new global document-serial uniqueness integration step), `payment-review-rls-integration`, and `tenant-integrity-db-integration`.
+- At the last check, `validate` and `tenant-acceptance` were still running with no reported failure. Do not call the entire workflow green until those two jobs finish successfully. Payment-page validation for the same head is queued/running at [#38992801845](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38992801845).

@@ -999,3 +999,12 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - The live two-school acceptance job also failed while counting foreign-school `schoolpro_invoices` rows. Its logger printed `[object Object]`, hiding the useful structured API error. Added structured error formatting to the read-only acceptance script (commit `b7075b732c26a8c80f4bf79565a5fe199257500f`) so the next run exposes the actual status/message rather than obscuring the cause.
 - Latest corrective commits are queued for CI; do not treat either test as passing until fresh jobs complete. Earlier tenant checks passed for students, members, and the academic-period RPC before the invoice-count error.
 - No production writes, deployment, migration application, or PR merge was performed.
+
+
+## RLS policy defect found and fixed from runtime fixture — 2026-10-17
+
+- Runtime execution reached the policy assertions after the fixture's guardian-link permissions were corrected. It exposed a real policy mismatch: the restrictive `schoolpro_module_permission` policy on `schoolpro_fee_payments` allowed Super Admin and finance-module reads, but omitted guardian reads for a linked student, despite the migration comment stating guardian-readable ledger entries.
+- Updated `supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql` to include an active guardian-link predicate in the restrictive policy's `USING` clause. The `WITH CHECK` remains finance-only and explicitly excludes Super Admin writes, preserving the intended read-only Super Admin behavior and finance-controlled mutations.
+- Fix commit: `82cc647d71014db1683e4d0f13a8a2cd1ff56efc`. Fresh CI will run on push; the RLS test remains pending until that run completes.
+- The tenant acceptance and tenant-integrity database jobs passed on the prior run `38990776439`; only `payment-review-rls-integration` failed. That failure is now treated as a product-policy defect, not merely fixture setup.
+- No production migration was applied, no deployment occurred, and no PR was merged.

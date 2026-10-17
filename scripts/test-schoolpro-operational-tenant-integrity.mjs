@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 
 const migrationPath = 'supabase/migrations/20261016160000_schoolpro_repair_operational_tenant_integrity.sql';
 const sql = readFileSync(migrationPath, 'utf8');
+const rlsMigrationPath = 'supabase/migrations/20261017170000_schoolpro_forward_operational_tenant_isolation.sql';
+const rlsSql = readFileSync(rlsMigrationPath, 'utf8');
 
 assert.match(sql, /create or replace function private\.schoolpro_validate_operational_tenant\(\)/i);
 assert.match(sql, /security definer\s+set search_path\s*=\s*''/i, 'Trigger functions must use a fixed empty search_path');
@@ -45,4 +47,23 @@ assert.match(
 assert.match(sql, /new\.school_id is distinct from old\.school_id/i, 'Parent tenant reassignment must be rejected');
 assert.match(sql, /raise exception 'School ownership cannot be reassigned'/i, 'Parent tenant reassignment must fail closed');
 assert.doesNotMatch(sql, /insert into|update public\.|delete from/i, 'Migration must not mutate existing application data');
-console.log('PASS: operational and staff-permission tenant-integrity migration contains fixed-search-path, restricted trigger functions and cross-school relationship checks.');
+
+assert.match(rlsSql, /alter table public\.%I enable row level security/i, 'Forward repair must enable RLS on the operational table set');
+assert.match(rlsSql, /alter table public\.%I force row level security/i, 'Forward repair must force RLS on the operational table set');
+assert.match(rlsSql, /if to_regclass\(format\('public\.%I', t\)\) is null then\s+raise exception/i, 'Forward repair must fail closed when a required operational table is missing');
+assert.doesNotMatch(rlsSql, /drop policy|create policy|alter policy/i, 'Forward repair must preserve existing feature-specific policies');
+assert.match(rlsSql, /does NOT\s+constrain\s+superusers or roles with BYPASSRLS/i, 'Migration must document the limits of FORCE RLS');
+for (const tableName of [
+  'schoolpro_library_books',
+  'schoolpro_transport_routes',
+  'schoolpro_hostel_rooms',
+  'schoolpro_inventory_assets',
+  'schoolpro_calendar_events',
+  'schoolpro_lesson_notes',
+  'schoolpro_result_approvals',
+  'schoolpro_promotions',
+]) {
+  assert.match(rlsSql, new RegExp("'" + tableName + "'"), 'Missing RLS posture target: ' + tableName);
+}
+
+console.log('PASS: operational relationship integrity and forward-only RLS posture migrations preserve feature policies and fail closed.');

@@ -141,7 +141,7 @@ as $function$
           'total', coalesce(sum(nullif(item->>'total_score','')::numeric), 0),
           'average', coalesce(round(avg(nullif(item->>'total_score','')::numeric), 2), 0)
         )
-        from jsonb_array_elements(v.snapshot->'results') as item
+        from jsonb_array_elements(v.snapshot->'results') as rows(item)
       )
       else null::jsonb
     end

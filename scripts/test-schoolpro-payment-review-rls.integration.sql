@@ -191,14 +191,16 @@ end $$;
 revoke all on function public.review_schoolpro_payment_submission(uuid,text,text) from public,anon;
 grant execute on function public.review_schoolpro_payment_submission(uuid,text,text) to authenticated,service_role;
 
-create function public.test_fail_payment_insert_for_rollback()
+create function public.test_fail_invoice_update_for_rollback()
 returns trigger language plpgsql as $trigger$
 begin
- if new.notes like '%force rollback%' then raise exception 'synthetic trigger failure for rollback assertion'; end if;
+ if current_setting('test.force_invoice_failure',true)='true' and new.amount_paid>old.amount_paid then
+  raise exception 'synthetic trigger failure for rollback assertion';
+ end if;
  return new;
 end $trigger$;
-create trigger test_fail_payment_insert_for_rollback before insert on public.schoolpro_fee_payments
-for each row execute function public.test_fail_payment_insert_for_rollback();
+create trigger test_fail_invoice_update_for_rollback before update on public.schoolpro_invoices
+for each row execute function public.test_fail_invoice_update_for_rollback();
 
 create function pg_temp.assert_rpc_rejected(p_name text,p_statement text,p_expected text)
 returns void language plpgsql as $assert$
@@ -347,10 +349,12 @@ select pg_temp.assert_rpc_rejected(
  'review RPC does not treat cancellation as an accepted decision',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','cancelled','cancel request')$$,
  'Invalid decision');
+select set_config('test.force_invoice_failure','true',false);
 select pg_temp.assert_rpc_rejected(
- 'trigger failure rolls back confirmation writes',
+ 'invoice trigger failure rolls back earlier fee-payment insert',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000001','confirmed','force rollback')$$,
  'synthetic trigger failure for rollback assertion');
+select set_config('test.force_invoice_failure','false',false);
 select pg_temp.assert_count('failed confirmation leaves submission pending',
  (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000001' and status='pending'),1);
 select pg_temp.assert_count('failed confirmation rolls invoice amount back',
@@ -358,7 +362,7 @@ select pg_temp.assert_count('failed confirmation rolls invoice amount back',
 select pg_temp.assert_count('failed confirmation rolls allocation link back',
  (select count(*) from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001' and payment_id is null),1);
 select pg_temp.assert_count('failed confirmation rolls fee payment insert back',
- (select count(*) from public.schoolpro_fee_payments where notes like '%force rollback%'),0);
+ (select count(*) from public.schoolpro_fee_payments),3);
 select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','synthetic rejection');
 select pg_temp.assert_count('authorized rejection transitions pending to rejected',
  (select count(*) from public.schoolpro_payment_submissions where id='e0000000-0000-0000-0000-000000000002' and status='rejected' and review_note='synthetic rejection'),1);

@@ -4,9 +4,9 @@ This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master fil
 
 ## Evidence status
 - Production Supabase ledger: 476 versions. The current migration branch has 123 numbered files, 79 exact version intersections, 397 live-only versions and 44 branch-only versions. The issued-document RLS correction is tracked separately in [draft PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108), branch `security/issued-document-rls-fix-2026-10-17`; it is not deployed.
-- The remote marker enumerates 35 distinct versions, all matching the live ledger by exact version/name. No exact-version SQL source for those 35 was found in the inspected SchoolPro branch or related repository tree.
-- The related `Hassan-625/IHLink_Design_System_1` repository contains 139 migrations. Eleven exact-version/name source candidates and 95 timestamp-different same-name candidates were reviewed and documented. They are corroborating source candidates, not proof of deployment.
-- No authoritative migration API audit event with actor/time/request/result has been recovered.
+- The remote marker enumerates 35 distinct versions, all matching the live ledger by exact version/name. The original SQL was recovered from the production migration ledger's `statements` array for all 35 versions and saved to the non-executable forensic folder; all 35 saved files byte-match the ledger payload. The original files were not found in inspected repository trees.
+- The related `Hassan-625/IHLink_Design_System_1` repository contains 139 migrations. Eleven exact-version/name and 95 timestamp-different same-name candidates were reviewed; additionally, the 35 marker SQL payloads were recovered directly from the live migration ledger and byte-verified against their saved files.
+- The live ledger records `created_by=hassanisahassan12@gmail.com` and NULL idempotency keys for all 35, but has no deployment timestamp field; no separate timestamped API request/response audit event has been recovered.
 
 ## Tenant and storage evidence
 - Prior 17 cross-school relationship checks: zero mismatches.
@@ -19,7 +19,7 @@ This checkpoint supplements `MASTER-MIGRATION-HANDOVER.md`; the large master fil
 - The live `students read own issued documents` policy contains `st.school_id = st.school_id`. A correction is proposed in draft PR #108 only.
 
 ## Approval gates remain open
-1. Recover original SQL and authoritative deployment evidence for all 35 marker versions.
+1. **SQL recovery complete:** exact ledger payloads for all 35 marker versions are saved and byte-verified. Remaining provenance gate: recover independent timestamped migration-API audit evidence (the live ledger does not retain execution time/request ID).
 2. Complete object/dependency review for all 397 live-only versions. 106 live-only versions have same-name source candidates reviewed (11 exact-version and 95 timestamp-different); 291 have no same-name SQL candidate in inspected repositories. Unresolved scope buckets remain provisional.
 3. Test the draft policy correction in a disposable rehearsal with two authenticated school identities, including full policy composition, PostgREST reads and document-download paths. Do not apply to production before explicit rollout approval.
 4. Generated checks cover 221 public FK constraints (0 orphan rows) and 86 school-paired FK relationships (0 school mismatches). Classify remaining unreferenced storage objects and run adversarial cross-tenant write/update/delete, signed URL/download, RPC and path-tampering tests in rehearsal.
@@ -73,3 +73,7 @@ All tests below were read-only and transaction-scoped; each transaction was roll
 
 ## Separate RLS-fix review lane — 2026-10-17
 The issued-document policy correction has been moved out of the MySQL migration branch into [draft PR #108](https://github.com/Hassan-625/IHLink-SchoolPro/pull/108) on `security/issued-document-rls-fix-2026-10-17`. Its exact-head [SchoolPro CI](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39045818073) and [payment-page validation](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39045818161) passed. Those workflows do not test PostgreSQL RLS behavior. The PR remains draft and the required disposable two-school policy regression tests have not passed; do not merge or apply the migration to production.
+
+
+## Remote-batch SQL recovery update
+The [35-version provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md) now records exact SQL recovery from the production migration ledger, creator metadata, NULL idempotency keys and the missing timestamped API audit event. The [recovered payload manifest](RECOVERED-REMOTE-BATCH-SQL-MANIFEST-2026-10-17.md) links all 35 non-executable evidence files. Export/import remains blocked by the unresolved deployment-time provenance, full object/dependency review, RLS regression tests and storage/adversarial access tests.

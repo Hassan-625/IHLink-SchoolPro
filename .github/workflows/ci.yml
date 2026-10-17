@@ -140,3 +140,30 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Exercise payment-review RLS using authenticated role switching
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-review-rls.integration.sql
+
+  result-pin-rate-limit-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_pin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_pin_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_pin_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql

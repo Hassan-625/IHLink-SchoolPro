@@ -570,3 +570,25 @@ The following full read-only catalog evidence artifacts are now committed on thi
 The candidate table list is reviewed as a **migration-planning boundary only**, not a final import list. Current recommendation is to preserve these categories: (A) school-owned operational records and their inherited child records, subject to per-table ownership and FK review; (B) global SchoolPro plan/catalog data as reviewed seed/configuration, not tenant records; (C) shared identity/payment/Storage/queue dependencies excluded from bulk copy; (D) DataSub/BillStack and other IHLink product records excluded.
 
 **Approval is withheld (P0) until migration-ledger drift is reconciled.** The live ledger has 476 entries; this branch has 123 migration files; only 79 versions match, with 397 live-only and 44 branch-only. The exact lists are in the reconciliation document. Also, the call-site scan confirms widespread direct browser-side Supabase table/RPC use, but a line-by-line machine-readable call-site manifest has not yet been generated. Therefore the migration boundary is not yet finalized for export. Do not export/import any data until the ledger diff, call-site manifest and object semantics have been signed off.
+
+
+## Provenance investigation update — 2026-10-17
+
+### Evidence found in repository history and active GitHub Actions
+
+- The current branch tree contains 123 numbered `supabase/migrations/*.sql` files, but **no `supabase/config.toml` and no Supabase deployment workflow**. The visible workflows are app CI, mobile builds, payment validation, and a draft MySQL schema test; none establishes a complete automated history of applying the 476 production ledger entries.
+- The current `.github/workflows/ci.yml` tests the app and a disposable MySQL API/schema. It does not run `supabase db push`, apply Supabase migrations to production, or reconcile the production migration ledger.
+- The current `.github/workflows/mysql-schoolpro-schema.yml` is explicitly a draft-schema CI workflow and applies only `database/mysql/*.sql` to a disposable MySQL 8.4 service. It is not provenance for the historical Supabase ledger.
+- Repository migration `supabase/migrations/20260926114500_schoolpro_remote_migration_sync_ledger.sql` states that a batch of remote migrations was applied directly to production through the Supabase migration API after `20260925210000_expand_schoolpro_datasub_features`. The file explicitly says it does **not** replay the inferred production DDL; it records a synchronization boundary through `20260926102630 schoolpro_completion_security_cleanup` and ends with `select 1;`. Therefore this file is a ledger/provenance note, **not executable schema source** for the migrations it names.
+- PR #79 (“Align operational migration filenames with applied history”, merged 2026-10-10) states that four operational migration filenames were aligned with versions already recorded in live history and that SQL contents were unchanged. This proves at least one historical reconciliation was filename/ledger-oriented, but it does not explain the current 397 live-only and 44 branch-only version sets as a whole. The PR's recorded preview deployment is legacy Vercel evidence, not evidence of database deployment; Render remains the current app host.
+- Recent GitHub Actions runs on 2026-10-17 are PR-triggered validation runs for SchoolPro CI, MySQL schema draft, and payment pages. These validate the current code branch but are not production Supabase migration-application records.
+
+### Current provenance conclusion
+
+The **authoritative source for current object state is the live Supabase catalog**, and the **live migration ledger is authoritative only for which versions the database records as applied**. Neither alone identifies the exact SQL artifact and commit that produced every live object. Repository filenames, commit messages, and PR success are not sufficient to infer missing SQL. The 397 live-only versions remain without complete immutable SQL/CI provenance in the inspected branch; the 44 branch-only versions remain unexplained as applied/not-applied dispositions.
+
+### Required disposition for the 397/44 sets
+
+For each version, add a row to the reconciliation register with: version/name; ledger status; exact SQL artifact URL + blob SHA if recovered; repository/branch/commit; CI run ID and deployment actor/time if available; target object(s); live catalog evidence; schema-diff result; scope (SchoolPro/shared/DataSub); disposition (already reflected, absent, superseded, intentionally draft, duplicate/renamed, or unresolved); reviewer and evidence link. Use “unresolved” rather than guessing when artifact or deployment proof is missing.
+
+Do not run historical SQL to “catch up”, replay any ledger entry, reset migration history, or reconstruct SQL from migration names. The safe path is read-only catalog-to-artifact reconciliation, then a reviewed forward-only target schema plan. Export/import remains blocked.

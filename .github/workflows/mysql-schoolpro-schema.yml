@@ -68,6 +68,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/006_schoolpro_learning_cbt_library_transport_payroll.sql
+      - name: Apply MySQL authentication throttling schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/007_schoolpro_auth_login_throttling.sql
       - name: Apply authentication login throttling schema
         env:
           MYSQL_PWD: root-test-password
@@ -96,6 +100,17 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_learning_cbt_library_transport_payroll_fixture.sql
+      - name: Test MySQL API authentication and tenant context
+        env:
+          MYSQL_HOST: 127.0.0.1
+          MYSQL_PORT: 3306
+          MYSQL_DATABASE: schoolpro_test
+          MYSQL_USER: root
+          MYSQL_PASSWORD: root-test-password
+          WEB_ORIGIN: http://localhost:5173
+        run: |
+          npm install --prefix server/mysql-api --no-audit --no-fund
+          npm test --prefix server/mysql-api
       - name: Insert valid authentication throttling fixture
         env:
           MYSQL_PWD: root-test-password

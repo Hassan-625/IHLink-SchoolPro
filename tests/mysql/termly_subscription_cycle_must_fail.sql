@@ -1,0 +1,1 @@
+INSERT INTO school_subscriptions (id,school_id,plan_code,billing_cycle,paid_amount,status,starts_at,updated_by) VALUES ('ab900000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','standard','termly',150000,'active','2025-09-01 00:00:00','00000000-0000-4000-8000-000000000001');

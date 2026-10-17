@@ -2339,3 +2339,29 @@ Final tested Stage A head: `78b6db3368ae24f5c02d8af9e2a557701084024d`.
 - This closes the operational tenant-isolation **source/test blocker** on the draft branch. Production rollout is still pending: the Stage A migrations have not been applied to production, no production writes or receipt uploads occurred, and PR #106 remains unmerged. Do not claim production Stage A closed until an approved rollout and post-deploy catalog/tenant checks are complete.
 - No live receipt-submission object was available for a production Storage test; local Storage API isolation passed without creating dummy production data. Payment cancellation remains unsupported; review decisions are confirmed/rejected only.
 - Stage B stays gated on Stage A merge and post-merge verification. The separate SchoolPro MySQL foundation/audit may continue with disposable fixtures only; no production backend switch is authorized.
+
+
+## MySQL workstream resumed after Stage A source/test closure — 2026-10-17
+
+Stage A's operational tenant-isolation source/test blocker is closed at exact-head CI #1502 and payment validation #1229 (see the Stage A section above). PR #106 remains draft/unmerged because its production migrations have not been rolled out. The separate SchoolPro MySQL foundation work now continues using disposable fixtures only; no Stage B academic data population or production backend switch has started.
+
+### New source-informed MySQL migration slice
+
+- Read-only production catalog inspection captured the current column sets for guardian links, fee structures/items, invoices, fee payments, payment submissions/allocations/proofs, bank accounts, subscription catalog/plans/subscriptions, and invoice/result templates.
+- Added `database/mysql/002_schoolpro_guardians_finance_subscriptions.sql`. It introduces guardian-to-student links, school bank accounts, fee structures/items, fee invoices, payment submissions, fee payment ledger, allocations, legacy per-invoice payment proofs, annual subscription plans/status, and subscription receipt review.
+- The target models SchoolPro's manual receipt-based payment flows. It intentionally does **not** port the old gateway/virtual-account subscription intent flow because the current business rule is annual subscriptions with receipt upload and IHLink admin verification; BillStack remains DataSub-only and the SchoolPro online gateway is disabled.
+- Demo plan is reserved as `code='demo'`, has no annual price and stores `paid_amount=NULL`; all subscription billing cycles are annual. Grace/suspension timestamps and states are represented for the agreed two-week grace lifecycle. API behavior and state-transition transactions still need implementation/tests.
+- Receipt records retain an object key and explicit owner; CHECK constraints require the first object-key folder and owner to match the submitting user. These database checks complement, but do not replace, server-side object ownership authorization.
+- Updated `001_schoolpro_core.sql` with the composite enrollment key needed to ensure an invoice's student/session matches its enrollment.
+- Added synthetic fixture `tests/mysql/schoolpro_finance_fixture.sql` and negative tests for cross-school guardian links, fee structure class, invoice student/enrollment, payment bank account, payment invoice/student, allocation invoice/student, subscription receipt tenant, receipt owner/path mismatch, Demo price, and non-annual billing cycles.
+- Updated `.github/workflows/mysql-schoolpro-schema.yml` to apply migrations 001 and 002 in disposable MySQL 8.4, load synthetic fixtures, and assert named foreign-key/check/ENUM rejections. This migration remains schema-only; it does not yet implement transactional review RPC/API behavior or reconcile production rows.
+
+### Exact-head validation currently running
+
+Candidate PR #107 head: `cf419bf94e353f2cb9b5c0647aa3e7932ed68195`.
+
+- MySQL schema workflow #294: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030626322
+- SchoolPro CI #1517: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030626304
+- Payment-page validation #1244: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39030626313
+
+Do not mark this slice accepted until the disposable MySQL workflow passes on the exact head and any failures are fixed/retested. No production database or application configuration was changed.

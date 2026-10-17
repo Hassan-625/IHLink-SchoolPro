@@ -141,7 +141,7 @@ create or replace function private.schoolpro_record_school(p_table text,p_row js
 returns uuid language sql stable security definer set search_path=''
 as $$ select nullif(p_row->>'school_id','')::uuid $$;
 create or replace function private.schoolpro_operationally_active(p_school uuid)
-returns boolean language sql stable as $$ select true $$;
+returns boolean language sql stable as $$ select coalesce(nullif(current_setting('test.school_active',true),''),'true')::boolean $$;
 create or replace function private.has_product_access(p_product text,p_action text)
 returns boolean language sql stable as $$ select false $$;
 
@@ -471,6 +471,12 @@ select pg_temp.assert_rpc_rejected(
  'Module permission denied');
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
 select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);
+select set_config('test.school_active','false',false);
+select pg_temp.assert_rpc_rejected(
+ 'deployed activation trigger blocks a review transition while school is inactive',
+ $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','rejected','inactive school')$$,
+ 'SchoolPro operational activation required');
+select set_config('test.school_active','true',false);
 select pg_temp.assert_rpc_rejected(
  'review RPC does not treat cancellation as an accepted decision',
  $$select public.review_schoolpro_payment_submission('e0000000-0000-0000-0000-000000000002','cancelled','cancel request')$$,

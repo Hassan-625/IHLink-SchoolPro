@@ -1472,3 +1472,23 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - **Stage A release gate:** **BLOCKED / NOT MERGE-READY** until receipt Storage isolation, family-media runtime/performance evidence, complete payment lifecycle/role boundary coverage, full-schema trigger and migration-drift review, and a safe admissions/login rollout plan are addressed and reviewed.
 - **Production:** unchanged by this checkpoint. No production migration, row mutation, Supabase function/secret change, Render deployment, merge or cutover was performed.
 - **Sequence remains A → B → C → D.** Do not start B until Stage A has passed the outstanding release gates, been explicitly approved and merged to the intended production branch, and then been verified post-merge/deployment. Reverify B and C before resuming D. Preserve the full E–J roadmap.
+
+
+## 14. Stage A blocker-remediation work started — 2026-10-17
+
+### Payment review boundary: prevent guardian-created pre-reviewed submissions
+
+- Stage A PR #106 remains open/draft/unmerged. Current head after this isolated draft change: `0c1186b3ba346b30a19f7d13f4c8563adf098963`.
+- Updated draft migration `supabase/migrations/20261016143000_schoolpro_payment_review_write_controls.sql` (commit `ba0a26965a577311712753c2de209c8a4d372966`) so a guardian-owned branch of the restrictive submission policy's `WITH CHECK` requires `status = 'pending'`. This blocks an authenticated guardian from using a direct INSERT policy to create a submission already marked reviewed/approved, while leaving authorized school-finance workflow and Super Admin read-only policy unchanged.
+- Added a disposable PostgreSQL regression assertion to `scripts/test-schoolpro-payment-review-rls.integration.sql` (commit `0c1186b3ba346b30a19f7d13f4c8563adf098963`) that attempts a guardian insert with status `reviewed` and an unverified receipt path and requires an RLS denial.
+- **Validation status at handover update:** changes pushed to the isolated Stage A branch. GitHub workflow run was not yet returned for this newest head when checked; do not call the new assertion passed until the corresponding CI job completes successfully.
+- This closes only the narrow pre-reviewed INSERT path in the draft policy. It does not close all payment gates: verify direct INSERT grant necessity against actual client call sites; test status/amount/receipt path/tenant/student/allocation direct writes, finance review transitions, rejected/cancelled states, duplicate allocation, invoice-lock concurrency, receipt ownership, and cross-school attempts against the fuller schema/policy set. Do not infer full payment lifecycle correctness from this narrow fix.
+
+### Remaining work order
+
+1. Wait for and inspect CI on the latest Stage A head; fix any failure before claiming this change is validated.
+2. Finish payment role/lifecycle tests and decide—using source call-site evidence—whether direct table INSERT should be revoked in favor of the SECURITY DEFINER submission RPC. Do not change grants blindly.
+3. Build a safe disposable Storage-policy test for receipt own-school/cross-school object isolation, and a runtime/performance test for family report-media exact reads and folder listing. Keep live customer storage untouched.
+4. Inspect live schema and triggers read-only; reconcile source migrations against the live migration ledger/catalog without replaying historical versions or guessing.
+5. Treat live admissions gateway rollout and login source/deployment mismatch as operational gates requiring approved configuration and deployment. Do not revoke admissions RPC before the gateway works. Do not treat untrusted forwarded headers as client identity.
+6. Update this handover with every new test result. Stage A stays **BLOCKED / NOT MERGE-READY** until all gates pass and the owner explicitly approves the release. No production mutation/deployment was performed by this remediation.

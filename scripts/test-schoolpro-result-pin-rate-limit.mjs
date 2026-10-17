@@ -10,9 +10,9 @@ assert.ok(sql.includes('extensions.digest('), 'Admission/PIN hashes must use sch
 assert.match(sql, /failed_attempts \+ 1 >= 8/i, 'Eight failures must trigger cooldown');
 assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 15 minutes');
 assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
-assert.ok(sql.includes("current_setting('request.headers', true)"), 'Rate-limit key should include request network context to reduce admission-only lockout abuse');
-assert.match(sql, /nullif\(trim\(v_headers ->> 'cf-connecting-ip'\), ''\)/i, 'Use the hosted edge client-IP header as the trusted rate-limit identity');
-assert.doesNotMatch(sql, /v_client_ip := split_part\([\s\S]{0,250}x-forwarded-for/i, 'Do not derive the security rate-limit identity from caller-influenced X-Forwarded-For');
+assert.doesNotMatch(sql, /current_setting\('request\.headers'/i, 'Do not trust caller-controlled request headers for database security rate-limit identity');
+assert.doesNotMatch(sql, /cf-connecting-ip|x-forwarded-for|x-real-ip|forwarded/i, 'Do not derive database rate-limit identity from unverified network headers');
+assert.match(sql, /lower\(trim\(coalesce\(p_admission, ''\)\)\)\s*\|\|\s*'\|'\s*\|\|\s*lower\(trim\(coalesce\(p_term, ''\)\)\)/i, 'Rate-limit key must be based on normalized admission and result period');
 const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
 const blockedAt = sql.indexOf('select a.blocked_until');
 const studentLookupAt = sql.indexOf('from public.schoolpro_students st');
@@ -27,4 +27,4 @@ assert.match(sql, /revoke all on function private\.record_schoolpro_result_pin_f
 assert.match(sql, /set search_path to ''/i, 'Security-definer functions must pin an empty search_path');
 assert.doesNotMatch(sql, /(?<!extensions\.)digest\(lower\(trim\(coalesce\(p_admission/i, 'pgcrypto digest must be schema-qualified under empty search_path');
 
-console.log('PASS: result-PIN rate-limit migration has hashed network-scoped identifiers, atomic failure counts, cooldown and restricted private storage.');
+console.log('PASS: result-PIN rate-limit migration has hashed normalized admission-period identifiers, atomic failure counts, cooldown and restricted private storage.');

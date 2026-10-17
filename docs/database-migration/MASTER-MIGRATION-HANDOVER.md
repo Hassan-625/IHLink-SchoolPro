@@ -1796,3 +1796,12 @@ This is a read-only comparison of key behaviors in production against the draft 
 - The edge-to-RPC integration was confirmed by source inspection only. It does not prove the deployed Edge Function version matches this branch, nor that production function grants have been changed. Do not apply the migration or claim the direct-anonymous path is closed until post-application grant checks and a deployed-path smoke test are approved and completed.
 - Production function metadata also confirms the public result-verification reader has the expected nine-column table result and is intentionally executable by `anon`; its data minimization must therefore be enforced inside the function body, not by removing anonymous execute.
 - Current migration ledger still ends at `20261015161735 / schoolpro_access_invitation_role_constraint`; no new source migration is marked as applied. No production SQL or deployment was changed in this check.
+
+
+## 26. Concurrent payment acceptance added to CI (2026-10-17)
+
+- Extended the disposable receipt-submission RPC fixture with a third invoice for concurrency testing.
+- Added a CI step that launches two concurrent submissions of 600 units against the same 1,000-unit invoice and asserts exactly one submission/allocation is accepted and exactly 600 units remain reserved. This exercises the draft RPC's row-lock and pending-allocation reservation behavior instead of relying only on source assertions.
+- Added a static CI-wiring assertion to `scripts/test-schoolpro-receipt-submission-guards.mjs`.
+- Commits: fixture `4ba918d26770a900efbe0937b5b398b700567b41`; workflow `b8b29feb02930e6662b94aacf21423903fa807e9`, quoting correction `dc6ac60f325620097cbcb6ada200c6374e0e72aa`; wiring assertion `a7c5d459add760368641b5305d55ed63f3a9427a`.
+- The prior exact-head CI run passed payment RLS, result-snapshot integration, tenant acceptance and local Storage on commit `37ee1c1d766056f49e04cbd77f329a79b529530e`, but it preceded the new concurrency step. At the latest check, the new head had payment-page validation in progress and a new SchoolPro CI run had not yet appeared in the workflow-run lookup. **Do not count the concurrency test as passed until a run actually executes that step.**

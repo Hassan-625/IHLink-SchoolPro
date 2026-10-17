@@ -136,3 +136,11 @@ begin
   );
 end
 $function$;
+
+
+-- Force anonymous public submissions through the Turnstile-verifying Edge Function.
+-- The function invokes this RPC using the server-side service-role key.
+revoke all on function public.submit_schoolpro_application(uuid,text,text,text,date,text,text,text,text,text)
+  from public, anon, authenticated;
+grant execute on function public.submit_schoolpro_application(uuid,text,text,text,date,text,text,text,text,text)
+  to service_role;

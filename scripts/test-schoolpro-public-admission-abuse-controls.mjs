@@ -17,6 +17,12 @@ for (const [field, limit] of [
   assert.match(migration, new RegExp('length\\(' + field + '\\) > ' + limit),
     'Must cap ' + field + ' at ' + limit + ' characters');
 }
+assert.match(migration, /length\(coalesce\(v_previous, ''\)\) > 160/,
+  'Previous-school input must be length bounded');
+assert.match(migration, /length\(coalesce\(v_email, ''\)\) > 254/,
+  'Email input must be length bounded');
+assert.match(migration, /length\(coalesce\(v_gender, ''\)\) > 32/,
+  'Gender input must be length bounded');
 assert.match(migration, /v_phone_digits\) < 7[\s\S]*?v_phone_digits\) > 15/i,
   'Phone must be constrained to 7–15 digits after normalization');
 assert.match(migration, /v_email !~ '[^\n]*@/i, 'Provided email must be format-validated');

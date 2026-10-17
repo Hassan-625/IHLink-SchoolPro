@@ -42,3 +42,9 @@ Storage buckets observed: `schoolpro-document-outputs` (83 objects), `schoolpro-
 
 - Additional path-prefix audit: all 83 linked document-output objects have first path segment equal to the corresponding issue `school_id`; 0 prefix mismatches.
 - Document template table: 3 rows, all 3 have a matching object in `schoolpro-document-templates`, with 0 missing objects and 0 school-prefix mismatches. This does not account for other unreferenced objects in that bucket (9 total objects), which still need classification.
+
+## Read-only authenticated two-identity production probe — 2026-10-17
+A transaction-scoped probe used `SET LOCAL ROLE authenticated` and a transaction-local `request.jwt.claim.sub` for two existing student identities from different schools. Each transaction ended with `ROLLBACK`; no data was changed.
+- Identity in school `7a340a27-9184-420a-b566-8fc0d3dac555`: 0 visible `schoolpro_document_issues` rows and 0 visible `schoolpro-document-outputs` objects.
+- Identity in school `d342eb87-8d6a-477a-a380-7fab83f586b7`: 1 visible issue row and 1 visible `schoolpro-document-outputs` object; 0 visible issue rows from another school and 0 visible output objects with another school's first path segment.
+- This is useful current-policy negative-read evidence for the sampled identities, not full acceptance: the test data contains zero issue/student school mismatches, so it does not exercise the tautology with a deliberately mismatched fixture. It also does not test write/update/delete, guardian/member roles, RPC/view paths, or the proposed policy before application. No production data was changed.

@@ -64,6 +64,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/005_schoolpro_operational_modules.sql
+      - name: Apply learning, CBT, library, transport and payroll schema
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < database/mysql/006_schoolpro_learning_cbt_library_transport_payroll.sql
       - name: Insert valid isolated core fixtures
         env:
           MYSQL_PWD: root-test-password
@@ -84,6 +88,10 @@ jobs:
         env:
           MYSQL_PWD: root-test-password
         run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_operational_modules_fixture.sql
+      - name: Insert valid learning, CBT, library, transport and payroll fixtures
+        env:
+          MYSQL_PWD: root-test-password
+        run: mysql --show-warnings -h 127.0.0.1 -uroot schoolpro_test < tests/mysql/schoolpro_learning_cbt_library_transport_payroll_fixture.sql
       - name: Confirm cross-school enrollment relationships fail on the expected foreign keys
         env:
           MYSQL_PWD: root-test-password
@@ -158,6 +166,9 @@ jobs:
           assert_check_rejection tests/mysql/timetable_invalid_time_range_must_fail.sql chk_timetable_time
           assert_fk_rejection tests/mysql/cross_school_timetable_class_must_fail.sql fk_timetable_class
           assert_fk_rejection tests/mysql/cross_school_hostel_student_must_fail.sql fk_hostel_allocation_student
+          assert_fk_rejection tests/mysql/cross_school_assignment_submission_must_fail.sql fk_assignment_submission_student
+          assert_fk_rejection tests/mysql/cross_school_cbt_question_must_fail.sql fk_cbt_tq_question
+          assert_fk_rejection tests/mysql/cross_school_library_loan_book_must_fail.sql fk_library_loan_book
           assert_enum_rejection() {
             local sql_file="$1"
             local output_file

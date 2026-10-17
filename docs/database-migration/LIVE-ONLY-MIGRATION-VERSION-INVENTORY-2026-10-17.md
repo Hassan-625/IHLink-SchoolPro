@@ -428,3 +428,11 @@
 For each row: recover immutable SQL blob + commit/ref; obtain deployment audit evidence where available; extract DDL/object dependencies; compare against live catalog including constraints, function bodies, ACLs, triggers, RLS policies, storage policies and seed data; classify as SchoolPro-only, shared-platform, DataSub/BillStack, other product, or mixed; and assign a final disposition with reviewer evidence. For mixed migrations, isolate only approved SchoolPro dependencies rather than bulk-copying the migration.
 
 **Safety:** no replay, production write, export/import, configuration change, or merge was performed.
+
+
+## Cross-linked detailed evidence — 2026-10-17
+
+- [Remote-batch SQL/deployment provenance register](REMOTE-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md): current marker enumerates 35 distinct versions, not 33; all 35 match live ledger names, but original SQL and independent deployment events remain unrecovered.
+- [Live tenant-relation catalog reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md): current alternate trigger functions, 17 zero-mismatch existing-row joins, missing-object implementation differences, and the issued-document RLS predicate defect.
+
+Scope bucket counts are name-based triage only. No bucket is an approved SchoolPro export allowlist.

@@ -158,3 +158,12 @@ No grants or functions were changed. This is a current security blocker to repro
 
 
 A follow-up read-only count found zero rows in `schoolpro_result_verifications` and zero rows in `schoolpro_result_access_pins`. No current result snapshot/PIN data was exposed during this review; the concern is a latent public endpoint/grant design risk before these tables are populated, not evidence of exploitation.
+
+
+### Semantic comparison batch 2 — five missing routines resolved
+
+The new [semantic triage batch 2 report](LIVE-ONLY-MIGRATION-SEMANTIC-TRIAGE-BATCH-2-2026-10-17.md) (commit `87a1b20f704474a59f3f16ff9589295fa2ea3661`) traces all five function declarations previously absent by current routine name to explicit later DROP migrations. These are intentionally retired legacy DataSub payment/provider routines, two retired Academy order finalizers, and the superseded SchoolPro demo-window validator. None should be restored into Aiven merely to mirror a historical SQL payload.
+
+The ownership-transfer RPC's live body matches its later successor `20261013184713 schoolpro_ownership_transfer_upsert_leadership_title`; the UPSERT difference is a versioned evolution, not unresolved drift. The RLS review also traces the SchoolPro module policy family through later role-specific replacements and records that `private.schoolpro_module_allowed` is a module gate, not a tenant-ownership predicate on its own.
+
+This resolves the five missing-name triage cases. It does **not** close the 236 function body/overload mismatches, full effective RLS expression matrix, all ACL/default-privilege changes, trigger wiring, or historical cron transitions. Literal expression-substring matches are not accepted as semantic proofs because PostgreSQL deparses expressions and policies are subsequently altered/replaced.

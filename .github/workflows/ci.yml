@@ -165,5 +165,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
       - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql

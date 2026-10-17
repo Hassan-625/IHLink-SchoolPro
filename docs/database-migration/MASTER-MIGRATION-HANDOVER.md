@@ -2698,3 +2698,8 @@ Added `server/mysql-api/test/server.test.mjs` and a dedicated Node 22 `mysql-api
 This is an initial contract test slice, not a full authentication acceptance suite. Still needed: session expiry/revocation tests, platform Super Admin access tests, inactive/suspended membership behavior, concurrent failed-login counter behavior, rate-limit threshold/reset tests, malformed/oversized body handling, CSRF/origin behavior for cookie-authenticated mutations, and API-backed role-by-role endpoint authorization. Migration 007 schema support is not a replacement for these behaviors.
 
 The test job is newly wired and awaits exact-head CI. Keep the MySQL API disconnected from production and do not switch SchoolPro away from Supabase until A/B/C acceptance, data reconciliation, backup/restore, and explicit cutover approval.
+
+
+### MySQL API production TLS guard — 2026-10-17
+
+The MySQL API pool now refuses to start in `NODE_ENV=production` unless `MYSQL_SSL=true`, and uses certificate verification (`rejectUnauthorized: true`) when TLS is enabled. This prevents accidentally deploying the new database API with plaintext MySQL transport. It remains unconnected to the live frontend and undeployed. Latest API code head: `1ab8dd093d83ff520098da6e6e67e27d87c0200c`; new exact-head CI is required because this security guard changed the code.

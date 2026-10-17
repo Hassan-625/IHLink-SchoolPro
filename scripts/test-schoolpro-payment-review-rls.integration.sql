@@ -187,7 +187,7 @@ begin
  end loop;
  update public.schoolpro_payment_submissions set status='confirmed',review_note=p_note,reviewed_by=auth.uid(),reviewed_at=now(),updated_at=now() where id=s.id;
  return jsonb_build_object('status','confirmed');
-end $function$;
+end $$;
 revoke all on function public.review_schoolpro_payment_submission(uuid,text,text) from public,anon;
 grant execute on function public.review_schoolpro_payment_submission(uuid,text,text) to authenticated,service_role;
 

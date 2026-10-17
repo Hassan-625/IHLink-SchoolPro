@@ -274,9 +274,9 @@ The cost quote retrieved for a Supabase branch was $0.01344/hour. The user did n
 
 ### Aiven destination verification outcome
 
-**Status: NOT VERIFIED / BLOCKED — no usable Aiven PostgreSQL destination has been established.** The user confirmed they have not yet established that a database is provisioned and accessible. The available connected-tool inventory has no Aiven account/database inspection or SQL-query integration. A repository search on the default branch for Aiven PostgreSQL, AIVEN_DATABASE_URL, DATABASE_URL Aiven, and migration rehearsal/rollback terms returned no matching artifacts. This is a bounded check of available tools and repository search, not proof that no Aiven service exists in the user's Aiven account or in unindexed refs.
+**Status: NOT VERIFIED / BLOCKED — no usable Aiven PostgreSQL destination has been established.** The user confirmed they have not yet established that a database is provisioned and accessible. The available connected-tool inventory has no Aiven account/database inspection or SQL-query integration. A repository search on the default branch for Aiven PostgreSQL, AIVEN_DATABASE_URL, DATABASE_URL Aiven, and migration rehearsal/rollback terms returned no matching artifacts; the active audit branch does contain AIVEN-POSTGRESQL-TARGET-VERIFICATION-2026-10-17.md with owner-reported service details. This is a bounded repository/tool check, not proof that no Aiven service exists.
 
-No Aiven database was provisioned, no paid service was created, no connection string or secret was requested in chat, and no database connection was attempted. Do not use Render Postgres or another provider as a silent substitute for the stated Aiven target.
+No Aiven resource was provisioned by this audit, no new paid service was created, no connection string or secret was requested in chat, and no database connection was attempted. The existing Aiven verification document records owner-reported service pg-33109aa1 and a candidate rehearsal fork pg-3898d936. Their existence/running state is owner-reported, not independently checked through an Aiven API; the fork has a public endpoint and was reported with its IP allowlist open to all. Treat pg-3898d936 as the only existing rehearsal candidate to verify, not as a proven ready/secure destination, and do not create another resource. Do not use Render Postgres or another provider as a silent substitute for the stated Aiven target.
 
 ### Aiven readiness gate — evidence required before rehearsal
 
@@ -294,7 +294,7 @@ Until the above is evidenced, Aiven readiness is **BLOCKED**, not assumed PASS.
 
 ### Rehearsal plan using an already-authorized isolated PostgreSQL destination
 
-No isolated destination is currently verified. The plan is prepared but **not executed**:
+An owner-reported candidate isolated fork exists as pg-3898d936, but no authorized connection/readiness test is available in this session, and its network exposure needs review. The plan is prepared but **not executed**:
 
 - Phase 0 — acquire approved isolated endpoint; record version, extensions, role capabilities, TLS and network reachability. If unavailable, stop without creating resources or touching production.
 - Phase 1 — use only an approved, minimized/synthetic fixture set; no unrestricted production export. Keep DataSub/shared payment and profile data out of SchoolPro scope unless a reviewed dependency contract requires a specific reference.
@@ -330,4 +330,4 @@ No isolated destination is currently verified. The plan is prepared but **not ex
 - **G2 Source completeness: BLOCKED** — all 397 payloads are recovered, but complete semantic dispositions and the 35-version deployment provenance are not closed.
 - **G3 Destination/schema/workflow correctness: BLOCKED** — Aiven endpoint/version/capabilities/access have not been verified; Auth/Storage/Edge boundaries remain undecided.
 - **G4 Isolated rehearsal/recovery: BLOCKED / NOT RUN** — no authorized isolated Aiven-compatible target has been established.
-- Overall migration decision remains **NO-GO**. No Supabase branch or charges, Aiven resource, production mutation, export/import, deployment, merge or cutover occurred.
+- Overall migration decision remains **NO-GO**. No Supabase branch or charges, new Aiven resource, production mutation, export/import, deployment, merge or cutover occurred.

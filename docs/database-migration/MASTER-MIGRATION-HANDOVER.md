@@ -983,3 +983,11 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Intended coverage: guardian reads only their own submission/allocation/proof and linked fee-payment row; guardian cannot alter payment-review records; school finance can review/update the school's rows; Super Admin can read across the fixture but cannot mutate ledger/submission records. This is a focused policy behavior fixture, not a full application schema/auth integration or a substitute for two-school live acceptance.
 - CI was triggered by the fixture/workflow addition. A follow-up adjustment now checks affected row counts for denied UPDATE/DELETE actions, because RLS can silently filter rows instead of raising an exception. Verify the newest run's head SHA matches the final fixture commit before treating this test as passed.
 - No production database, storage bucket, payment records, or deployments were changed. PR #106 remains draft/open/unmerged; MySQL migration/cutover remains incomplete.
+
+
+## RLS integration test failure diagnosed and corrected — 2026-10-17
+
+- The first run of the new `payment-review-rls-integration` job failed before policy assertions, due to a malformed dollar-quote delimiter in the test helper `pg_temp.assert_no_rows_affected` (SQL syntax error at the function body). This was a test-fixture syntax defect, not evidence of a product-policy failure.
+- Corrected the helper to use an explicit named dollar delimiter (`$assert$...$assert$`). Current correction commit: `13712c209883e24a697d29d9da56277825350be8`.
+- Fresh runs for that exact commit are queued/in progress: SchoolPro CI [#38990676105](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990676105) and payment-page validation [#38990676100](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/38990676100). Do not mark the RLS fixture green until the database job and all required CI jobs complete successfully.
+- The prior receipt-RPC fixture passed on commit `0d1294d03a90f9a5ee601d83645cbe9b1ff34c70`; the RLS fixture is separate and not yet validated. No production changes, deployment, or merge occurred.

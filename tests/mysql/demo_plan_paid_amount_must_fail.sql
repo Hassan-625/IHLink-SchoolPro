@@ -1,1 +1,1 @@
-INSERT INTO school_subscription_plans (code,name,billing_period,annual_price,is_demo,active,features) VALUES ('demo-invalid','Invalid Demo','annual',5000,TRUE,TRUE,JSON_OBJECT());
+UPDATE school_subscription_plans SET annual_price = 5000 WHERE code = 'demo';

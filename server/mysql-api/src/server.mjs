@@ -5,6 +5,7 @@ import mysql from 'mysql2/promise';
 
 const scrypt = promisify(scryptCallback);
 const SESSION_COOKIE = 'schoolpro_session';
+const STUDENT_SESSION_COOKIE = 'schoolpro_student_session';
 const SESSION_SECONDS = 12 * 60 * 60;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 10;
@@ -55,10 +56,10 @@ function cookieValue(request, name) {
   return null;
 }
 
-function requestToken(request) {
+function requestToken(request, cookieName = SESSION_COOKIE) {
   const authorization = String(request.headers.authorization || '');
   const bearer = authorization.match(/^Bearer\s+(.+)$/i);
-  return bearer?.[1]?.trim() || cookieValue(request, SESSION_COOKIE);
+  return bearer?.[1]?.trim() || cookieValue(request, cookieName);
 }
 
 function sendJson(response, status, payload, headers = {}) {
@@ -97,12 +98,12 @@ async function readJson(request) {
   }
 }
 
-function cookieHeader(token, secure) {
-  return SESSION_COOKIE + '=' + token + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=' + SESSION_SECONDS + (secure ? '; Secure' : '');
+function cookieHeader(token, secure, cookieName = SESSION_COOKIE) {
+  return cookieName + '=' + token + '; Path=/; HttpOnly; SameSite=Lax; Max-Age=' + SESSION_SECONDS + (secure ? '; Secure' : '');
 }
 
-function clearCookieHeader(secure) {
-  return SESSION_COOKIE + '=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0' + (secure ? '; Secure' : '');
+function clearCookieHeader(secure, cookieName = SESSION_COOKIE) {
+  return cookieName + '=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0' + (secure ? '; Secure' : '');
 }
 
 async function isLoginBlocked(pool, identifierHash) {
@@ -149,6 +150,23 @@ async function recordFailedLogin(pool, identifierHash) {
   } finally {
     connection.release();
   }
+}
+
+async function authenticateStudentRequest(pool, request) {
+  const token = requestToken(request, STUDENT_SESSION_COOKIE);
+  if (!token || token.length > 256) return null;
+  const tokenHash = sha256(token);
+  const [rows] = await pool.execute(
+    'SELECT st.id AS student_id, st.school_id, st.admission_number, st.first_name, st.last_name, ' +
+    'st.status AS student_status, sc.status AS school_status, c.must_change_password, c.status AS credential_status, ss.id AS session_id ' +
+    'FROM student_sessions ss JOIN students st ON st.school_id = ss.school_id AND st.id = ss.student_id ' +
+    'JOIN schools sc ON sc.id = st.school_id ' +
+    'JOIN student_credentials c ON c.school_id = st.school_id AND c.student_id = st.id ' +
+    "WHERE ss.token_hash = ? AND ss.revoked_at IS NULL AND ss.expires_at > UTC_TIMESTAMP(6) " +
+    "AND st.status = 'active' AND sc.status = 'active' AND c.status = 'active' LIMIT 1",
+    [tokenHash],
+  );
+  return rows[0] || null;
 }
 
 async function authenticateRequest(pool, request) {
@@ -244,6 +262,94 @@ export function createAppServer({pool, env = process.env}) {
           expiresIn: SESSION_SECONDS,
           ...(nativeClient ? {sessionToken: token} : {}),
         }, headers);
+      }
+
+      if (request.method === 'POST' && url.pathname === '/v1/student/auth/login') {
+        if (!isAllowedMutationOrigin(request, webOrigin)) return sendJson(response, 403, {error: 'Origin required'});
+        const body = await readJson(request);
+        const schoolCode = String(body.schoolCode || '').trim().toUpperCase();
+        const admissionNumber = String(body.admissionNumber || '').trim();
+        const password = String(body.password || '');
+        if (!schoolCode || schoolCode.length > 40 || !admissionNumber || admissionNumber.length > 80 || !password || password.length > 1024) {
+          return sendJson(response, 400, {error: 'School code, admission number and password are required'});
+        }
+        const identifierHash = sha256('student-login:' + schoolCode + ':' + admissionNumber.toUpperCase());
+        if (await isLoginBlocked(pool, identifierHash)) return sendJson(response, 429, {error: 'Too many login attempts. Try again later.'});
+        const [rows] = await pool.execute(
+          'SELECT st.id AS student_id, st.school_id, st.admission_number, st.first_name, st.last_name, ' +
+          'st.status AS student_status, sc.status AS school_status, c.password_hash, c.must_change_password, c.status AS credential_status ' +
+          'FROM students st JOIN schools sc ON sc.id = st.school_id ' +
+          'JOIN student_credentials c ON c.school_id = st.school_id AND c.student_id = st.id ' +
+          'WHERE sc.school_code = ? AND st.admission_number = ? LIMIT 1',
+          [schoolCode, admissionNumber],
+        );
+        const student = rows[0];
+        const passwordValid = await verifyPassword(password, student?.password_hash);
+        if (!student || student.student_status !== 'active' || student.school_status !== 'active'
+          || student.credential_status !== 'active' || !passwordValid) {
+          const blocked = await recordFailedLogin(pool, identifierHash);
+          return sendJson(response, blocked ? 429 : 401, {
+            error: blocked ? 'Too many login attempts. Try again later.' : 'Invalid credentials',
+          });
+        }
+        const token = randomBytes(32).toString('base64url');
+        const tokenHash = sha256(token);
+        await pool.execute(
+          'INSERT INTO student_sessions (id, school_id, student_id, token_hash, expires_at) VALUES (UUID(), ?, ?, ?, DATE_ADD(UTC_TIMESTAMP(6), INTERVAL ? SECOND))',
+          [student.school_id, student.student_id, tokenHash, SESSION_SECONDS],
+        );
+        await pool.execute('DELETE FROM auth_login_attempts WHERE identifier_hash = ?', [identifierHash]);
+        const nativeClient = String(request.headers['x-client-platform'] || '').toLowerCase() === 'native';
+        const headers = nativeClient ? {} : {'Set-Cookie': cookieHeader(token, secureCookie, STUDENT_SESSION_COOKIE)};
+        return sendJson(response, 200, {
+          student: {id: student.student_id, schoolId: student.school_id, admissionNumber: student.admission_number,
+            displayName: [student.first_name, student.last_name].filter(Boolean).join(' ')},
+          mustChangePassword: Boolean(student.must_change_password),
+          expiresIn: SESSION_SECONDS,
+          ...(nativeClient ? {sessionToken: token} : {}),
+        }, headers);
+      }
+
+      if (request.method === 'GET' && url.pathname === '/v1/student/me') {
+        const student = await authenticateStudentRequest(pool, request);
+        if (!student) return sendJson(response, 401, {error: 'Authentication required'});
+        return sendJson(response, 200, {
+          student: {id: student.student_id, schoolId: student.school_id, admissionNumber: student.admission_number,
+            displayName: [student.first_name, student.last_name].filter(Boolean).join(' ')},
+          mustChangePassword: Boolean(student.must_change_password),
+        });
+      }
+
+      if (request.method === 'POST' && url.pathname === '/v1/student/password') {
+        if (!isAllowedMutationOrigin(request, webOrigin)) return sendJson(response, 403, {error: 'Origin required'});
+        const student = await authenticateStudentRequest(pool, request);
+        if (!student) return sendJson(response, 401, {error: 'Authentication required'});
+        const body = await readJson(request);
+        const currentPassword = String(body.currentPassword || '');
+        const newPassword = String(body.newPassword || '');
+        if (!currentPassword || newPassword.length < 12 || newPassword.length > 1024) {
+          return sendJson(response, 400, {error: 'Current password and a new password of at least 12 characters are required'});
+        }
+        const [credentialRows] = await pool.execute(
+          'SELECT password_hash FROM student_credentials WHERE school_id = ? AND student_id = ? AND status = \'active\' LIMIT 1',
+          [student.school_id, student.student_id],
+        );
+        if (!credentialRows[0] || !(await verifyPassword(currentPassword, credentialRows[0].password_hash))) {
+          return sendJson(response, 401, {error: 'Current password is incorrect'});
+        }
+        const newHash = await hashPassword(newPassword);
+        await pool.execute(
+          'UPDATE student_credentials SET password_hash = ?, must_change_password = FALSE, password_changed_at = UTC_TIMESTAMP(6) WHERE school_id = ? AND student_id = ? AND status = \'active\'',
+          [newHash, student.school_id, student.student_id],
+        );
+        return sendJson(response, 200, {ok: true, mustChangePassword: false});
+      }
+
+      if (request.method === 'POST' && url.pathname === '/v1/student/auth/logout') {
+        if (!isAllowedMutationOrigin(request, webOrigin)) return sendJson(response, 403, {error: 'Origin required'});
+        const token = requestToken(request, STUDENT_SESSION_COOKIE);
+        if (token) await pool.execute('UPDATE student_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE token_hash = ? AND revoked_at IS NULL', [sha256(token)]);
+        return sendJson(response, 200, {ok: true}, {'Set-Cookie': clearCookieHeader(secureCookie, STUDENT_SESSION_COOKIE)});
       }
 
       if (request.method === 'POST' && url.pathname === '/v1/auth/logout') {

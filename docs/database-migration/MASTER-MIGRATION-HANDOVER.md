@@ -2419,3 +2419,16 @@ The earlier “still running” status is superseded by terminal outcomes. On th
 - Payment-page validation #1259 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39031138556
 
 Only documentation/PR description updates followed that code-bearing commit; no migration, fixture, or workflow source changed afterward. Therefore the tested schema code is unchanged, though the latest branch tip is a documentation-only descendant. Migrations 001–003 remain draft-only and do not authorize production cutover.
+
+
+## MySQL admissions and progression slice — 2026-10-17
+
+Added draft migration `database/mysql/004_schoolpro_admissions_progression.sql` based on a read-only source column inventory for admissions, documents, offers, events, acceptances, enrollment history and promotions.
+
+- Admissions, offers, documents, events and acceptances are explicitly school-scoped; child records use composite school/application or school/offer foreign keys.
+- Public admission/offer tokens and school-local application/offer numbers are unique. Entrance scores are bounded 0–100.
+- Admission document storage paths must begin with the owning school ID.
+- Student enrollment history references the same school's student, session and class, and retains class/arm/section snapshots plus graduation/transfer/repeat state.
+- Promotion decisions are represented separately from application of a promotion. A record starts as `previewed`/decision `hold`; applying requires `applied_by` and `applied_at`. This schema does not run automatic promotion when results publish; API logic must enforce preview, review and explicit apply.
+- Added synthetic fixtures and negative tests for cross-school admission documents, enrollment history student links, promotion target class, and foreign-school admission object paths. CI now installs migration 004 after migrations 001–003.
+- Validation pending: run MySQL schema, full SchoolPro CI, and payment-page validation on the migration 004 code-bearing commit. No production rows or routes have changed.

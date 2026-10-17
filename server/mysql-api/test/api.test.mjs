@@ -208,6 +208,12 @@ test('MySQL student admission login enforces initial password change and revocab
   ));
   assert.equal(changed.response.status, 200);
   assert.equal(changed.body.mustChangePassword, false);
+  const [otherSessions] = await pool.execute(
+    'SELECT revoked_at FROM student_sessions WHERE token_hash = ?',
+    ['aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'],
+  );
+  assert.equal(otherSessions.length, 1);
+  assert.ok(otherSessions[0].revoked_at, 'Password change revokes other active student sessions');
 
   const oldPassword = await request('/v1/student/auth/login', jsonOptions({
     schoolCode: 'TEST-A', admissionNumber: 'A-001', password: 'One',

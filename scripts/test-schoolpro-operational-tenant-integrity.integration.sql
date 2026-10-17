@@ -236,3 +236,40 @@ select pg_temp.assert_rejected('promotion row tenant reassignment',
   'School ownership cannot be reassigned');
 
 select 'PASS: PostgreSQL rejected cross-tenant child writes and unsafe parent reassignment.' as result;
+
+
+-- Simulate a non-BYPASSRLS table-owner role. Ordinary authenticated-role checks alone
+-- do not prove FORCE RLS, because PostgreSQL table owners normally bypass RLS.
+do $$ begin
+  create role schoolpro_test_table_owner nologin nosuperuser nobypassrls;
+exception when duplicate_object then null;
+end $$;
+grant create on schema public to schoolpro_test_table_owner;
+alter table public.schoolpro_library_books owner to schoolpro_test_table_owner;
+alter table public.schoolpro_transport_routes owner to schoolpro_test_table_owner;
+alter table public.schoolpro_hostel_rooms owner to schoolpro_test_table_owner;
+alter table public.schoolpro_inventory_assets owner to schoolpro_test_table_owner;
+alter table public.schoolpro_calendar_events owner to schoolpro_test_table_owner;
+alter table public.schoolpro_lesson_notes owner to schoolpro_test_table_owner;
+alter table public.schoolpro_result_approvals owner to schoolpro_test_table_owner;
+alter table public.schoolpro_promotions owner to schoolpro_test_table_owner;
+revoke create on schema public from schoolpro_test_table_owner;
+
+set role schoolpro_test_table_owner;
+select (
+  (select count(*) from public.schoolpro_library_books)=0 and
+  (select count(*) from public.schoolpro_transport_routes)=0 and
+  (select count(*) from public.schoolpro_hostel_rooms)=0 and
+  (select count(*) from public.schoolpro_inventory_assets)=0 and
+  (select count(*) from public.schoolpro_calendar_events)=0 and
+  (select count(*) from public.schoolpro_lesson_notes)=0 and
+  (select count(*) from public.schoolpro_result_approvals)=0 and
+  (select count(*) from public.schoolpro_promotions)=0
+) as forced_rls_blocks_non_bypass_table_owner \gset
+\if :forced_rls_blocks_non_bypass_table_owner
+  \echo 'PASS: FORCE RLS blocks a non-BYPASSRLS table owner from reading tenant rows without an applicable policy.'
+\else
+  \echo 'FAIL: a non-BYPASSRLS table owner bypassed forced RLS.'
+  \quit 1
+\endif
+reset role;

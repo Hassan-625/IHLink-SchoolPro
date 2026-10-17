@@ -1914,3 +1914,11 @@ Read-only privilege inspection found nine `public` SECURITY DEFINER functions ca
 5. The production payment-submission RPC ownership/locking gap remains the top database correctness/security blocker. Keep Stage A and Stage B blocked until the new CI concurrency check passes and the migration plan is approved.
 
 No production RPC grants, data, Storage objects, secrets, or deployments were changed by this inventory.
+
+
+## 35. Source/test parity rechecked at current Stage A head (2026-10-17)
+
+- Re-fetched all six relevant files at exact commit `cb2fe8ad841b0b2699859750e215b9b905d81114`. Confirmed the result-PIN migration, static test, SQL integration test and concurrent CI assertion all consistently use the SHA-256 digest of normalized admission number only. No request-IP header and no caller-selected term/session participates in the cooldown key.
+- Confirmed the concurrent receipt-submission test uses the second active fixture bank account `30000000-0000-0000-0000-000000000002`; the receipt-RPC integration fixture inserts that account before its intentional deactivation of the first account. The static workflow assertion now uses a valid JavaScript any-character matcher and targets the concurrency step.
+- SchoolPro CI run #39026167994 is queued for the exact current PR head `cb2fe8ad841b0b2699859750e215b9b905d81114`; payment-page validation #39026168066 is in progress. No pass is attributed to the current head until its CI jobs complete and logs are checked.
+- No production change or merge occurred. PR #106 remains draft/open; migration-ledger reconciliation, full payment lifecycle review, family media-policy runtime/performance review and trusted-edge/public-RPC review remain release gates.

@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const path = 'supabase/migrations/20261015203000_schoolpro_payment_receipt_tenant_guard.sql';
 const sql = readFileSync(path, 'utf8');
+const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 
 assert.match(sql, /if v_user is null then[\s\S]*?raise exception 'Authentication required'/i,
   'Receipt submission must require an authenticated user');
@@ -29,4 +30,8 @@ assert.match(sql, /if sum_alloc<>p_total then[\s\S]*?Allocated amount must equal
 assert.match(sql, /revoke all on function public\.submit_schoolpro_payment[\s\S]*?from public,anon[\s\S]*?grant execute on function public\.submit_schoolpro_payment[\s\S]*?to authenticated/i,
   'Submission RPC must not be executable by anonymous or public roles');
 
-console.log('PASS: receipt submission source guards cover authentication, owned receipt objects, same-school guardian/invoice relationships, deterministic invoice locks, pending reservations, and amount reconciliation.');
+
+assert.match(ci, /Verify concurrent receipt submissions cannot over-reserve an invoice[\\s\\S]*?RACE-[\\s\\S]*?exactly one pending reservation/i,
+  'CI must execute the two-session concurrent invoice reservation acceptance test');
+
+console.log('PASS: receipt submission source guards cover ownership, tenant links, allocation invariants, anonymous RPC denial, and CI concurrency acceptance wiring.');

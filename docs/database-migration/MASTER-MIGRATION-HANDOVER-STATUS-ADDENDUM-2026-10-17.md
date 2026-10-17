@@ -152,3 +152,11 @@ Ordered work:
 5. Only after acceptance evidence and a rehearsed rollback, request explicit cutover approval. Until then Supabase remains the production source of truth; no production export/import, Render environment change, deployment, or cutover.
 
 No production operation was performed by this documentation correction.
+
+
+## Verified Render service and frontend database coupling — 2026-10-17
+Read-only Render API metadata confirms service `srv-db0k11m0tbcc7386fmq0` (`ihlink-schoolpro`) is a Static Site, branch `main`, auto-deploy-on-commit enabled, build `npm install && npm run build`, publish directory `dist`. Its latest reported live deployment is commit `29856dff17ea8a3bc8bb31b7900967b7df9d316b`, deploy `dep-db77tfe7bikc73cm735g`, completed 2026-10-13. No deployment was triggered during this audit.
+
+On the migration branch, `package.json` declares `@supabase/supabase-js ^2.57.4`; `src/lib/supabase.ts` initializes the Supabase client in the frontend and has a fallback URL to project `lnqsroyiybutkfngbyge` plus a publishable-key fallback. These source details prove direct Supabase coupling in that branch, not complete parity with deployed `main` or all build-time environment values.
+
+**Blocking design decision before target implementation:** a static browser client must not connect to Aiven using a privileged PostgreSQL connection string. Map all Supabase table/RPC/Auth/Storage/Edge Function call sites, then decide whether to retain selected Supabase-managed services during transition or introduce a server-side API/auth layer on Render. PostgreSQL schema/data transfer alone does not migrate Supabase platform services. Render/Aiven configuration was not changed; no production data was exported/imported and no deploy was triggered.

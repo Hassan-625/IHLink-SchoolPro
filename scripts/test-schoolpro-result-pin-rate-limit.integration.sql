@@ -55,7 +55,7 @@ values
    '30000000-0000-0000-0000-000000000001','First Term','2025/2026','published',85,'{"ca":25,"exam":60}');
 
 -- Simulate request metadata as PostgREST would expose it to the SQL function.
-select set_config('request.headers','{"x-forwarded-for":"203.0.113.10"}',false);
+select set_config('request.headers','{"x-forwarded-for":"198.51.100.99, 203.0.113.10","cf-connecting-ip":"203.0.113.10"}',false);
 
 do $test$
 declare

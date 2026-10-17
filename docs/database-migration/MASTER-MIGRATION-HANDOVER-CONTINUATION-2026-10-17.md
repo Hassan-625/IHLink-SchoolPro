@@ -167,3 +167,10 @@ The new [semantic triage batch 2 report](LIVE-ONLY-MIGRATION-SEMANTIC-TRIAGE-BAT
 The ownership-transfer RPC's live body matches its later successor `20261013184713 schoolpro_ownership_transfer_upsert_leadership_title`; the UPSERT difference is a versioned evolution, not unresolved drift. The RLS review also traces the SchoolPro module policy family through later role-specific replacements and records that `private.schoolpro_module_allowed` is a module gate, not a tenant-ownership predicate on its own.
 
 This resolves the five missing-name triage cases. It does **not** close the 236 function body/overload mismatches, full effective RLS expression matrix, all ACL/default-privilege changes, trigger wiring, or historical cron transitions. Literal expression-substring matches are not accepted as semantic proofs because PostgreSQL deparses expressions and policies are subsequently altered/replaced.
+
+
+### Semantic comparison batch 3 — school fee receipt path trust boundary
+
+The [payment RPC and effective RLS review](LIVE-ONLY-MIGRATION-SEMANTIC-TRIAGE-BATCH-3-2026-10-17.md) (commit `0a2c9bb44a10043a703c965f13d718a7437c9f09`) compared the current `submit_schoolpro_payment` body with its recovered declaration and inspected effective policies on payment submissions, allocations and invoices. The function body matches the recovered SQL, and its current EXECUTE grants exclude `anon`; however, it stores client-provided `receipt_path` and `receipt_mime` without verifying bucket, object existence, school/caller path ownership or actual object metadata. The INSERT RLS policy validates the guardian/school relationship but does not validate Storage object ownership. The target must add trusted Storage-path/object validation; do not carry the current trust boundary forward unchanged.
+
+A read-only count found zero rows in `schoolpro_payment_submissions`, so this is a latent flaw in the RPC contract, not evidence of an accepted cross-school receipt. The required adversarial cases are specified in the report and must run in a disposable environment through the actual Storage API.

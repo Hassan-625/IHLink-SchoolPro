@@ -1670,3 +1670,53 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Payment-page validation [run #1092](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39023594275) also completed successfully.
 - **Scope limitation:** this CI success validates the tested code, disposable database scenarios, live tenant read/RPC/template checks and local Storage-policy behaviour. It does **not** prove the draft receipt-policy migration is already applied to production, nor does it complete schema/role parity review, migration-ledger reconciliation or the broader Stage A release acceptance. No production migration, object write, secret change, deployment or PR merge was performed.
 - **Disposition:** the prior CI failures caused by missing production receipt fixture paths are resolved without adding objects to production. Keep PR #106 open/unmerged while the receipt-policy migration is reviewed against the production role/schema definitions and remaining Stage A gates are checked. Do not mark Stage A merge-ready solely from this successful run.
+
+
+## 22. Stage A receipt-Storage migration review and production-ledger reconciliation (2026-10-17)
+
+### Read-only production facts
+
+- Production Supabase project `lnqsroyiybutkfngbyge` was inspected read-only. The `schoolpro-payment-receipts` bucket exists, is private, has a **5,242,880-byte (5 MiB)** object limit, and allows only JPEG, PNG, WebP and PDF. No bucket settings were changed.
+- Production currently has these three matching `storage.objects` policies, all scoped to `authenticated`:
+  - `guardian upload payment receipts`: INSERT only when the first object-path segment equals `auth.uid()`.
+  - `guardian read own payment receipts`: SELECT only when the first object-path segment equals `auth.uid()`.
+  - `school finance read payment receipts`: SELECT when the object path is referenced by `schoolpro_payment_proofs.receipt_path` and `private.has_school_access` succeeds for proprietor, administrator, accountant or bursar.
+- The live `private.has_school_access(uuid, school_member_role[])` helper exists, uses `SECURITY DEFINER` with an empty search path, and checks active profile status plus platform-admin, school-owner or school-member role. The four role enum values used by the receipt policy are valid in production.
+- Production also has the current `public.schoolpro_payment_submissions` table, which is written by the fee-payment submission RPC `public.submit_schoolpro_payment`. That RPC validates that the receipt object exists in `schoolpro-payment-receipts`, is under the caller's UID prefix and is owned by that caller. Its receipt path is stored in `schoolpro_payment_submissions.receipt_path`, not necessarily in the legacy `schoolpro_payment_proofs` table.
+- **Confirmed policy coverage gap:** the original draft finance-read policy checked only `schoolpro_payment_proofs`. A finance user whose receipt is linked through the current `schoolpro_payment_submissions` flow could therefore fail to download that receipt through Storage. This is a schema/workflow mismatch, not evidence that a cross-school disclosure occurred.
+
+### Draft remediation committed to Stage A branch
+
+- Updated `20261017150000_schoolpro_payment_receipt_storage_policies.sql` so finance receipt reads can be authorized against either the legacy `schoolpro_payment_proofs` row or the current `schoolpro_payment_submissions` row, with the school/role check required in both branches. The bucket-id check encloses both branches to avoid accidentally permitting a match outside the receipt bucket.
+- Updated both draft receipt bucket migrations to preserve the production-observed 5 MiB limit instead of silently increasing it to 10 MiB. The allowed MIME list and private-bucket setting remain aligned with production.
+- Extended the isolated local Supabase fixture/test to include a current payment-submission row, a finance member in each of two synthetic schools, and assertions that finance can read its own school's linked receipt but cannot read the other school's receipt. The existing own-user upload/download and cross-user denial checks remain.
+- Commits on `release/stage-a-auth-tenant-isolation`: policy schema/flow alignment `5a8b509cfb8d3b05f86ceed8d60077f71bdffaf1`; bucket limit alignment `acad6479eedbd7b448675b5b901bce63db008091`; fixture `cab664b0123532391895e929b5886aa7936e0b0b`; finance isolation test `6683ece5f6cbbffca5a00362d4777c63a3b7acbf`; final bucket-scope predicate correction `2e062df65e3b39abe5c840e1ca16d9063929d867`.
+- New validation triggered on final policy commit: SchoolPro CI #1373 and payment-page validation #1100. They were queued at the time this entry was written; do not mark the new finance assertion passed until #1373 finishes and its local Storage job log is inspected.
+
+### Migration source/ledger drift — explicit hold
+
+- The production migration API returned **476 recorded migrations**, with the latest exact version/name pair `20261015161735 / schoolpro_access_invitation_role_constraint`. No source migration versions dated 2026-10-16 or 2026-10-17 in this Stage A PR are recorded in that ledger.
+- Exact source files present in the PR but not recorded under their exact version/name pair in the production ledger include:
+  - `20261015203000_schoolpro_payment_receipt_tenant_guard.sql`
+  - `20261016110500_schoolpro_optimize_family_report_media_storage_policy.sql`
+  - `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql`
+  - `20261016143000_schoolpro_payment_review_write_controls.sql`
+  - `20261016160000_schoolpro_repair_operational_tenant_integrity.sql`
+  - `20261016170000_schoolpro_disable_online_payment_gateway.sql`
+  - `20261016180000_schoolpro_payment_receipt_storage_limits.sql`
+  - `20261017103000_schoolpro_document_serial_global_uniqueness.sql`
+  - `20261017120000_schoolpro_result_verification_minimal_snapshot.sql`
+  - `20261017133000_schoolpro_public_admission_rpc_abuse_controls.sql`
+  - `20261017150000_schoolpro_payment_receipt_storage_policies.sql`
+- The production receipt policy names already exist even though the recent source files are absent from the ledger. This establishes source/ledger drift; it does **not** establish which historical SQL created the live policies or prove every source migration is unapplied in behavior. Do not replay this list wholesale or use migration version insertion to conceal drift. Build a migration-by-migration reconciliation against actual live definitions, constraints, triggers, grants, functions and bucket configuration; map equivalent behavior only when evidenced, then prepare an explicit reviewed baseline/forward-only migration plan.
+- The draft policy migration remains unapplied to production. No production schema, bucket, row, secret, deployment or merge was changed during this review.
+
+### Remaining Stage A security/release gates
+
+1. Await and inspect CI #1373 after the finance-path Storage assertions were added; require all jobs to pass at the latest PR head.
+2. Complete per-migration source/ledger reconciliation; the 11-file list above is an inventory, not permission to apply them.
+3. Execute complete payment lifecycle tests for submit, review, reject/cancel, direct-write denials, receipt ownership, duplicate allocations and concurrent transactions using the current schema/policies. Existing disposable RPC/RLS tests cover only part of this lifecycle.
+4. Complete runtime/performance acceptance for the family report-media Storage policy, and verify trusted client-IP provenance for login throttling (do not trust caller-controlled forwarding headers without evidence).
+5. Finish authenticated invitations/first-login checks and the nine anonymous-callable SECURITY DEFINER RPC abuse/data-minimization review; keep the seven policy-less RLS tables fail-closed because production confirms anon/authenticated direct table privileges are absent.
+6. Review the full trigger/constraint set and actual trigger order against operational workflows. CI success alone is not production migration parity.
+7. Keep PR #106 draft/open and Stage A **NOT MERGE-READY** until all required evidence is reviewed and the user explicitly approves the release. Stage B remains blocked.

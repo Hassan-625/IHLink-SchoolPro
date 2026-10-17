@@ -227,7 +227,7 @@ BEGIN
     RAISE EXCEPTION 'visible output names %, expected %', actual, p_expected;
   END IF;
 END
-$;
+$body$;
 CREATE FUNCTION public.assert_insert_denied(p_name text, p_owner text) RETURNS void
 LANGUAGE plpgsql
 AS $body$
@@ -240,7 +240,7 @@ BEGIN
   END;
   RAISE EXCEPTION 'cross-school storage insert unexpectedly succeeded for %', p_name;
 END
-$;
+$body$;
 CREATE FUNCTION public.assert_update_path_denied(p_id uuid, p_name text) RETURNS void
 LANGUAGE plpgsql
 AS $body$
@@ -256,7 +256,7 @@ BEGIN
     RAISE EXCEPTION 'cross-school storage path update unexpectedly changed % rows', changed;
   END IF;
 END
-$;
+$body$;
 CREATE FUNCTION public.assert_delete_noop(p_id uuid) RETURNS void
 LANGUAGE plpgsql
 AS $body$
@@ -268,7 +268,7 @@ BEGIN
     RAISE EXCEPTION 'cross-school storage delete unexpectedly changed % rows', changed;
   END IF;
 END
-$;
+$body$;
 GRANT EXECUTE ON FUNCTION public.assert_visible_output_names(text[]) TO authenticated, anon;
 GRANT EXECUTE ON FUNCTION public.assert_insert_denied(text,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.assert_update_path_denied(uuid,text) TO authenticated;

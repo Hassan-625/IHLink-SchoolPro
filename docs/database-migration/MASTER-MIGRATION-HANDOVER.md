@@ -2492,3 +2492,15 @@ Added draft migration `database/mysql/006_schoolpro_learning_cbt_library_transpo
 
 - MySQL workflow #385 installed the new migration and valid fixtures but stopped in the negative-test harness because the expected foreign-key name for assignment student isolation was written as `fk_assignment_submission_student`; the actual migration names it `fk_submission_student`.
 - Corrected the workflow assertion to the actual constraint name. The failed run is not counted as a pass. A new exact-head schema run is required; payment-page validation had passed on the earlier code-bearing migration 006 commit, but that does not validate the corrected workflow assertion or schema suite.
+
+
+### MySQL migration 006 validation update — 2026-10-17
+
+Corrected the assignment-submission negative-test assertion to expect the actual constraint name `fk_submission_student`. On code-bearing commit `1e4ac4940a315717969baec8d64f3e25bbd89fdf`:
+- MySQL schema workflow #389 passed, applying migrations 001–006, inserting synthetic fixtures, and executing the selected cross-school/check-constraint negatives: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032356443
+- Payment-page validation #1299 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032356474
+- SchoolPro CI #1572 was still running at handover update time: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032356436
+
+The earlier failed schema run #385 remains recorded as a failed test-harness expectation and is not counted as acceptance. Migration 006 is validated only at the MySQL schema/fixture/selected relational-constraint level once the stated schema run completed; it does not establish application authorization or full behavior parity. Do not claim all workflows green until #1572 completes on this same code-bearing commit.
+
+Next MySQL work should be driven by the source-to-target parity matrix and actual application call paths, not by expanding tables without mapped source behavior. Highest-value gaps after schema slice: API authorization and transaction contracts, assessment calculation/publication parity, admissions/promotion preview/apply, receipt/storage authorization, result template import/export, and operational role restrictions. Preserve A→B→C→D acceptance order; MySQL schema CI does not close Stage A's separate production operational RLS/catalog blocker.

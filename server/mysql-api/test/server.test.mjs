@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createAppServer, hashPassword} from '../src/server.mjs';
+import {createAppServer, createPoolFromEnv, hashPassword} from '../src/server.mjs';
 
 const SCHOOL_A = '10000000-0000-4000-8000-000000000001';
 const SCHOOL_B = '10000000-0000-4000-8000-000000000002';
@@ -229,4 +229,20 @@ test('suspended school membership cannot access tenant context', async (t) => {
   const cookie = login.headers.get('set-cookie').split(';')[0];
   const response = await fetch(app.baseUrl + '/v1/schools/' + SCHOOL_A + '/context', {headers: {Cookie: cookie}});
   assert.equal(response.status, 404);
+});
+
+
+test('production API refuses to start without an explicit browser origin', () => {
+  const pool = {async execute() { return [[{1: 1}], []]; }};
+  assert.throws(() => createAppServer({pool, env: {NODE_ENV: 'production'}}), /WEB_ORIGIN must be configured in production/);
+});
+
+test('production MySQL pool refuses to connect without verified TLS enabled', () => {
+  assert.throws(() => createPoolFromEnv({
+    NODE_ENV: 'production',
+    MYSQL_HOST: 'db.example.test',
+    MYSQL_DATABASE: 'schoolpro',
+    MYSQL_USER: 'schoolpro_api',
+    MYSQL_PASSWORD: 'test-only-placeholder',
+  }), /MYSQL_SSL=true is required in production/);
 });

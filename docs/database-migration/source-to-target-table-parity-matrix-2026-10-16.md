@@ -159,3 +159,30 @@ Before a source table can be marked mapped, deferred, retired, or excluded, reco
 ## Current decision
 
 **Not ready for data migration or cutover.** The draft's passing MySQL tests validate a small set of relational constraints only. They do not establish feature parity, application authorization, data correctness, full schema coverage, production hosting suitability, or rollback readiness.
+
+
+## Draft MySQL target mapping update — 2026-10-17
+
+The original matrix above was accurate when first written but is now stale for the operational domains below. Draft target tables have been added in migrations 005–007 and are validated only in disposable MySQL CI. Update these entries to **draft schema mapped / behavior not yet accepted**, not “complete”:
+
+| Source table/domain | Draft MySQL target | Evidence and remaining acceptance |
+|---|---|---|
+| `schoolpro_attendance` | `attendance_records` (001) | Enrollment-scoped relation exists; verify full source columns, attendance states, batch writes, correction history and role rules |
+| `schoolpro_timetable_entries` | `timetable_entries` (005) | Synthetic fixture and weekday/time/cross-school class negative tests pass; overlap and teacher/room conflict behavior open |
+| `schoolpro_calendar_events` | `calendar_events` (005) | Basic synthetic fixture only; audience visibility, recurrence, event lifecycle and notifications open |
+| `schoolpro_announcements` | `announcements` (005) | Basic synthetic fixture only; publisher permissions, audience rules and delivery/read tracking open |
+| `schoolpro_discipline_records` | `discipline_records` (005) | Tenant FK tested indirectly; highly restricted role access, retention and audit semantics open |
+| `schoolpro_health_records` | `student_health_records` (005) | Tenant FK fixture only; sensitive-record authorization, retention, access logging and privacy review open |
+| `schoolpro_lesson_notes` | `lesson_notes` (005) | Synthetic fixture only; lesson planning, review/approval and teacher assignment behavior open |
+| `schoolpro_leave_requests` | `leave_requests` (005) | Synthetic fixture only; requester identity, approver roles, state transitions and audit open |
+| `schoolpro_inventory_assets` | `inventory_assets` (005) | Synthetic fixture only; stock/asset transactions, adjustments and audit open |
+| `schoolpro_hostel_rooms`, `schoolpro_hostel_allocations` | `hostel_rooms`, `hostel_allocations` (005) | Cross-school student allocation negative test passes; capacity/occupancy concurrency and allocation lifecycle open |
+| `schoolpro_assignments`, `schoolpro_assignment_submissions` | `assignments`, `assignment_submissions` (006) | Synthetic fixtures and cross-school submission/student negative test pass; file access, late handling, grading permissions and re-submission lifecycle open |
+| `schoolpro_question_bank`, `schoolpro_cbt_tests`, `schoolpro_cbt_test_questions`, `schoolpro_cbt_attempts`, `schoolpro_cbt_answers` | `question_bank`, `cbt_tests`, `cbt_test_questions`, `cbt_attempts`, `cbt_answers` (006) | Cross-school question FK negative test passes; candidate CBT tables and eligibility remain unmapped; answer-key disclosure, eligibility, attempt locking, timing, scoring and concurrent submission need tests |
+| `schoolpro_library_books`, `schoolpro_library_loans` | `library_books`, `library_loans` (006) | Cross-school book FK negative test passes; atomic available-copy accounting, overdue/fine lifecycle and role authorization open |
+| `schoolpro_transport_routes`, `schoolpro_student_transport` | `transport_routes`, `student_transport_assignments` (006) | Synthetic fixtures only; capacity, term changes, transport billing and authorized access open |
+| `schoolpro_payroll_records` | `payroll_records` (006) | Generated net amount fixture passes; approval separation, payment transaction, reversals, period locking and audit open |
+| `schoolpro_login_attempts` | `auth_login_attempts` (007) | Only the new target hash-state schema/format test is mapped; do not copy raw source attempts until source columns, hash inputs, retention and privacy semantics are inspected |
+| MySQL API identity/session/context | `users`, `user_sessions`, `platform_roles`, `school_memberships` (001), `auth_login_attempts` (007) | Initial API contract tests pass in disposable MySQL and mock-pool tests; invitation, first-login credential, account challenge, password reset, student activation and audit lifecycle remain open |
+
+Migrations 005–007 passed the disposable MySQL schema workflow through run #435; payment validation #1352 passed, and the new MySQL API test job passed five tests on code-bearing commit `26e3ec065425cfbbfe07492b3ff20b4c0d0b2b2d`. SchoolPro's separate main validation/build job was still in progress at last check. Treat all mappings above as draft schema coverage, not production migration readiness or feature parity.

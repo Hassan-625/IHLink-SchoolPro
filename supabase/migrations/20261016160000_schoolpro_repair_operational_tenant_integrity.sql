@@ -11,6 +11,28 @@ as $$
 declare
   ref_school uuid;
 begin
+  -- School ownership is immutable for every operational row in this repair. This
+  -- applies even when the row's related IDs would also be valid in the destination school.
+  if tg_op = 'UPDATE'
+     and new.school_id is distinct from old.school_id
+     and tg_table_name in (
+       'schoolpro_library_books',
+       'schoolpro_transport_routes',
+       'schoolpro_hostel_rooms',
+       'schoolpro_inventory_assets',
+       'schoolpro_calendar_events',
+       'schoolpro_lesson_notes',
+       'schoolpro_result_approvals',
+       'schoolpro_promotions',
+       'schoolpro_subjects',
+       'schoolpro_classes',
+       'schoolpro_students',
+       'schoolpro_results',
+       'schoolpro_members'
+     ) then
+    raise exception 'School ownership cannot be reassigned';
+  end if;
+
   if tg_table_name = 'schoolpro_lesson_notes' then
     if new.subject_id is not null then
       select school_id into ref_school
@@ -96,6 +118,33 @@ drop trigger if exists validate_schoolpro_promotions_tenant
   on public.schoolpro_promotions;
 create trigger validate_schoolpro_promotions_tenant
 before insert or update on public.schoolpro_promotions
+for each row execute function private.schoolpro_validate_operational_tenant();
+
+-- Prevent a privileged update from moving operational records across schools.
+-- Keep this independent from the existing feature/activation/workflow triggers.
+drop trigger if exists immutable_schoolpro_library_books_tenant on public.schoolpro_library_books;
+create trigger immutable_schoolpro_library_books_tenant before update of school_id on public.schoolpro_library_books
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_transport_routes_tenant on public.schoolpro_transport_routes;
+create trigger immutable_schoolpro_transport_routes_tenant before update of school_id on public.schoolpro_transport_routes
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_hostel_rooms_tenant on public.schoolpro_hostel_rooms;
+create trigger immutable_schoolpro_hostel_rooms_tenant before update of school_id on public.schoolpro_hostel_rooms
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_inventory_assets_tenant on public.schoolpro_inventory_assets;
+create trigger immutable_schoolpro_inventory_assets_tenant before update of school_id on public.schoolpro_inventory_assets
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_calendar_events_tenant on public.schoolpro_calendar_events;
+create trigger immutable_schoolpro_calendar_events_tenant before update of school_id on public.schoolpro_calendar_events
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_lesson_notes_tenant on public.schoolpro_lesson_notes;
+create trigger immutable_schoolpro_lesson_notes_tenant before update of school_id on public.schoolpro_lesson_notes
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_result_approvals_tenant on public.schoolpro_result_approvals;
+create trigger immutable_schoolpro_result_approvals_tenant before update of school_id on public.schoolpro_result_approvals
+for each row execute function private.schoolpro_validate_operational_tenant();
+drop trigger if exists immutable_schoolpro_promotions_tenant on public.schoolpro_promotions;
+create trigger immutable_schoolpro_promotions_tenant before update of school_id on public.schoolpro_promotions
 for each row execute function private.schoolpro_validate_operational_tenant();
 
 

@@ -2509,3 +2509,19 @@ Next MySQL work should be driven by the source-to-target parity matrix and actua
 ### Migration 006 exact-head CI closed — 2026-10-17
 
 SchoolPro CI #1572 completed successfully on code-bearing commit `1e4ac4940a315717969baec8d64f3e25bbd89fdf`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39032356436. Together with MySQL schema #389 and payment-page validation #1299, all three workflows passed on that code-bearing commit. The subsequent handover/PR documentation commit does not change schema code. Migration 006 therefore passes the current disposable MySQL 8.4 schema/fixture/selected constraint CI gate. This is not an application/API authorization acceptance or a production migration approval.
+
+
+## Stage A operational tenant isolation — fresh production catalog reconciliation (2026-10-17)
+
+Read-only catalog checks were repeated against production Supabase project `lnqsroyiybutkfngbyge` after Stage A PR #106's exact-head CI completed.
+
+**Confirmed production state:**
+- All eight operational tables targeted by the forward-only RLS repair have RLS enabled but `FORCE ROW LEVEL SECURITY = false`: `schoolpro_library_books`, `schoolpro_transport_routes`, `schoolpro_hostel_rooms`, `schoolpro_inventory_assets`, `schoolpro_calendar_events`, `schoolpro_lesson_notes`, `schoolpro_result_approvals`, and `schoolpro_promotions`.
+- All eight are owned by `postgres`, whose current role has `BYPASSRLS = true`. Therefore FORCE RLS is defense in depth against future non-BYPASSRLS table owners, not a restriction on the current postgres owner or service-role credentials.
+- Existing feature-specific policies are present and materially differ by table. Examples: family reads for borrowed library book details; calendar school read plus management write; lesson-note author and leadership access; result-approval leadership write and school read; promotion manager read. The historical migration `20261002234500_schoolpro_operational_tenant_isolation` drops all policies on its target tables and must not be replayed over this catalog.
+- `private.schoolpro_validate_operational_tenant()` and `private.validate_schoolpro_member_permission_tenant()` are absent from production. The exact ledger query returned no rows for versions `20261002234500`, `20261016160000`, `20261017170000`, or `20261017150000`.
+- Current `private.has_school_access` is SECURITY DEFINER with fixed empty search_path and grants active platform-admin access as designed. This must remain explicit in role/tenant tests.
+
+**Source and CI status:** Stage A PR #106 head `78b6db3368ae24f5c02d8af9e2a557701084024d` passed SchoolPro CI #1502 and payment-page validation #1229. The forward-only migration `20261017170000_schoolpro_forward_operational_tenant_isolation.sql` changes only RLS flags, fails closed if a required table is missing, and preserves all current policies. The separate `20261016160000_schoolpro_repair_operational_tenant_integrity.sql` adds tenant relationship/ownership triggers. Disposable integration tests verify eight ENABLE/FORCE flags, representative policy preservation, authenticated tenant-scoped reads, cross-school relationship rejection, and tenant immutability.
+
+**Release decision:** source/test acceptance is green, but Stage A is **not production-closed**. Production remains on the prior catalog: neither repair migration has been applied, and no post-deployment catalog/behavior verification exists. Do not mark A closed until the owner explicitly authorizes applying the two reviewed forward-only migrations in the intended order, followed by read-only catalog reconciliation and authenticated cross-school smoke tests. No production writes were made during this audit. This is the sole outstanding operational tenant-isolation release blocker before the project can treat Stage A as complete; other Stage A security checks remain subject to the release gate's full checklist.

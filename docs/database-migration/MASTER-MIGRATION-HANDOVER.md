@@ -3058,3 +3058,14 @@ The 79-FK review remains open: a fresh live-catalog query also surfaced adjacent
 Recovered live-only SQL provenance is unchanged: 397 SQL payloads recovered and 35 historical marker-batch files byte-match their ledger payloads, but independent deployment audit evidence remains unavailable. Version-by-version semantic comparison of recovered DDL against live `pg_catalog` definitions is still open; file/ledger byte equality is not proof of current catalog equivalence. The application call manifest remains a 463-record static scan, not a complete call graph; bucket caller resolution and live Render commit parity remain open.
 
 **No production writes, export/import, migration replay, Aiven writes, Render configuration/deployment, merge, or cutover occurred. Supabase remains production source of truth.**
+
+
+## Live row-ownership and schema reconciliation continuation — 2026-10-17
+
+Added `SCHOOLPRO-ROW-OWNERSHIP-FK-AND-CATALOG-RECONCILIATION-2026-10-17.md` (commit `8a0a4386482a18503615e97672e5592bbbae259b`). Read-only production-Supabase queries confirmed exact row counts for all 18 tables without direct `school_id`. Largest dependent sets: `schoolpro_assignment_submissions` 27,440; `schoolpro_cbt_answers` 2,800; `schoolpro_cbt_attempts` 280; `schoolpro_cbt_test_questions` 280; `schoolpro_fee_items` 504. Targeted parent anti-joins found zero orphans for the checked relationships, and five same-school consistency checks returned zero mismatches. This is targeted evidence, not full tenant-isolation sign-off.
+
+The 79-FK review remains open. The live catalog query also surfaced adjacent cross-boundary references outside the original public-to-public counting scope (private academic clock, shared email queue, payment transaction integration). Reconcile the canonical 79 by exact constraint name and column pair before declaring it complete. Identity/profile FKs remain external identity references; shared virtual-account/payment/email infrastructure is not bulk SchoolPro tenant data.
+
+Recovered live-only SQL provenance remains: 397 SQL payloads recovered; 35 historical marker-batch files byte-match their ledger payloads. Independent deployment audit evidence is still unavailable. Version-by-version semantic comparison of recovered DDL against live `pg_catalog` definitions remains open: file/ledger byte equality does not prove current catalog equivalence. The application manifest remains a 463-record static scan, not a complete call graph; bucket caller resolution and live Render commit parity remain open.
+
+**No production writes, export/import, migration replay, Aiven writes, Render configuration/deployment, merge, or cutover occurred. Supabase remains production source of truth.**

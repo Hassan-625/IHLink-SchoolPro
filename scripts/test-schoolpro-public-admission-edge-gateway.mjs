@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const edge = readFileSync('supabase/functions/schoolpro-public-admission/index.ts', 'utf8');
+const verifier = readFileSync('supabase/functions/schoolpro-public-admission/turnstile.mjs', 'utf8');
 const migration = readFileSync('supabase/migrations/20261017133000_schoolpro_public_admission_rpc_abuse_controls.sql', 'utf8');
 const page = readFileSync('src/pages/schoolpro/SchoolProPublicAdmission.tsx', 'utf8');
 const config = readFileSync('supabase/config.toml', 'utf8');

@@ -2095,3 +2095,12 @@ Read-only catalog inspection found:
 4. Verify and test the draft Storage policy's submission-based finance branch, exact object-path semantics and role enum/access helper against the actual schema. Do not apply the migration to production as part of this audit.
 5. Run and inspect the resulting CI jobs on the exact updated PR #106 head, then append exact commit/run/job evidence here.
 6. Stage A remains BLOCKED until these gates pass and the owner explicitly approves merge. No production writes, migration applications, receipt object creation, deployment or merge occurred during this session. Preserve A→B→C→D and E–J; do not resume D until A/B/C are re-verified and accepted.
+
+
+## 36. Stage A CI run #1453 passed; valid legacy-proof path added as a final positive control (2026-10-17)
+
+- SchoolPro CI [run #1453](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026729616) completed successfully on head `26f013bd0d7589c24606d5abe930b2f0e773220c`; payment-page validation [run #1180](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026729614) also passed.
+- All eight SchoolPro jobs passed, including the corrected payment-review RLS test, local Supabase Storage isolation, admission-wide PIN cooldown, result snapshot minimization, live tenant acceptance, tenant-integrity RPC/concurrency tests, public admission abuse controls, and general typecheck/static/build validation.
+- After that pass, added one final positive assertion to the payment-review RLS fixture: a guardian with an active school/student link can still insert a legacy proof row when the receipt object is actually owned by that guardian. The test removes its synthetic row before subsequent assertions. Commit `c29de6c35f04dca737d5bb9c13a16252b0d476ca`.
+- Latest SchoolPro CI [run #1456](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026915662) and payment-page validation [run #1183](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39026915641) were in progress when recorded. Require #1456 to pass before considering the new positive proof-path assertion validated.
+- These are draft/isolated test results. The production receipt RPC ownership/locking guard, direct public RPC restrictions, Storage finance-read update, payment-review policy changes and other missing source/ledger migrations remain unapplied. Stage A is not merge-ready until migration reconciliation, the latest run, and user release approval are complete.

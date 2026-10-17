@@ -111,6 +111,20 @@ async function fixture({platformRole = null, membershipStatus = 'active'} = {}) 
             attempts.set(params[3], {attempts: params[0], windowStartedAt: new Date(params[1]).getTime(), blockedUntil: params[2] ? new Date(params[2]).getTime() : 0});
             return [{affectedRows: 1}, []];
           }
+          if (query.startsWith('SELECT password_hash FROM student_credentials')) {
+            return [[studentCredential.status === 'active' ? {password_hash: studentCredential.password_hash} : undefined].filter(Boolean), []];
+          }
+          if (query.startsWith('UPDATE student_credentials SET password_hash = ?, must_change_password = FALSE')) {
+            studentCredential.password_hash = params[0];
+            studentCredential.must_change_password = false;
+            return [{affectedRows: 1}, []];
+          }
+          if (query.startsWith('UPDATE student_sessions SET revoked_at = UTC_TIMESTAMP(6) WHERE school_id = ? AND student_id = ? AND token_hash <> ?')) {
+            for (const [tokenHash, session] of studentSessions.entries()) {
+              if (session.schoolId === params[0] && session.studentId === params[1] && tokenHash !== params[2]) session.revoked = true;
+            }
+            return [{affectedRows: 1}, []];
+          }
           throw new Error('Unexpected transaction SQL in mock pool: ' + query);
         },
         async commit() {},

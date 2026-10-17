@@ -619,3 +619,12 @@ The source inventory remains an allowlist proposal only. Export/import is not ap
 ## Alternate-branch/source-history search — 2026-10-17
 
 Inspected `fix/operational-migration-history-oct10` as well as `migration/mysql-schoolpro-foundation`; the alternate branch has 55 numbered migrations and does not recover the original 33-version SQL batch. Code/commit search for two representative remote-only names (`schoolpro_admission_lifecycle`, `schoolpro_completion_security_cleanup`) returned no indexed matches. Several of the 44 branch-only files were added to current history by “Restore … migration” commits; these are not deployment proofs. Full source/deployment evidence remains outstanding.
+
+
+## Scope-classified live-only ledger — 2026-10-17
+
+Added [Live-only migration version inventory](LIVE-ONLY-MIGRATION-VERSION-INVENTORY-2026-10-17.md) with all 397 versions, one row per exact live-ledger version, and provisional buckets separating SchoolPro candidates (161), DataSub/BillStack (65), shared-platform/other product (95) and unclassified/mixed (76). These are name-based triage labels only; each SQL's touched objects/dependencies still need inspection before a final scope assignment.
+
+Added [remote-batch provenance register](REMOTE-33-BATCH-SQL-DEPLOYMENT-PROVENANCE-REGISTER-2026-10-17.md). It corrects a count discrepancy: the sync marker enumerates 35 distinct versions, not 33. All 35 match the live ledger, but original SQL and independent deployment audit events remain unrecovered. The source inventory remains a proposal, not export approval.
+
+See [live tenant-relation reconciliation](LIVE-TENANT-RELATION-CATALOG-RECONCILIATION-2026-10-17.md) for current replacement trigger functions, 17 zero-mismatch cross-school checks, missing-object model differences and the issued-document policy predicate defect. No production changes were made.

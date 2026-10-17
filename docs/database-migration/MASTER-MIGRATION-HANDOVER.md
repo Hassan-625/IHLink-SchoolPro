@@ -2845,3 +2845,13 @@ The live migration ledger still ends at `20261015161735`; none of these proposed
 Expanded `scripts/test-schoolpro-operational-tenant-integrity.integration.sql` on the Stage A branch to test a non-superuser, non-`BYPASSRLS` table-owner role. The integration test transfers ownership of the eight operational target tables to a disposable `schoolpro_test_table_owner` role, confirms that role cannot read tenant rows without an applicable policy, and fails if FORCE RLS is bypassed. This supplements the existing authenticated two-tenant visibility checks, policy-preservation assertions, cross-tenant trigger rejection tests, and six-index assertions. This matters because production catalog inspection showed the current table owner is `postgres` with `rolbypassrls=true`; PostgreSQL's FORCE RLS does not constrain superusers or BYPASSRLS roles. The test is designed to verify the separate non-bypass owner case rather than misrepresenting FORCE RLS as a barrier against privileged service credentials.
 
 The new Stage A integration test is committed on `release/stage-a-auth-tenant-isolation` at `077d7999f61fd70bdaa4da10a0d90a6c344725d7`. Exact-head CI is pending. No production DDL was run; the production operational RLS/index gap remains unresolved until the reviewed forward-only migrations are approved and applied, then catalog and live two-school acceptance are rerun.
+
+
+### MySQL migration set 001–008 exact-head validation fully green — 2026-10-17
+
+The exact branch-head run set for the MySQL migration foundation is now fully green on the code-bearing state preceding this handover-only update:
+- MySQL schema draft #470 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035911530
+- SchoolPro CI #1654 passed, including both `validate` and `mysql-api-test`: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035911512
+- Payment-page validation #1381 passed: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39035911515
+
+The MySQL API test confirms the synthetic credential fixture is seeded before API tests and student auth/session/password-change checks pass against disposable MySQL. The schema workflow applies migrations 001–008, seeds synthetic records, validates cross-school foreign-key rejection for the covered relations, and runs the API integration suite. This is CI evidence only—not production parity or cutover acceptance. Application modules beyond the current API skeleton still need implementation and role/service-level authorization tests. No production DDL or deployment was performed.

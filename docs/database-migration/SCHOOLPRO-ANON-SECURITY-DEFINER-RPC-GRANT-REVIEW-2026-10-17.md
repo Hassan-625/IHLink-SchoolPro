@@ -33,3 +33,8 @@ The `private` schema is not USAGE-granted to `anon` (while `authenticated` has s
 ## Migration impact
 
 Do not reproduce broad anonymous RPC grants in Aiven/trusted API routes by default. Preserve public behavior only through explicitly reviewed, abuse-controlled endpoints. This is a **migration and security gate**; no production change has been made in this report.
+
+
+## Current data-state qualifier
+
+A read-only count query found **zero rows** in `public.schoolpro_result_verifications` (0 valid/current, 0 inactive/revoked) and **zero rows** in `public.schoolpro_result_access_pins` (0 active/unexpired, 0 inactive/expired) at audit time. Therefore no existing result snapshot or PIN record was exposed by this review, and the direct-RPC abuse concern is a latent endpoint-design risk rather than evidence of current successful exploitation. The public grants and missing in-body throttle still need to be resolved before this feature is populated or reproduced in the target.

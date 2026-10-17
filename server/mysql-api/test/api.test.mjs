@@ -57,6 +57,11 @@ before(async () => {
 
   const ownerHash = await hashPassword('SchoolPro-Test-Password-2026!');
   await pool.execute('UPDATE users SET password_hash = ?, email_verified_at = UTC_TIMESTAMP(6) WHERE id IN (?, ?)', [ownerHash, ownerAId, ownerBId]);
+  const studentInitialHash = await hashPassword('One');
+  await pool.execute(
+    'UPDATE student_credentials SET password_hash = ?, must_change_password = TRUE, status = \'active\' WHERE school_id = ? AND student_id = ?',
+    [studentInitialHash, schoolAId, '50000000-0000-4000-8000-000000000001'],
+  );
 
   const adminHash = await hashPassword('Platform-Admin-Test-Password-2026!');
   await pool.execute(
@@ -165,5 +170,58 @@ test('MySQL API enforces sessions, origin, account throttling and tenant-scoped 
   const logout = await request('/v1/auth/logout', {method: 'POST', headers: {Cookie: ownerCookie, Origin: webOrigin}});
   assert.equal(logout.response.status, 200);
   const afterLogout = await request('/v1/me', {headers: {Cookie: ownerCookie, Origin: webOrigin}});
+  assert.equal(afterLogout.response.status, 401);
+});
+
+
+test('MySQL student admission login enforces initial password change and revocable session', async () => {
+  const login = await request('/v1/student/auth/login', jsonOptions({
+    schoolCode: 'test-a',
+    admissionNumber: 'A-001',
+    password: 'One',
+  }));
+  assert.equal(login.response.status, 200);
+  assert.equal(login.body.mustChangePassword, true);
+  const cookie = cookieFrom(login.response);
+  assert.match(cookie, /^schoolpro_student_session=[A-Za-z0-9_-]+$/);
+
+  const [stored] = await pool.execute(
+    'SELECT token_hash FROM student_sessions WHERE school_id = ? AND student_id = ? ORDER BY created_at DESC LIMIT 1',
+    [schoolAId, '50000000-0000-4000-8000-000000000001'],
+  );
+  assert.equal(stored.length, 1);
+  assert.equal(stored[0].token_hash, sha256(cookie.slice('schoolpro_student_session='.length)));
+
+  const me = await request('/v1/student/me', {headers: {Cookie: cookie, Origin: webOrigin}});
+  assert.equal(me.response.status, 200);
+  assert.equal(me.body.mustChangePassword, true);
+
+  const shortPassword = await request('/v1/student/password', jsonOptions(
+    {currentPassword: 'One', newPassword: 'short'},
+    {Cookie: cookie},
+  ));
+  assert.equal(shortPassword.response.status, 400);
+
+  const changed = await request('/v1/student/password', jsonOptions(
+    {currentPassword: 'One', newPassword: 'New-Student-Password-2026!'},
+    {Cookie: cookie},
+  ));
+  assert.equal(changed.response.status, 200);
+  assert.equal(changed.body.mustChangePassword, false);
+
+  const oldPassword = await request('/v1/student/auth/login', jsonOptions({
+    schoolCode: 'TEST-A', admissionNumber: 'A-001', password: 'One',
+  }));
+  assert.equal(oldPassword.response.status, 401);
+
+  const newPassword = await request('/v1/student/auth/login', jsonOptions({
+    schoolCode: 'TEST-A', admissionNumber: 'A-001', password: 'New-Student-Password-2026!',
+  }));
+  assert.equal(newPassword.response.status, 200);
+  assert.equal(newPassword.body.mustChangePassword, false);
+
+  const logout = await request('/v1/student/auth/logout', {method: 'POST', headers: {Cookie: cookie, Origin: webOrigin}});
+  assert.equal(logout.response.status, 200);
+  const afterLogout = await request('/v1/student/me', {headers: {Cookie: cookie, Origin: webOrigin}});
   assert.equal(afterLogout.response.status, 401);
 });

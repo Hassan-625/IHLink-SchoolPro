@@ -155,6 +155,7 @@ jobs:
           assert_check_rejection tests/mysql/grade_scale_above_100_must_fail.sql chk_grade_scale_range
           assert_check_rejection tests/mysql/admission_document_path_must_be_school_scoped.sql chk_admission_document_path
           assert_check_rejection tests/mysql/timetable_invalid_time_must_fail.sql chk_timetable_weekday
+          assert_check_rejection tests/mysql/timetable_invalid_time_range_must_fail.sql chk_timetable_time
           assert_fk_rejection tests/mysql/cross_school_timetable_class_must_fail.sql fk_timetable_class
           assert_fk_rejection tests/mysql/cross_school_hostel_student_must_fail.sql fk_hostel_allocation_student
           assert_enum_rejection() {

@@ -61,3 +61,6 @@ GitHub commit searches for representative original names (`schoolpro_admission_l
 - **Replay approval:** none. Do not fabricate replacement SQL from current catalog definitions. Recover original SQL from Supabase CLI/developer artifacts, archived migration directories, CI artifacts or backups; obtain the authoritative migration API event/response and resolve why the marker was previously treated as 33 versions. Record immutable blob SHA and deployment event per version.
 
 **Safety:** no migration replay, production write, export/import, configuration change, or merge occurred.
+
+## Expanded source-recovery attempt — 2026-10-17
+A repository-wide commit search for representative marker migration names found no source commits in this repository. A related but divergent repository, `Hassan-625/IHLink_Design_System_1`, was then inspected: its `main` tree contains 139 migration files, but none of the 35 exact marker version timestamps. It includes later/nearby migrations with different versions, including the remote sync marker and document lifecycle files, which are not substitutes for the missing original SQL. A related admission-lifecycle UI commit was found in that repository, but its diff contains application UI only, not the original SQL or deployment API evidence. The original 35 SQL files and authoritative deployment events remain unrecovered.

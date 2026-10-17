@@ -2703,3 +2703,12 @@ The test job is newly wired and awaits exact-head CI. Keep the MySQL API disconn
 ### MySQL API production TLS guard — 2026-10-17
 
 The MySQL API pool now refuses to start in `NODE_ENV=production` unless `MYSQL_SSL=true`, and uses certificate verification (`rejectUnauthorized: true`) when TLS is enabled. This prevents accidentally deploying the new database API with plaintext MySQL transport. It remains unconnected to the live frontend and undeployed. Latest API code head: `1ab8dd093d83ff520098da6e6e67e27d87c0200c`; new exact-head CI is required because this security guard changed the code.
+
+
+### MySQL API CI harness correction — 2026-10-17
+
+The first new `mysql-api-test` job failed because it ran the existing `server/mysql-api/test/api.test.mjs` integration suite without a MySQL service (`ECONNREFUSED 127.0.0.1:3306`). The four new mock-pool tests themselves passed; the existing integration test legitimately requires disposable MySQL and synthetic owner/school fixtures. Updated the job to start MySQL 8.4, apply migration 001 and migration 007, insert the core synthetic tenant fixture, then run the API test suite. No production connection is configured.
+
+The first install command also pinned `mysql2@3.15.3` despite the API package declaring a semver range; the workflow now resolves the declared dependency instead of forcing that older exact version. CI reported one high-severity npm audit finding during the pinned install; re-run dependency resolution and review the current resolved dependency audit before treating the runtime as security-accepted.
+
+This is a CI harness correction, not yet a pass. The latest workflow change is commit `26e3ec065425cfbbfe07492b3ff20b4c0d0b2b2d`; fresh exact-head SchoolPro CI, MySQL schema, and payment-page validation results are required.

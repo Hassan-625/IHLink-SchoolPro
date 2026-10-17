@@ -2326,3 +2326,16 @@ The Stage A proposal set is reconciled against the production ledger and deploye
 ### Production role semantics confirmed — 2026-10-17
 
 Read-only `pg_roles` inspection confirms `anon`, `authenticated` and `authenticator` have neither SUPERUSER nor BYPASSRLS; `postgres` and `service_role` have BYPASSRLS. This supports the migration's explicit caveat: FORCE RLS governs non-bypass owners, but it is not a substitute for scoped RLS policies, explicit RPC authorization, and keeping service-role credentials server-side. The new disposable integration tests exercise visibility as `authenticated`; they do not claim to constrain the privileged service role.
+
+
+### Exact-head Stage A CI result — 2026-10-17
+
+Final tested Stage A head: `78b6db3368ae24f5c02d8af9e2a557701084024d`.
+
+- SchoolPro CI [#1502](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917432): all eight jobs passed — validation/build, live two-school tenant acceptance, local receipt Storage isolation, disposable PostgreSQL tenant integrity, payment-review RLS/concurrency, result-PIN cooldown, result-verification exposure, and public-admission abuse controls.
+- Payment-page validation [#1229](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39029917397): passed on the same head.
+- Operational tenant integration passed the authenticated own-school visibility check, ENABLE/FORCE RLS checks on all eight tables, preservation of representative existing feature policies, cross-school relationship rejection, and immutable school ownership tests for operational and parent rows.
+- CI #1493 and #1500 failed on intermediate test-harness defects; their fixes are included before #1502. Do not report the intermediate runs as green.
+- This closes the operational tenant-isolation **source/test blocker** on the draft branch. Production rollout is still pending: the Stage A migrations have not been applied to production, no production writes or receipt uploads occurred, and PR #106 remains unmerged. Do not claim production Stage A closed until an approved rollout and post-deploy catalog/tenant checks are complete.
+- No live receipt-submission object was available for a production Storage test; local Storage API isolation passed without creating dummy production data. Payment cancellation remains unsupported; review decisions are confirmed/rejected only.
+- Stage B stays gated on Stage A merge and post-merge verification. The separate SchoolPro MySQL foundation/audit may continue with disposable fixtures only; no production backend switch is authorized.

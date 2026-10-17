@@ -246,7 +246,7 @@ async function main() {
     );
     assert.ok(
       foreignReceipt.error || !foreignReceipt.data,
-      fixture.name + ' must not download another account\\'s payment receipt',
+      fixture.name + ' must not download another account\'s payment receipt',
     );
     console.log('PASS', fixture.name, 'own receipt allowed; other account receipt denied');
   }

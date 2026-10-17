@@ -5,8 +5,8 @@ create schema if not exists auth;
 create schema if not exists private;
 do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
-do $ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $;
-do $ begin create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar'); exception when duplicate_object then null; end $;
+do $$ begin create type public.user_role as enum ('super_admin'); exception when duplicate_object then null; end $$;
+do $$ begin create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar'); exception when duplicate_object then null; end $$;
 
 create or replace function auth.uid()
 returns uuid language sql stable
@@ -20,19 +20,19 @@ create table public.schoolpro_test_memberships (
 );
 create or replace function private.has_school_access(p_school uuid, p_roles public.school_member_role[] default null)
 returns boolean language sql stable security definer set search_path=''
-as $ select exists (
+as $$ select exists (
  select 1 from public.schoolpro_test_memberships m
  where m.user_id=(select auth.uid()) and m.school_id=p_school
  and (p_roles is null or m.role=any(p_roles))
-) $;
+) $$;
 create or replace function private.schoolpro_module_allowed(p_school uuid, p_module text)
 returns boolean language sql stable
-as $ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $;
+as $$ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $$;
 create or replace function private.schoolpro_owns_invoice_student(p_school uuid,p_student uuid)
 returns boolean language sql stable security definer set search_path=''
-as $ select exists(select 1 from public.schoolpro_guardian_links g
+as $$ select exists(select 1 from public.schoolpro_guardian_links g
  where g.school_id=p_school and g.student_id=p_student
- and g.guardian_user_id=(select auth.uid()) and g.status='active') $;
+ and g.guardian_user_id=(select auth.uid()) and g.status='active') $$;
 
 create table public.schoolpro_invoices (
  id uuid primary key

@@ -2663,3 +2663,24 @@ The clean DDL correction was validated on code-bearing commit `2575687c7440a7d4d
 - SchoolPro CI #1610 was still in progress at last check: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034087944
 
 Migration 007 now installs in disposable MySQL 8.4 with the hash-format CHECK. The schema job passed its fixture and malformed-hash negative test. This establishes only that the throttling-state table and format constraint install; it does not yet prove production-grade rate-limit semantics or the full authentication/API authorization contract. Keep PR #107 draft/unmerged and all migrations unapplied to production.
+
+
+## MySQL API/authentication foundation — 2026-10-17
+
+Moved the next MySQL increment from table expansion into a server-side boundary. Added draft `server/mysql-api/` with a Node HTTP service using `mysql2`, and migration `database/mysql/007_schoolpro_auth_login_throttling.sql`.
+
+**Implemented in this draft:**
+- `GET /healthz` checks DB reachability without exposing connection details.
+- `POST /v1/auth/login` normalizes email, verifies only the documented scrypt password-hash format, uses generic invalid-credential responses, and issues an opaque random session token while storing only its SHA-256 hash in `user_sessions`.
+- Browser login uses an HttpOnly, SameSite=Lax cookie; native login can receive an opaque token for later secure native-vault integration. Production cookies are Secure.
+- `POST /v1/auth/logout` revokes the session; `GET /v1/me` requires an active user and unexpired, non-revoked session.
+- `GET /v1/schools/:schoolId/context` requires an active school membership or a separately assigned `super_admin`/`platform_admin` platform role. Platform admin access is not represented as school membership.
+- Per-normalized-identifier login throttling persists only a hashed identifier in MySQL. The implementation does not trust caller-controlled forwarded IP headers.
+- CI installs this isolated service's dependency and runs a real MySQL integration contract against the disposable MySQL 8.4 schema after migrations 001–007 and synthetic fixtures.
+
+**Not yet complete:** This is not wired into the React frontend, Android secure vault, or Render service. Existing Supabase Auth is still the live identity system. Student admission-number/surname first-login, invitation/activation, password reset/change, session/device management, permission overrides, audit events, global edge abuse controls, and all school feature endpoints remain to be implemented and reviewed. Never copy Supabase password hashes or expose MySQL credentials to clients. Production database/runtime configuration and TLS must be explicitly provisioned before any deployment. Migrations 001–007 and the API are draft-only; no production change or cutover has occurred.
+
+Exact-head validation for this increment is pending on code-bearing commit `f25eb89d4ed2d2fda8c92ec4c9028d4c7b4ddb4e`:
+- MySQL schema workflow #427: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221642
+- SchoolPro CI #1617: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221522
+- Payment-page validation #1344: https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/39034221613

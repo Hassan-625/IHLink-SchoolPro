@@ -212,7 +212,22 @@ select pg_temp.assert_count('guardian sees own allocation only',(select count(*)
 select pg_temp.assert_count('guardian sees own proof only',(select count(*) from public.schoolpro_payment_proofs),1);
 select pg_temp.assert_count('guardian sees linked fee payment only',(select count(*) from public.schoolpro_fee_payments),1);
 select pg_temp.assert_no_rows_affected('guardian cannot update submission',$$update public.schoolpro_payment_submissions set total_amount=999 where id='e0000000-0000-0000-0000-000000000001'$$);
-select pg_temp.assert_no_rows_affected('guardian cannot delete allocation',$$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$$);
+select pg_temp.assert_no_rows_affected('guardian cannot delete allocation',$delete from public.schoolpro_payment_allocations where id='f0000000-0000-0000-0000-000000000001'$);
+
+insert into public.schoolpro_payment_proofs
+  (id,school_id,student_id,submitted_by,receipt_path)
+values
+  ('11000000-0000-0000-0000-000000000099',
+   'b0000000-0000-0000-0000-000000000001',
+   'c0000000-0000-0000-0000-000000000001',
+   'd0000000-0000-0000-0000-000000000001',
+   'd0000000-0000-0000-0000-000000000001/receipt-a.pdf');
+select pg_temp.assert_count('guardian can submit own uploaded receipt proof',
+  (select count(*) from public.schoolpro_payment_proofs where id='11000000-0000-0000-0000-000000000099'),1);
+reset role;
+delete from public.schoolpro_payment_proofs where id='11000000-0000-0000-0000-000000000099';
+set role authenticated;
+select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000001',false);
 
 select set_config('request.jwt.claim.sub','d0000000-0000-0000-0000-000000000099',false);
 select set_config('test.finance_school','b0000000-0000-0000-0000-000000000001',false);

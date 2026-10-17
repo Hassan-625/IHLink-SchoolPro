@@ -1574,3 +1574,24 @@ SchoolPro has **no online payment gateway**. SchoolPro annual subscriptions use 
 - Required next step: configure the two GitHub Actions secrets to distinct, existing test-owned receipt object paths for the matching configured school test accounts. Each path must be rooted at that account's authenticated user UUID, as required by `scripts/test-schoolpro-tenant-isolation-live.mjs`. Validate that the paths exist and correspond to the expected account before rerunning CI. Do not record path values or credentials in the handover.
 - If no suitable test-owned receipt objects exist, use a dedicated disposable Supabase/Storage environment and fixture accounts. Do not create dummy objects in production or use customer receipts. The mandatory test must remain fail-closed and must not be converted to a skip.
 - Until the runtime receipt test passes, overall CI is red and Stage A remains **BLOCKED / NOT MERGE-READY**. No production mutation, migration application, deployment, secret change, or PR merge was performed by this work.
+
+
+
+## 17. Receipt Storage fixture provisioning investigation — 2026-10-17
+
+### Result of requested secret configuration / environment investigation
+
+- The available GitHub connection is read-only for repository secrets: its documented fetch endpoint explicitly excludes sensitive secret APIs, and no secret-write action is exposed in the connected GitHub tool set. Therefore this assistant session cannot set or inspect the values of `SCHOOL_A_RECEIPT_PATH` or `SCHOOL_B_RECEIPT_PATH`. Do not mistake this limitation for proof that no suitable objects exist.
+- The tenant acceptance script was inspected directly at `scripts/test-schoolpro-tenant-isolation-live.mjs`. It requires two distinct existing objects in bucket `schoolpro-payment-receipts`; each path must begin with the matching authenticated test user's UUID. It checks each user's own download and the other account's denial. It performs no uploads or other writes.
+- The available Supabase tool set does not expose Storage bucket object listing or object upload/download operations. The project inventory showed the active shared production project `lnqsroyiybutkfngbyge` and one unrelated inactive project `vfooxxdksbomqyglzsyd` (the user's IoT project). The unrelated project is not a suitable SchoolPro test environment and was not modified. No dedicated disposable SchoolPro Storage project is currently established by this evidence.
+- No secret values were read or written; no Storage object was listed, downloaded, uploaded, or deleted; no project was created; no production change was made. A new Supabase project can incur charges, and the project-creation workflow requires the owner to choose an organization and handle any quoted nonzero cost. Do not create one or assume it is free without that check.
+- The failed tenant acceptance run must **not** be rerun yet: the same missing fixture secrets will predictably fail before any request. Do not rerun merely to produce another identical red result.
+
+### Required next action
+
+1. In GitHub repository **Settings → Secrets and variables → Actions**, add/update the two repository Actions secrets `SCHOOL_A_RECEIPT_PATH` and `SCHOOL_B_RECEIPT_PATH` with verified object paths only if the owner/test maintainer can confirm that the objects already exist, are non-customer test fixtures, and belong to the two matching configured test users. Keep the values out of this handover and logs.
+2. If no suitable objects exist, establish a dedicated disposable Storage environment with test accounts and two synthetic receipt objects. Prefer a no-additional-cost local/CI-compatible Supabase Storage test harness if it exercises the actual Storage policies; otherwise obtain a project cost quote and owner approval before creating a hosted project. Do not reuse the unrelated IoT project or write dummy objects into production.
+3. Provide CI with the disposable project's URL/anon key and the two test-account credentials/IDs through appropriately scoped Actions secrets/variables, plus the two test-owned receipt paths. Confirm the environment's Storage policies match the policies under test; a blank/new bucket without the relevant policies is not valid isolation evidence.
+4. Rerun the tenant acceptance job/workflow only after fixture configuration is in place. Record the exact run, commit, job conclusion and own/foreign download assertions. If it fails, diagnose the actual response; do not weaken or skip the test.
+5. Stage A remains **BLOCKED / NOT MERGE-READY** until the mandatory receipt Storage test passes and the other release gates are satisfied.
+

@@ -2,8 +2,6 @@
 -- Runs only against the ephemeral CI service; do not point DATABASE_URL at production.
 create schema if not exists private;
 create schema if not exists extensions;
-do $ begin create role anon nologin; exception when duplicate_object then null; end $;
-do $ begin create role authenticated nologin; exception when duplicate_object then null; end $;
 create extension if not exists pgcrypto with schema extensions;
 
 create table public.schoolpro_schools (

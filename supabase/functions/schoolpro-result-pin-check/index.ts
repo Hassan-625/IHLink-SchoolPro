@@ -3,7 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.117.3';
 import { verifyTurnstile } from '../schoolpro-public-admission/turnstile.mjs';
 
 const allowedOrigins = new Set(
-  (Deno.env.get('SCHOOLPRO_RESULT_CHECK_ALLOWED_ORIGINS') || '')
+  (Deno.env.get('SCHOOLPRO_RESULT_CHECK_ALLOWED_ORIGINS') || Deno.env.get('SCHOOLPRO_ADMISSION_ALLOWED_ORIGINS') || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean),

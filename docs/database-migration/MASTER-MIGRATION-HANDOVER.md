@@ -2459,3 +2459,10 @@ Added draft migration `database/mysql/005_schoolpro_operational_modules.sql` usi
 - Added negative tests for cross-school timetable class, cross-school hostel student and invalid timetable weekday/time. MySQL 8.4 workflow now applies migration 005 and runs the fixtures/negative tests.
 - Important limitation: schema constraints do not replace application authorization. Health and discipline require particularly strict role-level access; timetable overlap, hostel capacity/occupancy, attendance batch rules, leave review permissions, and notification/audit transaction behavior need service-level tests.
 - Migrations 001–005 are draft-only. No production schema or records were changed. Awaiting exact-head MySQL schema workflow, SchoolPro CI and payment-page validation for this slice.
+
+
+### MySQL migration 005 first validation correction — 2026-10-17
+
+- Initial MySQL schema workflow #361 correctly caught an assertion-quality issue, not a migration DDL failure: the negative timetable fixture invalidated both weekday and time range, and MySQL reported `chk_timetable_time` first while the test expected `chk_timetable_weekday`.
+- Split the test inputs so invalid weekday is tested with a valid time range, and added a separate invalid time-range fixture. CI now expects each precise check constraint independently. The initial run is recorded as failed and is not counted as acceptance.
+- Re-run all workflows on the corrected fixture/workflow commit before considering migration 005 validated.

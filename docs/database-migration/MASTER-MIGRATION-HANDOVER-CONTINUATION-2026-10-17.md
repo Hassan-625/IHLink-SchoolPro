@@ -268,3 +268,66 @@ Continue without a Supabase branch by:
 5. Keeping DataSub outside this SchoolPro migration scope.
 
 The cost quote retrieved for a Supabase branch was $0.01344/hour. The user did not approve it. No branch was created and no production change occurred. Migration status remains **NO-GO** until destination correctness, tenant/role security, source completeness, and recovery rehearsal are supported by evidence.
+
+
+## Destination readiness and no-cost rehearsal checkpoint — 2026-10-17
+
+### Aiven destination verification outcome
+
+**Status: NOT VERIFIED / BLOCKED — no usable Aiven PostgreSQL destination has been established.** The user confirmed they have not yet established that a database is provisioned and accessible. The available connected-tool inventory has no Aiven account/database inspection or SQL-query integration. A repository search on the default branch for Aiven PostgreSQL, AIVEN_DATABASE_URL, DATABASE_URL Aiven, and migration rehearsal/rollback terms returned no matching artifacts. This is a bounded check of available tools and repository search, not proof that no Aiven service exists in the user's Aiven account or in unindexed refs.
+
+No Aiven database was provisioned, no paid service was created, no connection string or secret was requested in chat, and no database connection was attempted. Do not use Render Postgres or another provider as a silent substitute for the stated Aiven target.
+
+### Aiven readiness gate — evidence required before rehearsal
+
+Record these items from the Aiven Console or through a securely configured, authorized connection; do not paste passwords/connection secrets into chat:
+
+1. Existing service/project identifier and service state; region; PostgreSQL major version; plan/cost and storage capacity.
+2. A database and dedicated least-privilege migration/rehearsal roles exist; TLS is required and the connection can be reached from the approved rehearsal runner.
+3. Source/target extension inventory and supported versions (including any Supabase-specific extensions or functions); explicitly list unsupported dependencies.
+4. Schema and privilege capability check: schemas, owners, roles, grants/default privileges, RLS support and policy translation, sequences/identity, enums/domains, functions/procedures, triggers, generated columns, constraints and indexes.
+5. Network allowlist and secret delivery are configured without exposing credentials in GitHub, logs, prompts or artifacts.
+6. Destination is empty or has an approved disposable namespace/database; it contains no customer data and is isolated from production.
+7. Backup/snapshot or equivalent restore point and a tested recovery route exist before any rehearsal writes.
+
+Until the above is evidenced, Aiven readiness is **BLOCKED**, not assumed PASS.
+
+### Rehearsal plan using an already-authorized isolated PostgreSQL destination
+
+No isolated destination is currently verified. The plan is prepared but **not executed**:
+
+- Phase 0 — acquire approved isolated endpoint; record version, extensions, role capabilities, TLS and network reachability. If unavailable, stop without creating resources or touching production.
+- Phase 1 — use only an approved, minimized/synthetic fixture set; no unrestricted production export. Keep DataSub/shared payment and profile data out of SchoolPro scope unless a reviewed dependency contract requires a specific reference.
+- Phase 2 — build target schema from reviewed, current canonical definitions, not by blindly replaying historical recovered ledger payloads. Record every source version as exact/superseded/dropped/absent/unresolved and resolve all 397 live-only versions object-by-object before migration approval.
+- Phase 3 — load fixtures into the isolated target; reconcile per-table row counts, primary/business-key coverage, deterministic checksums where stable, FK/orphan results, same-school ownership aggregates, and academic/results/payment totals. Exercise idempotent rerun and interrupted-run recovery.
+- Phase 4 — run negative tenant tests using separate synthetic school A/B credentials and each intended role; verify no cross-tenant read/write, forged-ID/path access, invalid result access, or receipt/Storage cross-tenant access. Include owner, staff, exam officer, guardian/student, super-admin and service boundaries.
+- Phase 5 — restore the pre-rehearsal snapshot into a fresh isolated target and prove recovery. Record elapsed time, errors, reconciliation diffs, and rollback steps. No production cutover until an owner explicitly approves all gates.
+
+### Supabase service-boundary disposition — decision matrix
+
+| Dependency | Migration disposition | Required implementation/evidence before cutover |
+|---|---|---|
+| Supabase PostgreSQL | Replace as SchoolPro system of record with Aiven PostgreSQL | Schema/extension compatibility; reviewed DDL; data reconciliation; tenant/role tests; backups and rollback evidence |
+| Supabase Auth | **Unresolved — replace or deliberately retain** | Inventory every Auth API/session/JWT/admin call and auth.users/profiles FK. If replaced, implement and test account migration, password/session reset strategy, token validation, role/school binding and recovery. If retained, document it as an explicit external identity boundary and test Aiven API authorization against trusted validated identity claims |
+| Supabase Storage | **Unresolved — replace or deliberately retain** | Inventory buckets, policies, signed URLs, upload/download/delete paths and object ownership. Choose a destination/provider or retain temporarily; define path/tenant authorization, metadata/size/MIME limits, lifecycle, private access and signed URL expiry tests. Do not copy or rename objects until bucket mismatch and ownership tests pass |
+| Supabase Edge Functions | **Unresolved — replace or deliberately retain per function** | Inventory all ten recovered/deployed functions and callers, source/config drift, JWT validation, secrets, service-role operations, rate limits, cron and webhook behavior. For each function choose an approved replacement runtime or a time-bounded retained dependency, then test auth, tenant scope, retries/idempotency and observability |
+| Supabase Cron / scheduled jobs | **Unresolved per job** | Map seven current jobs and every invoked routine; identify the unresolved datasub-provider-health-5m provenance. Keep DataSub jobs out of this SchoolPro migration. Recreate only approved SchoolPro jobs with single-run/duplicate safeguards and operational monitoring |
+| Shared profiles, payments, virtual accounts, email queue, academic clock | External/shared boundaries until specifically approved | Map 79 cross-boundary FKs and adjacent private/shared references to explicit API/bridge or retained service contracts; do not invent physical Aiven FKs to tables that remain in Supabase |
+| Realtime and other Supabase-specific capabilities | Inventory not yet complete | Search application, server and generated clients for Realtime subscriptions and platform-specific APIs; choose replacement or documented retention with failure-mode tests |
+| Secrets/environment configuration | Must be replaced/re-scoped | Inventory Render and function secrets by consumer; issue new least-privilege target credentials through the secret manager; never commit credentials or print them into handover |
+
+### Reconciliation work continuing without production changes
+
+- The 397 live-only SQL payloads remain recovered in eight JSONL bundles. Complete semantic comparison remains open for exact function signatures/bodies, policies, effective grants, triggers, cron commands and dependency/scope per version.
+- The 35-version marker payloads match their ledger payloads, but original independent deployment actor/time/request/result evidence remains unavailable.
+- The live issued-document SELECT policy tautology st.school_id = st.school_id remains a high-priority source-side defect. It must be fixed through an approved change and tested for cross-tenant access; no production policy was changed in this checkpoint.
+- Existing tenant evidence is partial: targeted source-side SELECT tests passed for selected tables, but broad role/write adversarial tests, Storage API/signed URL tests and target-side tests are not complete.
+- Production export/import, migration replay, DDL/DML, policy/grant changes, Storage mutation, Edge deployment, Render configuration/deployment, merge and cutover remain prohibited without separate explicit authorization.
+
+### Gate status after this checkpoint
+
+- **G1 Tenant/role security: BLOCKED** — issued-document policy defect and adversarial role/Storage/RPC coverage remain open.
+- **G2 Source completeness: BLOCKED** — all 397 payloads are recovered, but complete semantic dispositions and the 35-version deployment provenance are not closed.
+- **G3 Destination/schema/workflow correctness: BLOCKED** — Aiven endpoint/version/capabilities/access have not been verified; Auth/Storage/Edge boundaries remain undecided.
+- **G4 Isolated rehearsal/recovery: BLOCKED / NOT RUN** — no authorized isolated Aiven-compatible target has been established.
+- Overall migration decision remains **NO-GO**. No Supabase branch or charges, Aiven resource, production mutation, export/import, deployment, merge or cutover occurred.

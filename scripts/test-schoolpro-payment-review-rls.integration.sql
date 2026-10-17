@@ -16,6 +16,9 @@ create or replace function private.schoolpro_module_allowed(p_school uuid, p_mod
 returns boolean language sql stable
 as $$ select p_module = 'finance' and current_setting('test.finance_school', true) = p_school::text $$;
 
+create table public.schoolpro_invoices (
+ id uuid primary key
+);
 create table public.schoolpro_guardian_links (
  id uuid primary key, school_id uuid not null, student_id uuid not null,
  guardian_user_id uuid not null, status text not null

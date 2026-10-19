@@ -1,0 +1,5 @@
+{"path":"src/lib/platformHandoff.ts","line":1,"operation":"ClientReference","object":"dynamic","snippet":"import { supabase } from \"@/lib/supabase\";"}
+{"path":"src/lib/platformHandoff.ts","line":6,"operation":"ClientReference","object":"dynamic","snippet":"if (!supabase) { window.location.assign(platformUrl(platform, destination)); return; }"}
+{"path":"src/lib/platformHandoff.ts","line":7,"operation":"Auth","object":"dynamic","snippet":"const { data: { session } } = await supabase.auth.getSession();"}
+{"path":"src/lib/platformHandoff.ts","line":9,"operation":"EdgeFunction","object":"auth-handoff","snippet":"const { data, error } = await supabase.functions.invoke(\"auth-handoff\", {"}
+{"path":"src/lib/schoolDataCache.ts","line":4,"operation":"ClientReference","object":"dynamic","snippet":"* Never use this cache as an authorization boundary; Supabase RLS remains authoritative."}

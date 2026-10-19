@@ -1,0 +1,23 @@
+{"path":"src/lib/schoolMembershipCache.ts","line":1,"operation":"ClientReference","object":"dynamic","snippet":"import type { SupabaseClient } from \"@supabase/supabase-js\";"}
+{"path":"src/lib/schoolMembershipCache.ts","line":13,"operation":"","object":"dynamic","snippet":"client: SupabaseClient,"}
+{"path":"src/lib/schoolMembershipCache.ts","line":22,"operation":"TableOrBucket","object":"schoolpro_members","snippet":".from(\"schoolpro_members\")"}
+{"path":"src/lib/schoolSessionStudents.ts","line":1,"operation":"ClientReference","object":"dynamic","snippet":"import {supabase} from '@/lib/supabase';"}
+{"path":"src/lib/schoolSessionStudents.ts","line":5,"operation":"ClientReference","object":"dynamic","snippet":"if(!supabase||!session)return [];"}
+{"path":"src/lib/schoolSessionStudents.ts","line":6,"operation":"TableOrBucket","object":"schoolpro_enrollment_history","snippet":"const history=await getSchoolData('school:'+(userId||'anonymous')+':'+schoolId+':enrollment-history:'+session,()=>fetchSchoolRows(supabase!.from('schoolpro_enrollment_history').select('student_id,class_id,class_name,arm,section,status').eq('school_id',schoolId).eq('session',sessi"}
+{"path":"src/lib/schoolSessionStudents.ts","line":9,"operation":"TableOrBucket","object":"schoolpro_enrollment_history","snippet":"if(!rows.length){const known=await getSchoolData('school:'+(userId||'anonymous')+':'+schoolId+':enrollment-history-exists',()=>supabase!.from('schoolpro_enrollment_history').select('student_id').eq('school_id',schoolId).limit(1));if(known.error)throw new Error('School enrolments "}
+{"path":"src/lib/schoolSignIn.ts","line":1,"operation":"ClientReference","object":"dynamic","snippet":"import {supabase} from '@/lib/supabase';"}
+{"path":"src/lib/schoolSignIn.ts","line":3,"operation":"ClientReference","object":"dynamic","snippet":"if(!supabase)return null;"}
+{"path":"src/lib/schoolSignIn.ts","line":7,"operation":"TableOrBucket","object":"schoolpro_schools","snippet":"scope(supabase.from('schoolpro_schools').select('id').eq('owner_id',userId),'id').limit(1).maybeSingle(),"}
+{"path":"src/lib/schoolSignIn.ts","line":8,"operation":"TableOrBucket","object":"schoolpro_members","snippet":"scope(supabase.from('schoolpro_members').select('role').eq('user_id',userId),'school_id').limit(1).maybeSingle(),"}
+{"path":"src/lib/schoolSignIn.ts","line":9,"operation":"TableOrBucket","object":"schoolpro_students","snippet":"scope(supabase.from('schoolpro_students').select('id').eq('user_id',userId),'school_id').limit(1).maybeSingle(),"}
+{"path":"src/lib/schoolSignIn.ts","line":10,"operation":"TableOrBucket","object":"schoolpro_guardian_links","snippet":"scope(supabase.from('schoolpro_guardian_links').select('id').eq('guardian_user_id',userId).eq('status','active'),'school_id').limit(1).maybeSingle()]);"}
+{"path":"src/lib/supabase.ts","line":3,"operation":"ClientReference","object":"dynamic","snippet":"import { createClient, type SupabaseClient } from \"@supabase/supabase-js\";"}
+{"path":"src/lib/supabase.ts","line":7,"operation":"ClientReference","object":"dynamic","snippet":"// variables can override them for staging or a future Supabase project."}
+{"path":"src/lib/supabase.ts","line":8,"operation":"","object":"dynamic","snippet":"const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ||"}
+{"path":"src/lib/supabase.ts","line":9,"operation":"ClientReference","object":"dynamic","snippet":"\"https://lnqsroyiybutkfngbyge.supabase.co\") as string;"}
+{"path":"src/lib/supabase.ts","line":10,"operation":"","object":"dynamic","snippet":"const supabasePublishableKey = (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ||"}
+{"path":"src/lib/supabase.ts","line":11,"operation":"","object":"dynamic","snippet":"import.meta.env.VITE_SUPABASE_ANON_KEY ||"}
+{"path":"src/lib/supabase.ts","line":14,"operation":"","object":"dynamic","snippet":"export const isSupabaseConfigured = Boolean(supabaseUrl && supabasePublishableKey);"}
+{"path":"src/lib/supabase.ts","line":16,"operation":"ClientReference","object":"dynamic","snippet":"export const supabase = (isSupabaseConfigured"}
+{"path":"src/lib/supabase.ts","line":17,"operation":"","object":"dynamic","snippet":"? createClient(supabaseUrl!, supabasePublishableKey!, {"}
+{"path":"src/lib/supabase.ts","line":26,"operation":"","object":"dynamic","snippet":": null) as unknown as SupabaseClient<any>;"}

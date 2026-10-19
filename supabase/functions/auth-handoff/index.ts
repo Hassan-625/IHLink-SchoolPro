@@ -1,0 +1,20 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2";
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const reply=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...cors,"Content-Type":"application/json","Cache-Control":"no-store"}});
+Deno.serve(async(req)=>{
+ if(req.method==="OPTIONS")return new Response("ok",{headers:cors});
+ if(req.method!=="POST")return reply({error:"Method not allowed"},405);
+ const auth=req.headers.get("Authorization");
+ if(!auth?.startsWith("Bearer "))return reply({error:"Authentication required"},401);
+ const url=Deno.env.get("SUPABASE_URL")!,publishable=Deno.env.get("SUPABASE_ANON_KEY")!,service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+ const caller=createClient(url,publishable,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:{user},error:userError}=await caller.auth.getUser(auth.slice(7));
+ if(userError||!user?.email)return reply({error:"Invalid session"},401);
+ const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
+ const {data:profile}=await admin.from("profiles").select("role,status").eq("id",user.id).maybeSingle();
+ if(!profile||profile.status!=="active")return reply({error:"Account is not active"},403);
+ const {data,error}=await admin.auth.admin.generateLink({type:"magiclink",email:user.email});
+ if(error||!data?.properties?.hashed_token)return reply({error:"Unable to create handoff"},500);
+ return reply({token_hash:data.properties.hashed_token});
+});

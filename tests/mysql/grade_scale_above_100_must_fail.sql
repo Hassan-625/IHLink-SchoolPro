@@ -1,0 +1,1 @@
+INSERT INTO grade_scales (id,school_id,label,min_score,max_score,position,is_active) VALUES ('bc300000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000001','Z',90,101,9,TRUE);

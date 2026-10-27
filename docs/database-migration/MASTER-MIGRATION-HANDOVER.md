@@ -8,58 +8,53 @@
 **Status:** Migration and production workspace cleanup are NOT complete.
 
 ## Operating rules
-- Audit-first; preserve the live production architecture and shared IHLink/DataSub data.
-- Do not describe a step as completed unless an action and its result were observed.
-- Do not repeat completed checks unless new evidence requires them. Continue from the last known state and record material outcomes here.
-- The user explicitly authorized deletion of the two SchoolPro workspaces below. Do not ask for the same approval again.
-- Do not delete global profile or Supabase Auth accounts; remove only workspace membership/ownership relationships. Preserve shared profiles, global permission definitions, global/default templates, platform-wide audit/security logs, billing/financial evidence that must be retained, and all Storage objects.
-- Keep SchoolPro migration work separate from DataSub. Do not migrate DataSub as part of this effort.
+- Preserve the live production architecture and shared IHLink/DataSub data.
+- Do not repeat completed checks unless new evidence requires them. Continue from the last known state.
+- The user explicitly authorized deletion of the two SchoolPro workspaces below; do not ask for the same approval again.
+- Do not delete global `profiles` or Supabase Auth accounts. Preserve global/default templates, platform-wide audit/security history, financial evidence that must be retained, and all Storage objects.
+- Keep SchoolPro migration work separate from DataSub.
 
-## Production workspace cleanup — authorized, still pending
-The user explicitly authorized deletion of all database records belonging to these two workspaces and their operational student/staff data, while preserving shared and platform-wide data.
+## Production workspace cleanup — authorized, pending a trigger-policy blocker
 
 | Workspace | School ID |
 |---|---|
 | IH Academy | `d342eb87-8d6a-477a-a380-7fab83f586b7` |
 | HASSAN ACADEMY | `7a340a27-9184-420a-b566-8fc0d3dac555` |
 
-Known historical inventory (not a fresh count): 94 memberships (90 IH Academy, 4 HASSAN ACADEMY), 1,214 students, 208,800 attendance rows, 34,803 result rows, 33,603 result approvals, 168,018 result events, 55,680 result-domain ratings, 4,045 fee payments, 3,362 invoices, 2,292 enrollment-history rows, 10,108 lesson notes, 141 document issues, and 161 transcript issues. Historical figures only; do not present as current counts.
+Historical, not freshly verified: 94 memberships (90 IH Academy, 4 HASSAN ACADEMY), 1,214 students, 208,800 attendance rows, 34,803 results, 33,603 result approvals, 168,018 result events, 55,680 result-domain ratings, 4,045 fee payments, 3,362 invoices, 2,292 enrollment-history rows, 10,108 lesson notes, 141 document issues, 161 transcript issues.
 
 ### Preservation and dependency rules
-- Delete dependent records child-first using the live foreign-key graph, including tables without a direct `school_id`.
-- Preserve shared `profiles` and `auth.users` records. The owner profiles remain global accounts even after workspace ownership/membership is removed.
-- Preserve global/default rows such as result templates where `school_id IS NULL`.
-- Preserve platform-wide audit/security history, unrelated schools, all DataSub/IHLink data, and all Storage objects (issued PDFs, generated workbooks, reusable templates).
-- Preserve financial evidence where required. Do not delete global `payment_transactions` records; their FK to SchoolPro payment intents is `ON DELETE SET NULL`. Carefully distinguish operational workspace payment rows from retained proof/billing evidence.
-- Keep the new-workspace creation flow intact.
+- Delete dependent workspace records child-first, including dependent tables without `school_id`.
+- Preserve owner/global `profiles` and `auth.users`; preserve global/default templates where `school_id IS NULL`.
+- Preserve unrelated schools, all DataSub/IHLink data, platform-wide audit/security history, required billing evidence, and all Storage objects.
+- Global `payment_transactions` must remain; their FK to SchoolPro payment intents uses `ON DELETE SET NULL`.
+- Ensure the workspace-creation flow remains usable.
 
-### Latest execution facts
-- The Supabase SQL execution connector is now responding to read-only SQL. A guarded `BEGIN ... DO ... ROLLBACK` precondition test executed and rolled back successfully; it did not delete or modify production records.
-- The live FK catalog query returned the SchoolPro-related relationships. Important restrictive dependencies include results referencing assessment schemes; result corrections and result events referencing results; document issue events referencing document issues; fee payments and payment intents referencing invoices/students; promotions referencing classes; library loans referencing members/books/students; admissions referencing CBT tests/students; enrollment history and transcript issues referencing students/classes; and `ihlink_email_queue.school_id` referencing schools with `NO ACTION`.
-- A focused live query found the non-`school_id` `NO ACTION/RESTRICT` FK cases as `schoolpro_candidate_cbt_answers.question_id -> schoolpro_question_bank.id` and `schoolpro_schools.owner_id -> profiles.id`. The owner FK is a deliberate reason not to delete owner profiles.
-- No destructive SQL has been run. Both target workspaces remain.
-- Next action: produce and run one explicitly scoped transaction that handles the dependency order and retained evidence correctly, then verify the targets are absent and unrelated workspaces remain. Do not repeat broad inventories; use the live FK findings above and query only remaining blockers needed to construct the transaction. If an FK or preservation constraint blocks the transaction, let it roll back and record the exact constraint.
+### Latest execution facts and exact blocker
+- Read-only SQL works through the Supabase SQL connector.
+- A destructive cleanup was attempted as a single PL/pgSQL statement, scoped to the two exact workspace UUIDs. PostgreSQL rejected it while deleting `schoolpro_lesson_notes`; because the statement failed, its preceding deletes in that statement were rolled back. **No workspace cleanup was committed.**
+- Exact blocker: trigger function `private.schoolpro_validate_lesson_workflow()` raises `Sign in to manage lesson notes` when `auth.uid()` is null. The same trigger explicitly raises `Reviewed or submitted lessons must be retained` when deleting lesson notes with status `submitted` or `approved`.
+- This is an application-level preservation rule, not a foreign-key problem. Do not disable the trigger or alter its function just to force cleanup. Do not attempt to impersonate a user through arbitrary JWT settings.
+- The FK catalog found one non-`school_id` restrictive dependency: `schoolpro_candidate_cbt_answers.question_id -> schoolpro_question_bank.id` (`NO ACTION`); the cleanup transaction explicitly accounted for this before the trigger stopped execution.
+- Next safe action: inspect the application’s supported retention/deletion workflow for lesson notes and determine whether approved/submitted lesson notes are to be retained, archived, or whether the user wants the application policy changed through a reviewed code/schema change. Until that policy is resolved, do not retry the same destructive transaction. Do not ask the user to re-authorize the already-approved workspace cleanup; ask only if a new decision about retaining reviewed lesson notes or changing that policy is genuinely required.
 
 ## Database migration — Supabase PostgreSQL to Aiven PostgreSQL
-- Decision: Aiven PostgreSQL is the target. The earlier MySQL foundation path was abandoned.
+- Decision: Aiven PostgreSQL is the target; the earlier MySQL foundation path was abandoned.
 - Target service: `pg-316d7ad1`; target rehearsal database: `schoolpro_rehearsal_20261018`.
-- Production frontend is on Render; do not treat stale README text claiming Vercel hosting as operational truth.
-- Historical rehearsal baseline: 108 SchoolPro-related tables, 1,181 live columns, 110 live RLS policies; candidate policy comparison found 90 policies and 20 policy drift items. Recheck only when needed for an actual migration action.
-- Historical inventory gaps: 397 live-only migration versions, 44 branch-only versions, 35-version provenance gap, 18 tables without direct `school_id`, 79 foreign keys crossing the SchoolPro boundary, 5 missing Edge Function sources, and 7 cron jobs. Reconcile before cutover.
-- Aiven rehearsal has SchoolPro-specific roles and two synthetic tenant fixtures. Previous acceptance checks reported each resolver returning its fixture's proprietor and runtime tenant scoping isolating A from B. Do not recreate fixtures or repeat these checks unless a change invalidates them.
-- Trusted API staging service: `schoolpro-migration-api-staging`. Last known health was 200; readiness was correctly 503 with `identity_mapping_unverified`; `IDENTITY_MAPPING_VERIFIED=false`. Keep fail-closed until identity mapping is actually verified.
+- Production frontend is on Render; stale README statements about Vercel are not operational truth.
+- Historical rehearsal baseline: 108 SchoolPro-related tables, 1,181 live columns, 110 live RLS policies; candidate policy comparison found 90 policies and 20 policy drift items.
+- Historical gaps: 397 live-only migration versions, 44 branch-only versions, 35-version provenance gap, 18 tables without direct `school_id`, 79 FKs crossing the SchoolPro boundary, 5 missing Edge Function sources, and 7 cron jobs. Reconcile before cutover.
+- Trusted API staging: `schoolpro-migration-api-staging`; last known health 200, readiness 503 with `identity_mapping_unverified`, and `IDENTITY_MAPPING_VERIFIED=false`. Keep fail-closed until identity mapping is verified.
 - No production migration/import/cutover has been completed.
 
 ## Required migration sequence A–J
-Keep the user's ordered A–J workstream; do not restart from scratch or conflate PR #104 annual subscriptions with A–D.
-
-A. Authentication, identity mapping, tenant isolation, and safe bootstrap.  
-B. Sessions, student population, and class rosters.  
-C. Assessments, calculations, review, and publication.  
+A. Authentication, identity mapping, tenant isolation, safe bootstrap.  
+B. Sessions, student population, class rosters.  
+C. Assessments, calculations, review, publication.  
 D. Result Design Studio and custom Excel workbooks.  
-E–J. Continue the established A–J plan and its existing repository documentation; inspect that plan before assigning or renaming stages.
-- User preference: A should merge before B; annual-subscription PR #104 is a separate workstream.
+E–J. Continue the established A–J plan in existing repository documentation; do not rename stages without inspecting that plan.
+- A should merge before B. Annual-subscription PR #104 is a separate workstream.
 - No production migration/replay/import/merge without explicit approval.
 
 ## Handover maintenance
-After each material action, record the actual change, commit/SQL result, tests/acceptance results, and exact remaining blocker. Do not substitute plans for outcomes.
+Record actual changes, commit/SQL outcomes, tests, and exact blockers after material actions. Do not substitute planned work for outcomes.

@@ -51,6 +51,11 @@ assert.match(sql, /ref_school is distinct from new\.school_id/i, 'Cross-tenant r
 assert.match(sql, /member_school is null or member_school is distinct from new\.school_id/i, 'Missing or cross-school members must be rejected');
 assert.match(
   sql,
+  /if tg_op = 'UPDATE' and new\.school_id is distinct from old\.school_id then\s+raise exception 'Permission school ownership cannot be reassigned'/i,
+  'Member permission tenant must be immutable even when member_id is changed at the same time'
+);
+assert.match(
+  sql,
   /tg_table_name in \([\s\S]*'schoolpro_library_books'[\s\S]*'schoolpro_promotions'[\s\S]*'schoolpro_members'[\s\S]*\)/i,
   'Tenant ownership must be immutable on operational and referenced parent tables'
 );

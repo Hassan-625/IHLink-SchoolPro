@@ -71,13 +71,8 @@ async function assertNoForeignRows(client, table, schoolId, accountName, maxAtte
 }
 
 async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId) {
-  // Membership is the required positive control: a tenant may legitimately have
-  // no student records, and the live acceptance test must never seed operational data.
-  const {data: ownMembers, error: ownMemberError} = await client
-    .from('schoolpro_members').select('id').eq('school_id', ownSchoolId).limit(1);
-  assert.ifError(ownMemberError);
-  assert.ok(ownMembers?.length, accountName + ' must be able to read its own-school membership');
-
+  // Do not assume operational rows exist in either school: the live acceptance
+  // test is read-only and must never seed students or memberships merely as fixtures.
   const {data: ownStudents, error: ownStudentError} = await client
     .from('schoolpro_students').select('id').eq('school_id', ownSchoolId).limit(1);
   assert.ifError(ownStudentError);

@@ -47,6 +47,8 @@ Historical, not freshly verified: 94 memberships (90 IH Academy, 4 HASSAN ACADEM
 - Preserve existing real data, shared IHLink/DataSub data, global profiles and Auth accounts, reusable role/permission definitions, global/default templates, audit/security history, required financial evidence, and Storage objects unless separately authorized.
 - The trusted API staging work for the Aiven experiment is no longer part of the SchoolPro target architecture. Do not use it to route production traffic or migrate data.
 - No production migration/import/cutover is planned. Do not run destructive cleanup or broad migrations as part of this direction change.
+- Read-only production recheck on 2026-10-28: all eight operational tables listed above still have RLS enabled but `FORCE ROW LEVEL SECURITY=false`; they are owned by `postgres`, whose role bypasses RLS. No schema changes or data writes were made by this check. This confirms the known Stage A posture gap remains; it does not by itself authorize applying a migration.
+- Closed as out of scope on 2026-10-28, retaining branches/history: PR #107 (MySQL migration foundation) and PR #109 (Aiven rehearsal API foundation).
 
 ## Required migration sequence A–J
 A. Authentication, identity mapping, tenant isolation, safe bootstrap.  

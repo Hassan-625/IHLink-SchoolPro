@@ -9,6 +9,7 @@ assert.match(source,/const requestVersion\s*=\s*\+\+profileRequestVersion/,'each
 assert.match(source,/active\s*&&\s*requestVersion\s*===\s*profileRequestVersion/,'stale profile responses must not overwrite access state');
 assert.match(source,/const eventVersion\s*=\s*\+\+authEventVersion/,'access-resolving auth events must be versioned');
 assert.match(source,/const eventVersion\s*=\s*\+\+authEventVersion;[\s\S]*?profileRequestVersion\+\+;[\s\S]*?setLoading\(true\);[\s\S]*?window\.setTimeout/,'a new auth event must invalidate an already-running profile request before scheduling its replacement');
+assert.match(source,/profileRequestVersion\+\+;[\s\S]*?setProfile\(null\);[\s\S]*?setAdminAccess\(\[\]\);[\s\S]*?setServiceAccess\(\[\]\);[\s\S]*?setLoading\(true\);[\s\S]*?window\.setTimeout/,'previous profile and product grants must be cleared before the new account profile is loaded');
 assert.match(source,/active\s*&&\s*eventVersion\s*===\s*authEventVersion/,'delayed callbacks from older auth events must be ignored');
 assert.match(source,/authEventVersion\+\+;\s*profileRequestVersion\+\+;\s*setProfile\(null\)/,'logout must invalidate scheduled and in-flight account loads');
 

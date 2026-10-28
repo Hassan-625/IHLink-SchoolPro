@@ -119,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // are the points where account access data should be resolved.
         if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN" && event !== "USER_UPDATED" && event !== "PASSWORD_RECOVERY") return;
         const eventVersion = ++authEventVersion;
+        // Invalidate any already-running profile/access query immediately. Waiting until
+        // the scheduled load starts leaves a window where the previous account can commit.
+        profileRequestVersion++;
         setLoading(true);
         window.setTimeout(() => {
           if (active && eventVersion === authEventVersion) void loadProfile(nextSession);

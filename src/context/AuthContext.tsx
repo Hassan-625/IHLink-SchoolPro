@@ -122,6 +122,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Invalidate any already-running profile/access query immediately. Waiting until
         // the scheduled load starts leaves a window where the previous account can commit.
         profileRequestVersion++;
+        // Do not pair the new session with the previous account's profile or grants while
+        // the replacement access snapshot is loading.
+        setProfile(null);
+        setAdminAccess([]);
+        setServiceAccess([]);
         setLoading(true);
         window.setTimeout(() => {
           if (active && eventVersion === authEventVersion) void loadProfile(nextSession);

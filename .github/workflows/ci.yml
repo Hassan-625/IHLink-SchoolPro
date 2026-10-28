@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -82,7 +83,9 @@ jobs:
         run: node scripts/test-schoolpro-receipt-storage-local.mjs
 
   tenant-acceptance:
-    if: ${{ vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
+    # Live tenant-account checks are manual-only; normal PR/push CI must not sign in
+    # to configured school accounts or require test-school fixtures.
+    if: ${{ github.event_name == 'workflow_dispatch' && vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

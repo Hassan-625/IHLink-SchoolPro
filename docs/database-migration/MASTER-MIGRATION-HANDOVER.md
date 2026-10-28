@@ -4,8 +4,8 @@
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
-**Aiven PostgreSQL target:** service `pg-316d7ad1`; database `schoolpro_rehearsal_20261018`  
-**Status:** Migration and production workspace cleanup are NOT complete.
+**Database direction (confirmed 2026-10-28):** Continue on the existing Supabase PostgreSQL project; Render remains the production frontend host. MySQL and Aiven are no longer target platforms for SchoolPro.  
+**Status:** No database-platform migration is planned. Continue only with narrowly scoped Supabase security/application work; preserve existing real data and do not seed business/demo records.
 
 ## Operating rules
 - Preserve the live production architecture and shared IHLink/DataSub data.
@@ -38,14 +38,15 @@ Historical, not freshly verified: 94 memberships (90 IH Academy, 4 HASSAN ACADEM
 - The FK catalog found one non-`school_id` restrictive dependency: `schoolpro_candidate_cbt_answers.question_id -> schoolpro_question_bank.id` (`NO ACTION`); the cleanup transaction explicitly accounted for this before the trigger stopped execution.
 - User clarified that workspace-specific records are disposable even when they reference reusable role labels or permissions: delete the records, retain role/permission definitions. This explicitly includes submitted and approved lesson notes. The scoped lesson-note deletion is complete; continue child-first cleanup of the remaining workspace records, preserving global profiles/auth accounts, reusable roles/permissions, global templates, all Storage objects, unrelated schools, shared IHLink/DataSub data, and required platform-wide/financial evidence. Do not delete a staff member's global profile or auth account merely because their workspace membership is removed.
 
-## Database migration — Supabase PostgreSQL to Aiven PostgreSQL
-- Decision: Aiven PostgreSQL is the target; the earlier MySQL foundation path was abandoned.
-- Target service: `pg-316d7ad1`; target rehearsal database: `schoolpro_rehearsal_20261018`.
-- Production frontend is on Render; stale README statements about Vercel are not operational truth.
-- Historical rehearsal baseline: 108 SchoolPro-related tables, 1,181 live columns, 110 live RLS policies; candidate policy comparison found 90 policies and 20 policy drift items.
-- Historical gaps: 397 live-only migration versions, 44 branch-only versions, 35-version provenance gap, 18 tables without direct `school_id`, 79 FKs crossing the SchoolPro boundary, 5 missing Edge Function sources, and 7 cron jobs. Reconcile before cutover.
-- Trusted API staging: `schoolpro-migration-api-staging`; last known health 200, readiness 503 with `identity_mapping_unverified`, and `IDENTITY_MAPPING_VERIFIED=false`. Keep fail-closed until identity mapping is verified.
-- No production migration/import/cutover has been completed.
+## Database platform direction — Supabase retained
+
+- Confirmed by the user on 2026-10-28: continue using the existing Supabase PostgreSQL project `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland); production frontend remains on Render at https://ihlink-schoolpro.onrender.com.
+- MySQL and Aiven are not target platforms for SchoolPro. The Aiven rehearsal and MySQL foundation were experiments only; no production cutover should be performed.
+- Do not create or seed demo/business records. Do not populate schools, students, sessions, classes, staff, results, subscriptions, or other operational tables with fabricated records.
+- Database changes are limited to what is necessary for application execution and security: authentication/identity mapping, role and permission definitions, RLS policies, tenant-isolation controls, constraints, indexes, triggers, and functions. Every change must have a concrete need and scoped validation.
+- Preserve existing real data, shared IHLink/DataSub data, global profiles and Auth accounts, reusable role/permission definitions, global/default templates, audit/security history, required financial evidence, and Storage objects unless separately authorized.
+- The trusted API staging work for the Aiven experiment is no longer part of the SchoolPro target architecture. Do not use it to route production traffic or migrate data.
+- No production migration/import/cutover is planned. Do not run destructive cleanup or broad migrations as part of this direction change.
 
 ## Required migration sequence A–J
 A. Authentication, identity mapping, tenant isolation, safe bootstrap.  

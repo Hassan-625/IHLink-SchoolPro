@@ -137,7 +137,8 @@ insert into public.schoolpro_results values
 ('40000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
 insert into public.schoolpro_members values
 ('50000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
-('50000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
+('50000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002'),
+('50000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000001');
 
 insert into public.schoolpro_lesson_notes values
 ('60000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001');
@@ -191,8 +192,19 @@ select pg_temp.assert_rejected('cross-school promotion destination class',
   $$insert into public.schoolpro_promotions values ('80000000-0000-0000-0000-000000000013','00000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002')$$,
   'Destination class belongs to another school');
 select pg_temp.assert_rejected('cross-school permission member',
-  $$insert into public.schoolpro_member_permissions values ('90000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000002')$$,
+  $insert into public.schoolpro_member_permissions values ('90000000-0000-0000-0000-000000000011','00000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000002')$,
   'Permission member belongs to another school');
+
+-- A permission may be reassigned to another member within the same school.
+update public.schoolpro_member_permissions
+set member_id='50000000-0000-0000-0000-000000000003'
+where id='90000000-0000-0000-0000-000000000001';
+select pg_temp.assert_rejected('permission tenant and member reassignment together',
+  $update public.schoolpro_member_permissions
+    set school_id='00000000-0000-0000-0000-000000000002',
+        member_id='50000000-0000-0000-0000-000000000002'
+    where id='90000000-0000-0000-0000-000000000001'$,
+  'Permission school ownership cannot be reassigned');
 select pg_temp.assert_rejected('subject parent reassignment',
   $$update public.schoolpro_subjects set school_id='00000000-0000-0000-0000-000000000002' where id='10000000-0000-0000-0000-000000000001'$$,
   'School ownership cannot be reassigned');

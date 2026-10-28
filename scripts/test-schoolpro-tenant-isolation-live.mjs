@@ -91,8 +91,24 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     await assertNoForeignRows(client, table, otherSchoolId, accountName);
   }
 
+  const [{data: ownProfile, error: ownProfileError}, {data: ownPermissions, error: ownPermissionsError}] = await Promise.all([
+    client.from('profiles').select('id,status').eq('id', (await client.auth.getUser()).data.user?.id).maybeSingle(),
+    client.rpc('schoolpro_user_permissions', {p_school: ownSchoolId}),
+  ]);
+  assert.ifError(ownProfileError);
+  assert.ifError(ownPermissionsError);
+  console.log('DIAGNOSTIC', accountName, 'profile status:', ownProfile?.status ?? 'not visible');
+  console.log('DIAGNOSTIC', accountName, 'own-school dashboard permission:', Array.isArray(ownPermissions) && ownPermissions.includes('dashboard'));
+
   const {data: ownPeriod, error: ownPeriodError} = await client.rpc('schoolpro_current_academic_period', {p_school: ownSchoolId});
-  assert.ifError(ownPeriodError);
+  if (ownPeriodError) {
+    throw new Error(
+      accountName + ' own-school academic-period RPC denied: ' + describeError(ownPeriodError) +
+      '; profile status=' + (ownProfile?.status ?? 'not visible') +
+      '; dashboard permission=' + (Array.isArray(ownPermissions) && ownPermissions.includes('dashboard')) +
+      '. The RPC also requires an operational school with an active subscription, so inspect that school/subscription state before treating this as a tenant-isolation defect.',
+    );
+  }
   assert.ok(ownPeriod && typeof ownPeriod === 'object', accountName + ' must be able to call the own-school academic-period RPC');
   const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
   assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC');

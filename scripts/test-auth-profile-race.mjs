@@ -8,6 +8,7 @@ assert.match(source,/let profileRequestVersion\s*=\s*0/,'profile loads need a mo
 assert.match(source,/const requestVersion\s*=\s*\+\+profileRequestVersion/,'each profile load must supersede prior loads');
 assert.match(source,/active\s*&&\s*requestVersion\s*===\s*profileRequestVersion/,'stale profile responses must not overwrite access state');
 assert.match(source,/const eventVersion\s*=\s*\+\+authEventVersion/,'access-resolving auth events must be versioned');
+assert.match(source,/const eventVersion\s*=\s*\+\+authEventVersion;[\\s\\S]*?profileRequestVersion\+\+;[\\s\\S]*?setLoading\(true\);[\\s\\S]*?window\.setTimeout/,'a new auth event must invalidate an already-running profile request before scheduling its replacement');
 assert.match(source,/active\s*&&\s*eventVersion\s*===\s*authEventVersion/,'delayed callbacks from older auth events must be ignored');
 assert.match(source,/authEventVersion\+\+;\s*profileRequestVersion\+\+;\s*setProfile\(null\)/,'logout must invalidate scheduled and in-flight account loads');
 
@@ -18,6 +19,9 @@ const scheduledB=++authEventVersion;
 assert.notEqual(scheduledA,scheduledB);
 assert.equal(scheduledA===authEventVersion,false,'an old scheduled sign-in callback must be rejected');
 assert.equal(scheduledB===authEventVersion,true,'the latest scheduled sign-in callback may proceed');
+let inFlightProfile=++profileRequestVersion;
+profileRequestVersion++; // a newer accepted auth event arrives before its scheduled callback runs
+assert.equal(inFlightProfile===profileRequestVersion,false,'a prior account response must be invalidated immediately when the next auth event arrives');
 const profileA=++profileRequestVersion;
 const profileB=++profileRequestVersion;
 assert.equal(profileA===profileRequestVersion,false,'an older account profile response must not commit');

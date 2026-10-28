@@ -179,6 +179,13 @@ as $$
 declare
   member_school uuid;
 begin
+  -- The permission row's tenant is immutable. Otherwise a privileged writer
+  -- could change school_id and member_id together to a valid pair in another
+  -- school and satisfy the relationship check below.
+  if tg_op = 'UPDATE' and new.school_id is distinct from old.school_id then
+    raise exception 'Permission school ownership cannot be reassigned';
+  end if;
+
   select school_id into member_school
   from public.schoolpro_members where id = new.member_id for share;
 

@@ -91,14 +91,35 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     await assertNoForeignRows(client, table, otherSchoolId, accountName);
   }
 
-  const [{data: ownProfile, error: ownProfileError}, {data: ownPermissions, error: ownPermissionsError}] = await Promise.all([
-    client.from('profiles').select('id,status').eq('id', (await client.auth.getUser()).data.user?.id).maybeSingle(),
+  const {data: currentUserResult, error: currentUserError} = await client.auth.getUser();
+  assert.ifError(currentUserError);
+  const currentUserId = currentUserResult.user?.id;
+  assert.ok(currentUserId, accountName + ' must have an authenticated user ID');
+  const [
+    {data: ownProfile, error: ownProfileError},
+    {data: ownPermissions, error: ownPermissionsError},
+    {data: ownMembership, error: ownMembershipError},
+    {data: ownSchool, error: ownSchoolError},
+    {data: ownSubscription, error: ownSubscriptionError},
+  ] = await Promise.all([
+    client.from('profiles').select('id,status').eq('id', currentUserId).maybeSingle(),
     client.rpc('schoolpro_user_permissions', {p_school: ownSchoolId}),
+    client.from('schoolpro_members').select('role').eq('school_id', ownSchoolId).eq('user_id', currentUserId).maybeSingle(),
+    client.from('schoolpro_schools').select('owner_id,status').eq('id', ownSchoolId).maybeSingle(),
+    client.from('schoolpro_subscriptions').select('status,renews_at').eq('school_id', ownSchoolId).order('updated_at', {ascending: false}).limit(1).maybeSingle(),
   ]);
   assert.ifError(ownProfileError);
   assert.ifError(ownPermissionsError);
   console.log('DIAGNOSTIC', accountName, 'profile status:', ownProfile?.status ?? 'not visible');
   console.log('DIAGNOSTIC', accountName, 'own-school dashboard permission:', Array.isArray(ownPermissions) && ownPermissions.includes('dashboard'));
+  console.log('DIAGNOSTIC', accountName, 'own membership role:', ownMembershipError ? 'query denied/error' : (ownMembership?.role ?? 'no visible matching membership'));
+  console.log('DIAGNOSTIC', accountName, 'configured school ownership matches user:', ownSchoolError ? 'query denied/error' : (ownSchool ? ownSchool.owner_id === currentUserId : 'school not visible'));
+  console.log('DIAGNOSTIC', accountName, 'configured school status:', ownSchoolError ? 'query denied/error' : (ownSchool?.status ?? 'not visible'));
+  const subscriptionCurrentlyValid = Boolean(
+    ownSubscription && ownSubscription.status === 'active' &&
+    (!ownSubscription.renews_at || new Date(ownSubscription.renews_at).getTime() >= Date.now() - 14 * 24 * 60 * 60 * 1000),
+  );
+  console.log('DIAGNOSTIC', accountName, 'active subscription currently valid:', ownSubscriptionError ? 'query denied/error' : subscriptionCurrentlyValid);
 
   const {data: ownPeriod, error: ownPeriodError} = await client.rpc('schoolpro_current_academic_period', {p_school: ownSchoolId});
   if (ownPeriodError) {
@@ -106,7 +127,7 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
       accountName + ' own-school academic-period RPC denied: ' + describeError(ownPeriodError) +
       '; profile status=' + (ownProfile?.status ?? 'not visible') +
       '; dashboard permission=' + (Array.isArray(ownPermissions) && ownPermissions.includes('dashboard')) +
-      '. The RPC also requires an operational school with an active subscription, so inspect that school/subscription state before treating this as a tenant-isolation defect.',
+      '. Read-only membership, ownership, school-status and subscription diagnostics above should identify whether the configured test identity/ID mapping or school operational state is the cause; do not treat this as a tenant-isolation defect without evidence.',
     );
   }
   assert.ok(ownPeriod && typeof ownPeriod === 'object', accountName + ' must be able to call the own-school academic-period RPC');

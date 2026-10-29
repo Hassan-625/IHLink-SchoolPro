@@ -325,3 +325,141 @@ select (
   \quit 1
 \endif
 reset role;
+
+
+-- Combined feature-trigger stack checks. These run after the original positional fixture
+-- inserts so the additional workflow columns do not change those earlier fixture shapes.
+-- The workflow function below mirrors the production lesson workflow guard; helper scopes
+-- are deterministic test doubles, while the tenant-integrity migration remains real.
+create schema if not exists auth;
+create or replace function auth.uid()
+returns uuid language sql stable
+as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+
+alter table public.schoolpro_lesson_notes
+  add column title text,
+  add column content text,
+  add column status text not null default 'draft',
+  add column created_by uuid,
+  add column lesson_date date,
+  add column term text,
+  add column session text,
+  add column week integer,
+  add column duration_minutes integer,
+  add column plan jsonb not null default '{}'::jsonb,
+  add column review_comment text,
+  add column reviewed_by uuid,
+  add column reviewed_at timestamptz,
+  add column updated_at timestamptz not null default now();
+
+create or replace function private.schoolpro_lesson_leader(p_school uuid)
+returns boolean language sql stable
+as $$ select coalesce(nullif(current_setting('test.lesson_leader', true), '')::boolean, false) $$;
+create or replace function private.schoolpro_lesson_author_scope(p_school uuid, p_class uuid, p_subject uuid)
+returns boolean language sql stable
+as $$ select p_class is not null and p_subject is not null $$;
+
+create or replace function private.schoolpro_validate_lesson_workflow()
+returns trigger language plpgsql security definer set search_path='' as $$
+declare leader boolean;
+begin
+ if auth.uid() is null then raise exception 'Sign in to manage lesson notes'; end if;
+ leader:=private.schoolpro_lesson_leader(case when tg_op='DELETE' then old.school_id else new.school_id end);
+ if tg_op='DELETE' then
+  if old.status in('submitted','approved') then raise exception 'Reviewed or submitted lessons must be retained'; end if;
+  return old;
+ end if;
+ if new.status not in('draft','submitted','approved','changes_requested') then raise exception 'Choose a valid lesson status'; end if;
+ if tg_op='INSERT' then
+  new.created_by:=auth.uid();
+  if new.status not in('draft','submitted') then raise exception 'Save a draft or submit it for review first'; end if;
+  new.review_comment:=null;new.reviewed_by:=null;new.reviewed_at:=null;
+ else
+  if new.school_id<>old.school_id or new.created_by is distinct from old.created_by then raise exception 'Lesson ownership cannot be changed'; end if;
+  if old.status='approved' then raise exception 'Approved lessons must be retained; prepare a new copy'; end if;
+  if not leader then
+   if old.status='submitted' then raise exception 'Wait for school review before editing this lesson'; end if;
+   if new.status not in('draft','submitted') then raise exception 'Only school leadership can review a lesson'; end if;
+   if new.review_comment is distinct from old.review_comment or new.reviewed_by is distinct from old.reviewed_by or new.reviewed_at is distinct from old.reviewed_at then raise exception 'School review cannot be changed'; end if;
+  elsif new.status in('approved','changes_requested') and new.status is distinct from old.status then
+   if old.status<>'submitted' then raise exception 'Only a submitted lesson can be reviewed'; end if;
+   if new.status='changes_requested' and coalesce(trim(new.review_comment),'')='' then raise exception 'Explain the changes needed'; end if;
+   if (to_jsonb(new)-array['status','review_comment','reviewed_by','reviewed_at','updated_at']) is distinct from (to_jsonb(old)-array['status','review_comment','reviewed_by','reviewed_at','updated_at']) then raise exception 'Review the saved lesson without changing its content'; end if;
+   new.reviewed_by:=auth.uid();new.reviewed_at:=now();
+  elsif old.status='submitted' then raise exception 'Approve the lesson or request changes'; end if;
+ end if;
+ if not leader and not private.schoolpro_lesson_author_scope(new.school_id,new.class_id,new.subject_id) then raise exception 'Choose your assigned class and subject'; end if;
+ if new.week is not null and (new.week<1 or new.week>53) then raise exception 'Week must be between 1 and 53'; end if;
+ if new.duration_minutes is not null and (new.duration_minutes<1 or new.duration_minutes>480) then raise exception 'Choose a lesson duration between 1 and 480 minutes'; end if;
+ if jsonb_typeof(new.plan)<>'object' then raise exception 'Lesson plan must contain named fields'; end if;
+ if new.status='submitted' and (new.class_id is null or new.subject_id is null or new.lesson_date is null or coalesce(trim(new.term),'')='' or coalesce(trim(new.session),'')='' or coalesce(trim(new.title),'')='' or coalesce(trim(new.plan->>'objectives'),'')='' or coalesce(trim(new.content),'')='') then raise exception 'Complete the class, subject, date, period, objectives and lesson content before submission'; end if;
+ new.updated_at:=now();return new;
+end;
+$$;
+drop trigger if exists schoolpro_lesson_workflow on public.schoolpro_lesson_notes;
+create trigger schoolpro_lesson_workflow before insert or update or delete
+on public.schoolpro_lesson_notes for each row execute function private.schoolpro_validate_lesson_workflow();
+
+-- Verify ordinary lesson author save/submit, author self-approval rejection, immutable
+-- submitted content, and leadership approval alongside the real tenant guard trigger.
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000101',false);
+select set_config('test.lesson_leader','false',false);
+insert into public.schoolpro_lesson_notes
+ (id,school_id,subject_id,class_id,title,content,lesson_date,term,session,plan,status)
+values
+ ('60000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',
+  'Trigger-stack lesson','Draft content',current_date,'First Term','2026/2027',
+  '{"objectives":"Explain the topic"}','draft');
+select pg_temp.assert_rejected('lesson author cannot self-approve',
+ $$update public.schoolpro_lesson_notes set status='approved' where id='60000000-0000-0000-0000-000000000101'$$,
+ 'Only school leadership can review a lesson');
+update public.schoolpro_lesson_notes set status='submitted'
+where id='60000000-0000-0000-0000-000000000101';
+select pg_temp.assert_rejected('submitted lesson content is immutable to author',
+ $$update public.schoolpro_lesson_notes set content='Changed after submission' where id='60000000-0000-0000-0000-000000000101'$$,
+ 'Wait for school review before editing this lesson');
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000102',false);
+select set_config('test.lesson_leader','true',false);
+update public.schoolpro_lesson_notes set status='approved'
+where id='60000000-0000-0000-0000-000000000101';
+do $$ begin
+ if not exists(select 1 from public.schoolpro_lesson_notes where id='60000000-0000-0000-0000-000000000101' and status='approved' and reviewed_by='60000000-0000-0000-0000-000000000102') then
+  raise exception 'FAIL: leadership approval did not retain reviewer identity';
+ end if;
+end $$;
+
+-- The production calendar workflow function's validation contract is exercised with a
+-- compact disposable equivalent, alongside the real immutable-school tenant guard.
+alter table public.schoolpro_calendar_events
+ add column event_date date,
+ add column end_date date,
+ add column class_id uuid;
+create or replace function private.validate_schoolpro_workflow_record()
+returns trigger language plpgsql set search_path='' as $$
+begin
+ if tg_op='UPDATE' and new.school_id is distinct from old.school_id then
+  raise exception 'A record cannot be moved to another school';
+ end if;
+ if new.end_date<new.event_date then raise exception 'The event end date must not be before its start date'; end if;
+ if new.class_id is not null and not exists(select 1 from public.schoolpro_classes where id=new.class_id and school_id=new.school_id) then
+  raise exception 'Choose a class from this school';
+ end if;
+ return new;
+end;
+$$;
+drop trigger if exists validate_schoolpro_calendar_workflow on public.schoolpro_calendar_events;
+create trigger validate_schoolpro_calendar_workflow before insert or update
+on public.schoolpro_calendar_events for each row execute function private.validate_schoolpro_workflow_record();
+
+insert into public.schoolpro_calendar_events(id,school_id,event_date,end_date,class_id)
+values ('a5000000-0000-0000-0000-000000000101','00000000-0000-0000-0000-000000000001',current_date,current_date,'20000000-0000-0000-0000-000000000001');
+select pg_temp.assert_rejected('calendar rejects reversed date range',
+ $$insert into public.schoolpro_calendar_events(id,school_id,event_date,end_date) values ('a5000000-0000-0000-0000-000000000102','00000000-0000-0000-0000-000000000001',current_date,current_date-1)$$,
+ 'The event end date must not be before its start date');
+select pg_temp.assert_rejected('calendar rejects foreign-school class',
+ $$insert into public.schoolpro_calendar_events(id,school_id,event_date,end_date,class_id) values ('a5000000-0000-0000-0000-000000000103','00000000-0000-0000-0000-000000000001',current_date,current_date,'20000000-0000-0000-0000-000000000002')$$,
+ 'Choose a class from this school');
+select pg_temp.assert_rejected('calendar tenant reassignment remains blocked with workflow trigger',
+ $$update public.schoolpro_calendar_events set school_id='00000000-0000-0000-0000-000000000002' where id='a5000000-0000-0000-0000-000000000101'$$,
+ 'School ownership cannot be reassigned');

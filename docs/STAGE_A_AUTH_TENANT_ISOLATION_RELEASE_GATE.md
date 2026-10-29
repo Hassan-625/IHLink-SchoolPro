@@ -232,3 +232,8 @@ Manual run [#40875207947](https://github.com/Hassan-625/IHLink-SchoolPro/actions
 ## Migration provenance snapshot — 2026-10-29
 
 Read-only comparison found 485 live migration-ledger entries versus 136 migration files in the Stage A branch: 79 matching version IDs, 406 live-only versions, and 57 branch-only versions. Twelve Stage A SQL proposals are branch-only, including the result-PIN, payment-review, tenant-integrity, forward RLS, and operational-index changes. The live ledger also contains later entries absent from the branch, including `20261028130707_index_schoolpro_result_events_result_id_for_workspace_cleanup`. This is source/ledger drift, not permission to replay or bulk-mark migrations. Reconcile catalog state and migration effects individually before any production DDL. No production changes were made by this comparison.
+
+
+## Live operational-index preflight — 2026-10-29
+
+Read-only catalog inspection found none of the six proposed `school_id` indexes present as valid/ready indexes. All six tables have RLS enabled and `FORCE RLS=false`. A bounded `EXPLAIN (FORMAT JSON)` on `schoolpro_result_approvals` selected a sequential scan (estimated total cost 747). This supports investigating the index proposal but does not prove the index alone will resolve the earlier timeout. The migration is still unapplied; no production DDL or data changes were made. Obtain explicit production-change approval before applying any index or RLS/integrity migration.

@@ -276,3 +276,10 @@ A source-only review of the proposed operational index migration identified an e
 - The runbook is documentation, not permission to run production DDL. The existing transactional six-index migration remains unchanged. Concurrent index creation must be rehearsed outside a transaction, and any failed build/invalid index requires reviewed cleanup before retry.
 - No production SQL/migrations, data writes, test accounts/schools, merges, or deployments were performed. Stage A remains open until index verification and authenticated two-school acceptance pass; B remains gated.
 
+### User decision — no additional Supabase branch — 2026-10-29
+
+- User explicitly declined any additional Supabase branch. Do not create one or ask again.
+- The concurrent-index runbook is retained as reference documentation only; its isolated-branch rehearsal step is not the chosen path. Do not treat the runbook as authorization to run SQL.
+- Continue with repository/source review and available read-only evidence against the existing environment. No production DDL, migrations, row writes, test accounts/schools, migration-ledger edits, merges, or deployments without explicit approval.
+- Because a safe isolated rehearsal is not available and the previous authenticated probe timed out on `schoolpro_result_approvals`, do not claim the index fix or tenant isolation is validated. Keep Stage A open and Stage B gated; seek a non-destructive, read-only way to diagnose the timeout and validate the proposed plan before proposing any production change.
+

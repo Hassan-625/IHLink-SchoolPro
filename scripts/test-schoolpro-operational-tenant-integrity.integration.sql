@@ -11,6 +11,15 @@ create table public.schoolpro_members (id uuid primary key, school_id uuid not n
 create table public.schoolpro_lesson_notes (id uuid primary key, school_id uuid not null, subject_id uuid, class_id uuid);
 create table public.schoolpro_result_approvals (id uuid primary key, school_id uuid not null, result_id uuid not null);
 create table public.schoolpro_promotions (id uuid primary key, school_id uuid not null, student_id uuid not null, from_class_id uuid, to_class_id uuid);
+create policy "lesson notes authorized access" on public.schoolpro_lesson_notes for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "result approvals authorized access" on public.schoolpro_result_approvals for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
+create policy "promotions authorized access" on public.schoolpro_promotions for all to authenticated
+  using (school_id::text = current_setting('test.school_id', true))
+  with check (school_id::text = current_setting('test.school_id', true));
 create table public.schoolpro_member_permissions (id uuid primary key, school_id uuid not null, member_id uuid not null);
 
 -- Minimal fixtures for the forward-only RLS posture repair. Keep feature policy names
@@ -101,7 +110,8 @@ insert into public.schoolpro_calendar_events values
  ('a5000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001'),
  ('a5000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002');
 grant select, insert on public.schoolpro_library_books, public.schoolpro_transport_routes,
- public.schoolpro_hostel_rooms, public.schoolpro_inventory_assets, public.schoolpro_calendar_events to authenticated;
+ public.schoolpro_hostel_rooms, public.schoolpro_inventory_assets, public.schoolpro_calendar_events,
+ public.schoolpro_lesson_notes, public.schoolpro_result_approvals, public.schoolpro_promotions to authenticated;
 
 -- Run the visibility assertion as the ordinary authenticated role, not as the table owner.
 set role authenticated;
@@ -146,6 +156,36 @@ insert into public.schoolpro_result_approvals values
 ('70000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001');
 insert into public.schoolpro_promotions values
 ('80000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001');
+
+-- Add School B child rows after their referenced parent rows exist.
+insert into public.schoolpro_lesson_notes values
+('60000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_result_approvals values
+('70000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_promotions values
+('80000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000002');
+
+-- Authenticated School A must see exactly its own row across all eight tables.
+set role authenticated;
+select set_config('test.school_id','00000000-0000-0000-0000-000000000001',false);
+select (
+  (select count(*) from public.schoolpro_library_books)=1 and
+  (select count(*) from public.schoolpro_transport_routes)=1 and
+  (select count(*) from public.schoolpro_hostel_rooms)=1 and
+  (select count(*) from public.schoolpro_inventory_assets)=1 and
+  (select count(*) from public.schoolpro_calendar_events)=1 and
+  (select count(*) from public.schoolpro_lesson_notes)=1 and
+  (select count(*) from public.schoolpro_result_approvals)=1 and
+  (select count(*) from public.schoolpro_promotions)=1
+) as all_eight_tenant_rows_scoped \gset
+\if :all_eight_tenant_rows_scoped
+  \echo 'PASS: authenticated role sees only its own tenant rows across all eight operational tables.'
+\else
+  \echo 'FAIL: authenticated role saw missing or cross-tenant rows in the eight operational tables.'
+  \quit 1
+\endif
+reset role;
+
 insert into public.schoolpro_member_permissions values
 ('90000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001');
 

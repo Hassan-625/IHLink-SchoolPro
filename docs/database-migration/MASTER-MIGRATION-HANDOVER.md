@@ -370,3 +370,21 @@ PRs #107 (MySQL) and #109 (Aiven) were closed because the user chose to stay on 
 - Checked GitHub file history for three representative same-name/different-version pairs: `schoolpro_finance_and_result_access`, `schoolpro_parent_portal`, and `schoolpro_remote_migration_sync_ledger`. Their current branch files were introduced by the 2026-09-26 “Restore SchoolPro migration” commit, while the live ledger records different versions for the same names. This supports a source-restoration/timestamp-provenance explanation for at least these samples, but it does **not** prove the restored file contents are byte-identical to the SQL originally applied in production.
 - Inspected `20260926114500_schoolpro_remote_migration_sync_ledger.sql`: it is a documentation/boundary marker ending in `select 1;`; it does not insert or update the Supabase migration ledger. Its comments list a historical applied-migration boundary and explicitly say not to replay inferred production DDL. Do not treat this file as a reconciliation mechanism or run it against production for that purpose.
 - The remaining exact-version/name mismatches and the live-only set still require source/commit provenance evidence. The safe output is an evidence matrix, not a guessed “repair” migration. No production writes or migration-ledger changes were made.
+
+
+### Migration provenance matrix — first-pass classification — 2026-10-29
+
+Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, migration filenames on `release/stage-a-auth-tenant-isolation`, GitHub file SHAs, and selected GitHub commit histories. The exact-version comparison was repeated for this matrix; counts remain 485 live entries, 136 branch files, 79 exact-version matches, 406 live-only versions, and 57 branch-only versions.
+
+| Classification | Count | Interpretation / safe handling |
+|---|---:|---|
+| Exact version match | 79 | Version exists in both lists; this does not prove source content equals deployed schema. |
+| Same migration name, different version | 24 | Timestamp/provenance conflict; compare historical file contents and commit history, do not rename or mark applied by assumption. |
+| Branch-only name and version | 33 | Not present in the current live ledger by exact version or name; treat as unapplied/uncertain until evidence proves otherwise. Never auto-apply. |
+| Live-only versions | 406 | Version not present in the current branch inventory; may reflect ecosystem migrations, deleted/restored files, or branch coverage gaps. Do not label every entry “missing SchoolPro source.” |
+
+**Important scope split:** the live-only set spans the wider IHLink ecosystem, not just SchoolPro. Examples include DataSub and BillStack migration names. It also includes late SchoolPro changes, such as `20261019192635 fix_schoolpro_document_tenant_scope`, `20261019193201 enforce_published_locked_family_result_reads`, and `20261028130707 index_schoolpro_result_events_result_id_for_workspace_cleanup`. These examples establish that the Stage A branch inventory is not a complete mirror of the current live ledger; they do not justify importing/replaying these migrations or changing the branch automatically.
+
+**First-pass provenance finding:** GitHub history for the representative same-name/different-version samples indicates a 2026-09-26 “Restore SchoolPro migration” commit for some restored files. The sync-marker migration itself is documentation plus `select 1`, not a ledger-repair operation. Source-file equality with historical deployed SQL remains unproven. Thus the matrix classifies evidence only; it is not an execution plan.
+
+**Next safe gate:** review the 33 branch-only migrations as a bounded list and classify each by scope (Stage A security, other SchoolPro feature, payment/subscription, ecosystem/DataSub, or sync marker), then inspect live ledger and commit provenance for the Stage A-relevant subset. Do not run Supabase migration commands, alter the live ledger, replay migrations, merge PR #106, or deploy as part of this review. Production remains unchanged; PR #106 remains draft/unmerged; tenant acceptance remains skipped/unverified.

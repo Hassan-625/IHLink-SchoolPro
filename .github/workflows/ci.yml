@@ -23,7 +23,9 @@ jobs:
       - run: node scripts/test-school-context-relationships.mjs
       - run: node scripts/test-school-lesson-paging.mjs
       - run: node scripts/test-result-section-data.mjs
+      - run: node scripts/test-result-workflow.mjs
       - run: node scripts/test-class-results-export.mjs
+      - run: node scripts/test-school-student-selection.mjs
       - run: node scripts/test-operational-roles.mjs
       - run: node scripts/test-native-entry-security.mjs
       - run: node scripts/test-browser-vault.mjs

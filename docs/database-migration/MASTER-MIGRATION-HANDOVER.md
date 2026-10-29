@@ -342,6 +342,6 @@ PRs #107 (MySQL) and #109 (Aiven) were closed because the user chose to stay on 
 
 - PR #106 head `38609c542c0ad992b12036b90d97c6e9c7ba94df` extends the disposable PostgreSQL operational tenant-integrity fixture with representative tenant-scoped policies for `schoolpro_lesson_notes`, `schoolpro_result_approvals`, and `schoolpro_promotions`.
 - It seeds School B rows for those tables only after their referenced subject/class/student/result fixtures exist, then asserts that an authenticated School A role sees exactly one own-school row across all eight operational tables.
-- Exact-head SchoolPro CI #2050 and payment-page validation #1775 started for this commit. The tenant-acceptance job is skipped because live acceptance is manual/conditional and there are no active school workspaces; this is not counted as a pass.
-- Await the disposable tenant-integrity job and all exact-head checks. PR #106 remains draft/unmerged. No production database changes, migrations, workspace creation, or deployment were performed.
+- Exact-head SchoolPro CI #2050 passed all seven executable jobs, including `tenant-integrity-db-integration`; `tenant-acceptance` was skipped (manual/conditional; no active school workspaces) and is not counted as a pass. Payment-page validation #1775 also passed.
+- This closes the specific disposable fixture-coverage action. Next review gate is full-schema/trigger interaction and migration-ledger reconciliation. PR #106 remains draft/unmerged pending those gates and remaining release checks. No production database changes, migrations, workspace creation, or deployment were performed.
 

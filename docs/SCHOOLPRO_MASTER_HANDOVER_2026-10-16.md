@@ -217,3 +217,24 @@ A draft forward-only repair now exists at `supabase/migrations/20261016160000_sc
 - The payment-review static regression test was aligned with the final draft policy implementation by removing stale comment-text assertions; it now asserts the actual restrictive-policy boundaries, guardian ownership checks, Super Admin SELECT-only policies, and no destructive data statements. The exact-head CI passed after this test correction.
 - These are source/static and CI results only. The payment RLS migration has not been applied to production, and the payment policies have not been exercised under real authenticated roles in a disposable PostgreSQL RLS fixture. That role-based integration test, payment lifecycle/concurrency tests, and full-schema interaction review remain open.
 - Stage A remains **NOT MERGE-READY**. The latest tested commit does not clear the existing Storage performance, result-PIN trusted-network/runtime, migration-provenance, payment lifecycle, or receipt-Storage gates. No production migration, row write, Render deployment or merge occurred.
+
+---
+
+## Continuation update — 2026-10-29
+
+### Stage A — public result-PIN ambiguity hardening
+
+- Code/test head before this handover update: `633df525feb695711cb89ff17bcf5a101008c470` on `release/stage-a-auth-tenant-isolation`, PR #106.
+- Review found that `check_schoolpro_result_pin` selected the newest matching student after filtering by admission number and PIN. Admission numbers are only school-unique, and a PIN collision across schools could make that selection ambiguous.
+- The draft migration `20261016122000_schoolpro_result_pin_attempt_rate_limit.sql` now counts active candidates matching admission number, term, session and PIN. More than one match returns the same generic failure and increments the attempt counter; it no longer chooses the newest row arbitrarily.
+- Added a disposable PostgreSQL integration case that creates an identical admission/PIN pair across two synthetic schools, asserts fail-closed behavior, then restores a unique PIN and confirms the intended student's result can still be retrieved.
+- On code/test head `633df525feb695711cb89ff17bcf5a101008c470`, the `result-pin-rate-limit-integration`, `result-verification-exposure-integration`, `payment-review-rls-integration`, `tenant-integrity-db-integration`, and `public-admission-abuse-integration` jobs passed; the static `validate` checks and local receipt-Storage job were still running at the last status check. Payment-page validation was also still running. Do not claim full exact-head CI until all jobs complete and the final documentation head is rechecked.
+- This is draft-branch code only. No production migration, data write, merge or Render deployment was performed. PR #106 remains draft and unmerged.
+
+### Preserve the user's detailed Stage B/C score-entry requirement
+
+- Do not require a teacher or section head to wait until every assessment has been entered before saving or submitting scores. Support assessment-by-assessment entry and persistence (for example, first CA/assignment, subsequent assessment, then examination) with clear partial/incomplete states and safe resume/edit behavior.
+- Section heads must be able to enter, compile and review scores for their assigned section/class assessment-by-assessment, not merely wait for a complete score bundle from all teachers. Enforce the assigned-section scope; retain Exam Officer review/publication class-by-class and preserve the approved teacher → form master check → section head → Exam Officer workflow.
+- Keep all existing unmerged PR requirements and implementation notes under the Stage B planning register rather than dropping them. This clarification is recorded now, but implementation remains gated: continue Stage A first; do not start B until A is approved, merged and post-merge verified.
+
+This update records source/test progress and preserves the roadmap; it does not authorize production migration, merge, deployment or production data changes.

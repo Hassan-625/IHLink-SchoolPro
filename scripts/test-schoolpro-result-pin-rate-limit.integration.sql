@@ -123,11 +123,24 @@ begin
     raise exception 'Unknown admission did not trigger hashed admission-period cooldown';
   end if;
 
-  -- After an expired cooldown, a valid published-result lookup succeeds and clears its key.
-  update private.schoolpro_result_pin_attempts
-    set blocked_until = now() - interval '1 second',
-        window_started_at = now() - interval '16 minutes'
-  where attempt_key = encode(extensions.digest('sp-test-001','sha256'),'hex');
+  -- If two schools have the same admission number AND the same valid PIN for
+  -- this period, the public checker must fail closed rather than pick the newest row.
+  update public.schoolpro_result_access_pins
+  set pin_hash = encode(extensions.digest('1234','sha256'),'hex')
+  where id = '20000000-0000-0000-0000-000000000002';
+  delete from private.schoolpro_result_pin_attempts;
+  result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','1234');
+  if coalesce((result->>'ok')::boolean,true)
+     or result->>'message' <> 'Result details or access PIN are invalid.' then
+    raise exception 'Ambiguous cross-school admission/PIN pair did not fail closed: %', result;
+  end if;
+
+  update public.schoolpro_result_access_pins
+  set pin_hash = encode(extensions.digest('9999','sha256'),'hex')
+  where id = '20000000-0000-0000-0000-000000000002';
+
+  -- After an expired cooldown, a unique valid published-result lookup succeeds and clears its key.
+  delete from private.schoolpro_result_pin_attempts;
   result := public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','1234');
   if not coalesce((result->>'ok')::boolean,false) then
     raise exception 'Valid PIN should succeed after cooldown expires: %', result;

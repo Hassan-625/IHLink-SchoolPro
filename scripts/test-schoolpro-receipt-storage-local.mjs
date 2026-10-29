@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process';
 import {mkdtemp, mkdir, readFile, rm, writeFile, copyFile} from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import net from 'node:net';
 import {fileURLToPath} from 'node:url';
 import {createClient} from '@supabase/supabase-js';
 
@@ -14,6 +15,22 @@ const supabaseDir = path.join(tempRoot, 'supabase');
 const migrationDir = path.join(supabaseDir, 'migrations');
 const bucket = 'schoolpro-payment-receipts';
 let stackStarted = false;
+
+async function allocateAvailablePort(excluded = new Set()) {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const server = net.createServer();
+    const port = await new Promise((resolve, reject) => {
+      server.once('error', reject);
+      server.listen(0, '0.0.0.0', () => {
+        const address = server.address();
+        resolve(typeof address === 'object' && address ? address.port : null);
+      });
+    });
+    await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+    if (port && !excluded.has(port)) return port;
+  }
+  throw new Error('Could not allocate a unique local Supabase database port');
+}
 
 function runSupabase(args, options = {}) {
   return execFileSync('supabase', args, {
@@ -59,8 +76,14 @@ async function signIn(url, anonKey, email, password) {
 
 try {
   await mkdir(migrationDir, {recursive: true});
+  // Supabase CLI defaults to 54322, which can already be occupied on hosted CI runners.
+  // Select a free local port so this isolated stack does not collide with runner services.
+  const dbPort = await allocateAvailablePort();
   await writeFile(path.join(supabaseDir, 'config.toml'), [
     'project_id = "schoolpro-receipt-storage-test"',
+    '',
+    '[db]',
+    `port = ${dbPort}`,
     '',
     '[db.migrations]',
     'enabled = true',

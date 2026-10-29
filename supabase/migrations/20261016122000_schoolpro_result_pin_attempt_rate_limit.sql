@@ -72,6 +72,7 @@ declare
   payload jsonb;
   v_attempt_key text;
   v_blocked_until timestamptz;
+  v_candidate_count integer;
 begin
   -- Key by admission identifier alone so callers cannot evade cooldown by
   -- changing the requested term/session or spoofing request network headers.
@@ -98,16 +99,14 @@ begin
     return jsonb_build_object('ok', false, 'message', 'Too many attempts. Please try again later.');
   end if;
 
-  select st.id, st.school_id, st.first_name, st.last_name, st.admission_number,
-         st.class_name, sc.name school_name, sc.address
-    into s
+  -- Admission numbers are unique per school, not globally. A supplied PIN
+  -- narrows the candidate set, but the same PIN can still exist in two schools.
+  -- Fail closed if more than one active student matches all supplied credentials.
+  select count(*)::integer
+    into v_candidate_count
   from public.schoolpro_students st
-  join public.schoolpro_schools sc on sc.id = st.school_id
   where upper(st.admission_number) = upper(trim(p_admission))
     and st.status = 'active'
-    -- Admission numbers are unique per school, not globally. Resolve the student
-    -- by the supplied PIN as well, so another school's newer duplicate admission
-    -- number cannot shadow the intended student's valid PIN.
     and exists (
       select 1
       from public.schoolpro_result_access_pins candidate_pin
@@ -120,9 +119,33 @@ begin
           extensions.digest(upper(trim(p_pin)), 'sha256'),
           'hex'
         )
-    )
-  order by st.created_at desc
-  limit 1;
+    );
+
+  if v_candidate_count > 1 then
+    perform private.record_schoolpro_result_pin_failure(v_attempt_key);
+    return jsonb_build_object('ok', false, 'message', 'Result details or access PIN are invalid.');
+  end if;
+
+  select st.id, st.school_id, st.first_name, st.last_name, st.admission_number,
+         st.class_name, sc.name school_name, sc.address
+    into s
+  from public.schoolpro_students st
+  join public.schoolpro_schools sc on sc.id = st.school_id
+  where upper(st.admission_number) = upper(trim(p_admission))
+    and st.status = 'active'
+    and exists (
+      select 1
+      from public.schoolpro_result_access_pins candidate_pin
+      where candidate_pin.student_id = st.id
+        and candidate_pin.term = p_term
+        and candidate_pin.session = p_session
+        and candidate_pin.is_active
+        and (candidate_pin.expires_at is null or candidate_pin.expires_at > now())
+        and candidate_pin.pin_hash = encode(
+          extensions.digest(upper(trim(p_pin)), 'sha256'),
+          'hex'
+        )
+    );
 
   if s.id is null then
     perform private.record_schoolpro_result_pin_failure(v_attempt_key);

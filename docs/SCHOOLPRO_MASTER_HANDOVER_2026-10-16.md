@@ -300,3 +300,10 @@ A source-only review of the proposed operational index migration identified an e
 - Next safe step: inspect column definitions, policies, and a bounded non-executing `EXPLAIN` for the exact prior acceptance query, then document whether the plan can be improved. Do not run `EXPLAIN ANALYZE` or change production indexes as part of this diagnostic step.
 - Stage A remains open. No test accounts/schools, additional branches, production migrations, DDL, data writes, merges, or deployments were performed.
 
+### Read-only result-approvals plan and policy inspection — 2026-10-29
+
+- Read-only inspection of `public.schoolpro_result_approvals` confirmed columns include `school_id uuid`, `result_id uuid`, `status`, review fields, `notes`, and `id`. Its authenticated SELECT policy requires `private.has_school_access(school_id)` and `private.schoolpro_module_allowed(school_id, 'results')`; the ALL policy also evaluates `schoolpro_member_can_manage(school_id)` or an authorized member-role existence check.
+- Read-only `EXPLAIN (COSTS, VERBOSE, SETTINGS)` for a bounded lookup filtering `school_id` showed a sequential scan on `public.schoolpro_result_approvals` (estimated cost 0.00..747.00), because no school-leading index currently exists. This was plain EXPLAIN, not EXPLAIN ANALYZE; it did not execute the query to measure latency and used a placeholder UUID. It does not reproduce the authenticated PostgREST/RLS probe or prove the index alone will resolve the timeout.
+- The access/module functions also consult profile status, school ownership/membership, account activity, operational state, and permissions. If the live probe continues timing out after a future approved index change, inspect those dependencies and their plans rather than assuming the tenant index is the only cause.
+- No index was created and no policies/functions were changed. These findings came from read-only catalog/function inspection only.
+

@@ -283,3 +283,20 @@ A source-only review of the proposed operational index migration identified an e
 - Continue with repository/source review and available read-only evidence against the existing environment. No production DDL, migrations, row writes, test accounts/schools, migration-ledger edits, merges, or deployments without explicit approval.
 - Because a safe isolated rehearsal is not available and the previous authenticated probe timed out on `schoolpro_result_approvals`, do not claim the index fix or tenant isolation is validated. Keep Stage A open and Stage B gated; seek a non-destructive, read-only way to diagnose the timeout and validate the proposed plan before proposing any production change.
 
+### Read-only production index catalog check — 2026-10-29
+
+- Per user direction, no additional Supabase branch will be created. The runbook is reference-only; do not run its concurrent-index commands in production without explicit approval.
+- Executed read-only catalog queries against the existing Supabase project `lnqsroyiybutkfngbyge`; no DDL or row writes were issued.
+- All six target tables exist in `public`. None currently has the proposed `school_id` index:
+  - `schoolpro_library_books`
+  - `schoolpro_transport_routes`
+  - `schoolpro_hostel_rooms`
+  - `schoolpro_inventory_assets`
+  - `schoolpro_result_approvals`
+  - `schoolpro_promotions`
+- Existing indexes observed on the target tables were primary-key indexes, plus existing uniqueness indexes on `schoolpro_result_approvals(result_id)` and `schoolpro_promotions(student_id, session)`. All observed indexes reported `indisvalid=true` and `indisready=true`.
+- `schoolpro_result_approvals` heap size is approximately 5,976 kB; catalog row estimate was zero, which is stale/inconsistent with the heap size and must not be used to claim the table is empty. It has existing result-id indexes but no tenant-leading `school_id` index. This supports further read-only plan diagnosis; it does not by itself prove the missing index caused the earlier timeout.
+- Several other target tables have an 8 kB or reported 0-byte heap with row estimates of zero or unknown; no data was read or changed. Catalog row estimates can be stale.
+- Next safe step: inspect column definitions, policies, and a bounded non-executing `EXPLAIN` for the exact prior acceptance query, then document whether the plan can be improved. Do not run `EXPLAIN ANALYZE` or change production indexes as part of this diagnostic step.
+- Stage A remains open. No test accounts/schools, additional branches, production migrations, DDL, data writes, merges, or deployments were performed.
+

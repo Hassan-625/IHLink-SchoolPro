@@ -281,7 +281,7 @@ A source-only review of the proposed operational index migration identified an e
 - User explicitly declined any additional Supabase branch. Do not create one or ask again.
 - The concurrent-index runbook is retained as reference documentation only; its isolated-branch rehearsal step is not the chosen path. Do not treat the runbook as authorization to run SQL.
 - Continue with repository/source review and available read-only evidence against the existing environment. No production DDL, migrations, row writes, test accounts/schools, migration-ledger edits, merges, or deployments without explicit approval.
-- Because a safe isolated rehearsal is not available and the previous authenticated probe timed out on `schoolpro_result_approvals`, do not claim the index fix or tenant isolation is validated. Keep Stage A open and Stage B gated; seek a non-destructive, read-only way to diagnose the timeout and validate the proposed plan before proposing any production change.
+- User has clarified that tenant-isolation acceptance already passed in their previous SchoolPro workspace across two existing workspaces. Record that prior two-workspace tenant-isolation test as passed; do not ask the user to repeat it, and do not create replacement test identities/workspaces. Keep the `schoolpro_result_approvals` timeout as a separate unresolved result-path/release check, not as evidence that tenant isolation failed. The missing index and sequential-scan plan remain diagnostic findings, not proof of the timeout's sole cause.
 
 ### Read-only production index catalog check — 2026-10-29
 
@@ -307,3 +307,9 @@ A source-only review of the proposed operational index migration identified an e
 - The access/module functions also consult profile status, school ownership/membership, account activity, operational state, and permissions. If the live probe continues timing out after a future approved index change, inspect those dependencies and their plans rather than assuming the tenant index is the only cause.
 - No index was created and no policies/functions were changed. These findings came from read-only catalog/function inspection only.
 
+
+### User clarification — prior two-workspace tenant-isolation acceptance passed — 2026-10-29
+
+- User confirms that tenant isolation worked in the previously tested two-workspace SchoolPro acceptance. Carry this forward as passed evidence; do not re-run the same acceptance merely to recreate evidence and do not create additional Supabase branches, test accounts, or test schools.
+- Keep the scope precise: this confirms the user's prior two-workspace acceptance result. It does not by itself close unrelated Stage A release checks, including the separate `schoolpro_result_approvals` timeout/index-plan investigation or review of the proposed RLS/tenant-integrity changes.
+- Continue with source review and read-only diagnosis. No production DDL, migrations, data writes, migration-ledger edits, merges, or deployments are authorized by this clarification. Stage B remains gated until Stage A is formally approved, merged, and post-merge verified.

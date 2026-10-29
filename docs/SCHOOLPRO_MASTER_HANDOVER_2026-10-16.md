@@ -268,3 +268,11 @@ A source-only review of the proposed operational index migration identified an e
 - Only after the index and acceptance evidence are reviewed should the separate forward-only RLS posture and tenant-integrity trigger migrations be considered, in that order, with explicit production-change approval. Preserve existing policies and reconcile the migration ledger/catalog after each approved step.
 - This is a proposed execution method, not authorization to perform production DDL. No production changes, migrations, account creation, school creation, merges, or deployments were performed.
 
+### Concurrent index rehearsal runbook and Supabase branch status — 2026-10-29
+
+- Added [`docs/database-migration/STAGE-A-CONCURRENT-INDEX-ROLLOUT.md`](https://github.com/Hassan-625/IHLink-SchoolPro/blob/release/stage-a-auth-tenant-isolation/docs/database-migration/STAGE-A-CONCURRENT-INDEX-ROLLOUT.md) on the Stage A branch. It contains preflight/catalog checks, six one-at-a-time `CREATE INDEX CONCURRENTLY IF NOT EXISTS` statements for isolated rehearsal only, postflight validation, and explicit stop conditions for invalid indexes, query-plan regressions, and failed two-school acceptance.
+- Read-only Supabase branch inventory returned only the default `main` branch; its reported status is `MIGRATIONS_FAILED`. No separate development branch is available in the listing. Do not reset or use this branch as the rehearsal target.
+- Supabase branch creation may incur charges. Get the quoted cost and approval before creating an isolated branch; no branch was created.
+- The runbook is documentation, not permission to run production DDL. The existing transactional six-index migration remains unchanged. Concurrent index creation must be rehearsed outside a transaction, and any failed build/invalid index requires reviewed cleanup before retry.
+- No production SQL/migrations, data writes, test accounts/schools, merges, or deployments were performed. Stage A remains open until index verification and authenticated two-school acceptance pass; B remains gated.
+

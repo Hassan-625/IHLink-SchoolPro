@@ -79,6 +79,7 @@ declare
   result jsonb;
   attempt_count integer;
   key_length integer;
+  blocked_until_value timestamptz;
 begin
   -- Seven wrong PINs remain ordinary failures; the eighth starts a 15-minute block.
   for i in 1..8 loop
@@ -129,10 +130,10 @@ begin
     raise exception 'Expired cooldown should allow a fresh credential check: %', result;
   end if;
   select failed_attempts, blocked_until
-    into attempt_count, v_blocked_until
+    into attempt_count, blocked_until_value
   from private.schoolpro_result_pin_attempts
   where attempt_key = encode(extensions.digest('sp-expired-001','sha256'),'hex');
-  if attempt_count <> 1 or v_blocked_until is not null then
+  if attempt_count <> 1 or blocked_until_value is not null then
     raise exception 'Expired cooldown did not reset the failure window: attempts %, blocked_until %',
       attempt_count, v_blocked_until;
   end if;

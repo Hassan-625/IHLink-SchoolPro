@@ -111,6 +111,32 @@ begin
     raise exception 'Blocked key was not rejected before PIN verification: %', result;
   end if;
 
+  -- Expired cooldowns must roll into a fresh failure window, not remain blocked
+  -- forever and not retain the prior eight failures.
+  delete from private.schoolpro_result_pin_attempts;
+  insert into private.schoolpro_result_pin_attempts
+    (attempt_key, window_started_at, failed_attempts, blocked_until, updated_at)
+  values (
+    encode(extensions.digest('sp-expired-001','sha256'),'hex'),
+    now() - interval '16 minutes',
+    8,
+    now() - interval '1 second',
+    now() - interval '16 minutes'
+  );
+  result := public.check_schoolpro_result_pin('SP-EXPIRED-001','First Term','2025/2026','wrong-pin');
+  if coalesce((result->>'ok')::boolean,true)
+     or result->>'message' <> 'Result details or access PIN are invalid.' then
+    raise exception 'Expired cooldown should allow a fresh credential check: %', result;
+  end if;
+  select failed_attempts, blocked_until
+    into attempt_count, v_blocked_until
+  from private.schoolpro_result_pin_attempts
+  where attempt_key = encode(extensions.digest('sp-expired-001','sha256'),'hex');
+  if attempt_count <> 1 or v_blocked_until is not null then
+    raise exception 'Expired cooldown did not reset the failure window: attempts %, blocked_until %',
+      attempt_count, v_blocked_until;
+  end if;
+
   -- Unknown admissions also accrue failures, using the same generic public error.
   delete from private.schoolpro_result_pin_attempts;
   for i in 1..8 loop

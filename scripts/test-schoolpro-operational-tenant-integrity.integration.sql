@@ -463,3 +463,122 @@ select pg_temp.assert_rejected('calendar rejects foreign-school class',
 select pg_temp.assert_rejected('calendar tenant reassignment remains blocked with workflow trigger',
  $$update public.schoolpro_calendar_events set school_id='00000000-0000-0000-0000-000000000002' where id='a5000000-0000-0000-0000-000000000101'$$,
  'School ownership cannot be reassigned');
+
+
+-- Exercise the exact production promotion AFTER UPDATE archive function in this
+-- disposable database. The function body is copied from the read-only live definition.
+alter table public.schoolpro_classes
+  add column name text,
+  add column arm text,
+  add column level text;
+update public.schoolpro_classes
+set name=case when school_id='00000000-0000-0000-0000-000000000001' then 'JSS 1' else 'JSS 1' end,
+    arm='A',
+    level='Junior Secondary';
+alter table public.schoolpro_promotions
+  add column from_class text,
+  add column to_class text,
+  add column session text,
+  add column status text not null default 'draft',
+  add column decision text,
+  add column decided_by uuid,
+  add column applied_by uuid,
+  add column applied_at timestamptz,
+  add column reason text;
+create table public.schoolpro_enrollment_history (
+  id bigint generated always as identity primary key,
+  school_id uuid not null,
+  student_id uuid not null,
+  session text not null,
+  class_id uuid not null,
+  class_name text,
+  arm text,
+  section text,
+  status text,
+  graduation_year integer,
+  promotion_id uuid,
+  created_at timestamptz not null default now(),
+  unique (school_id,student_id,session)
+);
+
+create or replace function private.schoolpro_archive_progression()
+returns trigger
+language plpgsql
+security definer
+set search_path=''
+as $function$
+declare oldclass public.schoolpro_classes; nextclass public.schoolpro_classes; nextsession text; yearstart integer;
+begin
+ if new.status<>'applied' or old.status='applied' then return new;end if;
+ if new.session !~ '^[0-9]{4}/[0-9]{4}$' then raise exception 'Select a valid source academic session';end if;
+ yearstart:=split_part(new.session,'/',1)::integer;
+ if split_part(new.session,'/',2)::integer<>yearstart+1 then raise exception 'Academic session must span consecutive years';end if;
+ select * into oldclass from public.schoolpro_classes where id=new.from_class_id and school_id=new.school_id;
+ if oldclass.id is null then raise exception 'Source class does not belong to this school';end if;
+ if not exists(select 1 from public.schoolpro_students where id=new.student_id and school_id=new.school_id) then raise exception 'Student does not belong to this school';end if;
+ insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id,class_name,arm,section,status,graduation_year,promotion_id)
+ values(new.school_id,new.student_id,new.session,oldclass.id,oldclass.name,oldclass.arm,oldclass.level,case when new.decision='graduated' then 'graduated' else 'completed' end,case when new.decision='graduated' then yearstart+1 end,new.id)
+ on conflict(school_id,student_id,session) do update set status=excluded.status,graduation_year=excluded.graduation_year,promotion_id=excluded.promotion_id;
+ if new.decision in ('promoted','repeated') then
+  select * into nextclass from public.schoolpro_classes where id=new.to_class_id and school_id=new.school_id;
+  if nextclass.id is null then raise exception 'Destination class does not belong to this school';end if;
+  nextsession:=(yearstart+1)::text||'/'||(yearstart+2)::text;
+  insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id,class_name,arm,section,status,promotion_id)
+  values(new.school_id,new.student_id,nextsession,nextclass.id,nextclass.name,nextclass.arm,nextclass.level,'active',new.id)
+  on conflict(school_id,student_id,session) do nothing;
+ end if;
+ return new;
+end
+$function$;
+drop trigger if exists schoolpro_archive_applied_progression on public.schoolpro_promotions;
+create trigger schoolpro_archive_applied_progression
+after update on public.schoolpro_promotions
+for each row execute function private.schoolpro_archive_progression();
+
+-- The production trigger writes the source-session completion and next-session
+-- active enrollment atomically when a promotion is applied.
+update public.schoolpro_promotions
+set session='2026/2027',decision='promoted',status='applied',
+    applied_by='50000000-0000-0000-0000-000000000001',applied_at=now()
+where id='80000000-0000-0000-0000-000000000001';
+do $$
+begin
+ if (select count(*) from public.schoolpro_enrollment_history
+     where promotion_id='80000000-0000-0000-0000-000000000001')<>2 then
+  raise exception 'FAIL: applied promotion did not create both enrollment-history rows';
+ end if;
+ if not exists(select 1 from public.schoolpro_enrollment_history
+   where promotion_id='80000000-0000-0000-0000-000000000001'
+     and session='2026/2027' and class_id='20000000-0000-0000-0000-000000000001'
+     and status='completed') then
+  raise exception 'FAIL: source-session completion history is incorrect';
+ end if;
+ if not exists(select 1 from public.schoolpro_enrollment_history
+   where promotion_id='80000000-0000-0000-0000-000000000001'
+     and session='2027/2028' and class_id='20000000-0000-0000-0000-000000000001'
+     and status='active') then
+  raise exception 'FAIL: next-session active history is incorrect';
+ end if;
+end
+$$;
+
+-- A second promotion with a foreign-school destination must be rejected by the
+-- operational tenant-integrity BEFORE trigger; the archive trigger must write nothing.
+select pg_temp.assert_rejected('promotion rejects foreign-school destination before archive',
+ $stmt$insert into public.schoolpro_promotions
+   (id,school_id,student_id,from_class_id,to_class_id,session,decision,status)
+   values('80000000-0000-0000-0000-000000000003',
+     '00000000-0000-0000-0000-000000000001',
+     '30000000-0000-0000-0000-000000000001',
+     '20000000-0000-0000-0000-000000000001',
+     '20000000-0000-0000-0000-000000000002',
+     '2026/2027','promoted','draft')$stmt$,
+ 'Destination class belongs to another school');
+do $$
+begin
+ if exists(select 1 from public.schoolpro_enrollment_history
+   where promotion_id='80000000-0000-0000-0000-000000000003') then
+  raise exception 'FAIL: rejected cross-school promotion wrote enrollment history';
+ end if;
+end
+$$;

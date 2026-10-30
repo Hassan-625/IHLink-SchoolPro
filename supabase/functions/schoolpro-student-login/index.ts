@@ -13,9 +13,9 @@ Deno.serve(async(req)=>{
   const client=createClient(url,key,{auth:{persistSession:false}});
   const body=await req.json();const code=String(body.schoolCode||"").trim(),admission=String(body.admissionNumber||"").trim(),password=String(body.password||"");
   if(!code||!admission||code.length>100||admission.length>100||password.length>256)return reply({error:"Enter your school code, admission number and password."},400);
-  // Supabase gateway-provided client address; account bucket also limits IP rotation.
-  const ip=req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()||"unknown";
-  for(const [bucket,limit] of [["account:"+code.toLowerCase()+":"+admission.toLowerCase(),8],["ip:"+ip,60]] as const){
+  // No forwarding header is used as a security identity until trusted proxy provenance is verified.
+  // The normalized school/admission bucket remains the enforced server-side throttle.
+  for(const [bucket,limit] of [["account:"+code.toLowerCase()+":"+admission.toLowerCase(),8]] as const){
    stage="rate_limit";const {data,error}=await admin.rpc("schoolpro_take_login_attempt",{p_key:await hash(bucket),p_limit:limit});if(error)throw error;if(!data){console.warn("[schoolpro-student-login] rejected",{stage:"rate_limited"});return reply({error:"Too many attempts. Please try again in 15 minutes."},429);}
   }
   stage="school_lookup";const {data:schools,error:se}=await admin.from("schoolpro_schools").select("id").eq("code",code).limit(2);if(se)throw se;

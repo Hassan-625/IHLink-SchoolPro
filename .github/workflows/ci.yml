@@ -32,6 +32,22 @@ jobs:
       - run: node scripts/test-app-idle-lock.mjs
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
+      - run: node scripts/test-auth-profile-race.mjs
+      - run: node --check scripts/test-schoolpro-tenant-isolation-live.mjs
+      - run: node scripts/test-schoolpro-family-report-media-policy.mjs
+      - run: node scripts/test-schoolpro-operational-tenant-integrity.mjs
+      - run: node scripts/test-schoolpro-result-pin-rate-limit.mjs
+      - run: node scripts/test-schoolpro-result-pin-edge-gateway.mjs
+      - run: node scripts/test-schoolpro-document-serial-uniqueness.mjs
+      - run: node scripts/test-schoolpro-result-verification-exposure.mjs
+      - run: node scripts/test-schoolpro-public-admission-abuse-controls.mjs
+      - run: node scripts/test-schoolpro-public-admission-edge-gateway.mjs
+      - run: node scripts/test-schoolpro-turnstile-verifier.behavior.mjs
+      - run: node scripts/test-schoolpro-login-rate-limit-trusted-ip.mjs
+      - run: node scripts/test-schoolpro-payment-review-write-controls.mjs
+      - name: Check SchoolPro receipt-submission security guards
+        run: node scripts/test-schoolpro-receipt-submission-guards.mjs
+      - run: node scripts/test-schoolpro-no-online-gateway.mjs
       - run: node scripts/school-document-design-test.mjs
       - run: node scripts/school-email-signin-test.mjs
       - run: node scripts/test-template-preview.mjs
@@ -48,3 +64,275 @@ jobs:
           name: mobile-layout-checks
           path: mobile-ui-evidence/
       - run: npm run build
+
+  receipt-storage-isolation:
+    name: Receipt Storage isolation (local Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - uses: supabase/setup-cli@v3
+      - name: Run receipt isolation against an isolated local Supabase Storage API
+        run: node scripts/test-schoolpro-receipt-storage-local.mjs
+
+  tenant-acceptance:
+    # Live tenant-account checks are manual-only; normal PR/push CI must not sign in
+    # to configured school accounts or require test-school fixtures.
+    if: ${{ github.event_name == 'workflow_dispatch' && vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || secrets.SUPABASE_PUBLISHABLE_KEY }}
+      SCHOOL_A_EMAIL: ${{ secrets.SCHOOL_A_EMAIL }}
+      SCHOOL_A_PASSWORD: ${{ secrets.SCHOOL_A_PASSWORD }}
+      SCHOOL_A_ID: ${{ secrets.SCHOOL_A_ID }}
+      SCHOOL_B_EMAIL: ${{ secrets.SCHOOL_B_EMAIL }}
+      SCHOOL_B_PASSWORD: ${{ secrets.SCHOOL_B_PASSWORD }}
+      SCHOOL_B_ID: ${{ secrets.SCHOOL_B_ID }}
+      SCHOOL_A_RECEIPT_PATH: ${{ secrets.SCHOOL_A_RECEIPT_PATH }}
+      SCHOOL_B_RECEIPT_PATH: ${{ secrets.SCHOOL_B_RECEIPT_PATH }}
+      TENANT_TEST_TERM: ${{ vars.TENANT_TEST_TERM }}
+      TENANT_TEST_SESSION: ${{ vars.TENANT_TEST_SESSION }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Run read-only two-school acceptance checks
+        run: node scripts/test-schoolpro-tenant-isolation-live.mjs
+
+  tenant-integrity-db-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply draft migration and run disposable tenant-integrity tests
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-operational-tenant-integrity.integration.sql
+      - name: Verify SchoolPro online gateway is disabled (disposable PostgreSQL)
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-online-payment-disable.integration.sql
+      - name: Exercise receipt-submission RPC against disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-receipt-rpc.integration.sql
+      - name: Verify concurrent receipt submissions cannot over-reserve an invoice
+        shell: bash
+        run: |
+          set -euo pipefail
+          guardian="10000000-0000-0000-0000-000000000001"
+          school="00000000-0000-0000-0000-000000000001"
+          bank="30000000-0000-0000-0000-000000000002"
+          invoice="40000000-0000-0000-0000-000000000003"
+          receipt="${guardian}/receipt.pdf"
+          allocation='[{"invoice_id":"'"$invoice"'","amount":600}]'
+          for attempt in 1 2; do
+            (
+              if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "select set_config('request.jwt.claim.sub','$guardian',false); select public.submit_schoolpro_payment('$school','$bank',600,current_date,'Concurrent Guardian','RACE-$attempt','$receipt','application/pdf','$allocation'::jsonb);" > "/tmp/schoolpro-receipt-race-$attempt.log" 2>&1; then
+                echo accepted > "/tmp/schoolpro-receipt-race-$attempt.result"
+              else
+                echo rejected > "/tmp/schoolpro-receipt-race-$attempt.result"
+              fi
+            ) &
+          done
+          wait
+          accepted="$(grep -l '^accepted' /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          rejected="$(grep -l '^rejected' /tmp/schoolpro-receipt-race-*.result | wc -l)"
+          test "$accepted" -eq 1
+          test "$rejected" -eq 1
+          actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select count(*)::text || ':' || coalesce(sum(pa.amount),0)::text from public.schoolpro_payment_submissions ps join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id where pa.invoice_id='$invoice' and ps.bank_reference like 'RACE-%'")"
+          test "$actual" = "1:600"
+          echo "PASS: two concurrent 600-unit submissions for one invoice produced exactly one pending reservation."
+
+
+  payment-review-rls-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_payment_rls_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_payment_rls_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_payment_rls_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise payment-review RLS using authenticated role switching
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-payment-review-rls.integration.sql
+
+      - name: Exercise two-session duplicate payment review concurrency
+        shell: bash
+        run: |
+          set -euo pipefail
+          submission="e0000000-0000-0000-0000-000000000003"
+          school="b0000000-0000-0000-0000-000000000001"
+          reviewer="d0000000-0000-0000-0000-000000000099"
+          for attempt in 1 2; do
+            (
+              if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "select set_config('request.jwt.claim.sub','$reviewer',false); select set_config('test.finance_school','$school',false); select public.review_schoolpro_payment_submission('$submission','confirmed','parallel-review-$attempt');" > "/tmp/schoolpro-review-race-$attempt.log" 2>&1; then
+                echo accepted > "/tmp/schoolpro-review-race-$attempt.result"
+              else
+                if grep -q "Already reviewed" "/tmp/schoolpro-review-race-$attempt.log"; then
+                  echo rejected > "/tmp/schoolpro-review-race-$attempt.result"
+                else
+                  cat "/tmp/schoolpro-review-race-$attempt.log"
+                  exit 1
+                fi
+              fi
+            ) &
+          done
+          wait
+          accepted="$(grep -l '^accepted' /tmp/schoolpro-review-race-*.result | wc -l)"
+          rejected="$(grep -l '^rejected' /tmp/schoolpro-review-race-*.result | wc -l)"
+          test "$accepted" -eq 1
+          test "$rejected" -eq 1
+          actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select ps.status || ':' || count(fp.id)::text || ':' || coalesce(sum(fp.amount),0)::text || ':' || count(pa.payment_id)::text from public.schoolpro_payment_submissions ps join public.schoolpro_payment_allocations pa on pa.submission_id=ps.id left join public.schoolpro_fee_payments fp on fp.invoice_id=pa.invoice_id where ps.id='$submission' group by ps.status")"
+          test "$actual" = "confirmed:1:100:1"
+          echo "PASS: concurrent review calls produced one confirmation and one fee-ledger payment."
+  result-pin-rate-limit-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_pin_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_pin_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_pin_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE service_role NOLOGIN"
+      - name: Exercise result-PIN cooldown migration in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-pin-rate-limit.integration.sql
+      - name: Exercise login-attempt throttling and cleanup in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-login-rate-limit.integration.sql
+      - name: Verify concurrent login attempts serialize through one key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 12); do
+            (psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "SELECT public.schoolpro_take_login_attempt('parallel-login-key', 60);" >/dev/null) &
+          done
+          wait
+          attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "SELECT attempts FROM public.schoolpro_login_attempts WHERE key='parallel-login-key'")"
+          test "$attempts" = "12"
+      - name: Enforce globally unique document serials in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-document-serial-uniqueness.integration.sql
+      - name: Verify concurrent wrong-PIN requests serialize into one cooldown key
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 8); do
+            (
+              psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet --command "BEGIN; SELECT public.check_schoolpro_result_pin('SP-TEST-001','First Term','2025/2026','wrong-pin'); COMMIT;" >/dev/null
+            ) &
+          done
+          wait
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "DO \$assert\$ DECLARE n integer; blocked timestamptz; BEGIN SELECT failed_attempts, blocked_until INTO n, blocked FROM private.schoolpro_result_pin_attempts WHERE attempt_key = encode(extensions.digest('sp-test-001','sha256'),'hex'); IF n <> 8 OR blocked IS NULL OR blocked <= now() THEN RAISE EXCEPTION 'Concurrent cooldown assertion failed: attempts=%, blocked_until=%', n, blocked; END IF; END \$assert\$;"
+          echo "PASS: 8 concurrent wrong-PIN requests share one serialized cooldown key."
+
+  result-verification-exposure-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_verification_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_verification_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_verification_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Execute result-verification snapshot migration against disposable schema
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-verification-exposure.integration.sql
+
+  public-admission-abuse-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_admission_abuse_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_admission_abuse_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_admission_abuse_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise public admissions RPC abuse controls in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-public-admission-abuse-controls.integration.sql

@@ -529,3 +529,10 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Corrected both helper definitions to use the paired `$lesson_fixture$ ... $lesson_fixture$` delimiter in PR branch commit `171d94768a0c0c9e731d608d40eaa179ebcea1d7`. Exact-head SchoolPro CI #2086 and payment validation #1811 are queued/running; do not accept the expanded lesson authorization coverage until the tenant-integrity job and full exact-head checks complete successfully.
 - The #2085 application validation, result-PIN/rate-limit integration, result-verification exposure integration, payment-review RLS integration, and public-admission abuse integration passed; local Receipt Storage isolation was still running at last poll. Payment validation #1810 passed. Live `tenant-acceptance` was skipped.
 - No production DDL/DML, migration, ledger edit, workspace creation, merge, or deployment occurred. PR #106 remains draft/open/unmerged; live two-tenant acceptance remains unverified.
+
+
+### Stage A lesson authorization fixture — paired helper delimiters — 2026-10-30
+
+- Exact-head SchoolPro CI #2086 on PR commit `171d94768a0c0c9e731d608d40eaa179ebcea1d7` confirmed the `private.is_admin()` helper compiled, but the tenant-integrity integration still failed while defining `private.schoolpro_lesson_leader()`: the opening delimiter had been changed to `$lesson_fixture$` while its closing delimiter remained the untagged `$`. The failure occurred before the lesson authorization assertions. Payment validation #1811 passed; live tenant acceptance was skipped.
+- Corrected both closing delimiters to match `$lesson_fixture$` in PR branch commit `0697415d39a3e3e58c74bf553f7479b35b6a7896`. This completes the paired delimiter fix for both lesson-leader and lesson-author-scope SQL helper definitions. Exact-head SchoolPro CI #2088 and payment validation #1813 are now running; the test expansion remains unaccepted until the tenant-integrity job passes.
+- No production DDL/DML, migration, ledger edit, workspace creation, merge, or deployment occurred. PR #106 remains draft/open/unmerged; live two-tenant acceptance remains unverified.

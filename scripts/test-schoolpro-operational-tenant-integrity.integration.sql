@@ -436,6 +436,20 @@ alter table public.schoolpro_calendar_events
  add column event_date date,
  add column end_date date,
  add column class_id uuid;
+-- The shared production function contains payroll-only type/helper references.
+-- Supply inert disposable definitions so PostgreSQL can compile the exact function;
+-- those branches are not invoked by the calendar-only trigger below.
+do $ begin
+  create type public.user_role as enum ('super_admin');
+exception when duplicate_object then null; end $;
+do $ begin
+  create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar');
+exception when duplicate_object then null; end $;
+create or replace function private.is_admin(public.user_role[])
+returns boolean language sql stable as $ select false $;
+create or replace function private.has_school_access(uuid, public.school_member_role[])
+returns boolean language sql stable as $ select false $;
+
 create or replace function private.validate_schoolpro_workflow_record()
 returns trigger
 language plpgsql

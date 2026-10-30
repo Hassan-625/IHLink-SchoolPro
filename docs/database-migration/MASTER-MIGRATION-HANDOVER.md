@@ -512,3 +512,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The other six executable CI jobs passed, including typecheck/application validation/build, result PIN/rate-limit, result-verification exposure, payment-review RLS, public-admission abuse, and local Receipt Storage isolation. Payment-page validation #1804 passed. Live `tenant-acceptance` was skipped.
 - Corrected all eight malformed DO-block delimiters to `do $$ ... end $$;` in PR branch commit `80acf05342dafe888c96e2eca0fb15071bc2880f`. Exact-head CI must rerun and pass the tenant-integrity SQL before the expanded lesson authorization fixture is accepted.
 - No production DDL/DML, migration, ledger edit, workspace creation, merge, or deployment occurred. PR #106 remains draft/open/unmerged; live tenant acceptance remains unverified.
+
+
+### Stage A lesson authorization fixture — corrected dollar-quote replacement — 2026-10-30
+
+- Follow-up inspection of SchoolPro CI #2081 showed the earlier commit `80acf05342dafe888c96e2eca0fb15071bc2880f` had not changed the eight malformed delimiters: the replacement operation interpreted the dollar characters and wrote the original `do $ ... end $;` text back unchanged. CI therefore failed at line 3 before any migration or test assertion ran. This was confirmed directly in the job log.
+- Replaced the delimiters using literal callback replacements. PR branch commit `4299ddd02079817e675f0ad84d26d7eace071348` now changes all eight occurrences to paired `$$` delimiters. The source was re-counted: zero malformed `do $ begin` occurrences remain and twelve valid `do $$ begin` blocks are present.
+- Exact-head validation is pending for commit `4299ddd02079817e675f0ad84d26d7eace071348`. SchoolPro CI #2081 failed only in `tenant-integrity-db-integration` at SQL setup; the other six executable jobs passed, live `tenant-acceptance` was skipped, and payment validation #1806 passed.
+- No production database changes, migration, ledger edit, workspace creation, merge, or deployment occurred. PR #106 remains draft/open/unmerged.

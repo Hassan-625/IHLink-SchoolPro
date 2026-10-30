@@ -432,3 +432,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added a cross-school destination rejection assertion against the existing operational tenant-integrity BEFORE trigger and verifies no enrollment-history row is written for the rejected promotion.
 - This is still a disposable integration fixture; it does not alter production. The exact-head CI run has not yet been observed, so this test change is **not yet accepted**. PR #106 remains open/draft/unmerged.
 - Next: inspect exact-head CI and fix any fixture/function mismatch before claiming coverage. Calendar's production shared trigger and activation-gate dependency stack remain separate follow-ups; do not replace them with approximations and call them exact.
+
+
+## Promotion archive test exact-head CI acceptance — 2026-10-30
+
+- Exact PR #106 test head `12ef364bc01ed628a3af951581059021416d9a75` completed validation successfully.
+- SchoolPro CI run [#41025364963](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/41025364963): all seven executable jobs passed, including `tenant-integrity-db-integration`; `tenant-acceptance` was skipped because its live acceptance prerequisites were not enabled. The tenant-integrity job's disposable PostgreSQL migration/test step completed successfully.
+- Payment-page validation [#41025365014](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/41025365014): passed.
+- This accepts the new disposable promotion archive assertions for this exact head; it does not constitute production migration approval or live two-tenant acceptance. PR #106 remains draft/open/unmerged. No production changes or deployment occurred.
+- Next test gap: faithfully exercise the deployed shared calendar workflow trigger and the activation-gate trigger stack using the exact production definitions and their dependencies, rather than compact substitutes. Preserve the existing lesson workflow helper-stub limitation in test reporting.

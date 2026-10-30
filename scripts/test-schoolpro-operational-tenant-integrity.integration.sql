@@ -720,14 +720,14 @@ on public.schoolpro_library_books for each row execute function private.guard_sc
 select pg_temp.assert_rejected('activation guard rejects inactive school write',
  $$insert into public.schoolpro_library_books values
  ('a1000000-0000-0000-0000-000000000003','91000000-0000-0000-0000-000000000002')$$,
- 'SchoolPro operational activation required');
+ 'SchoolPro operational activation required: complete subscription payment or an audited Control Center activation');
 insert into public.schoolpro_library_books values
  ('a1000000-0000-0000-0000-000000000004','91000000-0000-0000-0000-000000000001');
 select set_config('request.jwt.claim.role','anon',false);
 select pg_temp.assert_rejected('activation guard rejects anonymous inactive-school write',
  $$insert into public.schoolpro_library_books values
  ('a1000000-0000-0000-0000-000000000005','91000000-0000-0000-0000-000000000002')$$,
- 'SchoolPro operational activation required');
+ 'SchoolPro operational activation required: complete subscription payment or an audited Control Center activation');
 reset role;
 select set_config('request.jwt.claim.role','service_role',false);
 insert into public.schoolpro_library_books values

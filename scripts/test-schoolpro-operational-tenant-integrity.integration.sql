@@ -486,12 +486,11 @@ where id='60000000-0000-0000-0000-000000000101';
 select pg_temp.assert_rejected('submitted lesson content is immutable to author',
  $$update public.schoolpro_lesson_notes set content='Changed after submission' where id='60000000-0000-0000-0000-000000000101'$$,
  'Wait for school review before editing this lesson');
-select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000102',false);
-select set_config('test.lesson_leader','true',false);
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000103',false);
 update public.schoolpro_lesson_notes set status='approved'
 where id='60000000-0000-0000-0000-000000000101';
 do $$ begin
- if not exists(select 1 from public.schoolpro_lesson_notes where id='60000000-0000-0000-0000-000000000101' and status='approved' and reviewed_by='60000000-0000-0000-0000-000000000102') then
+ if not exists(select 1 from public.schoolpro_lesson_notes where id='60000000-0000-0000-0000-000000000101' and status='approved' and reviewed_by='60000000-0000-0000-0000-000000000103') then
   raise exception 'FAIL: leadership approval did not retain reviewer identity';
  end if;
 end $$;

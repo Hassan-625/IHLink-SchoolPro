@@ -706,3 +706,5 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 
 
 - Exact-head CI initially exposed a stale Super Admin context regression test: the Stage A dashboard now intentionally supports explicit school selection, while the test still expected Super Admin to ignore every selection. The underlying context selection expression also allowed the generic remembered member-workspace key to take precedence. Corrected it so Super Admin can resolve only an explicit URL school selection or the dedicated Super Admin dashboard selection, never a generic remembered workspace; updated the regression assertions accordingly. This preserves the Stage A dashboard workflow and its tenant boundary.
+
+- Separated the academic-calendar editor's session choice from the global working-session selector. Choosing a session to edit calendar dates no longer changes the session used by the rest of the dashboard; the shared selector supports this explicitly and a regression assertion covers it.

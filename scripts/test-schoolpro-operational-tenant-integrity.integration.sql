@@ -439,16 +439,16 @@ alter table public.schoolpro_calendar_events
 -- The shared production function contains payroll-only type/helper references.
 -- Supply inert disposable definitions so PostgreSQL can compile the exact function;
 -- those branches are not invoked by the calendar-only trigger below.
-do $ begin
+do $fixture$ begin
   create type public.user_role as enum ('super_admin');
-exception when duplicate_object then null; end $;
-do $ begin
+exception when duplicate_object then null; end $fixture$;
+do $fixture$ begin
   create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar');
-exception when duplicate_object then null; end $;
+exception when duplicate_object then null; end $fixture$;
 create or replace function private.is_admin(public.user_role[])
-returns boolean language sql stable as $ select false $;
+returns boolean language sql stable as $fixture$ select false $fixture$;
 create or replace function private.has_school_access(uuid, public.school_member_role[])
-returns boolean language sql stable as $ select false $;
+returns boolean language sql stable as $fixture$ select false $fixture$;
 
 create or replace function private.validate_schoolpro_workflow_record()
 returns trigger

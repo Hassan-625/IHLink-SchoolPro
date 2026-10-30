@@ -32,4 +32,6 @@ for(const expected of ['schoolpro_academic_sessions','schoolpro_academic_calenda
 }
 assert.ok(migration.includes('schoolpro_module_allowed(p_school, \'calendar\')'),'Session writes must enforce calendar permissions.');
 assert.ok(migration.includes('Academic session dates cannot overlap'),'Non-archived session date ranges must not overlap.');
+assert.equal((migration.match(/as \$\$/g)||[]).length,(migration.match(/^\$\$;/gm)||[]).length,'Every PL/pgSQL dollar-quoted body must have a matching delimiter.');
+assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');
 console.log('PASS: canonical session range, lifecycle date states, shared selector, and append-only calendar-history migration guards.');

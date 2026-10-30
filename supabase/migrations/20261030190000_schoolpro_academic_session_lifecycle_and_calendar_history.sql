@@ -69,11 +69,11 @@ create or replace function private.schoolpro_reject_calendar_history_mutation()
 returns trigger
 language plpgsql
 set search_path = ''
-as $
+as $$
 begin
   raise exception 'Academic calendar history is immutable';
 end;
-$;
+$$;
 revoke all on function private.schoolpro_reject_calendar_history_mutation() from public, anon, authenticated;
 drop trigger if exists schoolpro_academic_calendar_history_immutable on public.schoolpro_academic_calendar_history;
 create trigger schoolpro_academic_calendar_history_immutable
@@ -158,7 +158,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare session_start date; session_end date;
 begin
   select start_date, end_date into session_start, session_end
@@ -172,7 +172,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function private.schoolpro_validate_term_within_session() from public, anon, authenticated;
 drop trigger if exists schoolpro_term_within_academic_session on public.schoolpro_result_term_settings;
 create trigger schoolpro_term_within_academic_session

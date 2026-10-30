@@ -64,7 +64,21 @@ create policy schoolpro_academic_calendar_history_school_read
 revoke insert, update, delete on public.schoolpro_academic_sessions from anon, authenticated;
 revoke insert, update, delete on public.schoolpro_academic_calendar_history from anon, authenticated;
 grant select on public.schoolpro_academic_sessions, public.schoolpro_academic_calendar_history to authenticated;
-grant usage, select on sequence public.schoolpro_academic_calendar_history_id_seq to authenticated;
+
+create or replace function private.schoolpro_reject_calendar_history_mutation()
+returns trigger
+language plpgsql
+set search_path = ''
+as $
+begin
+  raise exception 'Academic calendar history is immutable';
+end;
+$;
+revoke all on function private.schoolpro_reject_calendar_history_mutation() from public, anon, authenticated;
+drop trigger if exists schoolpro_academic_calendar_history_immutable on public.schoolpro_academic_calendar_history;
+create trigger schoolpro_academic_calendar_history_immutable
+  before update or delete on public.schoolpro_academic_calendar_history
+  for each row execute function private.schoolpro_reject_calendar_history_mutation();
 
 create or replace function private.schoolpro_record_calendar_history()
 returns trigger

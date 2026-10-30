@@ -366,7 +366,7 @@ returns boolean language sql stable security definer set search_path=''
 as $admin_fixture$ select exists(select 1 from public.profiles where id=auth.uid() and role=any(required_roles) and status='active') $admin_fixture$;
 create or replace function private.schoolpro_lesson_leader(p_school uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $lesson_fixture$
  select exists(select 1 from public.profiles p where p.id=auth.uid() and p.status='active')
  and (private.is_admin(array['super_admin']::public.user_role[])
  or exists(select 1 from public.schoolpro_schools s where s.id=p_school and s.owner_id=auth.uid())
@@ -374,7 +374,7 @@ as $
 $;
 create or replace function private.schoolpro_lesson_author_scope(p_school uuid, p_class uuid, p_subject uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $lesson_fixture$
  select exists(select 1 from public.schoolpro_members m join public.profiles p on p.id=m.user_id
  where m.school_id=p_school and m.user_id=auth.uid() and p.status='active' and m.role in('teacher','class_teacher')
  and (exists(select 1 from public.schoolpro_classes c where c.id=p_class and c.school_id=p_school and c.form_teacher_id=m.id)

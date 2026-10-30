@@ -363,7 +363,7 @@ alter table public.schoolpro_lesson_notes
 -- the disposable profile fixture. No production authorization logic is mocked.
 create or replace function private.is_admin(required_roles public.user_role[] default array['super_admin'::public.user_role,'platform_admin'::public.user_role])
 returns boolean language sql stable security definer set search_path=''
-as $ select exists(select 1 from public.profiles where id=auth.uid() and role=any(required_roles) and status='active') $;
+as $admin_fixture$ select exists(select 1 from public.profiles where id=auth.uid() and role=any(required_roles) and status='active') $admin_fixture$;
 create or replace function private.schoolpro_lesson_leader(p_school uuid)
 returns boolean language sql stable security definer set search_path=''
 as $

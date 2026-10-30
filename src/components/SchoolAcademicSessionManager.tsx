@@ -53,7 +53,7 @@ export function SchoolAcademicSessionManager({schoolId,canEdit=true,selectedSess
     <h2 className="text-lg font-bold">Academic sessions</h2>
     <p className="mt-1 text-sm text-slate-600">Set the official beginning and ending dates for each school session. Session selection never changes student enrolment. Editing dates preserves the previous calendar version.</p>
     {canEdit&&<div className="mt-4 grid gap-3 sm:grid-cols-2">
-      <AcademicPeriodSelect kind="session" value={form.session} label="Session" onChange={e=>setForm(v=>({...v,session:e.target.value}))}/>
+      <AcademicPeriodSelect kind="session" value={form.session} label="Session" updateWorkingSession={false} onChange={e=>setForm(v=>({...v,session:e.target.value}))}/>
       <label className="text-sm font-semibold">Session begins<input aria-label="Session begins" type="date" className="mt-1 w-full rounded-xl border p-3" value={form.start} onChange={e=>setForm(v=>({...v,start:e.target.value}))}/></label>
       <label className="text-sm font-semibold">Session ends<input aria-label="Session ends" type="date" className="mt-1 w-full rounded-xl border p-3" value={form.end} onChange={e=>setForm(v=>({...v,end:e.target.value}))}/></label>
       <label className="text-sm font-semibold">Notes (optional)<input aria-label="Session notes" className="mt-1 w-full rounded-xl border p-3" value={form.notes} maxLength={500} onChange={e=>setForm(v=>({...v,notes:e.target.value}))} placeholder="e.g. approved school calendar"/></label>

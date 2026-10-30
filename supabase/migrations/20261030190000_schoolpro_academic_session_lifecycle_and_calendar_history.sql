@@ -168,9 +168,11 @@ begin
   end if;
 
   insert into public.schoolpro_academic_sessions
-    (school_id, session, start_date, end_date, notes, created_by, updated_by)
+    (school_id, session, start_date, end_date, status, notes, created_by, updated_by)
   values
-    (p_school, p_session, p_start, p_end, nullif(trim(p_notes), ''), auth.uid(), auth.uid())
+    (p_school, p_session, p_start, p_end,
+     case when current_date < p_start then 'upcoming' when current_date > p_end then 'completed' else 'active' end,
+     nullif(trim(p_notes), ''), auth.uid(), auth.uid())
   on conflict (school_id, session) do update
     set start_date = excluded.start_date,
         end_date = excluded.end_date,

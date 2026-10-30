@@ -1,6 +1,6 @@
 -- Disposable PostgreSQL integration test. Runs only against the ephemeral CI service.
 create schema private;
-do $ begin create type public.user_role as enum ('super_admin','platform_admin','support','finance','customer'); exception when duplicate_object then null; end $;
+do $$ begin create type public.user_role as enum ('super_admin','platform_admin','support','finance','customer'); exception when duplicate_object then null; end $$;
 create table public.profiles(id uuid primary key, role public.user_role not null, status text not null);
 create table public.schoolpro_schools(id uuid primary key, owner_id uuid, status text not null);
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
@@ -444,28 +444,28 @@ insert into public.schoolpro_schools(id,owner_id,status) values
 
 -- Form teacher and subject assignment are allowed; unassigned and inactive teachers are denied.
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000101',false);
-do $ begin
+do $$ begin
  if not private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: form teacher scope denied'; end if;
-end $;
+end $$;
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000102',false);
-do $ begin
+do $$ begin
  if not private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002') then raise exception 'FAIL: subject teacher scope denied'; end if;
  if private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: unassigned teacher received scope'; end if;
-end $;
+end $$;
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000106',false);
-do $ begin
+do $$ begin
  if private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: inactive teacher received scope'; end if;
-end $;
+end $$;
 
 -- School administrator and owner are leaders; ordinary teacher and inactive user are not.
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000103',false);
-do $ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: administrator leadership denied'; end if; end $;
+do $$ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: administrator leadership denied'; end if; end $$;
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000105',false);
-do $ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: owner leadership denied'; end if; end $;
+do $$ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: owner leadership denied'; end if; end $$;
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000104',false);
-do $ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: ordinary teacher received leadership'; end if; end $;
+do $$ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: ordinary teacher received leadership'; end if; end $$;
 select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000106',false);
-do $ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: inactive profile received leadership'; end if; end $;
+do $$ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: inactive profile received leadership'; end if; end $$;
 
 -- Verify ordinary lesson author save/submit, author self-approval rejection, immutable
 -- submitted content, and leadership approval alongside the real tenant guard trigger.

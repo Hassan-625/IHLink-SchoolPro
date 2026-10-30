@@ -667,3 +667,51 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Updated the SchoolPro support knowledge-base controls to force readable foreground/background contrast in dark-theme contexts (search input, topic filters, guide accordions, and guide text).
 - Latest corrections are committed on `fix/super-admin-dashboard-boundary-20261030`; they require a fresh GitHub Actions validation before merge. The previous green run predates these final corrections.
 - Stage B gaps remain implementation work: attendance write authorization must be limited to Form Masters/explicitly assigned leaders; section assignment needs a structured, enforceable relation; student middle name and guardian contact display need end-to-end support; academic sessions must include 2001–2002 through 2026–2027; Discipline Master and Game Master need role/schema/default-permission support. No production DDL or data changes have been applied for these Stage B items.
+
+
+## Stage A formal acceptance and Stage B commencement — 2026-10-30
+
+- The owner explicitly confirmed acceptance of the Turnstile secret configuration and Stage A acceptance. The earlier successful two-workspace tenant-isolation acceptance is retained as the tenant-isolation evidence; no replacement workspace or repeat live tenant test is required.
+- PR #110 was squash-merged into `main` as `e48613e75442f53ebd2b5bf327b3494e19d222d3`. Render deployment `dep-dbibh4vb9u1s73dvksd0` for that exact commit is confirmed **LIVE**. The deployed changes retain Super Admin school administration, keep ownership transfer out of the SchoolPro dashboard (Control Panel only), and correct Get in Touch help-topic contrast.
+- **Stage A is formally accepted and closed by owner confirmation**, including Turnstile configuration and acceptance. Do not reopen Stage A or repeat completed acceptance checks absent a new regression.
+- Stage B work begins on branch `stage-b/academic-sessions-student-rosters-20261030`, based on merged `main`. Execution order: B1 academic session coverage and session semantics; B2 student population and student/guardian data; B3 session-specific class rosters and progression; then connected B4 staff/class/subject assignment, B5 attendance/section authorization, and B6 Discipline Master/Game Master roles.
+- B1 initial implementation replaces the rolling 31-year selector (which omitted 2001–2010) with a canonical range from 2001/2002 through the current calendar year's next session, retaining any currently selected custom session. A focused regression test verifies 2026 includes 2001/2002 through 2026/2027 and rolls forward in 2027. This is code-only; no production database change is involved.
+- Existing `schoolpro_enrollment_history`, session-aware roster helper, class Form Master field, and subject assignment tables must be preserved and extended rather than rebuilt. No production DDL/DML or production migration has been applied for Stage B.
+
+
+### Stage B2 initial student identity slice — 2026-10-30
+
+- Added nullable `schoolpro_students.middle_name` in proposed migration `20261030160000_schoolpro_student_middle_name.sql`, with a 100-character trimmed-length constraint. The migration is committed to the Stage B branch only; it has **not** been applied to production.
+- Student enrolment now captures middle name and includes it in the student-list query/display. Class, attendance, parent-management and parent-dashboard reads were extended to fetch middle name; parent management also requests the linked guardian profile phone for contact display. Parent relationship remains sourced from `schoolpro_guardian_links.relationship`.
+- Existing student-level guardian name and phone fields remain intact; no guardian records or linked profiles are rewritten. This first slice does not yet add phone capture to parent invitations; that requires a separate review of the invitation Edge Function/profile update path.
+- Added `scripts/test-academic-sessions.mjs` to SchoolPro CI. The PR is still draft; typecheck/build and all existing security integrations must pass before this slice can be considered ready. The migration must receive explicit production approval before application.
+
+
+### Stage B3 initial class-roster slice — 2026-10-30
+
+- `SchoolProClasses` now exposes the selected academic session and scopes its student roster/counts through the existing `schoolSessionStudents()` helper and `schoolpro_enrollment_history` data. For schools with no enrollment-history rows yet, the helper's existing legacy fallback remains intact; when history exists, historical session/class membership is used instead of current student class placement.
+- Historical roster loading does not filter out students merely because their current student record is inactive/transferred; the selected session's history determines their historical membership. The current/legacy fallback still uses active students.
+- This extends the existing history implementation; no new roster table or production data change is introduced.
+
+
+### Stage B1 — academic session lifecycle and calendar history implementation slice — 2026-10-30
+
+- Added proposed migration `20261030190000_schoolpro_academic_session_lifecycle_and_calendar_history.sql` on the Stage B branch. It introduces school-scoped academic-session date ranges with upcoming/active/completed/archived lifecycle states, append-only before/after calendar history for session and term changes, and permission-checked save/archive RPCs. Session rows and term calendar rows cannot be deleted through these trigger paths; completed sessions are archived instead.
+- Session date ranges cannot overlap another non-archived session. Configured term dates must remain inside their academic session; session dates cannot be narrowed to exclude already configured terms. Existing term non-overlap validation remains in force. Calendar-history rows reject update/delete mutations at the database layer.
+- Added `SchoolAcademicSessionManager` to the existing academic calendar view. It exposes session start/end dates, notes, date-derived status, completed-session archival and the latest 30 calendar-history entries. Existing term editor remains in place.
+- Replaced the separate rolling 31-year list in `SchoolSessionBar` with the canonical `AcademicPeriodSelect`. Its explanatory text explicitly states that changing the working session does not promote students or move enrolments.
+- Added deterministic date-state tests and static migration guards to `scripts/test-academic-sessions.mjs`.
+- The migration is proposed only and has **not** been applied to Supabase production. No production data, workspace, or deployment changes were made. Calendar UI lifecycle actions require this migration to be applied in a separately approved migration window before use.
+- Remaining B1 work: run exact-head CI; verify SQL migration against a disposable PostgreSQL schema with the relevant Supabase role/function/table prerequisites; review session/term activity stamping and the existing calendar tick for boundary conditions; verify calendar history visibility for all intended staff roles; and ensure every session-scoped module consumes the same selected session without changing enrolments. B1 is **in progress**, not complete.
+
+
+- Exact-head CI initially exposed a stale Super Admin context regression test: the Stage A dashboard now intentionally supports explicit school selection, while the test still expected Super Admin to ignore every selection. The underlying context selection expression also allowed the generic remembered member-workspace key to take precedence. Corrected it so Super Admin can resolve only an explicit URL school selection or the dedicated Super Admin dashboard selection, never a generic remembered workspace; updated the regression assertions accordingly. This preserves the Stage A dashboard workflow and its tenant boundary.
+
+- Separated the academic-calendar editor's session choice from the global working-session selector. Choosing a session to edit calendar dates no longer changes the session used by the rest of the dashboard; the shared selector supports this explicitly and a regression assertion covers it.
+
+### Stage B1 follow-up — SQL delimiter correction and calendar editor isolation — 2026-10-30
+
+- Exact source review found two malformed single-dollar PL/pgSQL function delimiters in the proposed calendar lifecycle migration. Corrected both function bodies to paired `$$` delimiters before any production application. Added a CI assertion that the migration's function-body delimiters are balanced and that malformed single-dollar delimiters are absent.
+- Both the academic-session manager and the existing term-date editor now use the shared session selector with `updateWorkingSession={false}`. Selecting a session to edit calendar metadata or term dates therefore cannot change the dashboard's global working session. Added a regression assertion for the term editor as well.
+- This is a source-level correction only. The migration remains unapplied; no production database, data, workspace or deployment was changed.
+- Remaining B1 validation: exact-head CI after these corrections; disposable PostgreSQL execution against the actual Supabase schema/roles; permission review for the calendar RPCs; verify the dynamic current-period RPC and activity stamping continue to use the intended dates/session. B1 remains in progress.

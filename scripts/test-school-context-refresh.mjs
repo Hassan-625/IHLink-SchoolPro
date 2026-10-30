@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 import ts from 'typescript';
-let user={id:'owner'},search='',pathname='/schoolpro/library',profileRole='super_admin',cursor=0,effects=[],states=[];
+let user={id:'owner'},search='',pathname='/schoolpro/library',profileRole='customer',cursor=0,effects=[],states=[];
 const selected=new Map([['ihlink_schoolpro_workspace_owner','school']]);
 const source=ts.transpileModule(readFileSync('src/hooks/useSchoolProContext.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const contextSource=readFileSync('src/hooks/useSchoolProContext.ts','utf8');
@@ -27,3 +27,5 @@ pathname='/schoolpro/transcript';assert.equal(render().role,'parent','Opening a 
 user={id:'another-parent'};assert.equal(render().schoolId,null,'Another account must not reuse the parent workspace cache');
 console.log('PASS: parent invoice/transcript navigation retains the verified portal without crossing accounts.');
 user={id:'teacher'};selected.set('ihlink_schoolpro_workspace_teacher','school');selected.set('ihlink_schoolpro_portal_teacher','staff');pathname='/schoolpro/results';cacheExports.saveSchoolAccess('context:teacher:school:staff',{schoolId:'school',schoolName:'Fixture',role:'teacher',loading:false,error:null});assert.equal(render().role,'teacher','Staff module navigation must preserve the verified staff context');pathname='/schoolpro/attendance';assert.equal(render().role,'teacher');console.log('PASS: staff module navigation reuses the verified staff workspace.');
+
+user={id:'platform-admin'};profileRole='super_admin';pathname='/schoolpro/admin-dashboard';search='?school_id=11111111-1111-4111-8111-111111111111';selected.set('ihlink_schoolpro_workspace_platform-admin','school');selected.set('ihlink_schoolpro_admin_school','school');cacheExports.clearSchoolAccess();states=[];cursor=0;effects=[];assert.equal(render().schoolId,null,'Platform Super Admin must ignore URL and remembered workspace selections.');console.log('PASS: platform Super Admin remains outside school workspace context.');

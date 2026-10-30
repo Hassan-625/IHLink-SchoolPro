@@ -24,7 +24,7 @@ assert.ok(!sessionBar.includes('Array.from({length:31}'),'Working session bar mu
 assert.ok(sessionBar.includes('does not promote students'),'Changing the working session must not imply student progression.');
 
 const migration=readFileSync('supabase/migrations/20261030190000_schoolpro_academic_session_lifecycle_and_calendar_history.sql','utf8');
-for(const expected of ['schoolpro_academic_sessions','schoolpro_academic_calendar_history','before_state','after_state','schoolpro_save_academic_session','schoolpro_archive_academic_session','Academic sessions cannot be deleted','Academic term records cannot be deleted','status in (\'upcoming\',\'active\',\'completed\',\'archived\')']){
+for(const expected of ['schoolpro_academic_sessions','schoolpro_academic_calendar_history','schoolpro_reject_calendar_history_mutation','Academic calendar history is immutable','before_state','after_state','schoolpro_save_academic_session','schoolpro_archive_academic_session','Academic sessions cannot be deleted','Academic term records cannot be deleted','status in (\'upcoming\',\'active\',\'completed\',\'archived\')']){
   assert.ok(migration.includes(expected),`B1 migration must include: ${expected}`);
 }
 assert.ok(migration.includes('schoolpro_module_allowed(p_school, \'calendar\')'),'Session writes must enforce calendar permissions.');

@@ -729,6 +729,8 @@ select pg_temp.assert_rejected('activation guard rejects anonymous inactive-scho
  ('a1000000-0000-0000-0000-000000000005','91000000-0000-0000-0000-000000000002')$$,
  'SchoolPro operational activation required: complete subscription payment or an audited Control Center activation');
 reset role;
+select set_config('request.jwt.claim.sub','',false);
+select set_config('request.jwt.claims','{}',false);
 select set_config('request.jwt.claim.role','service_role',false);
 insert into public.schoolpro_library_books values
  ('a1000000-0000-0000-0000-000000000006','91000000-0000-0000-0000-000000000002');

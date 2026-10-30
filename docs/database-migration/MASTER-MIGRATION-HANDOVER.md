@@ -685,3 +685,10 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Student enrolment now captures middle name and includes it in the student-list query/display. Class, attendance, parent-management and parent-dashboard reads were extended to fetch middle name; parent management also requests the linked guardian profile phone for contact display. Parent relationship remains sourced from `schoolpro_guardian_links.relationship`.
 - Existing student-level guardian name and phone fields remain intact; no guardian records or linked profiles are rewritten. This first slice does not yet add phone capture to parent invitations; that requires a separate review of the invitation Edge Function/profile update path.
 - Added `scripts/test-academic-sessions.mjs` to SchoolPro CI. The PR is still draft; typecheck/build and all existing security integrations must pass before this slice can be considered ready. The migration must receive explicit production approval before application.
+
+
+### Stage B3 initial class-roster slice — 2026-10-30
+
+- `SchoolProClasses` now exposes the selected academic session and scopes its student roster/counts through the existing `schoolSessionStudents()` helper and `schoolpro_enrollment_history` data. For schools with no enrollment-history rows yet, the helper's existing legacy fallback remains intact; when history exists, historical session/class membership is used instead of current student class placement.
+- Historical roster loading does not filter out students merely because their current student record is inactive/transferred; the selected session's history determines their historical membership. The current/legacy fallback still uses active students.
+- This extends the existing history implementation; no new roster table or production data change is introduced.

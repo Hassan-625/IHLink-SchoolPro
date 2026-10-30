@@ -609,3 +609,24 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The six proposed tenant-leading indexes are absent. The production database does not currently contain `private.schoolpro_validate_operational_tenant()` or `private.validate_schoolpro_member_permission_tenant()`. The corresponding Stage A migration versions `20261016160000`, `20261017170000`, and `20261017180000` are not recorded in the live migration ledger. This matches the existing source/ledger reconciliation record: these are unapplied proposals, not missing history to backfill.
 - The migration proposals preserve existing feature policies, add relational tenant immutability checks, enable/force RLS on the eight operational tables, and add six tenant-leading indexes. Their disposable PostgreSQL integration tests pass on current PR head. This is a proposed forward-only rollout, not production validation.
 - No production DDL/DML or migration was executed. The next decision is not another tenant-isolation test: it is whether to authorize the exact reviewed forward-only operational tenant-integrity, FORCE-RLS and index changes for a controlled production rollout. Payment/receipt and result-PIN changes remain separately gated by their own runtime/source review; do not bundle unrelated changes into this operational migration.
+
+
+### Stage A production rollout and PR #106 merge — 2026-10-30
+
+- Owner explicitly authorized the three operational migrations, SchoolPro fee-payment receipt/review changes, receipt Storage changes, family report-media Storage optimization, and PR #106 merge.
+- PR #106 was marked ready and squash-merged into `main`. GitHub confirmed `merged=true`; merge commit: `c570843ec6bcd983b12771076d4aafcb5029b4fe`. The merged head was `2c1d5c45005a810e2f706f58dff0d77d7dfc4fd2`. Exact-head SchoolPro CI #2092 and payment-page validation #1817 both completed successfully. The member-permission guard in the merged migration rejects tenant reassignment before checking the member/school relationship.
+- Applied eight forward-only production migrations to Supabase project `lnqsroyiybutkfngbyge`, using the exact SQL from merged `main`:
+  1. `20261017180000_schoolpro_operational_tenant_indexes`
+  2. `20261017170000_schoolpro_forward_operational_tenant_isolation`
+  3. `20261016160000_schoolpro_repair_operational_tenant_integrity`
+  4. `20261016180000_schoolpro_payment_receipt_storage_limits`
+  5. `20261015203000_schoolpro_payment_receipt_tenant_guard`
+  6. `20261016143000_schoolpro_payment_review_write_controls`
+  7. `20261017150000_schoolpro_payment_receipt_storage_policies`
+  8. `20261016110500_schoolpro_optimize_family_report_media_storage_policy`
+- Supabase migration API returned success for all eight. The migration ledger records them under generated application timestamps `20261030141959` through `20261030142053`, retaining each original migration name; do not manually insert or rewrite ledger rows.
+- Read-only post-apply catalog verification confirmed all eight operational tables have RLS enabled and FORCE RLS enabled; all six tenant-leading indexes exist; both operational tenant guard functions and the family report-media helper exist; operational immutable-tenant and relational guard triggers are enabled; and the receipt bucket remains private with a 5 MiB limit and MIME allowlist JPEG/PNG/WebP/PDF.
+- No production rows, school workspaces, payment receipts, or receipt objects were created. The earlier successful two-workspace isolation evidence remains accepted; no repeat tenant acceptance run was performed.
+- The separate migration `20261016170000_schoolpro_disable_online_payment_gateway` was **not** applied. It disables the legacy online/card-payment finalizer and is a distinct payment-channel/product behavior change, not required to secure the receipt-based workflow. Confirm separately if that disablement is intended.
+- PR merge and database migrations do not deploy the frontend/API. No Render deployment was performed. SchoolPro production frontend remains hosted on Render. Post-deployment verification is still required after an explicitly approved Render release.
+- Stage A operational, receipt-payment, and Storage database changes are applied and catalog-verified; PR #106 is merged. Do not claim end-to-end production UI acceptance until the merged code is deployed to Render and the parent receipt submission/finance review and Storage paths are verified with valid authorized accounts.

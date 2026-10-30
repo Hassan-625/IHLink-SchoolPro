@@ -511,8 +511,8 @@ exception when duplicate_object then null; end $fixture$;
 do $fixture$ begin
   create type public.school_member_role as enum ('proprietor','administrator','accountant','bursar');
 exception when duplicate_object then null; end $fixture$;
-create or replace function private.is_admin(public.user_role[])
-returns boolean language sql stable as $fixture$ select false $fixture$;
+-- Keep the active-profile private.is_admin fixture defined above; the production
+-- workflow function shares it and must not replace it with a permissive stub.
 create or replace function private.has_school_access(uuid, public.school_member_role[])
 returns boolean language sql stable as $fixture$ select false $fixture$;
 

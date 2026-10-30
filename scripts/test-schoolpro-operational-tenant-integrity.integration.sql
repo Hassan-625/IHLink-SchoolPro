@@ -644,3 +644,92 @@ begin
  end if;
 end
 $$;
+
+
+-- Exercise the exact production activation guard on a disposable operational table.
+-- The record-school and subscription helpers below are exact production definitions;
+-- the no-school/global-edit fallback is outside this school-scoped test and is stubbed.
+create schema if not exists auth;
+create role service_role nologin;
+create or replace function auth.uid()
+returns uuid language sql stable
+as $function$
+ select coalesce(nullif(current_setting('request.jwt.claim.sub',true),''),
+   (nullif(current_setting('request.jwt.claims',true),'')::jsonb->>'sub'))::uuid
+$function$;
+create or replace function private.schoolpro_record_school(p_table text,p_row jsonb)
+returns uuid language plpgsql stable security definer set search_path=''
+as $function$
+declare parent_table text; parent_column text; parent_row jsonb;
+begin
+ if p_row ? 'school_id' then return nullif(p_row->>'school_id','')::uuid; end if;
+ case p_table
+ when 'schoolpro_admission_acceptances','schoolpro_admission_documents','schoolpro_admission_events','schoolpro_admission_offers' then parent_table:='schoolpro_admissions';parent_column:='application_id';
+ when 'schoolpro_assignment_submissions' then parent_table:='schoolpro_assignments';parent_column:='assignment_id';
+ when 'schoolpro_candidate_cbt_attempts','schoolpro_cbt_attempts','schoolpro_cbt_test_questions' then parent_table:='schoolpro_cbt_tests';parent_column:='test_id';
+ when 'schoolpro_candidate_cbt_answers' then parent_table:='schoolpro_candidate_cbt_attempts';parent_column:='attempt_id';
+ when 'schoolpro_cbt_answers' then parent_table:='schoolpro_cbt_attempts';parent_column:='attempt_id';
+ when 'schoolpro_fee_items' then parent_table:='schoolpro_fee_structures';parent_column:='fee_structure_id';
+ else return null;
+ end case;
+ if nullif(p_row->>parent_column,'') is null then return null; end if;
+ execute format('select to_jsonb(t) from public.%I t where id=$1',parent_table) into parent_row using (p_row->>parent_column)::uuid;
+ return private.schoolpro_record_school(parent_table,parent_row);
+end
+$function$;
+create table public.schoolpro_schools(id uuid primary key,status text not null);
+create table public.schoolpro_subscriptions(school_id uuid not null,status text not null,renews_at timestamptz,amount numeric not null,billing_cycle text not null);
+create or replace function private.schoolpro_operationally_active(p_school uuid)
+returns boolean language sql stable security definer set search_path=''
+as $function$
+ select exists(select 1 from public.schoolpro_schools s join public.schoolpro_subscriptions b on b.school_id=s.id
+ where s.id=p_school and s.status::text='active' and b.status='active'
+ and (b.renews_at is null or b.renews_at+case when b.amount>0 and b.billing_cycle='annual' then interval '14 days' else interval '0 days' end>now()))
+$function$;
+create or replace function private.has_product_access(target_product text,required_permission text default 'view')
+returns boolean language sql stable as $function$ select false $function$;
+create or replace function private.guard_schoolpro_operational_write()
+returns trigger language plpgsql security definer set search_path=''
+as $function$
+declare old_school uuid; new_school uuid;
+begin
+ if auth.uid() is null and coalesce(current_setting('request.jwt.claim.role',true),'')<>'anon' then
+  if tg_op='DELETE' then return old; else return new; end if;
+ end if;
+ if tg_op<>'INSERT' then old_school:=private.schoolpro_record_school(tg_table_name,to_jsonb(old)); end if;
+ if tg_op<>'DELETE' then new_school:=private.schoolpro_record_school(tg_table_name,to_jsonb(new)); end if;
+ if (old_school is not null and not private.schoolpro_operationally_active(old_school))
+ or (new_school is not null and not private.schoolpro_operationally_active(new_school)) then
+  raise exception 'SchoolPro operational activation required: complete subscription payment or an audited Control Center activation';
+ end if;
+ if old_school is null and new_school is null and not coalesce(private.has_product_access('schoolpro','edit'),false) then
+  raise exception 'School-linked operational record required';
+ end if;
+ if tg_op='DELETE' then return old; else return new; end if;
+end
+$function$;
+insert into public.schoolpro_schools values
+ ('91000000-0000-0000-0000-000000000001','active'),
+ ('91000000-0000-0000-0000-000000000002','suspended');
+insert into public.schoolpro_subscriptions values
+ ('91000000-0000-0000-0000-000000000001','active',null,100,'annual'),
+ ('91000000-0000-0000-0000-000000000002','active',null,100,'annual');
+drop trigger if exists schoolpro_activation_before_write on public.schoolpro_library_books;
+create trigger schoolpro_activation_before_write before insert or update or delete
+on public.schoolpro_library_books for each row execute function private.guard_schoolpro_operational_write();
+select pg_temp.assert_rejected('activation guard rejects inactive school write',
+ $$insert into public.schoolpro_library_books values
+ ('a1000000-0000-0000-0000-000000000003','91000000-0000-0000-0000-000000000002')$$,
+ 'SchoolPro operational activation required');
+insert into public.schoolpro_library_books values
+ ('a1000000-0000-0000-0000-000000000004','91000000-0000-0000-0000-000000000001');
+select set_config('request.jwt.claim.role','anon',false);
+select pg_temp.assert_rejected('activation guard rejects anonymous inactive-school write',
+ $$insert into public.schoolpro_library_books values
+ ('a1000000-0000-0000-0000-000000000005','91000000-0000-0000-0000-000000000002')$$,
+ 'SchoolPro operational activation required');
+reset role;
+select set_config('request.jwt.claim.role','service_role',false);
+insert into public.schoolpro_library_books values
+ ('a1000000-0000-0000-0000-000000000006','91000000-0000-0000-0000-000000000002');
+reset role;

@@ -2,6 +2,7 @@ import {useCallback,useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabase';
 import {Button} from '@/components/ui/Button';
 import {AcademicPeriodSelect} from '@/components/AcademicPeriodSelect';
+import {academicSessionStatus} from '@/lib/academicSessions';
 
 type SessionRow={id:string;session:string;start_date:string;end_date:string;status:string;notes:string|null};
 type HistoryRow={id:number;session:string;term:string|null;change_type:string;before_state:Record<string,unknown>|null;after_state:Record<string,unknown>;changed_at:string};
@@ -46,6 +47,8 @@ export function SchoolAcademicSessionManager({schoolId,canEdit=true,selectedSess
     }catch{setMessage('The academic session could not be archived.');}
     finally{setBusy(false);}
   }
+  const now=new Date();
+  const today=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
   return <section className="mb-5 rounded-xl border p-4">
     <h2 className="text-lg font-bold">Academic sessions</h2>
     <p className="mt-1 text-sm text-slate-600">Set the official beginning and ending dates for each school session. Session selection never changes student enrolment. Editing dates preserves the previous calendar version.</p>
@@ -57,7 +60,7 @@ export function SchoolAcademicSessionManager({schoolId,canEdit=true,selectedSess
       <div className="sm:col-span-2"><Button disabled={busy||!form.session||!form.start||!form.end} onClick={()=>void save()}>{busy?'Saving…':'Save session dates'}</Button></div>
     </div>}
     {message&&<p role="status" className="mt-3 text-sm">{message}</p>}
-    <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b"><th className="p-2">Session</th><th className="p-2">Begins</th><th className="p-2">Ends</th><th className="p-2">Status</th><th className="p-2">Action</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-b"><td className="p-2">{row.session}</td><td className="p-2">{row.start_date}</td><td className="p-2">{row.end_date}</td><td className="p-2 capitalize">{row.status}</td><td className="p-2">{canEdit&&row.status==='completed'&&<Button size="sm" variant="secondary" disabled={busy} onClick={()=>void archive(row.session)}>Archive</Button>}</td></tr>)}</tbody></table>{!rows.length&&<p className="p-3 text-sm text-slate-500">No session date ranges have been configured yet.</p>}</div>
+    <div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm"><thead><tr className="border-b"><th className="p-2">Session</th><th className="p-2">Begins</th><th className="p-2">Ends</th><th className="p-2">Status</th><th className="p-2">Action</th></tr></thead><tbody>{rows.map(row=><tr key={row.id} className="border-b"><td className="p-2">{row.session}</td><td className="p-2">{row.start_date}</td><td className="p-2">{row.end_date}</td><td className="p-2 capitalize">{academicSessionStatus(row.start_date,row.end_date,today,row.status==='archived')}</td><td className="p-2">{canEdit&&academicSessionStatus(row.start_date,row.end_date,today)==='completed'&&<Button size="sm" variant="secondary" disabled={busy} onClick={()=>void archive(row.session)}>Archive</Button>}</td></tr>)}</tbody></table>{!rows.length&&<p className="p-3 text-sm text-slate-500">No session date ranges have been configured yet.</p>}</div>
     <h3 className="mt-5 font-semibold">Calendar change history</h3>
     <p className="mt-1 text-xs text-slate-500">Latest 30 recorded changes, including previous and new calendar values.</p>
     <div className="mt-2 max-h-64 overflow-auto"><table className="w-full text-left text-xs"><thead><tr className="border-b"><th className="p-2">Changed</th><th className="p-2">Session / term</th><th className="p-2">Change</th><th className="p-2">Previous → new</th></tr></thead><tbody>{history.map(item=><tr key={item.id} className="border-b align-top"><td className="p-2 whitespace-nowrap">{new Date(item.changed_at).toLocaleString()}</td><td className="p-2">{item.session}{item.term?' · '+item.term:''}</td><td className="p-2">{item.change_type.replaceAll('_',' ')}</td><td className="p-2"><span className="text-slate-500">{item.before_state?JSON.stringify(item.before_state):'—'}</span><span className="block mt-1">{JSON.stringify(item.after_state)}</span></td></tr>)}</tbody></table>{!history.length&&<p className="p-3 text-sm text-slate-500">No calendar changes have been recorded yet.</p>}</div>

@@ -1,14 +1,21 @@
 -- Disposable PostgreSQL integration test. Runs only against the ephemeral CI service.
 create schema private;
+do $ begin create type public.user_role as enum ('super_admin','platform_admin','support','finance','customer'); exception when duplicate_object then null; end $;
+create table public.profiles(id uuid primary key, role public.user_role not null, status text not null);
+create table public.schoolpro_schools(id uuid primary key, owner_id uuid, status text not null);
 do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;
 do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$;
 
 create table public.schoolpro_subjects (id uuid primary key, school_id uuid not null);
-create table public.schoolpro_classes (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_classes (id uuid primary key, school_id uuid not null, form_teacher_id uuid);
 create table public.schoolpro_students (id uuid primary key, school_id uuid not null, class_id uuid);
 create table public.schoolpro_results (id uuid primary key, school_id uuid not null);
-create table public.schoolpro_members (id uuid primary key, school_id uuid not null);
+create table public.schoolpro_members (id uuid primary key, school_id uuid not null, user_id uuid, role text);
 create table public.schoolpro_lesson_notes (id uuid primary key, school_id uuid not null, subject_id uuid, class_id uuid);
+create table public.schoolpro_subject_assignments (
+ id uuid primary key, school_id uuid not null, class_id uuid not null,
+ subject_id uuid not null, teacher_member_id uuid not null
+);
 create table public.schoolpro_result_approvals (id uuid primary key, school_id uuid not null, result_id uuid not null);
 create table public.schoolpro_promotions (id uuid primary key, school_id uuid not null, student_id uuid not null, from_class_id uuid, to_class_id uuid);
 create policy "lesson notes authorized access" on public.schoolpro_lesson_notes for all to authenticated
@@ -352,12 +359,27 @@ alter table public.schoolpro_lesson_notes
   add column reviewed_at timestamptz,
   add column updated_at timestamptz not null default now();
 
+-- Exact production authorization predicates with private.is_admin isolated to
+-- the disposable profile fixture. No production authorization logic is mocked.
+create or replace function private.is_admin(required_roles public.user_role[] default array['super_admin'::public.user_role,'platform_admin'::public.user_role])
+returns boolean language sql stable security definer set search_path=''
+as $ select exists(select 1 from public.profiles where id=auth.uid() and role=any(required_roles) and status='active') $;
 create or replace function private.schoolpro_lesson_leader(p_school uuid)
-returns boolean language sql stable
-as $$ select coalesce(nullif(current_setting('test.lesson_leader', true), '')::boolean, false) $$;
+returns boolean language sql stable security definer set search_path=''
+as $
+ select exists(select 1 from public.profiles p where p.id=auth.uid() and p.status='active')
+ and (private.is_admin(array['super_admin']::public.user_role[])
+ or exists(select 1 from public.schoolpro_schools s where s.id=p_school and s.owner_id=auth.uid())
+ or exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role in('administrator','head_teacher','vice_principal')))
+$;
 create or replace function private.schoolpro_lesson_author_scope(p_school uuid, p_class uuid, p_subject uuid)
-returns boolean language sql stable
-as $$ select p_class is not null and p_subject is not null $$;
+returns boolean language sql stable security definer set search_path=''
+as $
+ select exists(select 1 from public.schoolpro_members m join public.profiles p on p.id=m.user_id
+ where m.school_id=p_school and m.user_id=auth.uid() and p.status='active' and m.role in('teacher','class_teacher')
+ and (exists(select 1 from public.schoolpro_classes c where c.id=p_class and c.school_id=p_school and c.form_teacher_id=m.id)
+ or exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=p_school and a.class_id=p_class and a.teacher_member_id=m.id and (p_subject is null or a.subject_id=p_subject))))
+$;
 
 create or replace function private.schoolpro_validate_lesson_workflow()
 returns trigger language plpgsql security definer set search_path='' as $$
@@ -399,6 +421,51 @@ $$;
 drop trigger if exists schoolpro_lesson_workflow on public.schoolpro_lesson_notes;
 create trigger schoolpro_lesson_workflow before insert or update or delete
 on public.schoolpro_lesson_notes for each row execute function private.schoolpro_validate_lesson_workflow();
+
+-- Seed deterministic users, member roles, class ownership and subject assignments.
+insert into public.profiles(id,role,status) values
+ ('60000000-0000-0000-0000-000000000101','customer','active'),
+ ('60000000-0000-0000-0000-000000000102','customer','active'),
+ ('60000000-0000-0000-0000-000000000103','customer','active'),
+ ('60000000-0000-0000-0000-000000000104','customer','active'),
+ ('60000000-0000-0000-0000-000000000105','super_admin','active'),
+ ('60000000-0000-0000-0000-000000000106','customer','suspended');
+update public.schoolpro_members set user_id='60000000-0000-0000-0000-000000000101',role='teacher' where id='50000000-0000-0000-0000-000000000001';
+update public.schoolpro_members set user_id='60000000-0000-0000-0000-000000000102',role='teacher' where id='50000000-0000-0000-0000-000000000003';
+insert into public.schoolpro_members(id,school_id,user_id,role) values
+ ('50000000-0000-0000-0000-000000000004','00000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000103','administrator'),
+ ('50000000-0000-0000-0000-000000000005','00000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000104','teacher');
+update public.schoolpro_classes set form_teacher_id='50000000-0000-0000-0000-000000000001' where id='20000000-0000-0000-0000-000000000001';
+insert into public.schoolpro_subject_assignments(id,school_id,class_id,subject_id,teacher_member_id) values
+ ('51000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','50000000-0000-0000-0000-000000000003');
+insert into public.schoolpro_schools(id,owner_id,status) values
+ ('00000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000105','active'),
+ ('00000000-0000-0000-0000-000000000002',null,'active');
+
+-- Form teacher and subject assignment are allowed; unassigned and inactive teachers are denied.
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000101',false);
+do $ begin
+ if not private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: form teacher scope denied'; end if;
+end $;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000102',false);
+do $ begin
+ if not private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002') then raise exception 'FAIL: subject teacher scope denied'; end if;
+ if private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: unassigned teacher received scope'; end if;
+end $;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000106',false);
+do $ begin
+ if private.schoolpro_lesson_author_scope('00000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001') then raise exception 'FAIL: inactive teacher received scope'; end if;
+end $;
+
+-- School administrator and owner are leaders; ordinary teacher and inactive user are not.
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000103',false);
+do $ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: administrator leadership denied'; end if; end $;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000105',false);
+do $ begin if not private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: owner leadership denied'; end if; end $;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000104',false);
+do $ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: ordinary teacher received leadership'; end if; end $;
+select set_config('request.jwt.claim.sub','60000000-0000-0000-0000-000000000106',false);
+do $ begin if private.schoolpro_lesson_leader('00000000-0000-0000-0000-000000000001') then raise exception 'FAIL: inactive profile received leadership'; end if; end $;
 
 -- Verify ordinary lesson author save/submit, author self-approval rejection, immutable
 -- submitted content, and leadership approval alongside the real tenant guard trigger.
@@ -677,7 +744,6 @@ begin
  return private.schoolpro_record_school(parent_table,parent_row);
 end
 $function$;
-create table public.schoolpro_schools(id uuid primary key,status text not null);
 create table public.schoolpro_subscriptions(school_id uuid not null,status text not null,renews_at timestamptz,amount numeric not null,billing_cycle text not null);
 create or replace function private.schoolpro_operationally_active(p_school uuid)
 returns boolean language sql stable security definer set search_path=''
@@ -708,7 +774,7 @@ begin
  if tg_op='DELETE' then return old; else return new; end if;
 end
 $function$;
-insert into public.schoolpro_schools values
+insert into public.schoolpro_schools(id,status) values
  ('91000000-0000-0000-0000-000000000001','active'),
  ('91000000-0000-0000-0000-000000000002','suspended');
 insert into public.schoolpro_subscriptions values

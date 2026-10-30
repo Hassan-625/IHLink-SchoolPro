@@ -441,3 +441,10 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Payment-page validation [#41025365014](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/41025365014): passed.
 - This accepts the new disposable promotion archive assertions for this exact head; it does not constitute production migration approval or live two-tenant acceptance. PR #106 remains draft/open/unmerged. No production changes or deployment occurred.
 - Next test gap: faithfully exercise the deployed shared calendar workflow trigger and the activation-gate trigger stack using the exact production definitions and their dependencies, rather than compact substitutes. Preserve the existing lesson workflow helper-stub limitation in test reporting.
+
+### Stage A calendar workflow exact-function test — 2026-10-30
+
+- The disposable tenant-integrity fixture now installs the exact live `private.validate_schoolpro_workflow_record()` body for its calendar trigger, exercising the calendar validation and common immutable-school path. Payroll and health branches are not invoked; inert disposable enum/helper definitions exist only for function compilation.
+- Exact PR #106 head `f6fdaede9cdcdc9bf728ad7d56f1e242a2bbe3fa` passed SchoolPro CI run #41027611391 (all seven executable jobs successful; tenant-acceptance skipped) and payment-page validation #41027611469. The tenant-integrity integration job passed.
+- Activation-guard coverage remains open: faithful coverage still needs its production dependency stack and authenticated, anonymous, and trusted-background context tests. No mock-only result should be represented as exact production coverage.
+- No production mutation, migration, ledger edit, merge, or deployment occurred. PR #106 remains draft/open/unmerged; live tenant acceptance is not established.

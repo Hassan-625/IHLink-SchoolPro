@@ -590,3 +590,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - **Stage A status: implementation and disposable CI gates pass; production closure is not authorized or evidenced.** PR #106 remains draft/open/unmerged. No production DDL/DML, migration, ledger edit, workspace creation, receipt upload, deployment, or merge was performed.
 - To close the production release gate, the owner must first provide/authorize a valid existing two-school live acceptance setup (or explicitly accept the absence of current live acceptance as a documented release risk), and separately approve a bounded production rollout plan for the reviewed forward-only changes. Until then, keep A as “code/test-ready; production rollout pending” and do not start Stage B.
 - Next work is bounded: (1) confirm live acceptance using valid existing active school accounts only; (2) reconcile each proposed migration's effect against the live catalog/ledger without replaying history; (3) obtain explicit approval for the exact production changes; (4) apply only the approved changes, verify tenant isolation and feature workflows, then merge/deploy and perform post-merge checks. Defer non-release enhancements rather than reopening scope.
+
+
+
+### Prior successful two-workspace isolation evidence retained — 2026-10-30
+
+- The user's earlier successful two-workspace tenant-isolation acceptance is accepted as existing Stage A evidence. Do not repeat it merely because the current production workspace inventory is now empty.
+- The 2026-10-29 manual run that could not resolve an active School A workspace is a later environment/prerequisite failure. It does not invalidate the earlier successful two-workspace evidence and is not a reason to create workspaces, seed production data, or rerun the same test.
+- Stage A acceptance evidence must distinguish: (a) prior successful two-workspace isolation result; (b) later live run blocked before completing because no active workspace was available; and (c) current disposable CI results. Do not collapse these into “live isolation unverified”.
+- Remove repeat live tenant acceptance from the remaining mandatory Stage A checklist. Retain the earlier result as the tenant-isolation acceptance evidence. Remaining Stage A work is limited to bounded review of the proposed production changes, migration/source-ledger reconciliation, exact-head CI confirmation, and post-approval rollout/verification. No production changes are authorized by this note.

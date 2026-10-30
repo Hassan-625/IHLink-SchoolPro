@@ -25,6 +25,8 @@ assert.ok(sessionBar.includes('does not promote students'),'Changing the working
 
 const calendarManager=readFileSync('src/components/SchoolAcademicSessionManager.tsx','utf8');
 assert.ok(calendarManager.includes('updateWorkingSession={false}'),'Editing calendar metadata must not change the globally selected working session.');
+const calendarEditor=readFileSync('src/components/SchoolAcademicCalendar.tsx','utf8');
+assert.ok(calendarEditor.includes('kind="session" value={form.session} updateWorkingSession={false}'),'Editing term dates must not change the globally selected working session.');
 
 const migration=readFileSync('supabase/migrations/20261030190000_schoolpro_academic_session_lifecycle_and_calendar_history.sql','utf8');
 for(const expected of ['schoolpro_academic_sessions','schoolpro_academic_calendar_history','schoolpro_reject_calendar_history_mutation','Academic calendar history is immutable','before_state','after_state','schoolpro_save_academic_session','schoolpro_archive_academic_session','Academic sessions cannot be deleted','Academic term records cannot be deleted','status in (\'upcoming\',\'active\',\'completed\',\'archived\')']){

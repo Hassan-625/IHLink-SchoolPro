@@ -504,3 +504,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added assertions for form-teacher authorization, assigned-subject-teacher authorization, denial of unassigned and inactive teachers, and leadership granted to a school administrator/owner but denied to an ordinary teacher/inactive profile.
 - PR branch commits: `8af6fc6` (fixture/helper implementation) and `18ca23e` (expanded fixture column insert correction). Exact-head CI has not yet been evaluated; this is pending disposable CI validation, not a completed test result.
 - No live database writes, production DDL/DML, migration, ledger edit, merge, or deployment occurred. PR #106 remains draft/open/unmerged.
+
+
+### Stage A lesson authorization fixture — SQL quoting correction — 2026-10-30
+
+- Exact-head SchoolPro CI #2079 for PR #106 test head `18ca23e4fdf21d9aa119701f30cf9088498ee999` completed with one failing job: `tenant-integrity-db-integration`. The failure occurred at the first disposable SQL setup statement, before the migration or assertions ran: eight newly added anonymous DO blocks used the invalid delimiter `do $ ... end $;` rather than a valid paired dollar quote. This is a test-fixture syntax defect, not a production database failure.
+- The other six executable CI jobs passed, including typecheck/application validation/build, result PIN/rate-limit, result-verification exposure, payment-review RLS, public-admission abuse, and local Receipt Storage isolation. Payment-page validation #1804 passed. Live `tenant-acceptance` was skipped.
+- Corrected all eight malformed DO-block delimiters to `do $$ ... end $$;` in PR branch commit `80acf05342dafe888c96e2eca0fb15071bc2880f`. Exact-head CI must rerun and pass the tenant-integrity SQL before the expanded lesson authorization fixture is accepted.
+- No production DDL/DML, migration, ledger edit, workspace creation, merge, or deployment occurred. PR #106 remains draft/open/unmerged; live tenant acceptance remains unverified.

@@ -138,6 +138,34 @@ create trigger schoolpro_academic_term_history
   after insert or update or delete on public.schoolpro_result_term_settings
   for each row execute function private.schoolpro_record_calendar_history();
 
+
+create or replace function private.schoolpro_validate_term_within_session()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare session_start date; session_end date;
+begin
+  select start_date, end_date into session_start, session_end
+  from public.schoolpro_academic_sessions
+  where school_id = new.school_id and session = new.session;
+  if session_start is not null and new.term_start_date is not null and new.term_start_date < session_start then
+    raise exception 'Term beginning cannot precede its academic session';
+  end if;
+  if session_end is not null and new.term_end_date is not null and new.term_end_date > session_end then
+    raise exception 'Term ending cannot exceed its academic session';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.schoolpro_validate_term_within_session() from public, anon, authenticated;
+drop trigger if exists schoolpro_term_within_academic_session on public.schoolpro_result_term_settings;
+create trigger schoolpro_term_within_academic_session
+  before insert or update of session, term_start_date, term_end_date
+  on public.schoolpro_result_term_settings
+  for each row execute function private.schoolpro_validate_term_within_session();
+
 create or replace function public.schoolpro_save_academic_session(
   p_school uuid, p_session text, p_start date, p_end date, p_notes text default null
 ) returns public.schoolpro_academic_sessions
@@ -158,6 +186,14 @@ begin
   end if;
 
   perform pg_advisory_xact_lock(hashtextextended(p_school::text || ':academic-sessions', 0));
+  if exists (
+    select 1 from public.schoolpro_result_term_settings t
+    where t.school_id = p_school and t.session = p_session
+      and ((t.term_start_date is not null and t.term_start_date < p_start)
+        or (t.term_end_date is not null and t.term_end_date > p_end))
+  ) then
+    raise exception 'Session dates must contain all configured term dates';
+  end if;
   if exists (
     select 1 from public.schoolpro_academic_sessions s
     where s.school_id = p_school and s.session <> p_session

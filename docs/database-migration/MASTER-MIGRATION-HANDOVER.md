@@ -495,3 +495,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Current fixture limitation is therefore narrower and more precise than “lesson workflow is mocked”: the trigger function body is represented, but its author-scope and leadership authorization dependencies are not yet faithfully modeled. Existing lesson assertions validate workflow transitions only under deterministic helper outputs; they do not prove production role/assignment resolution.
 - Next bounded test improvement: extend only the disposable PostgreSQL fixture with the minimum profiles, member-role, class form-teacher, subject-assignment, and platform-role helper dependencies needed to execute the exact helper predicates (or a documented isolated extraction). Add positive/negative assertions for assigned vs unassigned teacher and school leader vs non-leader. Keep the live database read-only and do not copy production user/business rows into fixtures.
 - PR #106 remains draft/open/unmerged. No production DDL/DML, migration, ledger edit, merge, deployment, or workspace creation occurred.
+
+
+### Stage A lesson authorization fixture upgraded to production predicates — 2026-10-30
+
+- PR #106 adds deterministic disposable fixtures for `profiles`, `schoolpro_members`, `schoolpro_classes.form_teacher_id`, `schoolpro_subject_assignments`, and school ownership, and replaces the simplified lesson-author/leader helper doubles with the exact live SQL predicates retrieved read-only from Supabase.
+- The fixture's `private.is_admin(user_role[])` is an isolated test implementation of the live helper's exact predicate: active profile, matching `auth.uid()`, and requested platform role. The lesson leader and author-scope helper bodies themselves mirror the live definitions. No production users or school records are copied.
+- Added assertions for form-teacher authorization, assigned-subject-teacher authorization, denial of unassigned and inactive teachers, and leadership granted to a school administrator/owner but denied to an ordinary teacher/inactive profile.
+- PR branch commits: `8af6fc6` (fixture/helper implementation) and `18ca23e` (expanded fixture column insert correction). Exact-head CI has not yet been evaluated; this is pending disposable CI validation, not a completed test result.
+- No live database writes, production DDL/DML, migration, ledger edit, merge, or deployment occurred. PR #106 remains draft/open/unmerged.

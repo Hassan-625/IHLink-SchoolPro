@@ -190,8 +190,12 @@ as $$
 declare result public.schoolpro_academic_sessions;
 begin
   if not private.schoolpro_module_allowed(p_school, 'calendar')
-     or not private.schoolpro_module_allowed(p_school, 'promotions') then
-    raise exception 'Academic calendar management permission required';
+     or not private.has_school_access(p_school, array[
+       'proprietor'::public.school_member_role, 'administrator'::public.school_member_role,
+       'registrar'::public.school_member_role, 'head_teacher'::public.school_member_role,
+       'vice_principal'::public.school_member_role
+     ]) then
+    raise exception 'Calendar permission required';
   end if;
   if p_session !~ '^[0-9]{4}/[0-9]{4}$'
      or split_part(p_session, '/', 2)::integer <> split_part(p_session, '/', 1)::integer + 1
@@ -258,8 +262,12 @@ set search_path = ''
 as $$
 begin
   if not private.schoolpro_module_allowed(p_school, 'calendar')
-     or not private.schoolpro_module_allowed(p_school, 'promotions') then
-    raise exception 'Academic calendar management permission required';
+     or not private.has_school_access(p_school, array[
+       'proprietor'::public.school_member_role, 'administrator'::public.school_member_role,
+       'registrar'::public.school_member_role, 'head_teacher'::public.school_member_role,
+       'vice_principal'::public.school_member_role
+     ]) then
+    raise exception 'Calendar permission required';
   end if;
   update public.schoolpro_academic_sessions
     set status = 'archived', updated_by = auth.uid(), updated_at = now()

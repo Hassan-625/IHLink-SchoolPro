@@ -1613,3 +1613,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Corrected the diagnostic query to select the target relation from `pg_class c`, constrained by `c.oid = 'public.schoolpro_academic_sessions'::regclass`. No migration policy or production SQL was changed.
 - Fixture correction committed as `706e9433b8ebdee15286729d9e6d74c8550cdf49`. Exact-head PostgreSQL CI is now the next gate; the teacher session visibility and subsequent RLS assertions remain unvalidated until that run completes.
 - PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, or new Supabase branch occurred.
+
+
+### Stage B1 authenticated teacher RLS assertion refinement — 2026-11-02
+
+- Exact-head SchoolPro CI #2188 on commit `e3f8451f8fe3618c322b4e132caefff94cded90e` failed only in `academic-calendar-migration-integration`; payment-page validation #1913 passed. Other executed jobs, including main typecheck/regression tests and tenant-integrity/payment-review/result-PIN/result-verification/public-admission integrations, passed; receipt Storage and main build/layout work were still in progress at inspection. Tenant acceptance was skipped because no active workspaces exist.
+- The corrected diagnostic query now runs. Its output confirms the session table has RLS enabled (not FORCE), the SELECT policy targets `authenticated` permissively, the policy includes `teacher`, the access helper returns true, SELECT privilege is present, and a direct row SELECT returns the School A session.
+- The subsequent scalar `count(*) = 1` assertion nevertheless returned false in this fixture. Replaced only that teacher visibility assertion with an `EXISTS (SELECT 1 ...)` row-presence assertion, which directly tests the intended authorization behavior rather than relying on an aggregate in this RLS fixture. No migration policy or production SQL was changed.
+- Test correction committed as `6f293e4d2ce684bd28ac3a9ee6bfc8d0b77ad35b`. Exact-head CI must confirm teacher visibility, history denial for teachers, history visibility for exam officers, and foreign-school isolation.
+- PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.

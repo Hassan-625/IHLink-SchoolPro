@@ -201,11 +201,30 @@ select c.relrowsecurity as row_security_enabled,
 from pg_class c
 where c.oid = 'public.schoolpro_academic_sessions'::regclass;
 select school_id, session from public.schoolpro_academic_sessions;
-select case when exists (select 1 from public.schoolpro_academic_sessions) then 1 else 1/0 end;
-select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
+do $rls_assertions$
+begin
+  if not exists (select 1 from public.schoolpro_academic_sessions) then
+    raise exception 'Teacher must be able to read the school academic session';
+  end if;
+  if exists (select 1 from public.schoolpro_academic_calendar_history) then
+    raise exception 'Teacher must not be able to read calendar history';
+  end if;
+end;
+$rls_assertions$;
 select set_config('request.test.school_role', 'exam_officer', false);
-select case when (select count(*) from public.schoolpro_academic_calendar_history) = 4 then 1 else 1/0 end;
-select case when (select count(*) from public.schoolpro_academic_sessions where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') = 0 then 1 else 1/0 end;
+do $rls_assertions$
+begin
+  if (select count(*) from public.schoolpro_academic_calendar_history) <> 4 then
+    raise exception 'Exam officer must be able to read all four school calendar history rows';
+  end if;
+  if exists (
+    select 1 from public.schoolpro_academic_sessions
+    where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  ) then
+    raise exception 'School sessions must not be visible across tenant boundaries';
+  end if;
+end;
+$rls_assertions$;
 reset role;
 
 -- Parent deletion must remove all owned calendar rows and history without orphaning.

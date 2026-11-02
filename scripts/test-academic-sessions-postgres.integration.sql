@@ -134,24 +134,6 @@ begin
     raise exception 'Explicit historical session was not preserved';
   end if;
 
-  -- RLS: teachers may read session rows but not calendar history; exam officers may read both.
-  perform set_config('request.test.school_id', school::text, true);
-  perform set_config('request.test.school_role', 'teacher', true);
-  set local role authenticated;
-  select count(*) into visible_count from public.schoolpro_academic_sessions where school_id = school;
-  if visible_count <> 1 then raise exception 'Teacher should read the own-school session'; end if;
-  select count(*) into visible_count from public.schoolpro_academic_calendar_history where school_id = school;
-  if visible_count <> 0 then raise exception 'Teacher must not read privileged calendar history'; end if;
-  reset role;
-
-  perform set_config('request.test.school_role', 'exam_officer', true);
-  set local role authenticated;
-  select count(*) into visible_count from public.schoolpro_academic_calendar_history where school_id = school;
-  if visible_count <> 4 then raise exception 'Exam officer should read own-school calendar history; got %', visible_count; end if;
-  select count(*) into visible_count from public.schoolpro_academic_sessions where school_id = foreign_school;
-  if visible_count <> 0 then raise exception 'Cross-school session read was not isolated'; end if;
-  reset role;
-
   -- Direct session deletion must be rejected.
   begin
     delete from public.schoolpro_academic_sessions where id = session_id;
@@ -191,9 +173,6 @@ begin
     if position('Academic calendar history is immutable' in sqlerrm) = 0 then raise; end if;
   end;
 
-  -- Deleting the owning school must cascade through terms, sessions and history.
-  delete from public.schoolpro_schools where id = school;
-  delete from public.schoolpro_schools where id = foreign_school;
 
   select count(*) into remaining from public.schoolpro_academic_sessions where school_id = school;
   if remaining <> 0 then raise exception 'School cascade left % session rows', remaining; end if;
@@ -204,4 +183,47 @@ begin
 end;
 $$;
 
-select 'PASS: B1 migration applied; session/term history, direct-delete/update guards, and school cleanup cascades executed in disposable PostgreSQL.' as result;
+-- Exercise the actual policies as the authenticated database role.
+set role authenticated;
+select set_config('request.test.school_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
+select set_config('request.test.school_role', 'teacher', false);
+do $
+declare n integer;
+begin
+  select count(*) into n from public.schoolpro_academic_sessions;
+  if n <> 1 then raise exception 'Teacher should read the own-school session'; end if;
+  select count(*) into n from public.schoolpro_academic_calendar_history;
+  if n <> 0 then raise exception 'Teacher must not read privileged calendar history'; end if;
+end;
+$;
+select set_config('request.test.school_role', 'exam_officer', false);
+do $
+declare n integer;
+begin
+  select count(*) into n from public.schoolpro_academic_calendar_history;
+  if n <> 4 then raise exception 'Exam officer should read own-school calendar history; got %', n; end if;
+  select count(*) into n from public.schoolpro_academic_sessions where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  if n <> 0 then raise exception 'Cross-school session read was not isolated'; end if;
+end;
+$;
+reset role;
+
+-- Parent deletion must remove all owned calendar rows and history without orphaning.
+delete from public.schoolpro_schools where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+delete from public.schoolpro_schools where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+
+do $
+begin
+  if exists (select 1 from public.schoolpro_academic_sessions where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+    raise exception 'School cascade left session rows';
+  end if;
+  if exists (select 1 from public.schoolpro_result_term_settings where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+    raise exception 'School cascade left term rows';
+  end if;
+  if exists (select 1 from public.schoolpro_academic_calendar_history where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+    raise exception 'School cascade left history rows';
+  end if;
+end;
+$;
+
+select 'PASS: B1 migration, calendar history, immutable guards, school cascades, authenticated RLS, and activity session stamping.' as result;

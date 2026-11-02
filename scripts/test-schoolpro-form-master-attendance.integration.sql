@@ -6,6 +6,7 @@
 
 create schema if not exists auth;
 create schema if not exists private;
+create role authenticated nologin;
 create type public.school_member_role as enum ('proprietor', 'administrator', 'teacher', 'class_teacher');
 create type public.user_role as enum ('super_admin');
 
@@ -72,7 +73,6 @@ for update to authenticated using (
   private.has_school_access(school_id, array['proprietor','administrator','teacher','class_teacher']::public.school_member_role[])
 );
 
-create role authenticated nologin;
 grant usage on schema public, private, auth to authenticated;
 grant select, insert, update on public.schoolpro_attendance to authenticated;
 grant select on public.schoolpro_members, public.schoolpro_classes, public.schoolpro_member_permissions,

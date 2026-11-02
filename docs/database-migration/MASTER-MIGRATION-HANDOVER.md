@@ -1604,3 +1604,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The mismatch is therefore in RLS policy execution/targeting rather than missing fixture data, table SELECT grant, or the helper's direct result.
 - Added a further diagnostic commit `d92b5cea9cd1e5643b8f6433e5a52f2f971d6d57` to print table RLS/FORCE flags, policy roles/command/permissiveness, direct helper and admin results, and the actual authenticated-visible session rows before the assertion.
 - Next: inspect the new exact-head CI output. Do not modify production migration policy until this diagnostic identifies the cause. PR #111 remains draft and unmerged; no production database changes or workspace creation.
+
+
+### Stage B1 authenticated-RLS diagnostic query correction — 2026-11-02
+
+- Inspected SchoolPro CI run #41448655107 on commit `d92b5cea9cd1e5643b8f6433e5a52f2f971d6d57`. All executed jobs passed except `academic-calendar-migration-integration`; the tenant-acceptance job was skipped because no active workspaces exist. The separate payment-page validation run #41448655103 passed.
+- The PostgreSQL log identifies the immediate failure precisely: the diagnostic SELECT referenced alias `c` (`c.relrowsecurity`, `c.relforcerowsecurity`) without a `FROM pg_class c` clause. The migration had applied successfully; the failure occurred in the fixture's diagnostic SQL before the authenticated session-visibility assertion could run.
+- Corrected the diagnostic query to select the target relation from `pg_class c`, constrained by `c.oid = 'public.schoolpro_academic_sessions'::regclass`. No migration policy or production SQL was changed.
+- Fixture correction committed as `706e9433b8ebdee15286729d9e6d74c8550cdf49`. Exact-head PostgreSQL CI is now the next gate; the teacher session visibility and subsequent RLS assertions remain unvalidated until that run completes.
+- PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, or new Supabase branch occurred.

@@ -1631,3 +1631,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Replaced the division-based checks with explicit PL/pgSQL `DO` assertions using `IF ... THEN RAISE EXCEPTION`. Assertions now directly check: teacher sees a school session; teacher cannot see calendar history; exam officer sees exactly four history rows; foreign-school session remains invisible.
 - Test correction committed as `e68fc9431b9759ba13265806dc52dc719f7adb1d`. Exact-head CI is the next gate. No migration policy or production SQL changed.
 - PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.
+
+### Stage B1 remaining cascade assertion correction — 2026-11-02
+
+- Exact-head SchoolPro CI #2192 on commit `dccbe1a85b652f8323ccb6756f15fbb18ac82448` reached the academic-calendar disposable PostgreSQL integration job. The four explicit PL/pgSQL RLS assertions were passed before the fixture failed at line 233.
+- The failure log identifies three remaining `CASE ... ELSE 1/0` sentinels in the parent-school deletion cascade checks (academic sessions, result term settings, and calendar history). These were separate from the four RLS assertions and reproduce the same unsafe constant-folding pattern.
+- Replaced all three cascade sentinels with a single explicit PL/pgSQL assertion block that raises a targeted exception if any School A session, term-setting, or calendar-history row survives school deletion.
+- Fixture correction committed as `ef401f50865591336e0d7cfabf07c8232e015311`. Fresh exact-head CI and payment-page validation are now required; no result is claimed until those runs finish.
+- Payment-page validation #1917 on the preceding head `dccbe1a85b652f8323ccb6756f15fbb18ac82448` passed. SchoolPro CI #2192 was still running at inspection, with the academic-calendar job failed on the three remaining sentinels.
+- PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.

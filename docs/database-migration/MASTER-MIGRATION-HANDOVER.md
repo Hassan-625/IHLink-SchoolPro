@@ -1533,3 +1533,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added source regression assertions for the history FK, all three cascade-aware delete paths, continued direct-delete rejection, and immutable history. These are static source guards; they do not substitute for execution against PostgreSQL.
 - This is a proposed PR-source correction only. The migration remains unapplied to the existing Supabase project. No production data, school workspace, deployment, or PR merge was changed.
 - Required validation before merge: execute the migration and focused delete/immutability scenarios against a disposable PostgreSQL schema with the real Supabase table/role/function prerequisites; verify direct session delete fails, direct term delete fails, direct history mutation fails, ordinary session/term changes append history, and deleting a school removes sessions, terms and history without an exception or orphan rows.
+
+
+### Stage B1 follow-up — correct cascade-guard regression assertion — 2026-11-02
+
+- The first exact-head CI run after the school-cascade correction failed only in `scripts/test-academic-sessions.mjs`: the new static assertion expected three identical `if not exists` text patterns, but the history immutability guard has an additional `tg_op = 'DELETE'` condition before its parent-existence check. The SQL itself contained all three parent-existence guards.
+- Corrected the assertion to count the three exact `where id = old.school_id` predicates, independent of the surrounding condition layout.
+- The same CI run passed TypeScript typecheck and the other database integration jobs (tenant integrity, receipt storage isolation, payment-review RLS, result-PIN rate limits, result-verification exposure and public-admission abuse controls). The tenant-acceptance job was skipped because no active school workspaces exist.
+- Payment-page validation run #1885 passed. SchoolPro CI run #2160 failed at the over-specific static assertion described above; the corrected test is committed as `08425f474d7a4eff77067fe16462979c339f8e35` and awaits a fresh exact-head CI result.
+- No PostgreSQL migration execution was performed. The production Supabase project remains unchanged; no test workspace, Supabase branch, deployment or PR merge was created.

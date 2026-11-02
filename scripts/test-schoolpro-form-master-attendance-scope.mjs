@@ -12,5 +12,6 @@ assert.match(sql,/c\.form_teacher_id=m\.id/);
 assert.match(sql,/drop policy if exists "school educators insert attendance"/);
 assert.match(sql,/drop policy if exists "school educators update attendance"/);
 assert.match(sql,/m\.user_id=\(select auth\.uid\(\)\)/);
+assert.equal((sql.match(/p\.permission='attendance' and p\.allowed=false/g)||[]).length,3);
 assert.match(sql,/private\.has_school_access\(school_id,array\['proprietor','administrator'\]::public\.school_member_role\[\]\)/);
 console.log('PASS: default teacher roles lack attendance; assigned Form Masters and school leaders retain class-scoped attendance writes.');

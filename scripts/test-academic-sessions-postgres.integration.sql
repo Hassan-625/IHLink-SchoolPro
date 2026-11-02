@@ -190,6 +190,15 @@ select current_setting('request.test.school_id', true) as test_school_id,
        private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', array['teacher'::public.school_member_role]) as helper_allows_teacher;
 select current_user as effective_role,
        has_table_privilege(current_user, 'public.schoolpro_academic_sessions', 'SELECT') as effective_role_can_select;
+select c.relrowsecurity as row_security_enabled,
+       c.relforcerowsecurity as force_row_security,
+       (select string_agg(format('roles=%s;cmd=%s;permissive=%s', roles, cmd, permissive), E'\n')
+        from pg_policies
+        where schemaname = 'public' and tablename = 'schoolpro_academic_sessions') as policy_targeting,
+       private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+         array['teacher'::public.school_member_role]) as direct_helper_result,
+       private.is_admin(array['super_admin'::public.user_role]) as direct_admin_result;
+select school_id, session from public.schoolpro_academic_sessions;
 select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
 select set_config('request.test.school_role', 'exam_officer', false);

@@ -122,13 +122,13 @@ begin
 
   -- Verify date-based stamping and explicit-session preservation.
   insert into public.schoolpro_attendance(school_id, attendance_date)
-  values (school, date '2026-03-15') returning * into stamped;
+  values (school, date '2025-10-15') returning * into stamped;
   if stamped.session <> '2025/2026' or stamped.term <> 'First Term' then
     raise exception 'Date-based activity stamping failed: session %, term %', stamped.session, stamped.term;
   end if;
 
   insert into public.schoolpro_attendance(school_id, attendance_date, session)
-  values (school, date '2026-03-15', '2024/2025') returning * into stamped;
+  values (school, date '2025-10-15', '2024/2025') returning * into stamped;
   if stamped.session <> '2024/2025' then
     raise exception 'Explicit historical session was not preserved';
   end if;

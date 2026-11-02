@@ -1622,3 +1622,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The subsequent scalar `count(*) = 1` assertion nevertheless returned false in this fixture. Replaced only that teacher visibility assertion with an `EXISTS (SELECT 1 ...)` row-presence assertion, which directly tests the intended authorization behavior rather than relying on an aggregate in this RLS fixture. No migration policy or production SQL was changed.
 - Test correction committed as `6f293e4d2ce684bd28ac3a9ee6bfc8d0b77ad35b`. Exact-head CI must confirm teacher visibility, history denial for teachers, history visibility for exam officers, and foreign-school isolation.
 - PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.
+
+
+### Stage B1 RLS fixture assertion root cause — 2026-11-02
+
+- Exact-head SchoolPro CI #2190 on handover commit `a29a85442733ce73ea695e5a02fadb493f8717ea` failed in the disposable academic-calendar job. The diagnostic output showed the teacher's direct SELECT returned the expected School A session row, while the next assertion still failed.
+- Root cause: the fixture used `CASE WHEN ... THEN 1 ELSE 1/0 END` as a failure sentinel. PostgreSQL can constant-fold the literal division-by-zero expression during planning, so this is not a safe assertion pattern. The prior RLS diagnosis was therefore misleading; it does not establish a teacher-policy defect.
+- Replaced the division-based checks with explicit PL/pgSQL `DO` assertions using `IF ... THEN RAISE EXCEPTION`. Assertions now directly check: teacher sees a school session; teacher cannot see calendar history; exam officer sees exactly four history rows; foreign-school session remains invisible.
+- Test correction committed as `e68fc9431b9759ba13265806dc52dc719f7adb1d`. Exact-head CI is the next gate. No migration policy or production SQL changed.
+- PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.

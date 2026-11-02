@@ -1661,3 +1661,14 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Commits: migration `e41678b`, test `3229b91`, package script `68078d3`, CI wiring `a72496f`.
 - Exact-head CI and payment validation are pending for the attendance-scope change. Do not apply this migration to production or merge PR #111 until CI and the appropriate disposable PostgreSQL policy test pass.
 - PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.
+
+
+### Stage B1 Form Master attendance disposable PostgreSQL coverage added — 2026-11-02
+
+- Exact-head SchoolPro CI #2203 and payment validation #1928 passed on commit 5e19b1b82214a6040e43d94c6e9f42b1164d73e9. The Form Master source-level regression test, typecheck, build, academic-calendar PostgreSQL integration and all other executed CI jobs passed. Tenant acceptance was skipped because no active school workspaces exist.
+- While building the disposable attendance fixture, reviewed the policy semantics and identified an important precedence case: an explicit attendance=false member permission must override Form Master assignment not only in the module permission list but also in the database write policy. Updated all three Form Master write predicates (INSERT check, UPDATE using, UPDATE check) to honor that explicit denial.
+- Added scripts/test-schoolpro-form-master-attendance.integration.sql. It creates an isolated minimal PostgreSQL schema, applies the exact Form Master migration, checks the default teacher/class-teacher permission mapping, explicit allow/deny behavior, assigned Form Master class scoping, and administrator write access under the authenticated database role.
+- Added a separate form-master-attendance-integration CI job using PostgreSQL 16. It is disposable CI infrastructure only; it does not connect to Supabase or create school workspaces.
+- Commits after the prior handover update: 0ab9360 (initial disposable fixture), 71731d7 (explicit-denial enforcement in migration), 520b8ae (fixture role setup correction), df69c6f (PostgreSQL CI job), d9bcb6e (static regression assertion for all three denial guards).
+- The new PostgreSQL integration has not yet completed on the exact current head. Do not mark the attendance migration accepted until the new form-master-attendance-integration job passes. If it fails, diagnose the disposable fixture or migration and correct only the demonstrated issue.
+- PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.

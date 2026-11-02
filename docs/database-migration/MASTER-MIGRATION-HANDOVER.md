@@ -1640,3 +1640,14 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Fixture correction committed as `ef401f50865591336e0d7cfabf07c8232e015311`. Fresh exact-head CI and payment-page validation are now required; no result is claimed until those runs finish.
 - Payment-page validation #1917 on the preceding head `dccbe1a85b652f8323ccb6756f15fbb18ac82448` passed. SchoolPro CI #2192 was still running at inspection, with the academic-calendar job failed on the three remaining sentinels.
 - PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.
+
+
+### Stage B1 historical roster fallback and identity display correction — 2026-11-02
+
+- Continued the B1 code reconciliation after the academic-calendar disposable PostgreSQL integration passed. The shared `schoolSessionStudents` resolver had a legacy fallback that returned every current student when a school had no enrollment-history rows. That could place inactive or graduated current records into a selected-session roster. The broadsheet compatibility rule already limits this fallback to active students.
+- Extracted deterministic roster projection into `src/lib/schoolSessionRoster.ts`. The resolver now: (1) uses only active students for legacy schools with no enrollment history; (2) returns an empty roster when a school has history but none for the selected session; and (3) uses the selected session's recorded class, arm, section and status while preserving the current class ID separately.
+- Updated the Results and Attendance student queries to include the status field required for the legacy fallback. Updated the class-roster query to include middle name and display the full student name where available.
+- Added `scripts/test-school-session-rosters.mjs` and wired it into the package test script and SchoolPro CI. Coverage includes active-only legacy fallback, empty historical sessions, historical class/arm projection, current-class preservation and graduated status.
+- Commits: `c29351b` (pure roster resolver), `dbb40c9` (tests), `7d31392` (resolver integration), `a961bf1` (results query), `8bdd309` (attendance query), `3eb72f5` (class roster identity), `9d9c6f8` (package script), `7413c80` (CI wiring).
+- Exact-head CI is pending for this code change. Do not mark the roster correction validated until the new CI run passes.
+- No production migration, data change, workspace creation, deployment, merge, or Supabase branch creation occurred. PR #111 remains draft/open/unmerged.

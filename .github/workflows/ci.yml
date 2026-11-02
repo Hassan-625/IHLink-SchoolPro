@@ -367,3 +367,31 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Execute academic calendar migration and lifecycle/cascade assertions
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-academic-sessions-postgres.integration.sql
+
+  form-master-attendance-integration:
+    name: Form Master attendance RLS (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_form_master_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_form_master_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_form_master_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply Form Master migration and exercise authenticated attendance RLS
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-form-master-attendance.integration.sql

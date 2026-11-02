@@ -127,7 +127,7 @@ begin
   begin
     update public.schoolpro_academic_calendar_history
     set term = 'Tampered'
-    where school_id = school limit 1;
+    where ctid = (select ctid from public.schoolpro_academic_calendar_history where school_id = school limit 1);
     raise exception 'ASSERT: direct history update unexpectedly succeeded';
   exception when others then
     if sqlerrm like 'ASSERT:%' then raise; end if;

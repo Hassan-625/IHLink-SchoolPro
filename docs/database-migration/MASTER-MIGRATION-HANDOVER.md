@@ -1681,3 +1681,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Fixture correction commits: `b6841a6` (remove unintended School B Form Master assignment) and `e9d4712` (assert explicit module grants remain class-scoped).
 - A fresh exact-head SchoolPro CI run must pass the disposable PostgreSQL attendance job before this migration is accepted. Payment validation is also pending on the updated head.
 - PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.
+
+
+### Stage B1 Form Master attendance authorization — validated — 2026-11-02
+
+- The corrected Form Master attendance implementation passed exact-head SchoolPro CI #2212 (run `41460413816`) and payment validation #1937 (run `41460413831`). CI head: `e3df03b83b83ac78f65b72ca1f465f0299f171d01`.
+- The dedicated PostgreSQL 16 disposable integration job `Form Master attendance RLS (disposable PostgreSQL)` completed successfully. It applied `20261102090000_schoolpro_form_master_attendance_scope.sql` and exercised the resulting authenticated RLS policies. Assertions cover default teacher restrictions, assigned Form Master class writes, rejection of writes to another class, explicit attendance grants remaining class-scoped, explicit denials overriding Form Master assignment, and administrator write access.
+- All other executed SchoolPro CI jobs passed, including validation/typecheck/build, academic-calendar PostgreSQL integration, tenant-integrity, result verification exposure, result PIN, public admission, receipt storage isolation and payment-review RLS integration. `tenant-acceptance` remained skipped because there are no active workspaces; no workspace was created.
+- Form Master attendance authorization is therefore validated in disposable PostgreSQL and may be treated as complete for Stage B1 implementation review. This does not authorize production application of the migration; it remains part of the unmerged migration proposal.
+- PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.

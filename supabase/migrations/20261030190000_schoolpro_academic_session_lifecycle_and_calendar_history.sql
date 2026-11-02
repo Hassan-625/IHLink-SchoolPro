@@ -26,7 +26,7 @@ create index if not exists schoolpro_academic_sessions_school_dates_idx
 
 create table if not exists public.schoolpro_academic_calendar_history (
   id bigint generated always as identity primary key,
-  school_id uuid not null,
+  school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
   session text not null,
   term text,
   change_type text not null check (change_type in ('session_created','session_updated','session_archived','term_created','term_updated')),
@@ -71,6 +71,13 @@ language plpgsql
 set search_path = ''
 as $$
 begin
+  if tg_op = 'DELETE'
+     and not exists (
+       select 1 from public.schoolpro_schools
+       where id = old.school_id
+     ) then
+    return old;
+  end if;
   raise exception 'Academic calendar history is immutable';
 end;
 $$;
@@ -96,6 +103,12 @@ declare
 begin
   if tg_table_name = 'schoolpro_academic_sessions' then
     if tg_op = 'DELETE' then
+      if not exists (
+        select 1 from public.schoolpro_schools
+        where id = old.school_id
+      ) then
+        return old;
+      end if;
       raise exception 'Academic sessions cannot be deleted; archive them instead';
     end if;
     if tg_op = 'UPDATE' then
@@ -114,6 +127,12 @@ begin
     session_key := new.session;
   else
     if tg_op = 'DELETE' then
+      if not exists (
+        select 1 from public.schoolpro_schools
+        where id = old.school_id
+      ) then
+        return old;
+      end if;
       raise exception 'Academic term records cannot be deleted; amend the calendar instead';
     end if;
     if tg_op = 'UPDATE' then

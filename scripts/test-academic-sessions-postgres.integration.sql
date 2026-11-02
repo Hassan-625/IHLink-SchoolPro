@@ -85,6 +85,8 @@ declare
   session_id uuid;
   history_count integer;
   remaining integer;
+  stamped public.schoolpro_attendance;
+  foreign_school uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 begin
   insert into public.schoolpro_schools(id) values (school);
   perform set_config('request.jwt.claim.sub', '', true);
@@ -118,7 +120,7 @@ begin
     raise exception 'Expected 4 history records after session/term create and update; got %', history_count;
   end if;
 
-  -- Verify date-based stamping, explicit-session preservation and legacy fallback.
+  -- Verify date-based stamping and explicit-session preservation.
   insert into public.schoolpro_attendance(school_id, attendance_date)
   values (school, date '2026-03-15') returning * into stamped;
   if stamped.session <> '2025/2026' or stamped.term <> 'First Term' then

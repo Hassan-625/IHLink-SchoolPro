@@ -180,6 +180,95 @@ create trigger schoolpro_term_within_academic_session
   on public.schoolpro_result_term_settings
   for each row execute function private.schoolpro_validate_term_within_session();
 
+-- Session dates are authoritative for the session component of new activity stamps.
+-- Term settings remain authoritative for the term and the existing academic clock.
+-- Schools that have not configured any session rows retain the legacy term-date fallback.
+create or replace function private.schoolpro_stamp_activity_period()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $
+declare
+  j jsonb := to_jsonb(new);
+  sid uuid;
+  activity_date date;
+  selected_session text;
+  session_configured boolean;
+  term_row public.schoolpro_result_term_settings;
+begin
+  sid := nullif(j->>'school_id', '')::uuid;
+  if sid is null and j->>'student_id' is not null then
+    select school_id into sid
+    from public.schoolpro_students
+    where id = (j->>'student_id')::uuid;
+  end if;
+
+  activity_date := coalesce(
+    nullif(j->>'attendance_date', '')::date,
+    nullif(j->>'lesson_date', '')::date,
+    nullif(j->>'event_date', '')::date,
+    nullif(j->>'start_date', '')::date,
+    nullif(j->>'recorded_at', '')::timestamptz::date,
+    nullif(j->>'borrowed_at', '')::timestamptz::date,
+    current_date
+  );
+  selected_session := nullif(j->>'session', '');
+
+  if selected_session is null and sid is not null then
+    select exists (
+      select 1 from public.schoolpro_academic_sessions
+      where school_id = sid
+    ) into session_configured;
+
+    if session_configured then
+      select session into selected_session
+      from public.schoolpro_academic_sessions
+      where school_id = sid
+        and start_date <= activity_date
+        and end_date >= activity_date
+        and status <> 'archived'
+      order by start_date desc
+      limit 1;
+    else
+      -- Backward-compatible path until a school configures explicit session ranges.
+      select session into selected_session
+      from public.schoolpro_result_term_settings
+      where school_id = sid
+        and term_start_date <= activity_date
+        and term_end_date >= activity_date
+      order by term_start_date desc
+      limit 1;
+    end if;
+  end if;
+
+  if selected_session is not null then
+    if not private.schoolpro_valid_session(selected_session) then
+      raise exception 'Select consecutive academic years';
+    end if;
+    j := j || jsonb_build_object('session', selected_session);
+
+    if j ? 'term' and nullif(j->>'term', '') is null and sid is not null then
+      select * into term_row
+      from public.schoolpro_result_term_settings
+      where school_id = sid
+        and session = selected_session
+        and term_start_date <= activity_date
+        and term_end_date >= activity_date
+      order by term_start_date desc
+      limit 1;
+      if term_row.id is not null then
+        j := j || jsonb_build_object('term', term_row.term);
+      end if;
+    end if;
+    new := jsonb_populate_record(new, j);
+  end if;
+
+  return new;
+end;
+$;
+revoke all on function private.schoolpro_stamp_activity_period() from public, anon, authenticated;
+
 create or replace function public.schoolpro_save_academic_session(
   p_school uuid, p_session text, p_start date, p_end date, p_notes text default null
 ) returns public.schoolpro_academic_sessions

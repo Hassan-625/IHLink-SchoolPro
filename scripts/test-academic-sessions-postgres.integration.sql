@@ -186,43 +186,18 @@ $$;
 set role authenticated;
 select set_config('request.test.school_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
 select set_config('request.test.school_role', 'teacher', false);
-do $
-declare n integer;
-begin
-  select count(*) into n from public.schoolpro_academic_sessions;
-  if n <> 1 then raise exception 'Teacher should read the own-school session'; end if;
-  select count(*) into n from public.schoolpro_academic_calendar_history;
-  if n <> 0 then raise exception 'Teacher must not read privileged calendar history'; end if;
-end;
-$;
+select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
+select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
 select set_config('request.test.school_role', 'exam_officer', false);
-do $
-declare n integer;
-begin
-  select count(*) into n from public.schoolpro_academic_calendar_history;
-  if n <> 4 then raise exception 'Exam officer should read own-school calendar history; got %', n; end if;
-  select count(*) into n from public.schoolpro_academic_sessions where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-  if n <> 0 then raise exception 'Cross-school session read was not isolated'; end if;
-end;
-$;
+select case when (select count(*) from public.schoolpro_academic_calendar_history) = 4 then 1 else 1/0 end;
+select case when (select count(*) from public.schoolpro_academic_sessions where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') = 0 then 1 else 1/0 end;
 reset role;
 
 -- Parent deletion must remove all owned calendar rows and history without orphaning.
 delete from public.schoolpro_schools where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 delete from public.schoolpro_schools where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-
-do $
-begin
-  if exists (select 1 from public.schoolpro_academic_sessions where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
-    raise exception 'School cascade left session rows';
-  end if;
-  if exists (select 1 from public.schoolpro_result_term_settings where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
-    raise exception 'School cascade left term rows';
-  end if;
-  if exists (select 1 from public.schoolpro_academic_calendar_history where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
-    raise exception 'School cascade left history rows';
-  end if;
-end;
-$;
+select case when not exists (select 1 from public.schoolpro_academic_sessions where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
+select case when not exists (select 1 from public.schoolpro_result_term_settings where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
+select case when not exists (select 1 from public.schoolpro_academic_calendar_history where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
 
 select 'PASS: B1 migration, calendar history, immutable guards, school cascades, authenticated RLS, and activity session stamping.' as result;

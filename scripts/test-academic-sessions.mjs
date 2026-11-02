@@ -43,6 +43,7 @@ assert.ok(migration.includes("and status <> 'archived'"),'Archived sessions must
 assert.ok(migration.includes('Backward-compatible path until a school configures explicit session ranges.'),'Schools without explicit session records must retain legacy term-date stamping during transition.');
 assert.ok(migration.includes('from public.schoolpro_result_term_settings')&&migration.includes('session = selected_session')&&migration.includes('term_start_date <= activity_date')&&migration.includes('term_end_date >= activity_date'),'Term remains independently resolved from the matching session and activity date.');
 assert.ok(migration.includes("selected_session := nullif(j->>'session', '')"),'An explicitly supplied session must be preserved instead of overwritten by date inference.');
+assert.ok(!/as \$(?:\r?\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');
 assert.equal((migration.match(/as \$\$/g)||[]).length,(migration.match(/^\$\$;/gm)||[]).length,'Every PL/pgSQL dollar-quoted body must have a matching delimiter.');
 assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');
 console.log('PASS: canonical session range, lifecycle date states, shared selector, and append-only calendar-history migration guards.');

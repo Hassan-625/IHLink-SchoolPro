@@ -139,6 +139,19 @@ begin
 end
 $test$;
 
+-- An explicit module grant does not bypass the class-level attendance RLS boundary.
+select set_config('request.jwt.claim.sub','40000000-0000-0000-0000-000000000003',false);
+do $test$
+begin
+  begin
+    insert into public.schoolpro_attendance values
+      ('60000000-0000-0000-0000-000000000005','10000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000003','40000000-0000-0000-0000-000000000003','70000000-0000-0000-0000-000000000005',current_date);
+    raise exception 'Explicit module grant unexpectedly bypassed Form Master class assignment';
+  exception when insufficient_privilege then null;
+  end;
+end
+$test$;
+
 select set_config('request.jwt.claim.sub','40000000-0000-0000-0000-000000000002',false);
 insert into public.schoolpro_attendance values
  ('60000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000002','70000000-0000-0000-0000-000000000002',current_date);

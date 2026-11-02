@@ -188,7 +188,7 @@ returns trigger
 language plpgsql
 security definer
 set search_path = ''
-as $
+as $$
 declare
   j jsonb := to_jsonb(new);
   sid uuid;
@@ -266,7 +266,7 @@ begin
 
   return new;
 end;
-$;
+$$;
 revoke all on function private.schoolpro_stamp_activity_period() from public, anon, authenticated;
 
 create or replace function public.schoolpro_save_academic_session(

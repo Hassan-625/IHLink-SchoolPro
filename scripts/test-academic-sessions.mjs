@@ -33,6 +33,9 @@ for(const expected of ['schoolpro_academic_sessions','schoolpro_academic_calenda
   assert.ok(migration.includes(expected),`B1 migration must include: ${expected}`);
 }
 assert.ok(migration.includes('schoolpro_module_allowed(p_school, \'calendar\')'),'Session writes must enforce calendar permissions.');
+assert.equal((migration.match(/private\.has_school_access\(p_school, array\[/g)||[]).length,2,'Both session save and archive RPCs must use the same school-role boundary as the existing calendar RPC.');
+assert.ok(!migration.includes("schoolpro_module_allowed(p_school, 'promotions')"),'Calendar management must not require the separate promotions module.');
+assert.ok(migration.includes("'registrar'::public.school_member_role")&&migration.includes("'head_teacher'::public.school_member_role")&&migration.includes("'vice_principal'::public.school_member_role"),'Calendar RPCs must preserve the established calendar-management roles.');
 assert.ok(migration.includes('Academic session dates cannot overlap'),'Non-archived session date ranges must not overlap.');
 assert.equal((migration.match(/as \$\$/g)||[]).length,(migration.match(/^\$\$;/gm)||[]).length,'Every PL/pgSQL dollar-quoted body must have a matching delimiter.');
 assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');

@@ -1595,3 +1595,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Diagnostic-only fixture update committed as `4b8e9497919ae103dd832b44630f381897249447`. It emits the authenticated table SELECT privilege, owner-visible fixture row count, actual `pg_policies.qual`, and effective role/table privilege before the failing assertion. Use the next CI log to distinguish a missing table grant, policy mismatch, or fixture-row issue.
 - Next action: inspect the academic-calendar job for the diagnostic output; make only a root-cause correction, then rerun the focused job. Keep PR #111 draft/open/unmerged.
 - Continue to avoid production migration/deployment/data changes, workspace creation, test operational data, or new Supabase branches.
+
+
+### Follow-up diagnostic result — 2026-11-02
+
+- CI for diagnostic commit `4b8e9497919ae103dd832b44630f381897249447` completed. Payment-page validation passed; the disposable academic-calendar job still failed at the teacher session visibility assertion.
+- The job output now proves: authenticated has table SELECT privilege; one School A session exists when viewed by the fixture owner; the actual SELECT policy includes `teacher`; and `private.has_school_access(... teacher ...)` returns true under authenticated.
+- The mismatch is therefore in RLS policy execution/targeting rather than missing fixture data, table SELECT grant, or the helper's direct result.
+- Added a further diagnostic commit `d92b5cea9cd1e5643b8f6433e5a52f2f971d6d57` to print table RLS/FORCE flags, policy roles/command/permissiveness, direct helper and admin results, and the actual authenticated-visible session rows before the assertion.
+- Next: inspect the new exact-head CI output. Do not modify production migration policy until this diagnostic identifies the cause. PR #111 remains draft and unmerged; no production database changes or workspace creation.

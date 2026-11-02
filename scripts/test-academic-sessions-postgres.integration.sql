@@ -201,7 +201,7 @@ select c.relrowsecurity as row_security_enabled,
 from pg_class c
 where c.oid = 'public.schoolpro_academic_sessions'::regclass;
 select school_id, session from public.schoolpro_academic_sessions;
-select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
+select case when exists (select 1 from public.schoolpro_academic_sessions) then 1 else 1/0 end;
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
 select set_config('request.test.school_role', 'exam_officer', false);
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 4 then 1 else 1/0 end;

@@ -64,14 +64,9 @@ create table public.schoolpro_audit_logs (
 
 grant usage on schema private to authenticated;
 create or replace function private.has_school_access(p_school uuid, p_roles public.school_member_role[])
-returns boolean language sql stable as $
-  select p_school::text = current_setting('request.test.school_id', true)
-     and exists (
-       select 1
-       from unnest(p_roles) allowed(role)
-       where allowed.role::text = current_setting('request.test.school_role', true)
-     )
-$;
+returns boolean language sql stable as 'select p_school::text = current_setting(''request.test.school_id'', true)
+  and exists (select 1 from unnest(p_roles) allowed(role)
+              where allowed.role::text = current_setting(''request.test.school_role'', true))';
 create or replace function private.is_admin(public.user_role[])
 returns boolean language sql stable as $$ select false $$;
 create or replace function private.schoolpro_module_allowed(uuid, text)

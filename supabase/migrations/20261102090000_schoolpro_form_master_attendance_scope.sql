@@ -51,18 +51,21 @@ for insert to authenticated with check (
  marked_by=(select auth.uid()) and (
   private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[])
   or exists(select 1 from public.schoolpro_classes c join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
-   where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher'))
+   where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher')
+   and not exists(select 1 from public.schoolpro_member_permissions p where p.member_id=m.id and p.permission='attendance' and p.allowed=false))
  )
 );
 create policy "School educators update attendance" on public.schoolpro_attendance
 for update to authenticated using (
  private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[])
  or exists(select 1 from public.schoolpro_classes c join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
-  where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher'))
+  where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher')
+   and not exists(select 1 from public.schoolpro_member_permissions p where p.member_id=m.id and p.permission='attendance' and p.allowed=false))
 ) with check (
  marked_by=(select auth.uid()) and (
   private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[])
   or exists(select 1 from public.schoolpro_classes c join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
-   where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher'))
+   where c.id=schoolpro_attendance.class_id and c.school_id=schoolpro_attendance.school_id and m.user_id=(select auth.uid()) and m.role::text in('teacher','class_teacher')
+   and not exists(select 1 from public.schoolpro_member_permissions p where p.member_id=m.id and p.permission='attendance' and p.allowed=false))
  )
 );

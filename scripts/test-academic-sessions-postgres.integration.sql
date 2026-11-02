@@ -178,6 +178,9 @@ $fixture$;
 set role authenticated;
 select set_config('request.test.school_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
 select set_config('request.test.school_role', 'teacher', false);
+select current_setting('request.test.school_id', true) as test_school_id,
+       current_setting('request.test.school_role', true) as test_school_role,
+       private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', array['teacher'::public.school_member_role]) as helper_allows_teacher;
 select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
 select set_config('request.test.school_role', 'exam_officer', false);

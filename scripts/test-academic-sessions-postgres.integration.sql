@@ -174,6 +174,13 @@ begin
 end;
 $fixture$;
 
+-- Capture table grants, policy text, and the owner-visible fixture row before switching roles.
+select has_table_privilege('authenticated', 'public.schoolpro_academic_sessions', 'SELECT') as authenticated_can_select,
+       (select count(*) from public.schoolpro_academic_sessions
+        where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') as owner_visible_school_sessions,
+       (select string_agg(qual, E'\n') from pg_policies
+        where schemaname = 'public' and tablename = 'schoolpro_academic_sessions') as session_policy_qual;
+
 -- Exercise the actual policies as the authenticated database role.
 set role authenticated;
 select set_config('request.test.school_id', 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', false);
@@ -181,6 +188,8 @@ select set_config('request.test.school_role', 'teacher', false);
 select current_setting('request.test.school_id', true) as test_school_id,
        current_setting('request.test.school_role', true) as test_school_role,
        private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', array['teacher'::public.school_member_role]) as helper_allows_teacher;
+select current_user as effective_role,
+       has_table_privilege(current_user, 'public.schoolpro_academic_sessions', 'SELECT') as effective_role_can_select;
 select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;
 select set_config('request.test.school_role', 'exam_officer', false);

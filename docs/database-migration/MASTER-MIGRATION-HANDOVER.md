@@ -1583,3 +1583,15 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Fixture correction committed as `1af382297ffcd105ed8326890caf6376ad737377`. Await exact-head PostgreSQL CI before marking expanded coverage validated.
 - CI #2179: all jobs passed except the disposable academic-calendar migration job; payment-page validation #1904 passed. The prior cascade-order correction is therefore not yet validated independently because parsing failed first.
 - No production migration, data change, workspace creation, deployment or PR merge occurred. PR #111 remains open/draft; migration remains unapplied.
+
+
+## Stage B PR #111 — latest B1 disposable PostgreSQL CI diagnosis (2026-11-02)
+
+- PR #111 remains **open and draft**; no merge or production deployment/migration has occurred.
+- Latest diagnostic commit before this update: `79a945e7041f6a62575de3e04720e3db1f92c219`.
+- SchoolPro CI run #2182 (`41444237925`) completed with the disposable academic-calendar PostgreSQL job failing; all other executed jobs passed. Tenant acceptance remained skipped because there are no active workspaces.
+- Payment-page validation #1907 (`41444237869`) completed successfully.
+- The #2182 job log shows `private.has_school_access('...school A...', ARRAY['teacher']) = true` under the configured authenticated test context, but the subsequent authenticated SELECT from `schoolpro_academic_sessions` still returned zero rows. Therefore the helper/context hypothesis is not the cause; do not weaken the migration's teacher read policy without further evidence.
+- Diagnostic-only fixture update committed as `4b8e9497919ae103dd832b44630f381897249447`. It emits the authenticated table SELECT privilege, owner-visible fixture row count, actual `pg_policies.qual`, and effective role/table privilege before the failing assertion. Use the next CI log to distinguish a missing table grant, policy mismatch, or fixture-row issue.
+- Next action: inspect the academic-calendar job for the diagnostic output; make only a root-cause correction, then rerun the focused job. Keep PR #111 draft/open/unmerged.
+- Continue to avoid production migration/deployment/data changes, workspace creation, test operational data, or new Supabase branches.

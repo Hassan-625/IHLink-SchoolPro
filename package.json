@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "android:prepare": "npm run build && npx cap add android && npx cap sync android && node scripts/prepare-android.mjs",
     "android:sync": "npm run build && npx cap sync android && node scripts/prepare-android.mjs",
-    "test:academic-sessions": "node scripts/test-academic-sessions.mjs"
+    "test:academic-sessions": "node scripts/test-academic-sessions.mjs",
+    "test:school-session-rosters": "node scripts/test-school-session-rosters.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

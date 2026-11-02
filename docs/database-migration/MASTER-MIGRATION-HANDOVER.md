@@ -1574,3 +1574,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Correction committed as `51601b0c675b020d05ed2ec23c5d8465402e3d15`. Exact-head CI must pass before the expanded RLS/stamping coverage is considered validated.
 - All other jobs in #2176 and #2177 passed, including main validation, tenant integrity, receipt Storage isolation, payment-review RLS, result-PIN, result-verification and public-admission. Tenant acceptance remained skipped because no active school workspaces exist. Payment-page validation #1902 passed.
 - No production migration, production data change, workspace creation, deployment or PR merge occurred. PR #111 remains open/draft; the B1 migration remains unapplied.
+
+
+### Stage B1 PostgreSQL fixture dollar-quote correction — 2026-11-02
+
+- The corrected cascade assertion order exposed the next fixture issue in CI #2178/#2179: the GitHub file-update operation had normalized the closing delimiter of the newly edited PL/pgSQL block from `$$;` to `$;`, causing PostgreSQL's `unterminated dollar-quoted string` error before the behavior assertions ran.
+- Replaced the edited block's delimiter with the distinct `$fixture$` tag to avoid delimiter normalization. No migration SQL or production behavior changed.
+- Fixture correction committed as `1af382297ffcd105ed8326890caf6376ad737377`. Await exact-head PostgreSQL CI before marking expanded coverage validated.
+- CI #2179: all jobs passed except the disposable academic-calendar migration job; payment-page validation #1904 passed. The prior cascade-order correction is therefore not yet validated independently because parsing failed first.
+- No production migration, data change, workspace creation, deployment or PR merge occurred. PR #111 remains open/draft; migration remains unapplied.

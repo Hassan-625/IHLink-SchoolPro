@@ -1542,3 +1542,16 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The same CI run passed TypeScript typecheck and the other database integration jobs (tenant integrity, receipt storage isolation, payment-review RLS, result-PIN rate limits, result-verification exposure and public-admission abuse controls). The tenant-acceptance job was skipped because no active school workspaces exist.
 - Payment-page validation run #1885 passed. SchoolPro CI run #2160 failed at the over-specific static assertion described above; the corrected test is committed as `08425f474d7a4eff77067fe16462979c339f8e35` and awaits a fresh exact-head CI result.
 - No PostgreSQL migration execution was performed. The production Supabase project remains unchanged; no test workspace, Supabase branch, deployment or PR merge was created.
+
+### Stage B1 focused PostgreSQL integration added — 2026-11-02
+
+- SchoolPro CI run #2162 completed successfully on the prior branch head. The main validation and receipt-storage isolation jobs passed; the tenant-acceptance job was skipped because no active school workspaces exist. Payment-page validation run #1887 also passed.
+- Added `scripts/test-academic-sessions-postgres.integration.sql`, a disposable PostgreSQL fixture that supplies only the Supabase schema/role/function prerequisites needed by the proposed B1 migration, applies that exact migration with psql, and executes focused behavior checks:
+  - session save plus term/session insert and update append four history entries;
+  - direct session delete and direct term delete are rejected;
+  - direct calendar-history UPDATE and DELETE are rejected;
+  - deleting the owning school cascades through session, term and history rows without leaving orphans.
+- Added an isolated PostgreSQL 16 CI job, `academic-calendar-migration-integration`, to execute the fixture against a fresh ephemeral database. This is deliberately separate from production Supabase and does not create a Supabase branch or school workspace.
+- The integration fixture is a targeted disposable schema with minimal prerequisite stubs, not a full clone of every live Supabase policy/function. It proves migration execution and the listed trigger/FK behaviors; it does not yet prove live authenticated RLS/role semantics or every activity-stamping trigger attachment.
+- New integration job has been added to the Stage B PR branch; its exact-head CI result is pending. Do not treat the migration as PostgreSQL-validated until that job passes. If it fails, fix only the failing fixture/migration behavior and record the result here.
+- No production migration, production data change, deployment, PR merge or test workspace creation occurred. PR #111 remains open/draft; the academic-session migration remains unapplied.

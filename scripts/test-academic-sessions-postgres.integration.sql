@@ -230,8 +230,27 @@ reset role;
 -- Parent deletion must remove all owned calendar rows and history without orphaning.
 delete from public.schoolpro_schools where id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 delete from public.schoolpro_schools where id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-select case when not exists (select 1 from public.schoolpro_academic_sessions where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
-select case when not exists (select 1 from public.schoolpro_result_term_settings where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
-select case when not exists (select 1 from public.schoolpro_academic_calendar_history where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then 1 else 1/0 end;
+do $cascade_assertions$
+begin
+  if exists (
+    select 1 from public.schoolpro_academic_sessions
+    where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ) then
+    raise exception 'Deleting a school must cascade to its academic sessions';
+  end if;
+  if exists (
+    select 1 from public.schoolpro_result_term_settings
+    where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ) then
+    raise exception 'Deleting a school must cascade to its result term settings';
+  end if;
+  if exists (
+    select 1 from public.schoolpro_academic_calendar_history
+    where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+  ) then
+    raise exception 'Deleting a school must cascade to its calendar history';
+  end if;
+end;
+$cascade_assertions$;
 
 select 'PASS: B1 migration, calendar history, immutable guards, school cascades, authenticated RLS, and activity session stamping.' as result;

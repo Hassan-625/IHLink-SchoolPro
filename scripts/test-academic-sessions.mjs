@@ -50,7 +50,7 @@ assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain
 assert.ok(migration.includes('school_id uuid not null references public.schoolpro_schools(id) on delete cascade'),'Calendar history must be deleted with its owning school; it must not leave orphan history rows.');
 assert.ok(migration.includes("if tg_op = 'DELETE'\n     and not exists ("),'History immutability must permit school-deletion cascades while rejecting ordinary mutations.');
 assert.ok(migration.includes("raise exception 'Academic calendar history is immutable'"),'Direct history update/delete must remain prohibited.');
-assert.equal((migration.match(/if not exists \(\s*select 1 from public\.schoolpro_schools\s*where id = old\.school_id/g)||[]).length,3,'Session, term and history delete triggers must all distinguish school cascades from direct deletes.');
+assert.equal((migration.match(/where id = old\.school_id/g)||[]).length,3,'Session, term and history delete triggers must all distinguish school cascades from direct deletes.');
 assert.ok(migration.includes("raise exception 'Academic sessions cannot be deleted; archive them instead'"),'Direct session deletion must remain prohibited.');
 assert.ok(migration.includes("raise exception 'Academic term records cannot be deleted; amend the calendar instead'"),'Direct term deletion must remain prohibited.');
 

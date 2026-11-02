@@ -1649,5 +1649,15 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Updated the Results and Attendance student queries to include the status field required for the legacy fallback. Updated the class-roster query to include middle name and display the full student name where available.
 - Added `scripts/test-school-session-rosters.mjs` and wired it into the package test script and SchoolPro CI. Coverage includes active-only legacy fallback, empty historical sessions, historical class/arm projection, current-class preservation and graduated status.
 - Commits: `c29351b` (pure roster resolver), `dbb40c9` (tests), `7d31392` (resolver integration), `a961bf1` (results query), `8bdd309` (attendance query), `3eb72f5` (class roster identity), `9d9c6f8` (package script), `7413c80` (CI wiring).
-- Exact-head CI is pending for this code change. Do not mark the roster correction validated until the new CI run passes.
+- Exact-head SchoolPro CI #2199 and payment validation #1924 both passed on commit `d4326c20363de2b2f01938aac30076c9f6079958`. The typecheck, production build, academic-calendar disposable PostgreSQL integration, and `test-school-session-rosters.mjs` all passed. Tenant acceptance was skipped because no active workspaces exist.
 - No production migration, data change, workspace creation, deployment, merge, or Supabase branch creation occurred. PR #111 remains draft/open/unmerged.
+
+
+### Stage B1 Form Master attendance authorization correction — 2026-11-02
+
+- After the historical roster correction passed exact-head CI #2199 and payment validation #1924 on `d4326c20363de2b2f01938aac30076c9f6079958`, the next B1 role-scope gap was addressed: the legacy attendance policies granted every `teacher` and `class_teacher` school-wide attendance writes by default.
+- Added `supabase/migrations/20261102090000_schoolpro_form_master_attendance_scope.sql`. Default teacher and class-teacher permission arrays no longer include attendance. A teacher/class teacher receives the attendance module when assigned through the existing `schoolpro_classes.form_teacher_id` field; RLS permits attendance insert/update only for the assigned Form Master and school proprietor/administrator. The existing restrictive student/session/class scope remains in force.
+- Added `scripts/test-schoolpro-form-master-attendance-scope.mjs` and wired it into package scripts and SchoolPro CI. This is a source-level authorization regression test; disposable database execution of the new migration is still required before acceptance.
+- Commits: migration `e41678b`, test `3229b91`, package script `68078d3`, CI wiring `a72496f`.
+- Exact-head CI and payment validation are pending for the attendance-scope change. Do not apply this migration to production or merge PR #111 until CI and the appropriate disposable PostgreSQL policy test pass.
+- PR #111 remains open/draft/unmerged. No production migration, deployment, production data change, workspace creation, or new Supabase branch occurred.

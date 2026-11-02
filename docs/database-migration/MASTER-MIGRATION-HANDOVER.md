@@ -1565,3 +1565,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The expanded fixture is now in commit `4c7331f`; exact-head SchoolPro CI run #2176 is queued. These additional RLS and activity-stamping checks are pending until that run passes. The earlier #2167 pass does not cover these later additions.
 - The fixture uses a minimal disposable schema and a deterministic role/access helper to exercise policy role boundaries; it is not a full Supabase Auth/member-table clone. It validates the policy expressions and authenticated database-role visibility, not the complete live JWT/member-resolution implementation.
 - No production Supabase migration, production data change, workspace creation, deployment or PR merge occurred. PR #111 remains open/draft and the B1 migration remains unapplied.
+
+
+### Stage B1 expanded fixture teardown correction — 2026-11-02
+
+- Expanded PostgreSQL fixture CI runs #2176 and #2177 failed only in the disposable academic-calendar integration job. The failure was in test ordering: the fixture asserted that the school cascade had removed session/term/history rows inside its setup DO block, before the parent school was actually deleted. The later parent-delete statements were already present after the RLS checks.
+- Corrected the fixture so the cascade assertions run only after the parent-school DELETE statements at the end of the script. No migration SQL or production behavior was changed.
+- Correction committed as `51601b0c675b020d05ed2ec23c5d8465402e3d15`. Exact-head CI must pass before the expanded RLS/stamping coverage is considered validated.
+- All other jobs in #2176 and #2177 passed, including main validation, tenant integrity, receipt Storage isolation, payment-review RLS, result-PIN, result-verification and public-admission. Tenant acceptance remained skipped because no active school workspaces exist. Payment-page validation #1902 passed.
+- No production migration, production data change, workspace creation, deployment or PR merge occurred. PR #111 remains open/draft; the B1 migration remains unapplied.

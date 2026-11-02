@@ -197,7 +197,9 @@ select c.relrowsecurity as row_security_enabled,
         where schemaname = 'public' and tablename = 'schoolpro_academic_sessions') as policy_targeting,
        private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
          array['teacher'::public.school_member_role]) as direct_helper_result,
-       private.is_admin(array['super_admin'::public.user_role]) as direct_admin_result;
+       private.is_admin(array['super_admin'::public.user_role]) as direct_admin_result
+from pg_class c
+where c.oid = 'public.schoolpro_academic_sessions'::regclass;
 select school_id, session from public.schoolpro_academic_sessions;
 select case when (select count(*) from public.schoolpro_academic_sessions) = 1 then 1 else 1/0 end;
 select case when (select count(*) from public.schoolpro_academic_calendar_history) = 0 then 1 else 1/0 end;

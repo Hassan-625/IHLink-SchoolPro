@@ -1690,3 +1690,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - All other executed SchoolPro CI jobs passed, including validation/typecheck/build, academic-calendar PostgreSQL integration, tenant-integrity, result verification exposure, result PIN, public admission, receipt storage isolation and payment-review RLS integration. `tenant-acceptance` remained skipped because there are no active workspaces; no workspace was created.
 - Form Master attendance authorization is therefore validated in disposable PostgreSQL and may be treated as complete for Stage B1 implementation review. This does not authorize production application of the migration; it remains part of the unmerged migration proposal.
 - PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.
+
+
+### Stage B1 student identity display — middle name carried into results — 2026-11-02
+
+- Following the passing Form Master PostgreSQL integration, continued the student identity/display requirement. `SchoolProStudents.tsx` already selects, stores on enrollment, searches and displays `middle_name`; the results page was still omitting it from its student query and rendered names.
+- Updated `src/pages/schoolpro/SchoolProResults.tsx` to select `middle_name`, include it in the local Student type, and display full first/middle/last names in the class-subject register, saved-result rows and correction detail where the matching name expression was present. No student records or database schema were changed.
+- Commit: `2afc0f82f15e906d5b649672fbb79f94e9b3ddeb`.
+- Exact-head SchoolPro CI #2214 and payment validation #1939 were triggered on this commit. At handover update time both were still running; do not call the UI change validated until both conclude successfully.
+- Parent/guardian relationship remains a separate open requirement: the current student form stores guardian name and phone but no relationship field. No relationship column or migration is proposed until the actual schema and any existing parent/guardian model are traced; do not invent or backfill relationship values.
+- PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.

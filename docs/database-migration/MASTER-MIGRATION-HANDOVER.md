@@ -1672,3 +1672,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Commits after the prior handover update: 0ab9360 (initial disposable fixture), 71731d7 (explicit-denial enforcement in migration), 520b8ae (fixture role setup correction), df69c6f (PostgreSQL CI job), d9bcb6e (static regression assertion for all three denial guards).
 - The new PostgreSQL integration has not yet completed on the exact current head. Do not mark the attendance migration accepted until the new form-master-attendance-integration job passes. If it fails, diagnose the disposable fixture or migration and correct only the demonstrated issue.
 - PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.
+
+
+### Stage B1 Form Master PostgreSQL fixture first-run correction — 2026-11-02
+
+- The first exact-head CI attempt for the new disposable Form Master integration applied the migration successfully, then failed one fixture assertion: the supposed unassigned School B teacher was actually assigned as that school's Form Master in the fixture data. This was a fixture setup error, not a migration or RLS failure.
+- Corrected the School B class fixture to have no Form Master assignment. Added a further authenticated RLS assertion that an explicit attendance module grant does not bypass the class-level Form Master write boundary.
+- Fixture correction commits: `b6841a6` (remove unintended School B Form Master assignment) and `e9d4712` (assert explicit module grants remain class-scoped).
+- A fresh exact-head SchoolPro CI run must pass the disposable PostgreSQL attendance job before this migration is accepted. Payment validation is also pending on the updated head.
+- PR #111 remains open/draft/unmerged. No production Supabase migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.

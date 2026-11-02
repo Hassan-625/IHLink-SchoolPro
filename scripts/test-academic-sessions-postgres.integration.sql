@@ -93,6 +93,8 @@ declare
 begin
   insert into public.schoolpro_schools(id) values (school);
   perform set_config('request.jwt.claim.sub', '', true);
+  perform set_config('request.test.school_id', school::text, true);
+  perform set_config('request.test.school_role', 'proprietor', true);
   insert into public.schoolpro_schools(id) values (foreign_school);
 
   -- Normal session save and term writes must append immutable history.

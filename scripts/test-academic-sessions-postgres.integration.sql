@@ -79,7 +79,7 @@ $$;
 
 \ir ../supabase/migrations/20261030190000_schoolpro_academic_session_lifecycle_and_calendar_history.sql
 
-do $$
+do $fixture$
 declare
   school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   session_id uuid;
@@ -172,7 +172,7 @@ begin
   end;
 
 end;
-$;
+$fixture$;
 
 -- Exercise the actual policies as the authenticated database role.
 set role authenticated;

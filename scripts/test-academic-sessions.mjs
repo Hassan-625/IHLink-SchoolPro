@@ -37,6 +37,12 @@ assert.equal((migration.match(/private\.has_school_access\(p_school, array\[/g)|
 assert.ok(!migration.includes("schoolpro_module_allowed(p_school, 'promotions')"),'Calendar management must not require the separate promotions module.');
 assert.ok(migration.includes("'registrar'::public.school_member_role")&&migration.includes("'head_teacher'::public.school_member_role")&&migration.includes("'vice_principal'::public.school_member_role"),'Calendar RPCs must preserve the established calendar-management roles.');
 assert.ok(migration.includes('Academic session dates cannot overlap'),'Non-archived session date ranges must not overlap.');
+assert.ok(migration.includes('create or replace function private.schoolpro_stamp_activity_period()'),'The proposed session migration must integrate session dates with activity stamping.');
+assert.ok(migration.includes('from public.schoolpro_academic_sessions')&&migration.includes('start_date <= activity_date')&&migration.includes('end_date >= activity_date'),'New activity session stamps must be resolved by the configured session date range.');
+assert.ok(migration.includes("and status <> 'archived'"),'Archived sessions must not be inferred for new activity records.');
+assert.ok(migration.includes('Backward-compatible path until a school configures explicit session ranges.'),'Schools without explicit session records must retain legacy term-date stamping during transition.');
+assert.ok(migration.includes('from public.schoolpro_result_term_settings')&&migration.includes('session = selected_session')&&migration.includes('term_start_date <= activity_date')&&migration.includes('term_end_date >= activity_date'),'Term remains independently resolved from the matching session and activity date.');
+assert.ok(migration.includes("selected_session := nullif(j->>'session', '')"),'An explicitly supplied session must be preserved instead of overwritten by date inference.');
 assert.equal((migration.match(/as \$\$/g)||[]).length,(migration.match(/^\$\$;/gm)||[]).length,'Every PL/pgSQL dollar-quoted body must have a matching delimiter.');
 assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');
 console.log('PASS: canonical session range, lifecycle date states, shared selector, and append-only calendar-history migration guards.');

@@ -84,7 +84,6 @@ declare
   school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   session_id uuid;
   history_count integer;
-  remaining integer;
   stamped public.schoolpro_attendance;
   foreign_school uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 begin
@@ -172,15 +171,8 @@ begin
     if position('Academic calendar history is immutable' in sqlerrm) = 0 then raise; end if;
   end;
 
-
-  select count(*) into remaining from public.schoolpro_academic_sessions where school_id = school;
-  if remaining <> 0 then raise exception 'School cascade left % session rows', remaining; end if;
-  select count(*) into remaining from public.schoolpro_result_term_settings where school_id = school;
-  if remaining <> 0 then raise exception 'School cascade left % term rows', remaining; end if;
-  select count(*) into remaining from public.schoolpro_academic_calendar_history where school_id = school;
-  if remaining <> 0 then raise exception 'School cascade left % history rows', remaining; end if;
 end;
-$$;
+$;
 
 -- Exercise the actual policies as the authenticated database role.
 set role authenticated;

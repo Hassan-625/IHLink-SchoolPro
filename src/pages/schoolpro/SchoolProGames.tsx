@@ -15,11 +15,13 @@ type Criterion={id:string;event_id:string;name:string;max_points:number;weight:n
 type Entry={id:string;event_id:string;house_id:string|null;entry_name:string};
 type Judge={id:string;event_id:string;member_id:string;panel_role:string;ended_at:string|null};
 type Student={id:string;first_name:string;last_name:string;admission_number:string|null};
+type ResultRun={id:string;event_id:string;version:number;status:string;calculated_at:string;approved_at:string|null;published_at:string|null};
+type ResultEntry={id:string;result_run_id:string;entry_id:string;house_id:string|null;entry_name:string;is_complete:boolean;score_percent:number|null;result_position:number|null;criterion_breakdown:any};
 const input='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm';
 export function SchoolProGames(){
  const ctx=useSchoolProContext(),{user}=useAuth(),{session}=useSchoolSession();
  const [houses,setHouses]=useState<House[]>([]),[members,setMembers]=useState<Member[]>([]),[students,setStudents]=useState<Student[]>([]),[houseMasters,setHouseMasters]=useState<{id:string;house_id:string;member_id:string;assigned_at:string;ended_at:string|null}[]>([]);
- const [events,setEvents]=useState<Event[]>([]),[criteria,setCriteria]=useState<Criterion[]>([]),[entries,setEntries]=useState<Entry[]>([]),[judges,setJudges]=useState<Judge[]>([]);
+ const [events,setEvents]=useState<Event[]>([]),[criteria,setCriteria]=useState<Criterion[]>([]),[entries,setEntries]=useState<Entry[]>([]),[judges,setJudges]=useState<Judge[]>([]),[resultRuns,setResultRuns]=useState<ResultRun[]>([]),[resultEntries,setResultEntries]=useState<ResultEntry[]>([]),[selectedRun,setSelectedRun]=useState('');
  const [selected,setSelected]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [houseName,setHouseName]=useState(''),[houseCode,setHouseCode]=useState(''),[houseColor,setHouseColor]=useState('#dc2626');
  const [masterHouse,setMasterHouse]=useState(''),[masterMember,setMasterMember]=useState('');
@@ -44,17 +46,21 @@ export function SchoolProGames(){
   setHouses(h.data||[]);setMembers((m.data||[]) as unknown as Member[]);setStudents(s.data||[]);setEvents(e.data||[]);setHouseMasters(hm.data||[]);
  },[ctx.schoolId]);
  const loadEvent=useCallback(async(id:string)=>{
-  if(!supabase||!ctx.schoolId||!id){setCriteria([]);setEntries([]);setJudges([]);return;}
-  const [c,en,j]=await Promise.all([
+  if(!supabase||!ctx.schoolId||!id){setCriteria([]);setEntries([]);setJudges([]);setResultRuns([]);setResultEntries([]);setSelectedRun('');return;}
+  const [c,en,j,rr]=await Promise.all([
    supabase.from('schoolpro_competition_criteria').select('id,event_id,name,max_points,weight').eq('school_id',ctx.schoolId).eq('event_id',id).order('sort_order'),
    supabase.from('schoolpro_competition_entries').select('id,event_id,house_id,entry_name').eq('school_id',ctx.schoolId).eq('event_id',id).order('created_at'),
-   supabase.from('schoolpro_competition_judges').select('id,event_id,member_id,panel_role,ended_at').eq('school_id',ctx.schoolId).eq('event_id',id).order('assigned_at')
+   supabase.from('schoolpro_competition_judges').select('id,event_id,member_id,panel_role,ended_at').eq('school_id',ctx.schoolId).eq('event_id',id).order('assigned_at'),
+   supabase.from('schoolpro_competition_result_runs').select('id,event_id,version,status,calculated_at,approved_at,published_at').eq('school_id',ctx.schoolId).eq('event_id',id).order('version',{ascending:false})
   ]);
-  if(c.error||en.error||j.error){setError('Competition details could not be loaded.');return;}
-  setCriteria(c.data||[]);setEntries(en.data||[]);setJudges(j.data||[]);
+  if(c.error||en.error||j.error||rr.error){setError('Competition details could not be loaded.');return;}
+  setCriteria(c.data||[]);setEntries(en.data||[]);setJudges(j.data||[]);setResultRuns((rr.data||[]) as ResultRun[]);
+  const preferred=(rr.data||[]).find((r:any)=>r.status==='calculated'||r.status==='approved')||(rr.data||[]).find((r:any)=>r.status==='published');
+  setSelectedRun(preferred?.id||'');
  },[ctx.schoolId]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{void loadEvent(selected)},[selected,loadEvent]);
+ useEffect(()=>{let cancelled=false;async function loadResultEntries(){if(!supabase||!ctx.schoolId||!selectedRun){setResultEntries([]);return;}const r=await supabase.from('schoolpro_competition_result_entries').select('id,result_run_id,entry_id,house_id,entry_name,is_complete,score_percent,result_position,criterion_breakdown').eq('school_id',ctx.schoolId).eq('result_run_id',selectedRun).order('result_position',{ascending:true,nullsFirst:false});if(!cancelled){if(r.error)setError('Result snapshot could not be loaded.');else setResultEntries((r.data||[]) as ResultEntry[]);}}void loadResultEntries();return()=>{cancelled=true}},[ctx.schoolId,selectedRun]);
  const activeHouses=houses.filter(h=>h.is_active);
  const activeJudges=judges.filter(j=>!j.ended_at);
  const memberName=(id:string)=>{const m=members.find(x=>x.id===id);return [m?.profile?.first_name,m?.profile?.last_name].filter(Boolean).join(' ')||m?.profile?.email||'Staff member'};
@@ -69,7 +75,10 @@ export function SchoolProGames(){
  async function appointJudge(){if(!supabase||!selected||!judgeMember)return;await run(()=>supabase!.rpc('schoolpro_assign_competition_judge',{p_school:ctx.schoolId,p_event:selected,p_member:judgeMember,p_panel_role:judgeRole}),'Staff judge assigned to event.')};
  async function changeEventStatus(eventId:string,status:string){if(!supabase)return;await run(()=>supabase!.from('schoolpro_competition_events').update({status,updated_at:new Date().toISOString()}).eq('id',eventId).eq('school_id',ctx.schoolId).select('id').single(), 'Competition status updated.');}
  async function submitScore(){if(!supabase||!selected||!scoreEntry||!scoreCriterion||scorePoints==='')return;await run(()=>supabase!.rpc('schoolpro_record_competition_score',{p_school:ctx.schoolId,p_event:selected,p_entry:scoreEntry,p_criterion:scoreCriterion,p_points:Number(scorePoints),p_comments:scoreComments||null}),'Judge score saved.');setScorePoints('');setScoreComments('');}
- async function submitHouseAward(){if(!supabase||!awardHouse||!awardPointValue||!awardReason.trim())return;await run(()=>supabase!.rpc('schoolpro_award_house_points',{p_school:ctx.schoolId,p_house:awardHouse,p_points:Number(awardPointValue),p_reason:awardReason.trim(),p_event:selected||null,p_entry:null}),'House points recorded.');setAwardPointValue('');setAwardReason('');}
+ async function submitHouseAward(){if(!supabase||!awardHouse||!awardPointValue||!awardReason.trim())return;await run(()=>supabase!.rpc('schoolpro_award_house_points',{p_school:ctx.schoolId,p_house:awardHouse,p_points:Number(awardPointValue),p_reason:awardReason.trim(),p_event:null,p_entry:null}),'House points recorded.');setAwardPointValue('');setAwardReason('');}
+ async function calculateResults(){if(!supabase||!selected)return;await run(()=>supabase!.rpc('schoolpro_calculate_competition_results',{p_school:ctx.schoolId,p_event:selected}),'A new result version has been calculated.');}
+ async function approveResults(runId:string){if(!supabase)return;await run(()=>supabase!.rpc('schoolpro_approve_competition_results',{p_school:ctx.schoolId,p_run:runId}),'Competition results approved.');}
+ async function publishResults(runId:string){if(!supabase)return;await run(()=>supabase!.rpc('schoolpro_publish_competition_results',{p_school:ctx.schoolId,p_run:runId}),'Competition results published.');}
  const [standings,setStandings]=useState<any[]>([]);
  const loadStandings=useCallback(async()=>{if(!supabase||!ctx.schoolId)return;const r=await supabase.from('schoolpro_house_competition_standings').select('house_id,house_name,color,total_points,events_scored').eq('school_id',ctx.schoolId).order('total_points',{ascending:false});if(!r.error)setStandings(r.data||[])},[ctx.schoolId]);
  useEffect(()=>{void loadStandings()},[loadStandings,events,judges]);
@@ -102,5 +111,9 @@ export function SchoolProGames(){
    <Card><h3 className="font-bold">Staff judging panel</h3><p className="text-xs text-muted">Select a staff account and give it a role on this event's panel.</p><div className="mt-3 space-y-2"><select className={input} value={judgeMember} onChange={e=>setJudgeMember(e.target.value)}><option value="">Choose staff judge</option>{members.map(m=><option key={m.id} value={m.id}>{memberName(m.id)} · {m.role.replaceAll('_',' ')}</option>)}</select><select className={input} value={judgeRole} onChange={e=>setJudgeRole(e.target.value)}>{['chief_judge','judge','timekeeper','referee','moderator'].map(r=><option key={r} value={r}>{r.replaceAll('_',' ')}</option>)}</select><Button disabled={!canManage||busy||!judgeMember} onClick={()=>void appointJudge()}>Assign staff to panel</Button></div><div className="mt-3 space-y-2">{judges.map(j=><div key={j.id} className="flex justify-between rounded-lg border p-3 text-sm"><span>{memberName(j.member_id)}</span><span className="text-muted">{j.panel_role.replaceAll('_',' ')}{j.ended_at?' · ended':''}</span></div>)}</div></Card>
    <Card><h3 className="font-bold">Judge score entry</h3><p className="text-xs text-muted">A judge must be signed in and actively assigned to this event to submit a score.</p><div className="mt-3 space-y-2"><select className={input} value={scoreEntry} onChange={e=>setScoreEntry(e.target.value)}><option value="">Choose entry</option>{entries.map(e=><option key={e.id} value={e.id}>{e.entry_name}</option>)}</select><select className={input} value={scoreCriterion} onChange={e=>setScoreCriterion(e.target.value)}><option value="">Choose criterion</option>{criteria.map(c=><option key={c.id} value={c.id}>{c.name} (max {c.max_points})</option>)}</select><input className={input} type="number" min="0" step="0.01" placeholder="Points" value={scorePoints} onChange={e=>setScorePoints(e.target.value)}/><textarea className={input} rows={2} placeholder="Judge comments" value={scoreComments} onChange={e=>setScoreComments(e.target.value)}/><Button disabled={busy||!scoreEntry||!scoreCriterion||scorePoints===''||Number(scorePoints)<0||Number(scorePoints)>Number(criteria.find(c=>c.id===scoreCriterion)?.max_points)} onClick={()=>void submitScore()}>Submit score</Button></div></Card>
   </div>}
+  {selected&&<Card><div className="flex flex-wrap items-start justify-between gap-3"><div><h3 className="font-bold">Competition results & publication</h3><p className="text-xs text-muted">Each calculation creates a new version. Only Games managers can approve and publish results.</p></div><Button disabled={!canManage||busy||!criteria.length||!entries.length||!['scoring','completed'].includes(events.find(e=>e.id===selected)?.status||'')} onClick={()=>void calculateResults()}>Calculate new version</Button></div>
+   <div className="mt-3 space-y-2">{resultRuns.map(r=><div key={r.id} className={'rounded-lg border p-3 '+(selectedRun===r.id?'border-blue-500 bg-blue-50':'')}><div className="flex flex-wrap items-center gap-2"><button className="mr-auto text-left font-semibold" onClick={()=>setSelectedRun(r.id)}>Version {r.version}</button><span className="rounded-full bg-slate-100 px-2 py-1 text-xs">{r.status}</span><span className="text-xs text-muted">{new Date(r.calculated_at).toLocaleString()}</span>{canManage&&r.status==='calculated'&&<Button size="sm" disabled={busy} onClick={()=>void approveResults(r.id)}>Approve</Button>}{canManage&&r.status==='approved'&&<Button size="sm" disabled={busy||events.find(e=>e.id===selected)?.status!=='completed'} onClick={()=>void publishResults(r.id)}>Publish</Button>}</div></div>)}{!resultRuns.length&&<p className="text-sm text-muted">No result versions calculated yet.</p>}</div>
+   <div className="mt-4 overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="p-2">Position</th><th className="p-2">Entry</th><th className="p-2">House</th><th className="p-2">Score</th><th className="p-2">Completeness</th></tr></thead><tbody>{resultEntries.filter(e=>e.result_run_id===selectedRun).map(e=><tr key={e.id} className="border-b"><td className="p-2">{e.result_position??'—'}</td><td className="p-2">{e.entry_name}</td><td className="p-2">{houseNameOf(e.house_id)}</td><td className="p-2">{e.score_percent===null?'—':`${e.score_percent}%`}</td><td className="p-2">{e.is_complete?'Complete':'Incomplete'}</td></tr>)}</tbody></table>{selectedRun&&!resultEntries.some(e=>e.result_run_id===selectedRun)&&<p className="p-3 text-sm text-muted">No snapshot entries are available for this version.</p>}</div>
+  </Card>}
  </ModulePage>;
 }

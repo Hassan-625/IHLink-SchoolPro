@@ -8,7 +8,7 @@ create or replace function auth.uid() returns uuid language sql stable
 as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 create type public.school_member_role as enum ('proprietor','administrator','head_teacher','vice_principal','exam_officer','teacher','class_teacher');
 create type public.user_role as enum ('super_admin');
-create table public.schoolpro_schools(id uuid primary key);
+create table public.schoolpro_schools(id uuid primary key, owner_id uuid);
 create table public.schoolpro_members(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
  user_id uuid not null references auth.users(id), role public.school_member_role not null
@@ -20,13 +20,15 @@ create table public.schoolpro_classes(
 );
 create table public.schoolpro_students(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
- class_id uuid references public.schoolpro_classes(id), status text not null
+ class_id uuid references public.schoolpro_classes(id), user_id uuid, status text not null
 );
 create table public.schoolpro_enrollment_history(
  school_id uuid not null, student_id uuid not null, session text not null,
  class_id uuid not null, created_at timestamptz not null default now()
 );
 create table public.schoolpro_subjects(id uuid primary key, school_id uuid not null);
+create table public.schoolpro_guardian_links(school_id uuid,student_id uuid,guardian_user_id uuid,status text);
+create table public.schoolpro_subject_assignments(school_id uuid,class_id uuid,teacher_member_id uuid);
 create table public.schoolpro_audit_logs(
  school_id uuid, actor_id uuid, action text, entity_type text, entity_id uuid, metadata jsonb
 );
@@ -36,6 +38,8 @@ create table public.schoolpro_results(
  assessment_scheme_id uuid, status text not null, approved_by uuid, approved_at timestamptz,
  published_at timestamptz
 );
+alter table public.schoolpro_results enable row level security;
+create policy "Result access gate" on public.schoolpro_results as restrictive for select to authenticated using(true);
 create or replace function private.is_active_account() returns boolean language sql stable as $$ select auth.uid() is not null $$;
 create or replace function private.schoolpro_operationally_active(uuid) returns boolean language sql stable as $$ select true $$;
 create or replace function private.schoolpro_module_allowed(uuid,text) returns boolean language sql stable as $$ select true $$;
@@ -43,7 +47,9 @@ create or replace function private.is_admin(public.user_role[]) returns boolean 
 create or replace function private.has_school_access(p_school uuid,p_roles public.school_member_role[])
 returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role=any(p_roles))
-$$;
+$;
+create or replace function private.schoolpro_result_access(uuid,text,text)
+returns table(allowed boolean) language sql stable as $ select true $;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 create trigger enforce_result_workflow before update on public.schoolpro_results
 for each row execute function private.enforce_result_workflow();
@@ -63,7 +69,7 @@ declare
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
 begin
  insert into auth.users values(owner_id),(head_id),(vice_id);
- insert into public.schoolpro_schools values(school);
+ insert into public.schoolpro_schools values(school,owner_id);
  insert into public.schoolpro_members values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor'),
   (head_member,school,head_id,'head_teacher'),
@@ -72,8 +78,8 @@ begin
   (nursery_class,school,'Nursery 2','nursery',null),
   (primary_class,school,'Primary 4','primary',null);
  insert into public.schoolpro_students values
-  (student_n,school,nursery_class,'active'),
-  (student_p,school,primary_class,'active');
+  (student_n,school,nursery_class,null,'active'),
+  (student_p,school,primary_class,null,'active');
  insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id) values
   (school,student_n,'2025/2026',nursery_class),
   (school,student_p,'2025/2026',primary_class);

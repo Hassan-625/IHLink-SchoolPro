@@ -147,6 +147,7 @@ declare
   processed int := 0;
   omitted jsonb := '[]';
   existing record;
+  v_has_history boolean;
 begin
   if auth.uid() is null then raise exception 'Authentication required'; end if;
   if p_action not in ('issue_transcripts','prepare_progression','apply_progression')
@@ -182,15 +183,28 @@ begin
 
   perform pg_advisory_xact_lock(hashtextextended(p_school::text || p_session || p_action,0));
 
+  -- Match the application roster resolver: historical enrolments are
+  -- authoritative once a school has any history; only a school with no
+  -- history rows at all may fall back to its active current-student roster.
+  select exists (
+    select 1 from public.schoolpro_enrollment_history eh
+    where eh.school_id = p_school
+  ) into v_has_history;
+
   for s in
     select st.*
     from public.schoolpro_students st
-    join public.schoolpro_enrollment_history eh
-      on eh.student_id = st.id
-     and eh.school_id = st.school_id
-     and eh.session = p_session
     where st.school_id = p_school
       and (p_students is null or st.id = any(p_students))
+      and (
+        (v_has_history and exists (
+          select 1 from public.schoolpro_enrollment_history eh
+          where eh.school_id = st.school_id
+            and eh.student_id = st.id
+            and eh.session = p_session
+        ))
+        or (not v_has_history and st.status = 'active')
+      )
     order by st.id
   loop
     begin
@@ -274,13 +288,20 @@ begin
         continue;
       end if;
 
-      select c.* into h
-      from public.schoolpro_enrollment_history e
-      join public.schoolpro_classes c
-        on c.id = e.class_id and c.school_id = e.school_id
-      where e.school_id = p_school
-        and e.student_id = s.id
-        and e.session = p_session;
+      if v_has_history then
+        select c.* into h
+        from public.schoolpro_enrollment_history e
+        join public.schoolpro_classes c
+          on c.id = e.class_id and c.school_id = e.school_id
+        where e.school_id = p_school
+          and e.student_id = s.id
+          and e.session = p_session;
+      else
+        select c.* into h
+        from public.schoolpro_classes c
+        where c.school_id = p_school
+          and c.id = s.class_id;
+      end if;
 
       if s.status <> 'active' or s.class_id is distinct from h.id then
         raise exception 'Student has already changed class or left';

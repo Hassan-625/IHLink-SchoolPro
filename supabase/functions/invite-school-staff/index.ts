@@ -49,7 +49,6 @@ Deno.serve(async(req:Request)=>{
   if(existing?.id===school.owner_id)return respond({error:'The proprietor already has school access.'},400);
   const code=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(code);
   if(existing){
-   if(role==='parent'&&guardianPhone&&!String(existing.phone||'').trim()){let phoneUpdate=admin.from('profiles').update({phone:guardianPhone}).eq('id',existing.id);phoneUpdate=existing.phone===null?phoneUpdate.is('phone',null):phoneUpdate.eq('phone',existing.phone);const {error:phoneError}=await phoneUpdate;if(phoneError)throw phoneError;}
    const {data:initial,error:initialError}=await admin.from('schoolpro_initial_credentials').select('user_id').eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).maybeSingle();if(initialError)throw initialError;
    if(initial){
     const {data:identity,error:identityError}=await admin.auth.admin.getUserById(existing.id);if(identityError)throw identityError;
@@ -57,11 +56,13 @@ Deno.serve(async(req:Request)=>{
      const {data:renewed,error:renewError}=await admin.from('schoolpro_initial_credentials').update({expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).select('user_id');if(renewError||renewed?.length!==1)throw renewError||new Error('renew');
      const {error:challengeError}=await admin.from('schoolpro_account_challenges').delete().eq('user_id',existing.id);if(challengeError)throw challengeError;
      const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(invitationError)throw invitationError;
+   if(role==='parent'&&guardianPhone&&!String(existing.phone||'').trim()){let phoneUpdate=admin.from('profiles').update({phone:guardianPhone}).eq('id',existing.id);phoneUpdate=existing.phone===null?phoneUpdate.is('phone',null):phoneUpdate.eq('phone',existing.phone);const {error:phoneError}=await phoneUpdate;if(phoneError)throw phoneError;}
      const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:existing.id,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
      return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }
    }
    const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
+   if(role==='parent'&&guardianPhone&&!String(existing.phone||'').trim()){let phoneUpdate=admin.from('profiles').update({phone:guardianPhone}).eq('id',existing.id);phoneUpdate=existing.phone===null?phoneUpdate.is('phone',null):phoneUpdate.eq('phone',existing.phone);const {error:phoneError}=await phoneUpdate;if(phoneError)throw phoneError;}
    return respond({ok:true,schoolCode:school.code,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
   }
   // A random inaccessible Auth password and ban prevent surname sessions or OAuth bypass.

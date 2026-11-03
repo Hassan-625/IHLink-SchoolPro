@@ -35,6 +35,8 @@ begin
   if v_subject_school is null or v_subject_school is distinct from new.school_id then
     raise exception 'Progression requirement subject must belong to the selected school';
   end if;
+  new.created_by := coalesce(new.created_by, auth.uid());
+  new.updated_by := auth.uid();
   new.updated_at := now();
   return new;
 end;

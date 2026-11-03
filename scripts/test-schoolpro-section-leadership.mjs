@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const migration=readFileSync('supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql','utf8');
+const integration=readFileSync('scripts/test-schoolpro-section-leadership.integration.sql','utf8');
+assert.match(migration,/create table public\.schoolpro_section_leaders/i);
+assert.match(migration,/unique \(school_id, member_id, section\)/i);
+assert.match(migration,/force row level security/i);
+assert.match(migration,/private\.schoolpro_set_section_leader/i);
+assert.match(migration,/m\.role in \('head_teacher','vice_principal'\)/i);
+assert.match(migration,/private\.schoolpro_member_leads_student_section/i);
+assert.match(migration,/private\.schoolpro_can_write_result/i);
+assert.match(migration,/create or replace function private\.enforce_result_workflow/i);
+assert.match(migration,/private\.has_school_access\(p_school,array\['proprietor','administrator','exam_officer'\]/i);
+assert.match(integration,/Head teacher must not lead an unassigned Primary section/i);
+assert.match(integration,/Head teacher must not write results outside assigned section/i);
+assert.match(integration,/section leader approved result outside assigned section/i);
+assert.match(integration,/Vice principal must not lead unassigned Nursery section/i);
+assert.match(integration,/Section leader removal failed/i);
+console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

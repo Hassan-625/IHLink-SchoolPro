@@ -16,10 +16,9 @@ type Entry={id:string;event_id:string;house_id:string|null;entry_name:string};
 type Judge={id:string;event_id:string;member_id:string;panel_role:string;ended_at:string|null};
 type Student={id:string;first_name:string;last_name:string;admission_number:string|null};
 const input='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm';
-const label='block text-sm font-semibold text-ink';
 export function SchoolProGames(){
  const ctx=useSchoolProContext(),{user}=useAuth(),{session}=useSchoolSession();
- const [houses,setHouses]=useState<House[]>([]),[members,setMembers]=useState<Member[]>([]),[students,setStudents]=useState<Student[]>([]);
+ const [houses,setHouses]=useState<House[]>([]),[members,setMembers]=useState<Member[]>([]),[students,setStudents]=useState<Student[]>([]),[houseMasters,setHouseMasters]=useState<{id:string;house_id:string;member_id:string;assigned_at:string;ended_at:string|null}[]>([]);
  const [events,setEvents]=useState<Event[]>([]),[criteria,setCriteria]=useState<Criterion[]>([]),[entries,setEntries]=useState<Entry[]>([]),[judges,setJudges]=useState<Judge[]>([]);
  const [selected,setSelected]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [houseName,setHouseName]=useState(''),[houseCode,setHouseCode]=useState(''),[houseColor,setHouseColor]=useState('#dc2626');
@@ -34,14 +33,15 @@ export function SchoolProGames(){
  const canManage=['proprietor','administrator','super_administrator','game_master'].includes(ctx.role.toLowerCase().replaceAll(' ','_'));
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
-  const [h,m,s,e]=await Promise.all([
+  const [h,m,s,e,hm]=await Promise.all([
    supabase.from('schoolpro_houses').select('id,name,code,color,sort_order,is_active').eq('school_id',ctx.schoolId).order('sort_order'),
    supabase.from('schoolpro_members').select('id,role,position_title,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name,email)').eq('school_id',ctx.schoolId).order('created_at'),
    supabase.from('schoolpro_students').select('id,first_name,last_name,admission_number').eq('school_id',ctx.schoolId).eq('status','active').order('last_name'),
-   supabase.from('schoolpro_competition_events').select('id,title,event_type,status,academic_session,term,judging_guidelines').eq('school_id',ctx.schoolId).order('created_at',{ascending:false})
+   supabase.from('schoolpro_competition_events').select('id,title,event_type,status,academic_session,term,judging_guidelines').eq('school_id',ctx.schoolId).order('created_at',{ascending:false}),
+   supabase.from('schoolpro_house_master_assignments').select('id,house_id,member_id,assigned_at,ended_at').eq('school_id',ctx.schoolId).order('assigned_at',{ascending:false})
   ]);
-  if(h.error||m.error||s.error||e.error){setError('Some Games records could not be loaded. Check your access and refresh.');return;}
-  setHouses(h.data||[]);setMembers((m.data||[]) as unknown as Member[]);setStudents(s.data||[]);setEvents(e.data||[]);
+  if(h.error||m.error||s.error||e.error||hm.error){setError('Some Games records could not be loaded. Check your access and refresh.');return;}
+  setHouses(h.data||[]);setMembers((m.data||[]) as unknown as Member[]);setStudents(s.data||[]);setEvents(e.data||[]);setHouseMasters(hm.data||[]);
  },[ctx.schoolId]);
  const loadEvent=useCallback(async(id:string)=>{
   if(!supabase||!ctx.schoolId||!id){setCriteria([]);setEntries([]);setJudges([]);return;}
@@ -82,7 +82,7 @@ export function SchoolProGames(){
    </Card>
    <Card><h3 className="font-bold">House Masters</h3><p className="text-xs text-muted">Only teaching staff can be appointed. One active house per House Master.</p>
     {canManage&&<div className="mt-3 grid gap-2 sm:grid-cols-2"><select className={input} value={masterHouse} onChange={e=>setMasterHouse(e.target.value)}><option value="">Choose house</option>{activeHouses.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><select className={input} value={masterMember} onChange={e=>setMasterMember(e.target.value)}><option value="">Choose teaching staff</option>{teachingMembers.map(m=><option key={m.id} value={m.id}>{memberName(m.id)}</option>)}</select><Button disabled={busy||!masterHouse||!masterMember} onClick={()=>void assignMaster()}>Appoint House Master</Button></div>}
-    <p className="mt-3 text-xs text-muted">Appointments are recorded in the House Master history table and closed when a staff member is moved or demoted.</p>
+    <div className="mt-3 space-y-2">{houseMasters.map(a=><div key={a.id} className="flex items-center justify-between rounded-lg border p-2 text-sm"><span>{memberName(a.member_id)} · {houseNameOf(a.house_id)}</span><span className="text-xs text-muted">{a.ended_at?'Past appointment':'Current House Master'}</span></div>)}{!houseMasters.length&&<p className="text-xs text-muted">No House Masters appointed yet.</p>}</div>
    </Card>
    <Card><h3 className="font-bold">Manual student house assignment</h3><p className="text-xs text-muted">Use this for transfer students or students admitted without automatic house placement.</p>
     {canManage&&<div className="mt-3 space-y-2"><select className={input} value={manualStudent} onChange={e=>setManualStudent(e.target.value)}><option value="">Choose student</option>{students.map(s=><option key={s.id} value={s.id}>{s.first_name} {s.last_name} · {s.admission_number||'No admission number'}</option>)}</select><select className={input} value={manualHouse} onChange={e=>setManualHouse(e.target.value)}><option value="">Choose house</option>{activeHouses.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><input className={input} placeholder="Reason (optional)" value={manualReason} onChange={e=>setManualReason(e.target.value)}/><Button disabled={busy||!manualStudent||!manualHouse} onClick={()=>void assignStudent()}>Assign house</Button></div>}

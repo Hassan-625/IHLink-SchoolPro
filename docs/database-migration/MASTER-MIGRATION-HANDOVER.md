@@ -1912,3 +1912,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added a Form Master selector to each class row. It loads only same-school teaching-role members and calls the existing RPC; it does not write `form_teacher_id` directly.
 - Added regression assertions for the RPC call and the eligible-role query to `scripts/test-school-session-rosters.mjs`, which runs in SchoolPro CI.
 - No database migration or production data change was made. Current-head CI is required to validate this UI and test update.
+
+
+## Stage B4 — Form Master role-downgrade cleanup — 2026-11-03
+
+- Added proposed migration `20261103130000_schoolpro_clear_ineligible_form_master.sql`. When a member changes from `teacher` or `class_teacher` to a non-teaching role, the database trigger clears that member from current `schoolpro_classes.form_teacher_id` assignments in the same school.
+- This prevents a former Form Master assignment from silently becoming active again if the member later returns to a teaching role. A new assignment must be made explicitly.
+- Subject assignment rows are deliberately retained because they may be needed to preserve historical result attribution. The existing subject-assignment guard still validates teaching eligibility on new or changed allocations.
+- Extended the disposable PostgreSQL subject-assignment integration harness to execute the role-downgrade trigger and assert that the Form Master link is cleared while the subject allocation row remains intact. Extended the existing session-roster regression script with migration assertions.
+- Validation is pending on the new exact PR head. The previous exact head `d2c2453ece828e22b50115458ec0aa867eee8808` passed SchoolPro CI #2342 and payment validation #2067.
+- No production migration, data change, deployment, workspace creation, or test account was used.

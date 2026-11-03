@@ -208,7 +208,7 @@ begin
 end
 $$;
 revoke all on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid,boolean) from public, anon;
-grant execute on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid) to authenticated;
+grant execute on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid,boolean) to authenticated;
 
 create or replace function public.schoolpro_set_house_master(
   p_school uuid, p_house uuid, p_member uuid

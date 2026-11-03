@@ -174,6 +174,8 @@ create policy "Assigned judges read event entries" on public.schoolpro_competiti
 using (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
   where j.event_id=public.schoolpro_competition_entries.event_id and j.school_id=public.schoolpro_competition_entries.school_id
     and j.ended_at is null and m.user_id=auth.uid()));
+create policy "Assigned staff read own judge assignments" on public.schoolpro_competition_judges for select to authenticated
+using (exists(select 1 from public.schoolpro_members m where m.id=member_id and m.school_id=school_id and m.user_id=auth.uid()));
 create policy "Games staff read competition judges" on public.schoolpro_competition_judges for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff manage competition judges" on public.schoolpro_competition_judges for all to authenticated using (private.schoolpro_module_allowed(school_id,'games')) with check (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff read competition scores" on public.schoolpro_competition_scores for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));

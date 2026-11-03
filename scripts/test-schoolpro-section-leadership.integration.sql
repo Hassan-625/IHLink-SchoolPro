@@ -126,6 +126,10 @@ begin
  if exists(select 1 from public.schoolpro_section_leaders where member_id=head_member and section='nursery') then
    raise exception 'Section leader removal failed';
  end if;
+ update public.schoolpro_members set role='teacher' where id=vice_member;
+ if exists(select 1 from public.schoolpro_section_leaders where member_id=vice_member) then
+   raise exception 'Changing staff role must clear obsolete section assignments';
+ end if;
 end
 $test$;
 select 'PASS: section assignments, historical class-level resolution, result-write scope, review scope, and assignment revocation' as result;

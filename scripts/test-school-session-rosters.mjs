@@ -8,6 +8,7 @@ const bulkActions=readFileSync('src/components/SchoolBulkAcademicActions.tsx','u
 const classFilters=readFileSync('src/lib/schoolClassFilters.ts','utf8');
 const subjectsPage=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const assignmentGuard=readFileSync('supabase/migrations/20261103110000_schoolpro_subject_assignment_teaching_role_guard.sql','utf8');
+const staffPage=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const exports={};
 vm.runInNewContext(compiled,{exports});
@@ -46,6 +47,7 @@ assert.equal(studentClass(historical[1],classes)?.id,'class-final','Graduated st
 assert.match(bulkActions,/schoolSessionStudents\(schoolId,session,pupils\.data\|\|\[\]\)/,'Bulk year-end actions must use the canonical session roster resolver, including the legacy fallback.');
 assert.match(bulkActions,/student_id:student\.id,class_id:student\.class_id/,'Bulk actions must pass resolved session-specific student IDs and class assignments.');
 assert.match(subjectsPage,/members\.filter\(x=>\[\"teacher\",\"class_teacher\"\]\.includes\(x\.role\)\)\.map\(x=><option/,'Subject allocations must offer only staff whose school role carries teaching responsibility.');
+assert.match(staffPage,/eligibleTeachingMembers=new Set\(\(data\|\|\[\]\)\.filter\(m=>\[\"teacher\",\"class_teacher\"\]\.includes\(m\.role\)\)/,'Staff responsibility labels must not present former teaching allocations as active after a role change.');
 assert.match(assignmentGuard,/member_role not in \('teacher', 'class_teacher'\)/i,'The database trigger must accept only the teaching roles offered by the subject-assignment UI.');
 assert.match(assignmentGuard,/class_school <> new\.school_id/i,'Subject assignments must reject classes from another school.');
 assert.match(assignmentGuard,/subject_school <> new\.school_id/i,'Subject assignments must reject subjects from another school.');

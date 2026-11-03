@@ -1854,3 +1854,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Corrected the assertion wording without changing test behavior. Fix commit: `b7372667b1d23c790ab83d7eb913e3f238f4c791`.
 - Payment validation run `41632059491` passed on the preceding head. The corrected commit requires fresh exact-head SchoolPro CI and payment validation; the prior CI's Receipt Storage isolation job was still in progress when inspected.
 - PR #111 remains open/draft/unmerged. No production migration, data change, deployment, workspace or test account was created.
+
+### Stage B2/B3 exact-head validation — passed — 2026-11-03
+
+- Corrected the apostrophe syntax error in the session-roster regression assertion (commit `b7372667b1d23c790ab83d7eb913e3f238f4c791`) and recorded the correction above.
+- Final handover update commit: `8a9b657168c10ea5056db2b2c89677b6170cee13`.
+- Exact-head SchoolPro CI run `41632784502` (run #2322) passed. The `validate` job, session-roster regression, student-family-record regression and all database integration jobs passed, including progression subject requirements, production graduation certificates, Form Master attendance RLS, section leadership authorization, academic calendar, Receipt Storage isolation, tenant-integrity, payment-review RLS, public admission, result-PIN and result-verification exposure. Tenant acceptance was skipped because no active workspaces exist.
+- Exact-head payment validation run `41632784513` (run #2047) passed.
+- B2 student identity/family-record implementation and B3 session-specific roster/progression implementation now have passing exact-head CI/payment evidence. PR #111 remains open, draft and unmerged.
+- Next Stage B work is B4 staff, class and subject assignment integrity. Existing staff and subject allocation screens are present; B4 should focus on validating their data model, tenant/session scoping, role authorization and assignment lifecycle rather than duplicating existing UI. No B4 changes are included in this validation.
+- No production migration, production data change, deployment, workspace creation, test-account creation or new Supabase branch occurred. All database migration tests ran against disposable PostgreSQL/local CI infrastructure only.

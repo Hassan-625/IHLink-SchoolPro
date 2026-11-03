@@ -160,7 +160,7 @@ begin
     on enrolled.id = sh.student_id and enrolled.school_id = sh.school_id and enrolled.status = 'active'
   where h.school_id = new.school_id and h.is_active
   group by h.id, h.sort_order, h.name
-  order by count(sh.id), h.sort_order, h.name, h.id
+  order by count(enrolled.id), h.sort_order, h.name, h.id
   limit 1;
   if chosen_house is not null then
     insert into public.schoolpro_student_house_history

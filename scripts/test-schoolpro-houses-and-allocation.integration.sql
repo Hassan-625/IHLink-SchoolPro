@@ -98,10 +98,10 @@ begin
   insert into public.schoolpro_competition_events(school_id,title,event_type,status,judging_guidelines,rules)
   values(school,'Inter-house Debate','debate','open','Evidence, clarity, rebuttal and respectful conduct','{"format":"team debate"}'::jsonb)
   returning id into competition_event_id;
-  insert into public.schoolpro_competition_criteria(school_id,competition_event_id,name,description,max_points,weight)
+  insert into public.schoolpro_competition_criteria(school_id,event_id,name,description,max_points,weight)
   values(school,competition_event_id,'Argument quality','Reasoning and evidence',40,1.5)
   returning id into criterion_id;
-  insert into public.schoolpro_competition_entries(school_id,competition_event_id,house_id,entry_name)
+  insert into public.schoolpro_competition_entries(school_id,event_id,house_id,entry_name)
   values(school,competition_event_id,house_id,'Red House Debate Team') returning id into entry_id;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   judge_id := public.schoolpro_assign_competition_judge(school,competition_event_id,
@@ -122,7 +122,7 @@ begin
   end;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   award_id := public.schoolpro_award_house_points(school,house_id,10,'Debate participation and result',competition_event_id,entry_id);
-  if not exists(select 1 from public.schoolpro_house_point_ledger where schoolpro_house_point_ledger.id=award_id and points=10 and schoolpro_house_point_ledger.competition_event_id=competition_event_id) then
+  if not exists(select 1 from public.schoolpro_house_point_ledger where schoolpro_house_point_ledger.id=award_id and points=10 and schoolpro_house_point_ledger.event_id=competition_event_id) then
     raise exception 'ASSERT: house points were not ledgered against the competition';
   end if;
   if not exists(select 1 from public.schoolpro_house_competition_standings where schoolpro_house_competition_standings.school_id=school and schoolpro_house_competition_standings.house_id=house_id and total_points=10) then

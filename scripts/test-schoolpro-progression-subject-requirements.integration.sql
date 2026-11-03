@@ -207,7 +207,7 @@ begin
 
   -- Existing review/apply remains explicit; preparation must not change enrolment.
   if (select class_id from public.schoolpro_students where id=pass_student) <> basic1 then
-    raise exception 'Preparing a progression decision must not change the student's class';
+    raise exception 'Preparing a progression decision must not change the student class';
   end if;
   perform public.apply_schoolpro_promotion((select id from public.schoolpro_promotions where student_id=pass_student));
   if (select status from public.schoolpro_promotions where student_id=pass_student) <> 'applied' then

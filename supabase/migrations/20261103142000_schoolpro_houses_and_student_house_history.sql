@@ -156,6 +156,8 @@ begin
   from public.schoolpro_houses h
   left join public.schoolpro_student_house_history sh
     on sh.school_id = h.school_id and sh.house_id = h.id and sh.effective_to is null
+  left join public.schoolpro_students enrolled
+    on enrolled.id = sh.student_id and enrolled.school_id = sh.school_id and enrolled.status = 'active'
   where h.school_id = new.school_id and h.is_active
   group by h.id, h.sort_order, h.name
   order by count(sh.id), h.sort_order, h.name, h.id
@@ -175,7 +177,7 @@ for each row execute function private.schoolpro_auto_assign_student_house();
 
 create or replace function public.schoolpro_save_house(
   p_school uuid, p_name text, p_code text, p_color text default '#64748B',
-  p_sort_order integer default 100, p_house uuid default null
+  p_sort_order integer default 100, p_house uuid default null, p_is_active boolean default true
 ) returns uuid language plpgsql security definer set search_path = ''
 as $$
 declare saved_id uuid;
@@ -189,19 +191,23 @@ begin
     raise exception 'Enter a valid house name, code and six-digit colour';
   end if;
   if p_house is null then
-    insert into public.schoolpro_houses(school_id,name,code,color,sort_order)
-    values(p_school,btrim(p_name),lower(btrim(p_code)),p_color,p_sort_order)
+    insert into public.schoolpro_houses(school_id,name,code,color,sort_order,is_active)
+    values(p_school,btrim(p_name),lower(btrim(p_code)),p_color,p_sort_order,p_is_active)
     returning id into saved_id;
   else
     update public.schoolpro_houses set name=btrim(p_name),code=lower(btrim(p_code)),
-      color=p_color,sort_order=p_sort_order,updated_at=now()
+      color=p_color,sort_order=p_sort_order,is_active=p_is_active,updated_at=now()
     where id=p_house and school_id=p_school returning id into saved_id;
     if saved_id is null then raise exception 'House not found in this school'; end if;
+    if not p_is_active then
+      update public.schoolpro_house_master_assignments set ended_at=now()
+      where school_id=p_school and house_id=saved_id and ended_at is null;
+    end if;
   end if;
   return saved_id;
 end
 $$;
-revoke all on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid) from public, anon;
+revoke all on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid,boolean) from public, anon;
 grant execute on function public.schoolpro_save_house(uuid,text,text,text,integer,uuid) to authenticated;
 
 create or replace function public.schoolpro_set_house_master(
@@ -217,7 +223,7 @@ begin
   end if;
   update public.schoolpro_house_master_assignments
     set ended_at=now()
-    where school_id=p_school and house_id=p_house and ended_at is null;
+    where school_id=p_school and (house_id=p_house or (p_member is not null and member_id=p_member)) and ended_at is null;
   if p_member is not null then
     insert into public.schoolpro_house_master_assignments(school_id,house_id,member_id,assigned_by)
     values(p_school,p_house,p_member,auth.uid());

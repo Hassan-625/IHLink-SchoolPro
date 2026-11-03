@@ -19,7 +19,8 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:user.id,p_hash:await hash(code)});if(error)throw error;
    return data?respond({ok:true}):respond({error:'This joining code is invalid, expired or belongs to another email.'},400);
   }
-  const {schoolId,email,role,relationship='guardian'}=body;\n  const guardianPhone=String(body.guardianPhone||'').trim();
+  const {schoolId,email,role,relationship='guardian'}=body;
+  const guardianPhone=String(body.guardianPhone||'').trim();
   const normalized=String(email||'').trim().toLowerCase();
   const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
   const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
@@ -39,6 +40,7 @@ Deno.serve(async(req:Request)=>{
   if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
   if(role==='parent'){
+   if(guardianPhone.length>40)return respond({error:'Guardian phone must be 40 characters or fewer.'},400);
    if(!studentIds.length||studentIds.length>50||!['mother','father','guardian','sponsor'].includes(relationship))return respond({error:'Choose at least one enrolled child and a relationship.'},400);
    const {data:students,error}=await admin.from('schoolpro_students').select('id').in('id',studentIds).eq('school_id',schoolId).eq('status','active');if(error)throw error;
    if(students?.length!==studentIds.length)return respond({error:'Choose enrolled children from this school.'},400);
@@ -47,6 +49,7 @@ Deno.serve(async(req:Request)=>{
   if(existing?.id===school.owner_id)return respond({error:'The proprietor already has school access.'},400);
   const code=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(code);
   if(existing){
+   if(role==='parent'&&guardianPhone&&!String(existing.phone||'').trim()){let phoneUpdate=admin.from('profiles').update({phone:guardianPhone}).eq('id',existing.id);phoneUpdate=existing.phone===null?phoneUpdate.is('phone',null):phoneUpdate.eq('phone',existing.phone);const {error:phoneError}=await phoneUpdate;if(phoneError)throw phoneError;}
    const {data:initial,error:initialError}=await admin.from('schoolpro_initial_credentials').select('user_id').eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).maybeSingle();if(initialError)throw initialError;
    if(initial){
     const {data:identity,error:identityError}=await admin.auth.admin.getUserById(existing.id);if(identityError)throw identityError;

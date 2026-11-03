@@ -1984,3 +1984,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added RLS allowing an authenticated staff member to read only their own judge assignment rows. The predicate is explicitly qualified by the outer judge table's school and member IDs.
 - Added navigation for both the Games administration workspace and the personal judging portal.
 - The exact-head typecheck/build and disposable PostgreSQL integration have not yet returned results. Treat this as implementation in review, not validated production functionality.
+
+
+### B6 — Games and judging UI integration — 2026-11-03
+
+- Added the SchoolPro Games management page integration for house configuration, House Master appointments, manual student-house placement, event creation, rubrics, house/team entries, staff judging panels, judge score entry and house standings/point awards.
+- Added a dedicated My Judging Panel page. Staff can see only events assigned to their own school membership and submit/revise criterion scores through the judge RPC; active assignment, event status and maximum score are enforced server-side.
+- Event creation UI now exposes separate JSON objects for event rules and eligibility, plus judging guidelines. Invalid JSON is rejected before submission.
+- Fixed malformed JSX closing syntax on the Staff and Games routes, and corrected house-points form state references.
+- Exact CI run #2384 reported a house-test PL/pgSQL ambiguity: the test variable `member_id` shadowed the same-named table column in assertions. Renamed the test variable to `teacher_member_id`. That run's TypeScript failure was from the malformed routes; those are now corrected. A subsequent exact-head run is still required.
+- Do not mark B6 validated until the latest TypeScript checks and the combined house/competition PostgreSQL integration job pass. No Supabase migration, deployment, or PR merge has been performed.

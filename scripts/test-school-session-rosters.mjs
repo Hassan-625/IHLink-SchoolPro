@@ -4,6 +4,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 const source=readFileSync('src/lib/schoolSessionRoster.ts','utf8');
+const bulkActions=readFileSync('src/components/SchoolBulkAcademicActions.tsx','utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const exports={};
 vm.runInNewContext(compiled,{exports});
@@ -26,4 +27,6 @@ assert.equal(historical[0].class_name,'Primary 1 A');
 assert.equal(historical[0].current_class_id,'class-new');
 assert.equal(historical[0].session_status,'completed');
 assert.equal(historical[1].session_status,'graduated');
-console.log('PASS: legacy active-only fallback, empty historical session, and historical class/arm projection.');
+assert.match(bulkActions,/schoolSessionStudents\(schoolId,session,pupils\.data\|\|\[\]\)/,'Bulk year-end actions must use the canonical session roster resolver, including the legacy fallback.');
+assert.match(bulkActions,/student_id:student\.id,class_id:student\.class_id/,'Bulk actions must pass resolved session-specific student IDs and class assignments.');
+console.log('PASS: legacy active-only fallback, empty historical session, historical class/arm projection, and bulk-action roster consistency.');

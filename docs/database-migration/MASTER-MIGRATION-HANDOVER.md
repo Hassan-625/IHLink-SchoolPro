@@ -1864,3 +1864,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - B2 student identity/family-record implementation and B3 session-specific roster/progression implementation now have passing exact-head CI/payment evidence. PR #111 remains open, draft and unmerged.
 - Next Stage B work is B4 staff, class and subject assignment integrity. Existing staff and subject allocation screens are present; B4 should focus on validating their data model, tenant/session scoping, role authorization and assignment lifecycle rather than duplicating existing UI. No B4 changes are included in this validation.
 - No production migration, production data change, deployment, workspace creation, test-account creation or new Supabase branch occurred. All database migration tests ran against disposable PostgreSQL/local CI infrastructure only.
+
+
+## Stage B4 — subject allocation teaching-role eligibility guard — 2026-11-03
+
+- Source review found that the Subjects & Teacher Allocation page offered every school member in the teacher selector, including finance, administration and operational roles. The Form Master selector already restricted candidates to the two teaching roles.
+- Restricted subject-assignment candidates to `teacher` (Subject Teacher) and `class_teacher` (Class Teacher), matching the existing school role descriptions and Form Master eligibility. This is a UI eligibility guard; the database/RLS remains authoritative and backend assignment constraints still require separate verification before B4 can be accepted.
+- Extended the existing session-roster regression test (already wired into SchoolPro CI) with an assertion that the subject allocation selector filters candidates to teaching roles.
+- No schema or production change, migration execution, deployment, workspace or test account was created. PR #111 remains draft and unmerged.
+- Next B4 action: trace the subject-assignment write policy/trigger and the form-master RPC to confirm that the backend independently validates same-school membership and teaching-role eligibility; then address any demonstrated stale-reference or role-transition defect with isolated regression coverage.

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const page=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
+const save=page.slice(page.indexOf('async function saveScore'),page.indexOf('useEffect(()=>{let current=true;setDomainRatings'));
+assert.match(save,/filter\(c=>scoreForm\.scores\[c\.key\]!==undefined&&scoreForm\.scores\[c\.key\]\.trim\(\)!==""\)/,'Only entered assessment components should be submitted.');
+assert.match(save,/\{\.\.\.\(existing\?\.assessment_scores\|\|\{\}\),\.\.\.entered\}/,'New component scores must merge with previously saved component scores.');
+assert.match(save,/Object\.keys\(entered\)\.length/,'Empty submissions must be rejected.');
+assert.match(save,/existing\?\.assessment_scheme_id&&existing\.assessment_scheme_id!==activeScheme\.id/,'An existing result must retain its assessment scheme.');
+assert.match(save,/existing\.status!=="draft"\|\|existing\.locked/,'Approved, published and locked results must remain protected.');
+assert.match(page,/Enter one component at a time/,'The UI must explain incremental component entry.');
+assert.match(page,/assessment_scores,updated_at/,'The merged component map must be persisted.');
+console.log('PASS: component-by-component entry merges prior scores, rejects empty input, and preserves result workflow guards.');

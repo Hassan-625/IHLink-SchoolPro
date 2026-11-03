@@ -171,10 +171,10 @@ create policy "Games staff award house points" on public.schoolpro_house_point_l
 -- Judges may submit only their own scores for an event to which they are actively assigned.
 create policy "Assigned judges read own competition scores" on public.schoolpro_competition_scores for select to authenticated
 using (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
-  where j.id=judge_assignment_id and j.school_id=school_id and j.ended_at is null and m.user_id=auth.uid()));
+  where j.id=judge_assignment_id and j.school_id=public.schoolpro_competition_scores.school_id and j.ended_at is null and m.user_id=auth.uid()));
 create policy "Assigned judges submit own competition scores" on public.schoolpro_competition_scores for insert to authenticated
 with check (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
-  where j.id=judge_assignment_id and j.school_id=school_id and j.ended_at is null and m.user_id=auth.uid()));
+  where j.id=judge_assignment_id and j.school_id=public.schoolpro_competition_scores.school_id and j.ended_at is null and m.user_id=auth.uid()));
 
 create or replace function public.schoolpro_assign_competition_judge(
   p_school uuid,p_event uuid,p_member uuid,p_panel_role text default 'judge'

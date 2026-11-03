@@ -47,7 +47,7 @@ revoke all on function private.schoolpro_validate_progression_subject_requiremen
 drop trigger if exists schoolpro_progression_subject_requirement_tenant_guard
   on public.schoolpro_progression_subject_requirements;
 create trigger schoolpro_progression_subject_requirement_tenant_guard
-before insert or update of school_id, subject_id
+before insert or update
 on public.schoolpro_progression_subject_requirements
 for each row execute function private.schoolpro_validate_progression_subject_requirement();
 

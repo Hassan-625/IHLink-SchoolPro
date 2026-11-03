@@ -12,7 +12,6 @@ as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$
 create type public.school_member_role as enum
   ('proprietor','administrator','head_teacher','vice_principal','registrar','teacher','class_teacher');
 create type public.user_role as enum ('super_admin','customer');
-create type public.schoolpro_attendance_status as enum ('present','absent','late','excused');
 
 create table public.profiles(
   id uuid primary key, email text, first_name text, last_name text,

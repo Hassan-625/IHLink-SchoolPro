@@ -23,5 +23,7 @@ assert.match(migration,/schoolpro_can_read_student/i);
 assert.match(migration,/schoolpro_can_read_class/i);
 assert.match(migration,/alter policy "Result access gate"/i);
 assert.match(migration,/schoolpro_prune_section_leadership_role/i);
+assert.match(migration,/schoolpro_enrollment_reader_keys/i);
+assert.match(integration,/Vice principal must not read enrollment history outside assigned section/i);
 assert.match(integration,/Changing staff role must clear obsolete section assignments/i);
 console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

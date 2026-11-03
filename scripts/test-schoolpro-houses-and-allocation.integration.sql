@@ -122,10 +122,10 @@ begin
   end;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   award_id := public.schoolpro_award_house_points(school,house_id,10,'Debate participation and result',event_id,entry_id);
-  if not exists(select 1 from public.schoolpro_house_point_ledger where id=award_id and points=10 and event_id=event_id) then
+  if not exists(select 1 from public.schoolpro_house_point_ledger where schoolpro_house_point_ledger.id=award_id and points=10 and schoolpro_house_point_ledger.event_id=event_id) then
     raise exception 'ASSERT: house points were not ledgered against the competition';
   end if;
-  if not exists(select 1 from public.schoolpro_house_competition_standings where school_id=school and house_id=house_id and total_points=10) then
+  if not exists(select 1 from public.schoolpro_house_competition_standings where schoolpro_house_competition_standings.school_id=school and schoolpro_house_competition_standings.house_id=house_id and total_points=10) then
     raise exception 'ASSERT: house competition standings did not include awarded points';
   end if;
   begin

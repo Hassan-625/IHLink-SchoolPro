@@ -24,6 +24,7 @@ jobs:
       - run: node scripts/test-schoolpro-progression-threshold.mjs
       - run: node scripts/test-schoolpro-progression-subject-requirements.mjs
       - run: node scripts/test-schoolpro-production-graduation-certificates.mjs
+      - run: node scripts/test-schoolpro-section-leadership.mjs
       - run: node scripts/test-schoolpro-incremental-assessment-entry.mjs
       - run: node scripts/test-school-access-cache.mjs
       - run: node scripts/test-school-dashboard-roles.mjs
@@ -456,3 +457,31 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Execute graduation certificate migration and lifecycle assertions
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-production-graduation-certificates.integration.sql
+
+  section-leadership-db-integration:
+    name: Section leadership authorization (disposable PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_section_leadership_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_section_leadership_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_section_leadership_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply section-leadership migration and exercise authorization boundaries
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-section-leadership.integration.sql

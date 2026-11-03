@@ -73,6 +73,8 @@ begin
  if exists(select 1 from public.schoolpro_house_master_assignments where teacher_member_id=teacher_member_id and ended_at is null) then
    raise exception 'ASSERT: House Master appointment survived teaching-role downgrade';
  end if;
+ -- Restore the fixture teacher role after testing downgrade cleanup; later judge authorization tests rely on a non-Games teacher.
+ update public.schoolpro_members set role='teacher' where id=teacher_member_id;
 end
 $test$;
 select 'PASS: default houses, balanced automatic allocation, manual reassignment history, House Master eligibility and downgrade cleanup' as result;

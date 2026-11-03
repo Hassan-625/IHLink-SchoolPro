@@ -40,7 +40,7 @@ create table public.schoolpro_results(
 );
 alter table public.schoolpro_results enable row level security;
 create policy "Result access gate" on public.schoolpro_results as restrictive for select to authenticated using(true);
-create or replace function private.is_active_account() returns boolean language sql stable as $ select true $;
+create or replace function private.is_active_account() returns boolean language sql stable as $$ select auth.uid() is not null $$;
 create or replace function private.schoolpro_operationally_active(uuid) returns boolean language sql stable as $$ select true $$;
 create or replace function private.schoolpro_module_allowed(uuid,text) returns boolean language sql stable as $$ select true $$;
 create or replace function private.is_admin(public.user_role[]) returns boolean language sql stable as $$ select false $$;

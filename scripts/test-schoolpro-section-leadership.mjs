@@ -14,6 +14,8 @@ assert.match(migration,/create or replace function private\.enforce_result_workf
 assert.match(migration,/private\.has_school_access\(p_school,array\['proprietor','administrator','exam_officer'\]/i);
 assert.match(integration,/Head teacher must not lead an unassigned Primary section/i);
 assert.match(integration,/Head teacher must not write results outside assigned section/i);
+assert.match(integration,/Head teacher must not read students outside assigned section/i);
+assert.match(integration,/Head teacher must read students and classes in assigned section/i);
 assert.match(integration,/section leader approved result outside assigned section/i);
 assert.match(integration,/Vice principal must not lead unassigned Nursery section/i);
 assert.match(integration,/Section leader removal failed/i);

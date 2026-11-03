@@ -15,12 +15,17 @@ begin
     return new;
   end if;
 
-  if auth.uid() is null then
-    raise exception 'Authentication required';
+  -- Once a certificate has left draft, the existing lifecycle controls own it.
+  if tg_op = 'UPDATE' and old.status <> 'draft' then
+    return new;
   end if;
 
-  if new.status <> 'draft' then
+  if tg_op = 'INSERT' and new.status <> 'draft' then
     raise exception 'A certificate must begin as a draft';
+  end if;
+
+  if auth.uid() is null then
+    raise exception 'Authentication required';
   end if;
 
   if new.student_id is null or new.template_id is null then

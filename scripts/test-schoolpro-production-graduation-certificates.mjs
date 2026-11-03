@@ -14,7 +14,7 @@ assert.match(migration, /is_active = true/);
 assert.match(migration, /issued_by=auth\.uid\(\)/);
 assert.match(migration, /schoolpro_document_issue_events/);
 assert.match(migration, /revoke all on function public\.finalize_schoolpro_document_issue/);
-const executableMigration = migration.replace(/^\\s*--.*$/gm, '');
+const executableMigration = migration.replace(/^\s*--.*$/gm, '');
 assert.doesNotMatch(executableMigration, /schoolpro_finalize_testing_certificate|IH-TST-|synthetic/);
 
 assert.match(studio, /class_name,status/);

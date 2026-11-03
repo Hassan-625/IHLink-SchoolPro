@@ -1895,7 +1895,7 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added `scripts/test-schoolpro-subject-assignment-guard.integration.sql`. It creates a disposable schema fixture, applies the original subject-assignment migration followed by the proposed role-alignment migration, and executes the actual trigger through INSERT/UPDATE statements.
 - Coverage includes acceptance of `teacher` and `class_teacher`, acceptance of an unassigned (`NULL`) teacher, and rejection of administrator assignment, a foreign-school teacher, a foreign-school class, and a foreign-school subject.
 - Added a dedicated `subject-assignment-guard-integration` GitHub Actions job using an isolated PostgreSQL 16 service. It does not connect to Supabase or require school workspaces/accounts.
-- This closes the earlier source-only test limitation once the new job passes on the exact PR head. B4 still remains in progress pending that CI result and review of the other staff/class/subject assignment paths.
+- The dedicated PostgreSQL 16 job passed on commit `43d03bbd5e52c2a16060e873ddbe01de3c4633a6` in SchoolPro CI run `41637169487`. This validates the trigger behavior on that commit; later Staff-page display changes are separate and still need validation on the newer PR head. B4 remains in progress pending the current-head CI result and review of remaining staff/class/subject assignment paths.
 
 ### Stage B4 — staff role-change responsibility display — 2026-11-03
 

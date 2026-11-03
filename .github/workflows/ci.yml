@@ -91,6 +91,33 @@ jobs:
       - name: Run receipt isolation against an isolated local Supabase Storage API
         run: node scripts/test-schoolpro-receipt-storage-local.mjs
 
+  houses-and-house-allocation-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_houses_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_houses_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_houses_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Test tenant-scoped houses, automatic and manual allocation, and House Master lifecycle
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-houses-and-allocation.integration.sql
+
   tenant-acceptance:
     # Live tenant-account checks are manual-only; normal PR/push CI must not sign in
     # to configured school accounts or require test-school fixtures.

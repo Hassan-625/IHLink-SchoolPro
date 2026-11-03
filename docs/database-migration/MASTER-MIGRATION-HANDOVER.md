@@ -1732,3 +1732,18 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Implementation commits: UI `e5785ed`, regression test `a472abc`, package script `6431cbb`, CI wiring `3dd6317`.
 - Exact-head SchoolPro CI and payment validation for incremental entry are pending. Do not treat this change as validated until both finish successfully. No production schema or data change is involved.
 - PR #111 remains open/draft/unmerged. No production migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.
+
+
+### Stage B1 configurable progression subject requirements — implementation pending validation — 2026-11-03
+
+- Read-only inspection of the connected Supabase project `lnqsroyiybutkfngbyge` established the authoritative live definitions that were missing from the migration-only source search:
+  - `public.schoolpro_promotions` has a unique `(student_id, session)` index and stores the reviewed decision, source/destination class IDs, reason, decision maker, status and apply metadata.
+  - `public.create_schoolpro_progression(uuid,text,text,uuid,text)` creates a pending decision and preserves the existing promotion/repeat/graduation decision model.
+  - `public.apply_schoolpro_promotion(uuid)` applies only pending decisions after permission, active-student and source-class checks.
+  - `schoolpro_subjects` has school ownership, subject name and class name; `schoolpro_results` stores subject IDs, term/session and published `total_score`.
+- Added draft migration `supabase/migrations/20261103100000_schoolpro_progression_subject_requirements.sql`. It introduces a school-scoped requirement table keyed by school and subject, validates 0–100 minimum scores, enforces subject/school ownership, uses forced RLS and promotion-manager policies, and stamps the authenticated editor.
+- The replacement year-end review evaluates enabled requirements only for subjects belonging to the student's historical class. Each configured subject must have published results for all three terms; incomplete subject evidence is skipped for manual review rather than silently treated as zero. The annual subject average is compared with that rule's minimum. Failed subject minimums produce a repeat decision and are recorded in the progression reason. The existing overall below-45% repeat default, three-term publication gate, permission checks, pending review and explicit apply workflow remain.
+- Added `scripts/test-schoolpro-progression-subject-requirements.mjs`, registered it in `package.json`, and wired it into `.github/workflows/ci.yml`.
+- Commits: migration `33a8ec8`, regression test `f607f45`, package script `4ec9fc2`, CI wiring `57a3f2b`, editor identity stamping `1d2d1dd`.
+- This is a draft proposal only. No production migration was applied, no data was written, and no workspace or test account was created. The new settings table is not yet connected to a SchoolPro configuration screen. The source-level regression test and exact-head CI/payment validation are still pending; do not treat the feature as accepted or merge PR #111 until those checks pass.
+- Read-only live catalog inspection also confirmed the current production bulk function still contains the pre-proposal implementation; the 45% threshold and subject-requirement migrations remain unapplied. No production schema or function was modified.

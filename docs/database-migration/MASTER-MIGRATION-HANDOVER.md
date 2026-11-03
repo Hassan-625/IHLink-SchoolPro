@@ -1838,3 +1838,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Extended scripts/test-school-session-rosters.mjs to assert that bulk academic actions use the canonical resolver and pass its resolved student/class IDs to the progression RPC.
 - Implementation commits: bulk action resolver a6eda5f; regression assertion 95d7f53.
 - Exact-head SchoolPro CI and payment validation are pending. No production schema/data changes, migration, deployment, workspace creation or test-account creation occurred.
+
+### Stage B3 database-side legacy roster fallback — implementation pending exact-head validation — 2026-11-03
+
+- Follow-up to the application-side roster resolver found that the bulk progression RPC still inner-joined schoolpro_enrollment_history. That would exclude every active student at a legacy school with no history rows, even though the UI correctly displayed its active current roster.
+- Updated schoolpro_bulk_academic_action in the proposed progression migration to use the same rule as schoolSessionStudents(): if the school has any enrollment-history rows, only students with a row for the selected session are included and their historical class is authoritative; only when the school has no history rows at all does it fall back to active students and their current class.
+- Extended the progression source regression test and disposable-PostgreSQL integration fixture to cover a legacy school with no enrollment-history rows, three published terms, and a repeat decision under the default below-45% threshold.
+- Implementation commits: database resolver a9e5b07; source assertion b52e71f; legacy integration fixture 2fafe2c; school-owned legacy subject fixture 6fa3038.
+- This remains a proposed migration and disposable integration test only. No production schema/data change, migration application, deployment, workspace creation or test-account creation occurred. Exact-head SchoolPro CI and payment validation are required before treating B3 as complete.

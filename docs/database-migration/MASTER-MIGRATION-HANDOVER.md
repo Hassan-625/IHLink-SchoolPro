@@ -1896,3 +1896,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Coverage includes acceptance of `teacher` and `class_teacher`, acceptance of an unassigned (`NULL`) teacher, and rejection of administrator assignment, a foreign-school teacher, a foreign-school class, and a foreign-school subject.
 - Added a dedicated `subject-assignment-guard-integration` GitHub Actions job using an isolated PostgreSQL 16 service. It does not connect to Supabase or require school workspaces/accounts.
 - This closes the earlier source-only test limitation once the new job passes on the exact PR head. B4 still remains in progress pending that CI result and review of the other staff/class/subject assignment paths.
+
+### Stage B4 — staff role-change responsibility display — 2026-11-03
+
+- Staff role changes are currently performed directly on `schoolpro_members.role`; existing subject-allocation and Form Master references are retained for historical continuity.
+- The Staff page previously rendered every referenced allocation as a current teaching responsibility, even after a staff member's role changed to a non-teaching role.
+- Updated the responsibility projection to label Form Master / subject allocations only for members whose current role is `teacher` or `class_teacher`. This is a display correction; it does not delete or rewrite historical assignment records and does not change authorization.
+- Added a regression assertion to `scripts/test-school-session-rosters.mjs`.
+- Attendance remains governed separately by the Form Master scoped RLS migration and its disposable-PostgreSQL test; this UI correction does not grant attendance access.

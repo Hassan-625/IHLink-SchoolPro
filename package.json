@@ -10,7 +10,16 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.app.json",
     "android:prepare": "npm run build && npx cap add android && npx cap sync android && node scripts/prepare-android.mjs",
-    "android:sync": "npm run build && npx cap sync android && node scripts/prepare-android.mjs"
+    "android:sync": "npm run build && npx cap sync android && node scripts/prepare-android.mjs",
+    "test:academic-sessions": "node scripts/test-academic-sessions.mjs",
+    "test:school-session-rosters": "node scripts/test-school-session-rosters.mjs",
+    "test:form-master-attendance": "node scripts/test-schoolpro-form-master-attendance-scope.mjs",
+    "test:schoolpro-progression-threshold": "node scripts/test-schoolpro-progression-threshold.mjs",
+    "test:schoolpro-incremental-assessment": "node scripts/test-schoolpro-incremental-assessment-entry.mjs",
+    "test:schoolpro-progression-subject-requirements": "node scripts/test-schoolpro-progression-subject-requirements.mjs",
+    "test:schoolpro-production-graduation-certificates": "node scripts/test-schoolpro-production-graduation-certificates.mjs",
+    "test:schoolpro-section-leadership": "node scripts/test-schoolpro-section-leadership.mjs",
+    "test:schoolpro-student-family-records": "node scripts/test-schoolpro-student-family-records.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

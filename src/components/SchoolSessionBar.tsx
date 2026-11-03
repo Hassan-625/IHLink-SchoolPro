@@ -1,2 +1,10 @@
 import {useSchoolSession} from '@/hooks/useSchoolSession';
-export function SchoolSessionBar(){const {session,select}=useSchoolSession();const year=new Date().getFullYear();return <section className="mb-4 rounded-xl border p-3 print:hidden"><label className="block text-sm font-bold">Working academic session<select aria-label="Working academic session" className="mt-1 w-full rounded-lg border p-2" value={session} onChange={e=>select(e.target.value)}><option value="">Choose a session before continuing</option>{Array.from({length:31},(_,i)=>year-15+i).map(y=><option key={y}>{y}/{y+1}</option>)}</select></label><p className="mt-1 text-xs">Records and reports keep the session in which they were saved. Choose a previous session to review its history.</p></section>}
+import {AcademicPeriodSelect} from '@/components/AcademicPeriodSelect';
+
+export function SchoolSessionBar(){
+  const {session}=useSchoolSession();
+  return <section className="mb-4 rounded-xl border p-3 print:hidden">
+    <AcademicPeriodSelect kind="session" value={session} label="Working academic session" placeholder="Choose a session before continuing" />
+    <p className="mt-1 text-xs">Records and reports retain the session in which they were saved. Selecting a different session changes the working view only; it does not promote students or move enrolments.</p>
+  </section>;
+}

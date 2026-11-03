@@ -138,3 +138,45 @@ begin
 end
 $competition_test$;
 select 'PASS: staff judge panels, rubric scoring limits, tenant-safe entries, house point ledger and standings' as result;
+
+
+-- Versioned weighted result calculation, explicit approval and publication.
+do $results_test$
+declare
+  school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  owner_id uuid := '10000000-0000-4000-8000-000000000001';
+  teacher_id uuid := '10000000-0000-4000-8000-000000000002';
+  event_id uuid;
+  run_id uuid;
+begin
+  select id into event_id from public.schoolpro_competition_events
+    where school_id=school and title='Inter-house Debate';
+  update public.schoolpro_competition_events set status='completed' where id=event_id;
+  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+  run_id := public.schoolpro_calculate_competition_results(school,event_id);
+  if not exists(select 1 from public.schoolpro_competition_result_entries
+    where result_run_id=run_id and entry_name='Red House Debate Team'
+      and is_complete and score_percent=87.50 and result_position=1) then
+    raise exception 'ASSERT: weighted rubric score or ranking was calculated incorrectly';
+  end if;
+  begin
+    perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+    perform public.schoolpro_approve_competition_results(school,run_id);
+    raise exception 'ASSERT: a judge without Games management permission approved results';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+  perform public.schoolpro_approve_competition_results(school,run_id);
+  perform public.schoolpro_publish_competition_results(school,run_id);
+  if not exists(select 1 from public.schoolpro_competition_result_runs
+    where id=run_id and status='published' and approved_by=owner_id and published_by=owner_id) then
+    raise exception 'ASSERT: result approval/publication audit trail was not recorded';
+  end if;
+  if not exists(select 1 from public.schoolpro_competition_result_entries
+    where result_run_id=run_id and result_position=1 and score_percent=87.50) then
+    raise exception 'ASSERT: published result snapshot was not retained';
+  end if;
+end
+$results_test$;
+select 'PASS: weighted competition results, role-gated approval, publication and immutable result snapshot' as result;

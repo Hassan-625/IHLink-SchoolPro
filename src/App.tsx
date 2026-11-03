@@ -31,6 +31,7 @@ import { SchoolProReportCard } from "@/pages/schoolpro/SchoolProReportCard";
 import { SchoolProClassResultsPrint } from "@/pages/schoolpro/SchoolProClassResultsPrint";
 import { SchoolProStaff } from "@/pages/schoolpro/SchoolProStaff";
 import { SchoolProGames } from "@/pages/schoolpro/SchoolProGames";
+import { SchoolProJudgePortal } from "@/pages/schoolpro/SchoolProJudgePortal";
 import { SchoolProClasses } from "@/pages/schoolpro/SchoolProClasses";
 import { SchoolProSubjects } from "@/pages/schoolpro/SchoolProSubjects";
 import { SchoolProAttendance } from "@/pages/schoolpro/SchoolProAttendance";
@@ -134,6 +135,7 @@ export default function App(){
   <Route path="/schoolpro/invoices/:invoiceId" element={<Guard permission="finance"><SchoolProInvoice/></Guard>}/>
   <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard}/>
   <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
+  <Route path="/schoolpro/judge" element={<Guard><SchoolProJudgePortal/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>
   <Route path="/schoolpro/subjects" element={<Guard permission="subjects"><SchoolProSubjects/></Guard>}/>
   <Route path="/schoolpro/attendance" element={<Guard permission="attendance"><SchoolProAttendance/></Guard>}/>

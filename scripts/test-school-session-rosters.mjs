@@ -8,6 +8,7 @@ const bulkActions=readFileSync('src/components/SchoolBulkAcademicActions.tsx','u
 const classFilters=readFileSync('src/lib/schoolClassFilters.ts','utf8');
 const subjectsPage=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const assignmentGuard=readFileSync('supabase/migrations/20261103110000_schoolpro_subject_assignment_teaching_role_guard.sql','utf8');
+const formMasterRoleGuard=readFileSync('supabase/migrations/20261103130000_schoolpro_clear_ineligible_form_master.sql','utf8');
 const staffPage=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
 const classesPage=readFileSync('src/pages/schoolpro/SchoolProClasses.tsx','utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
@@ -55,4 +56,7 @@ assert.match(assignmentGuard,/member_role not in \('teacher', 'class_teacher'\)/
 assert.match(assignmentGuard,/class_school <> new\.school_id/i,'Subject assignments must reject classes from another school.');
 assert.match(assignmentGuard,/subject_school <> new\.school_id/i,'Subject assignments must reject subjects from another school.');
 assert.match(assignmentGuard,/member_school <> new\.school_id/i,'Subject assignments must reject staff from another school.');
-console.log('PASS: legacy active-only fallback, empty historical session, historical class/arm projection, historical class counts, graduated roster visibility, bulk-action roster consistency, and teaching-role-only subject allocation, matching database role and tenant validation.');
+assert.match(formMasterRoleGuard,/old\.role in \('teacher','class_teacher'\)/i,'Form Master cleanup must detect a downgrade from an eligible teaching role.');
+assert.match(formMasterRoleGuard,/new\.role not in \('teacher','class_teacher'\)/i,'Form Master cleanup must run only when the new role is not eligible.');
+assert.match(formMasterRoleGuard,/set form_teacher_id = null/i,'Form Master assignments must be cleared on role downgrade.');
+console.log('PASS: legacy active-only fallback, empty historical session, historical class/arm projection, historical class counts, graduated roster visibility, bulk-action roster consistency, and teaching-role-only subject allocation, matching database role and tenant validation, and Form Master cleanup on role downgrade.');

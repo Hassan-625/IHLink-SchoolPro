@@ -1889,3 +1889,10 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added proposed migration `20261103110000_schoolpro_subject_assignment_teaching_role_guard.sql` to align the trigger with the supported teaching roles (`teacher`, `class_teacher`) while preserving same-school class, subject, and member checks. A null teacher remains valid for an unassigned subject.
 - Extended `scripts/test-school-session-rosters.mjs` with regression assertions tying the UI role filter to the database guard and checking all three tenant-boundary predicates. This is a source-level regression assertion, not a substitute for a live/disposable-PostgreSQL trigger execution test; add database execution coverage before final B4 acceptance.
 - No Supabase migration was applied and no production data or workspace was created or changed.
+
+### Stage B4 — disposable PostgreSQL assignment-trigger coverage — 2026-11-03
+
+- Added `scripts/test-schoolpro-subject-assignment-guard.integration.sql`. It creates a disposable schema fixture, applies the original subject-assignment migration followed by the proposed role-alignment migration, and executes the actual trigger through INSERT/UPDATE statements.
+- Coverage includes acceptance of `teacher` and `class_teacher`, acceptance of an unassigned (`NULL`) teacher, and rejection of administrator assignment, a foreign-school teacher, a foreign-school class, and a foreign-school subject.
+- Added a dedicated `subject-assignment-guard-integration` GitHub Actions job using an isolated PostgreSQL 16 service. It does not connect to Supabase or require school workspaces/accounts.
+- This closes the earlier source-only test limitation once the new job passes on the exact PR head. B4 still remains in progress pending that CI result and review of the other staff/class/subject assignment paths.

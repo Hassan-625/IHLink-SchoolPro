@@ -140,6 +140,8 @@ $competition_test$;
 select 'PASS: staff judge panels, rubric scoring limits, tenant-safe entries, house point ledger and standings' as result;
 
 
+\\ir ../supabase/migrations/20261103144000_schoolpro_competition_result_approval_and_publication.sql
+
 -- Versioned weighted result calculation, explicit approval and publication.
 do $results_test$
 declare

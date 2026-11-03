@@ -154,13 +154,26 @@ grant select on public.schoolpro_competition_events,public.schoolpro_competition
   public.schoolpro_competition_judges,public.schoolpro_competition_scores,public.schoolpro_house_point_ledger to authenticated;
 grant all on public.schoolpro_competition_events,public.schoolpro_competition_criteria,public.schoolpro_competition_entries,
   public.schoolpro_competition_judges,public.schoolpro_competition_scores,public.schoolpro_house_point_ledger to service_role;
+grant insert,update,delete on public.schoolpro_competition_events,public.schoolpro_competition_criteria,public.schoolpro_competition_entries to authenticated;
 
 create policy "Games staff read competitions" on public.schoolpro_competition_events for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff manage competitions" on public.schoolpro_competition_events for all to authenticated using (private.schoolpro_module_allowed(school_id,'games')) with check (private.schoolpro_module_allowed(school_id,'games'));
+create policy "Assigned judges read their event" on public.schoolpro_competition_events for select to authenticated
+using (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
+  where j.event_id=public.schoolpro_competition_events.id and j.school_id=public.schoolpro_competition_events.school_id
+    and j.ended_at is null and m.user_id=auth.uid()));
 create policy "Games staff read competition criteria" on public.schoolpro_competition_criteria for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff manage competition criteria" on public.schoolpro_competition_criteria for all to authenticated using (private.schoolpro_module_allowed(school_id,'games')) with check (private.schoolpro_module_allowed(school_id,'games'));
+create policy "Assigned judges read event criteria" on public.schoolpro_competition_criteria for select to authenticated
+using (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
+  where j.event_id=public.schoolpro_competition_criteria.event_id and j.school_id=public.schoolpro_competition_criteria.school_id
+    and j.ended_at is null and m.user_id=auth.uid()));
 create policy "Games staff read competition entries" on public.schoolpro_competition_entries for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff manage competition entries" on public.schoolpro_competition_entries for all to authenticated using (private.schoolpro_module_allowed(school_id,'games')) with check (private.schoolpro_module_allowed(school_id,'games'));
+create policy "Assigned judges read event entries" on public.schoolpro_competition_entries for select to authenticated
+using (exists(select 1 from public.schoolpro_competition_judges j join public.schoolpro_members m on m.id=j.member_id
+  where j.event_id=public.schoolpro_competition_entries.event_id and j.school_id=public.schoolpro_competition_entries.school_id
+    and j.ended_at is null and m.user_id=auth.uid()));
 create policy "Games staff read competition judges" on public.schoolpro_competition_judges for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff manage competition judges" on public.schoolpro_competition_judges for all to authenticated using (private.schoolpro_module_allowed(school_id,'games')) with check (private.schoolpro_module_allowed(school_id,'games'));
 create policy "Games staff read competition scores" on public.schoolpro_competition_scores for select to authenticated using (private.schoolpro_module_allowed(school_id,'games'));

@@ -43,6 +43,15 @@ assert.ok(migration.includes("and status <> 'archived'"),'Archived sessions must
 assert.ok(migration.includes('Backward-compatible path until a school configures explicit session ranges.'),'Schools without explicit session records must retain legacy term-date stamping during transition.');
 assert.ok(migration.includes('from public.schoolpro_result_term_settings')&&migration.includes('session = selected_session')&&migration.includes('term_start_date <= activity_date')&&migration.includes('term_end_date >= activity_date'),'Term remains independently resolved from the matching session and activity date.');
 assert.ok(migration.includes("selected_session := nullif(j->>'session', '')"),'An explicitly supplied session must be preserved instead of overwritten by date inference.');
+
+const integration=readFileSync('scripts/test-academic-sessions-postgres.integration.sql','utf8');
+assert.ok(integration.includes('create trigger schoolpro_attendance_stamp_activity_period'),'Disposable integration must execute the activity-period stamping function through an attendance trigger.');
+assert.ok(integration.includes("values (school, '2024/2025', 'First Term', date '2024-09-01', date '2024-12-20')"),'Historical session term fixture must exist for explicit-session stamping.');
+assert.ok(integration.includes("stamped.session <> '2024/2025' or stamped.term <> 'First Term'"),'Explicit historical session and its matching term must both be preserved.');
+assert.ok(integration.includes("'Foreign tenant fixture'"),'RLS negative assertions must include a real foreign-tenant session row.');
+assert.ok(integration.includes('Teacher must read own-school session only'),'Authenticated teacher RLS must assert positive own-school and negative foreign-school visibility.');
+assert.ok(integration.includes('Exam officer must read all five own-school calendar history rows'),'Authenticated exam-officer RLS must assert own-school history visibility.');
+assert.ok(integration.includes('Calendar history must not be visible across tenant boundaries'),'Authenticated history RLS must explicitly reject foreign-tenant visibility.');
 assert.ok(!/as \$(?:\r?\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');
 assert.equal((migration.match(/as \$\$/g)||[]).length,(migration.match(/^\$\$;/gm)||[]).length,'Every PL/pgSQL dollar-quoted body must have a matching delimiter.');
 assert.ok(!/as \$(?:\\r?\\n)|^\$;$/m.test(migration),'Migration must not contain malformed single-dollar function delimiters.');

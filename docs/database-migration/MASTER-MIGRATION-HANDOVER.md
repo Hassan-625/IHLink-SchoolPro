@@ -1763,3 +1763,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 
 - Added `scripts/test-schoolpro-production-graduation-certificates.integration.sql` and a dedicated PostgreSQL 16 CI job. The disposable fixture applies the exact draft migration and exercises graduated versus active recipients, applied versus pending graduation decisions, active/same-school template checks, missing session, unauthorized staff, invalid output path, issuer identity, issuance event audit, and generic non-certificate document compatibility. The Node regression test now asserts the integration fixture covers these contracts.
 - Integration-fixture commit: `59e79b7`; CI job commit: `f4c1cb8`; fixture-coverage assertion commit: `8d495d0`. Exact-head SchoolPro CI and payment validation for `8d495d09196e1758f31f8ca97c452e397abdb5bf` are running; the database fixture has not yet passed CI. Do not mark the certificate workflow database-validated until the dedicated PostgreSQL job succeeds.
+
+
+### Stage B1 production graduation-certificate workflow — disposable database and exact-head CI validated — 2026-11-03
+
+- Corrected the Node source-contract assertions to match the SQL fixture's actual `position('...')` error-message checks; the earlier failures were assertion mismatches. The disposable PostgreSQL migration/lifecycle test itself passed.
+- On exact head `787953e387d83447f83f35afa7043e5f0956398a`, SchoolPro CI run `41617478382` succeeded and payment validation run `41617478347` succeeded.
+- The dedicated `Production graduation certificates (disposable PostgreSQL)` job passed, executing the draft migration and lifecycle assertions. The validation job also passed typecheck, build and the graduation-certificate source regression test. All other executed SchoolPro CI jobs passed; tenant acceptance was skipped because there are no active workspaces.
+- The certificate workflow is validated in disposable PostgreSQL and exact-head CI. The migration remains a draft proposal and has not been applied to production. No production data/schema change, deployment, workspace creation, or test account creation occurred. PR #111 remains open/draft/unmerged.

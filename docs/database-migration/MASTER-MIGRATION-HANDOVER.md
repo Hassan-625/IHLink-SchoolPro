@@ -1847,3 +1847,10 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Extended the session-roster regression test to assert that class counts use historical class_id rather than the student's current class, and that graduated students remain visible in their historical class roster.
 - Implementation commits: database resolver a9e5b07; source assertion b52e71f; legacy integration fixture 2fafe2c; school-owned legacy subject fixture 6fa3038; historical class-count regression 514c4d6.
 - This remains a proposed migration and disposable integration test only. No production schema/data change, migration application, deployment, workspace creation or test-account creation occurred. Exact-head SchoolPro CI and payment validation are required before treating B3 as complete.
+
+### Stage B3 roster regression assertion syntax correction — 2026-11-03
+
+- Exact-head SchoolPro CI run `41632059358` exposed a JavaScript parse error in `scripts/test-school-session-rosters.mjs`: an apostrophe in the assertion message terminated its single-quoted string. This was a test-source syntax issue; the roster implementation and database progression integration jobs passed.
+- Corrected the assertion wording without changing test behavior. Fix commit: `b7372667b1d23c790ab83d7eb913e3f238f4c791`.
+- Payment validation run `41632059491` passed on the preceding head. The corrected commit requires fresh exact-head SchoolPro CI and payment validation; the prior CI's Receipt Storage isolation job was still in progress when inspected.
+- PR #111 remains open/draft/unmerged. No production migration, data change, deployment, workspace or test account was created.

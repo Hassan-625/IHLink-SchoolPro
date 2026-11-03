@@ -19,7 +19,7 @@ Deno.serve(async(req:Request)=>{
    const {data,error}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:user.id,p_hash:await hash(code)});if(error)throw error;
    return data?respond({ok:true}):respond({error:'This joining code is invalid, expired or belongs to another email.'},400);
   }
-  const {schoolId,email,role,relationship='guardian'}=body;
+  const {schoolId,email,role,relationship='guardian'}=body;\n  const guardianPhone=String(body.guardianPhone||'').trim();
   const normalized=String(email||'').trim().toLowerCase();
   const firstName=String(body.firstName||'').trim(),middleName=String(body.middleName||'').trim(),surname=String(body.surname||'').trim();
   const [{data:school,error:se},{data:member,error:me},{data:profile,error:pe}]=await Promise.all([admin.from('schoolpro_schools').select('owner_id,code').eq('id',schoolId).maybeSingle(),admin.from('schoolpro_members').select('role').eq('school_id',schoolId).eq('user_id',user.id).maybeSingle(),admin.from('profiles').select('status,role').eq('id',user.id).maybeSingle()]);
@@ -43,7 +43,7 @@ Deno.serve(async(req:Request)=>{
    const {data:students,error}=await admin.from('schoolpro_students').select('id').in('id',studentIds).eq('school_id',schoolId).eq('status','active');if(error)throw error;
    if(students?.length!==studentIds.length)return respond({error:'Choose enrolled children from this school.'},400);
   }
-  const {data:existing,error:ee}=await admin.from('profiles').select('id,last_name').eq('email',normalized).maybeSingle();if(ee)throw ee;
+  const {data:existing,error:ee}=await admin.from('profiles').select('id,last_name,phone').eq('email',normalized).maybeSingle();if(ee)throw ee;
   if(existing?.id===school.owner_id)return respond({error:'The proprietor already has school access.'},400);
   const code=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(code);
   if(existing){
@@ -66,7 +66,7 @@ Deno.serve(async(req:Request)=>{
   if(ce||!created.user)throw ce||new Error('create');
   const uid=created.user.id;
   try{
-   const {error:profileError}=await admin.from('profiles').update({first_name:firstName,middle_name:middleName,last_name:surname}).eq('id',uid);if(profileError)throw profileError;
+   const {error:profileError}=await admin.from('profiles').update({first_name:firstName,middle_name:middleName,last_name:surname,phone:role==='parent'?(guardianPhone||null):null}).eq('id',uid);if(profileError)throw profileError;
    const {error:credentialError}=await admin.rpc('schoolpro_set_initial_credential',{p_user:uid,p_school:schoolId,p_surname:surname});if(credentialError)throw credentialError;
    const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(inviteError)throw inviteError;
    const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:uid,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');

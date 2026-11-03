@@ -1975,3 +1975,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Staff judges can use the score submission flow only when authenticated as an active judge assigned to that event. Games administrators manage event configuration and scoring panels.
 - The page uses the current school's scoped Supabase queries and existing RPCs; no client-side demo data or test workspaces were introduced.
 - UI is committed to PR #111. Typecheck/build and disposable PostgreSQL integration remain pending for the exact latest head. Do not apply migrations to Supabase or deploy until those checks pass and the user authorizes the next stage.
+
+
+### B6 UI refinement — event lifecycle and staff judge portal — 2026-11-03
+
+- Added competition lifecycle controls so Game Masters can move events from draft to open, scoring and completed. The score RPC only accepts scores while an event is open or scoring.
+- Added a separate `/schoolpro/judge` portal for staff who are assigned to judging panels. This route does not grant the Games module; its data access is constrained by RLS to the signed-in staff member's own active assignments, the assigned event's rubric/entries and score records. The portal submits scores through the judge-attributed RPC.
+- Added RLS allowing an authenticated staff member to read only their own judge assignment rows. The predicate is explicitly qualified by the outer judge table's school and member IDs.
+- Added navigation for both the Games administration workspace and the personal judging portal.
+- The exact-head typecheck/build and disposable PostgreSQL integration have not yet returned results. Treat this as implementation in review, not validated production functionality.

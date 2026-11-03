@@ -79,6 +79,14 @@ $$;
 
 \ir ../supabase/migrations/20261030190000_schoolpro_academic_session_lifecycle_and_calendar_history.sql
 
+-- Install the activity-period trigger boundary in this disposable fixture so the
+-- migration's replacement trigger function is executed by real attendance writes.
+drop trigger if exists schoolpro_attendance_stamp_activity_period on public.schoolpro_attendance;
+create trigger schoolpro_attendance_stamp_activity_period
+  before insert or update on public.schoolpro_attendance
+  for each row execute function private.schoolpro_stamp_activity_period();
+
+
 do $fixture$
 declare
   school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
@@ -119,7 +127,12 @@ begin
     raise exception 'Expected 4 history records after session/term create and update; got %', history_count;
   end if;
 
-  -- Verify date-based stamping and explicit-session preservation.
+  -- A historical term remains addressable after the current session changes.
+  insert into public.schoolpro_result_term_settings
+    (school_id, session, term, term_start_date, term_end_date)
+  values (school, '2024/2025', 'First Term', date '2024-09-01', date '2024-12-20');
+
+  -- Verify date-based stamping and explicit-session + matching-term preservation.
   insert into public.schoolpro_attendance(school_id, attendance_date)
   values (school, date '2025-10-15') returning * into stamped;
   if stamped.session <> '2025/2026' or stamped.term <> 'First Term' then
@@ -127,9 +140,9 @@ begin
   end if;
 
   insert into public.schoolpro_attendance(school_id, attendance_date, session)
-  values (school, date '2025-10-15', '2024/2025') returning * into stamped;
-  if stamped.session <> '2024/2025' then
-    raise exception 'Explicit historical session was not preserved';
+  values (school, date '2024-10-15', '2024/2025') returning * into stamped;
+  if stamped.session <> '2024/2025' or stamped.term <> 'First Term' then
+    raise exception 'Explicit historical session/term was not preserved: session %, term %', stamped.session, stamped.term;
   end if;
 
   -- Direct session deletion must be rejected.
@@ -174,6 +187,14 @@ begin
 end;
 $fixture$;
 
+-- Create a real foreign-tenant session/history row so negative visibility checks are not vacuous.
+select set_config('request.test.school_id', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', true);
+select set_config('request.test.school_role', 'proprietor', true);
+select public.schoolpro_save_academic_session(
+  'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '2025/2026',
+  date '2025-09-01', date '2026-07-31', 'Foreign tenant fixture'
+);
+
 -- Capture table grants, policy text, and the owner-visible fixture row before switching roles.
 select has_table_privilege('authenticated', 'public.schoolpro_academic_sessions', 'SELECT') as authenticated_can_select,
        (select count(*) from public.schoolpro_academic_sessions
@@ -203,8 +224,10 @@ where c.oid = 'public.schoolpro_academic_sessions'::regclass;
 select school_id, session from public.schoolpro_academic_sessions;
 do $rls_assertions$
 begin
-  if not exists (select 1 from public.schoolpro_academic_sessions) then
-    raise exception 'Teacher must be able to read the school academic session';
+  if (select count(*) from public.schoolpro_academic_sessions) <> 1
+     or exists (select 1 from public.schoolpro_academic_sessions
+                where school_id <> 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+    raise exception 'Teacher must read own-school session only and must not see foreign-tenant sessions';
   end if;
   if exists (select 1 from public.schoolpro_academic_calendar_history) then
     raise exception 'Teacher must not be able to read calendar history';
@@ -214,13 +237,16 @@ $rls_assertions$;
 select set_config('request.test.school_role', 'exam_officer', false);
 do $rls_assertions$
 begin
-  if (select count(*) from public.schoolpro_academic_calendar_history) <> 4 then
-    raise exception 'Exam officer must be able to read all four school calendar history rows';
+  if (select count(*) from public.schoolpro_academic_calendar_history
+      where school_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 5 then
+    raise exception 'Exam officer must read all five own-school calendar history rows';
   end if;
-  if exists (
-    select 1 from public.schoolpro_academic_sessions
-    where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
-  ) then
+  if exists (select 1 from public.schoolpro_academic_calendar_history
+             where school_id <> 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+    raise exception 'Calendar history must not be visible across tenant boundaries';
+  end if;
+  if exists (select 1 from public.schoolpro_academic_sessions
+             where school_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') then
     raise exception 'School sessions must not be visible across tenant boundaries';
   end if;
 end;

@@ -2019,3 +2019,17 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Renamed only the competition-block local variable to `competition_house_id`, retaining the real schema column names `house_id` and `event_id`. Also corrected the cross-school competition-entry INSERT column list to use the actual `event_id` column (not the similarly named local variable).
 - Test-only fixes committed as `2dd0229` and follow-up schema-column correction as `ee1e4aa`. Exact-head CI and payment validation must be checked again on the new head. Do not proceed to result aggregation/publication until the combined integration job passes.
 - No production migration, live data change, workspace creation, deployment or PR merge occurred.
+
+
+## 2026-11-03 authoritative Stage B6 continuation
+
+This section supersedes older stage-status summaries above where they conflict.
+
+- Stage A remains accepted and complete. Stage B1–B5 are recorded as complete in the current working sequence. Stage B6 is in progress.
+- The active work is PR #111 on `stage-b/academic-sessions-student-rosters-20261030`. It remains a draft PR. No merge, production deployment, Supabase migration application, production data change, or database-platform migration has been performed.
+- B6 foundations already committed: Discipline Master and Game Master roles; configurable Red/Green/Blue/Yellow houses; balanced automatic allocation of new active students; manual assignment history; House Master appointment history; event types/rules/eligibility; rubric criteria; staff judging panels; judge score entry; house-points ledger and standings.
+- CI for head `a504c19df1e820fbbcb77aa825700e0ca61e733f` completed successfully: SchoolPro CI run #2397 and payment-page validation #2122 both passed. The house allocation/competition integration and local Receipt Storage isolation jobs passed. Tenant acceptance was skipped because no active workspaces exist; do not create test workspaces to force this conditional check.
+- New repository-only migration `20261103144000_schoolpro_competition_result_approval_and_publication.sql` adds versioned result snapshots, weighted rubric calculation (average judge score per criterion, normalized by criterion maximum and weight), competition ranking with tied positions, explicit Games-permission approval and publication, and a helper that permits event-linked house points only against a published result entry.
+- New integration assertions were appended to `scripts/test-schoolpro-houses-and-allocation.integration.sql` for the 87.50 weighted score fixture, ranking, rejection of approval by a judge without Games management permission, approval/publication audit fields, and retained result snapshot.
+- These latest result-calculation changes are committed on the PR branch but have not yet completed CI. Do not claim them validated until the new head's full SchoolPro CI and payment-page validation complete.
+- Next action: inspect the latest commit and CI run. Fix only concrete failures. Once green, continue B6 UI work to expose result preview/version, approval, publication and published-result-based house awards. Preserve the no-production-write/no-merge/no-deployment boundary.

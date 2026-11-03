@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const migration=readFileSync('supabase/migrations/20261103100000_schoolpro_progression_subject_requirements.sql','utf8');
 const prior=readFileSync('supabase/migrations/20261103090000_schoolpro_progression_repeat_threshold.sql','utf8');
+const ui=readFileSync('src/components/SchoolBulkAcademicActions.tsx','utf8');
 
 assert.match(migration,/create table if not exists public\.schoolpro_progression_subject_requirements/i);
 assert.match(migration,/unique \(school_id, subject_id\)/i);

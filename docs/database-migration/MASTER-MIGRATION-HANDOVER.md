@@ -1873,3 +1873,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Extended the existing session-roster regression test (already wired into SchoolPro CI) with an assertion that the subject allocation selector filters candidates to teaching roles.
 - No schema or production change, migration execution, deployment, workspace or test account was created. PR #111 remains draft and unmerged.
 - Next B4 action: trace the subject-assignment write policy/trigger and the form-master RPC to confirm that the backend independently validates same-school membership and teaching-role eligibility; then address any demonstrated stale-reference or role-transition defect with isolated regression coverage.
+
+
+## Stage B4 — backend assignment authorization trace — 2026-11-03
+
+- Rechecked the latest exact-head CI/payment workflows after the subject-teacher selector change: SchoolPro CI #2325 and payment validation #2050 both completed successfully on `7e51eb19f176ae9aa3d6c88b8faaeb24a3b5f043`.
+- Read the existing `private.schoolpro_set_form_master` implementation (migration `20261011124255_schoolpro_board_and_class_coordinator_roles.sql`). It resolves the class's owning school, requires the Classes module and proprietor/administrator access, and rejects a selected member unless that member belongs to the same school and has role `teacher` or `class_teacher`. It writes an audit event. This is an existing backend safeguard; no duplicate RPC is needed.
+- The same database-level guarantee has not yet been established for `schoolpro_subject_assignments`: the inspected allocation policy migration (`20261012121241_schoolpro_bounded_teacher_allocation_policy.sql`) changes teacher read visibility only. The UI selector restriction is not a substitute for a write-time tenant/role guard. Do not mark B4 complete until the assignment table's write policy/trigger is located and verified or a proposed migration adds an equivalent guard with disposable-PostgreSQL regression coverage.
+- No live Supabase writes or schema inspection were performed, and no production migration was applied. PR #111 remains draft and unmerged.

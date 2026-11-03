@@ -17,7 +17,8 @@
     "test:schoolpro-progression-threshold": "node scripts/test-schoolpro-progression-threshold.mjs",
     "test:schoolpro-incremental-assessment": "node scripts/test-schoolpro-incremental-assessment-entry.mjs",
     "test:schoolpro-progression-subject-requirements": "node scripts/test-schoolpro-progression-subject-requirements.mjs",
-    "test:schoolpro-production-graduation-certificates": "node scripts/test-schoolpro-production-graduation-certificates.mjs"
+    "test:schoolpro-production-graduation-certificates": "node scripts/test-schoolpro-production-graduation-certificates.mjs",
+    "test:schoolpro-section-leadership": "node scripts/test-schoolpro-section-leadership.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

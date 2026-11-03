@@ -119,13 +119,18 @@ declare
   pass_student uuid := '55555555-5555-4555-8555-555555555551';
   fail_student uuid := '55555555-5555-4555-8555-555555555552';
   incomplete_student uuid := '55555555-5555-4555-8555-555555555553';
+  legacy_school uuid := 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
+  legacy_class uuid := '66666666-6666-4666-8666-666666666666';
+  legacy_student uuid := '77777777-7777-4777-8777-777777777777';
   result jsonb;
+  legacy_result jsonb;
   fail_reason text;
   failed boolean := false;
 begin
-  insert into public.schoolpro_schools(id) values (school),(foreign_school);
+  insert into public.schoolpro_schools(id) values (school),(foreign_school),(legacy_school);
   insert into public.schoolpro_classes(id,school_id,name) values
-    (basic1,school,'Basic 1'),(basic2,school,'Basic 2');
+    (basic1,school,'Basic 1'),(basic2,school,'Basic 2'),
+    (legacy_class,legacy_school,'Basic 1');
   insert into public.schoolpro_subjects(id,school_id,name,class_name) values
     (math,school,'Mathematics','Basic 1'),(english,school,'English','Basic 1');
 
@@ -203,6 +208,22 @@ begin
       and item->>'reason' like '%does not have published results for all three terms%'
   ) then
     raise exception 'Missing subject term evidence must be reported in skipped reasons: %',result;
+  end if;
+
+  -- A school with no enrollment-history rows at all uses active current students.
+  insert into public.schoolpro_students(id,school_id,first_name,last_name,status,class_id)
+  values(legacy_student,legacy_school,'Legacy','Student','active',legacy_class);
+  insert into public.schoolpro_results(school_id,student_id,subject_id,session,term,status,total_score)
+  select legacy_school,legacy_student,math, '2025/2026', term, 'published', 40
+  from (values('First Term'),('Second Term'),('Third Term')) terms(term);
+  legacy_result := private.schoolpro_bulk_academic_action(
+    legacy_school,'2025/2026','prepare_progression',array[legacy_student]
+  );
+  if (legacy_result->>'processed')::int <> 1 then
+    raise exception 'Legacy school with no history rows must include its active student: %',legacy_result;
+  end if;
+  if (select decision from public.schoolpro_promotions where school_id=legacy_school and student_id=legacy_student) <> 'repeated' then
+    raise exception 'Legacy active student must be evaluated using the default repeat threshold';
   end if;
 
   -- Existing review/apply remains explicit; preparation must not change enrolment.

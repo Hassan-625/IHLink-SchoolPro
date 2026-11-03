@@ -1931,3 +1931,15 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added forward-only enum and role-permission migrations: `20261103140000_schoolpro_house_competition_roles.sql` and `20261103141000_schoolpro_house_competition_role_permissions.sql`. These are repository migrations only; they have not been applied to Supabase.
 - This is the role/access foundation, not completion of the Houses and Competitions feature. Next implementation slice must add tenant-scoped house configuration and student house-membership history, balanced allocation with deterministic tie-breaking, manual assignment workflow, teaching-staff House Master assignments, and the competition/rubric/judging/points schema and UI. Do not overwrite historical student house assignments or competition results.
 - No live database change, production data write, deployment, test workspace creation or PR merge was performed for this B6 foundation.
+
+
+## Stage B6 — House configuration and student allocation foundation — 2026-11-03
+
+- Added migration `20261103142000_schoolpro_houses_and_student_house_history.sql` (repository-only; not applied to Supabase). It creates tenant-scoped houses, house-master appointment history and student house-membership history.
+- New and existing schools receive default Red, Green, Blue and Yellow houses. House names, codes, colours and ordering can be configured through a games-permission RPC.
+- New student records receive a balanced automatic house assignment by selecting the active house with the lowest current roster count (stable tie-break by configured order/name/id). This covers direct enrolment and admission-to-student conversion because the trigger runs on student insertion. If no active houses exist, the student remains unassigned rather than failing enrolment.
+- Existing/transfer students can be manually assigned through a tenant-checked RPC. Reassignment closes the prior history row and creates a new manual row; it never overwrites the historical assignment.
+- House Masters are appointments of same-school teaching staff (teacher/class_teacher), not a broad staff role. One active House Master per house and one active house per House Master are enforced. Demotion from teaching roles closes the appointment while preserving history.
+- RLS protects house, appointment and student-house-history reads. Mutations are exposed through authenticated RPCs that require the school games permission. No direct table write policies were added.
+- Added disposable PostgreSQL integration coverage and a CI job for default-house seeding, balanced allocation, manual reassignment history, tenant boundaries and House Master eligibility/downgrade.
+- Competition/event/rubric/judging/points schema and UI remain the next B6 slice. No production migration, live data change, deployment, test workspace creation or PR merge was performed.

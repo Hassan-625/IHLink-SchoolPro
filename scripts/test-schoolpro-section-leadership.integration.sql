@@ -26,6 +26,8 @@ create table public.schoolpro_enrollment_history(
  school_id uuid not null, student_id uuid not null, session text not null,
  class_id uuid not null, created_at timestamptz not null default now()
 );
+alter table public.schoolpro_enrollment_history enable row level security;
+create policy "Authorized school enrollment history" on public.schoolpro_enrollment_history for select to authenticated using(true);
 create table public.schoolpro_subjects(id uuid primary key, school_id uuid not null);
 create table public.schoolpro_guardian_links(school_id uuid,student_id uuid,guardian_user_id uuid,status text);
 create table public.schoolpro_subject_assignments(school_id uuid,class_id uuid,teacher_member_id uuid);
@@ -48,6 +50,8 @@ create or replace function private.has_school_access(p_school uuid,p_roles publi
 returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role=any(p_roles))
 $$;
+create or replace function private.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $ select false $;
+create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $ select false $;
 create or replace function private.schoolpro_result_access(uuid,text,text)
 returns table(allowed boolean) language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
@@ -120,6 +124,12 @@ begin
  end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Vice principal must not lead unassigned Nursery section';
+ end if;
+ if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_n::text||'|2025/2026') then
+   raise exception 'Vice principal must not read enrollment history outside assigned section';
+ end if;
+ if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026')) then
+   raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',false);

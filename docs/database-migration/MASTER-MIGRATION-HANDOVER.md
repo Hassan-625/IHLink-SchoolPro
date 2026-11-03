@@ -1830,3 +1830,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Implementation commits: parent phone form 50cfc29; initial invitation phone handling 45dd9f5; student guardian email and removal of delete UI 6b85e2f; delete-handler removal a6b3c22; invitation phone validation/preservation 27c2139; invitation-order correction c51f4bb; family-record regression test 09bff93; package script 2c03d9f; CI wiring 612f273; guardian-email search cfcafc0; full-name parent-child selector 63d1a7f.
 - The connected Supabase inspection was read-only. No migration, DDL, DML, production data change, deployment, workspace creation or test-account creation occurred. No additional Supabase branch was created.
 - Exact-head SchoolPro CI and payment validation for the B2 code are pending. Do not mark B2 complete or merge PR #111 until those checks pass and the resulting head is reviewed. PR #111 remains draft/open/unmerged.
+
+### Stage B3 bulk progression roster consistency — implementation pending exact-head validation — 2026-11-03
+
+- Focused review found that the Classes & Arms view and class roster already used schoolSessionStudents(), but SchoolBulkAcademicActions read schoolpro_enrollment_history directly. That bypass meant legacy schools with no enrollment-history rows could see an empty year-end progression/transcript roster instead of the intended active-student fallback.
+- Updated SchoolBulkAcademicActions to load the school's student records and resolve them through the same schoolSessionStudents() helper used by class rosters. This preserves historical class/session assignments when history exists, returns an empty roster for a historical session when the school has history but no rows for that session, and uses active current students only when the school has no enrollment-history records at all.
+- Extended scripts/test-school-session-rosters.mjs to assert that bulk academic actions use the canonical resolver and pass its resolved student/class IDs to the progression RPC.
+- Implementation commits: bulk action resolver a6eda5f; regression assertion 95d7f53.
+- Exact-head SchoolPro CI and payment validation are pending. No production schema/data changes, migration, deployment, workspace creation or test-account creation occurred.

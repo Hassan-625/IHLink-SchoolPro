@@ -162,3 +162,75 @@ begin
   return new;
 end;
 $$;
+
+
+-- Replace the broad leadership read path: head teachers and vice principals
+-- must read only their assigned section, while existing teacher/family rules stay intact.
+create or replace function private.schoolpro_member_leads_class(p_school uuid,p_class uuid)
+returns boolean language sql stable security definer set search_path=''
+as $$
+  select auth.uid() is not null and private.is_active_account() and exists(
+    select 1 from public.schoolpro_members m
+    join public.schoolpro_section_leaders sl on sl.school_id=m.school_id and sl.member_id=m.id
+    join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
+    where m.school_id=p_school and m.user_id=auth.uid()
+      and m.role in('head_teacher','vice_principal')
+  )
+$$;
+revoke all on function private.schoolpro_member_leads_class(uuid,uuid) from public,anon;
+grant execute on function private.schoolpro_member_leads_class(uuid,uuid) to authenticated;
+
+create or replace function private.schoolpro_can_read_student(p_student uuid)
+returns boolean language sql stable security definer set search_path=''
+as $$
+ select auth.uid() is not null and private.is_active_account() and exists(
+   select 1 from public.schoolpro_students s
+   where s.id=p_student and private.schoolpro_operationally_active(s.school_id)
+   and (
+     private.is_admin(array['super_admin'::public.user_role[]])
+     or s.user_id=auth.uid()
+     or exists(select 1 from public.schoolpro_guardian_links g
+       where g.school_id=s.school_id and g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')
+     or exists(select 1 from public.schoolpro_schools sc where sc.id=s.school_id and sc.owner_id=auth.uid())
+     or private.schoolpro_member_leads_class(s.school_id,s.class_id)
+     or exists(select 1 from public.schoolpro_members m where m.school_id=s.school_id and m.user_id=auth.uid() and (
+       m.role::text not in('teacher','class_teacher','parent','student','head_teacher','vice_principal')
+       or (m.role in('teacher','class_teacher') and (
+         exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=s.school_id and a.class_id=s.class_id and a.teacher_member_id=m.id)
+         or exists(select 1 from public.schoolpro_classes c where c.id=s.class_id and c.school_id=s.school_id and c.form_teacher_id=m.id)
+       ))
+     ))
+   )
+ )
+$$;
+revoke all on function private.schoolpro_can_read_student(uuid) from public,anon;
+grant execute on function private.schoolpro_can_read_student(uuid) to authenticated;
+
+create or replace function private.schoolpro_can_read_class(p_class uuid)
+returns boolean language sql stable security definer set search_path=''
+as $$
+ select auth.uid() is not null and private.is_active_account() and exists(
+   select 1 from public.schoolpro_classes c where c.id=p_class and (
+     private.has_school_access(c.school_id,array['proprietor','administrator']::public.school_member_role[])
+     or private.schoolpro_member_leads_class(c.school_id,c.id)
+     or exists(select 1 from public.schoolpro_members m where m.school_id=c.school_id and m.user_id=auth.uid() and (
+       m.role::text not in('teacher','class_teacher','parent','student','head_teacher','vice_principal')
+       or c.form_teacher_id=m.id
+       or exists(select 1 from public.schoolpro_subject_assignments a
+         where a.class_id=c.id and a.school_id=c.school_id and a.teacher_member_id=m.id)
+     ))
+     or exists(select 1 from public.schoolpro_students s where s.class_id=c.id and s.school_id=c.school_id
+       and (s.user_id=auth.uid() or exists(select 1 from public.schoolpro_guardian_links g
+         where g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')))
+   )
+ )
+$$;
+revoke all on function private.schoolpro_can_read_class(uuid) from public,anon;
+grant execute on function private.schoolpro_can_read_class(uuid) to authenticated;
+
+alter policy "Result access gate" on public.schoolpro_results
+using (
+  (private.schoolpro_can_read_student(student_id)
+   or private.schoolpro_member_leads_student_section(school_id,student_id,session))
+  and coalesce((select a.allowed from private.schoolpro_result_access(student_id,term,session) a),false)
+);

@@ -132,7 +132,8 @@ export default function App(){
   <Route path="/schoolpro/access-denied" element={<SchoolProAccessDenied/>}/>
   <Route path="/schoolpro/receipts/:receiptId" element={<Guard permission="finance"><SchoolProReceipt/></Guard>}/>
   <Route path="/schoolpro/invoices/:invoiceId" element={<Guard permission="finance"><SchoolProInvoice/></Guard>}/>
-  <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard}/>\n  <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
+  <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard}/>
+  <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>
   <Route path="/schoolpro/subjects" element={<Guard permission="subjects"><SchoolProSubjects/></Guard>}/>
   <Route path="/schoolpro/attendance" element={<Guard permission="attendance"><SchoolProAttendance/></Guard>}/>

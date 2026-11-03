@@ -121,6 +121,7 @@ declare
   incomplete_student uuid := '55555555-5555-4555-8555-555555555553';
   legacy_school uuid := 'cccccccc-cccc-4ccc-8ccc-cccccccccccc';
   legacy_class uuid := '66666666-6666-4666-8666-666666666666';
+  legacy_math uuid := '88888888-8888-4888-8888-888888888888';
   legacy_student uuid := '77777777-7777-4777-8777-777777777777';
   result jsonb;
   legacy_result jsonb;
@@ -132,7 +133,8 @@ begin
     (basic1,school,'Basic 1'),(basic2,school,'Basic 2'),
     (legacy_class,legacy_school,'Basic 1');
   insert into public.schoolpro_subjects(id,school_id,name,class_name) values
-    (math,school,'Mathematics','Basic 1'),(english,school,'English','Basic 1');
+    (math,school,'Mathematics','Basic 1'),(english,school,'English','Basic 1'),
+    (legacy_math,legacy_school,'Mathematics','Basic 1');
 
   insert into public.schoolpro_students(id,school_id,first_name,last_name,status,class_id) values
     (pass_student,school,'Pass','Student','active',basic1),
@@ -214,7 +216,7 @@ begin
   insert into public.schoolpro_students(id,school_id,first_name,last_name,status,class_id)
   values(legacy_student,legacy_school,'Legacy','Student','active',legacy_class);
   insert into public.schoolpro_results(school_id,student_id,subject_id,session,term,status,total_score)
-  select legacy_school,legacy_student,math, '2025/2026', term, 'published', 40
+  select legacy_school,legacy_student,legacy_math, '2025/2026', term, 'published', 40
   from (values('First Term'),('Second Term'),('Third Term')) terms(term);
   legacy_result := private.schoolpro_bulk_academic_action(
     legacy_school,'2025/2026','prepare_progression',array[legacy_student]

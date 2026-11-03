@@ -2002,3 +2002,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - TypeScript identified the Games page helper signature as too restrictive: Supabase PostgREST query/RPC builders are awaitable (`PromiseLike`) but are not native `Promise` instances. Updated the `run` helper argument type to `PromiseLike<{ error: any; data?: any }>` so it accepts the actual Supabase builder return types while preserving awaited error handling.
 - The house/competition PostgreSQL integration failed in the competition assertion because the PL/pgSQL variable `event_id` was ambiguous with the ledger table column `event_id`. Renamed the test-block variable and its references to `competition_event_id`; the ledger column remains explicitly qualified.
 - Both source/test fixes are committed to the PR branch. The next required action is exact-head CI and payment validation; neither failure is considered resolved until those workflows pass. No Supabase migration, production data change, deployment, workspace creation or PR merge occurred.
+
+
+### B6 integration test column-reference correction — 2026-11-03
+
+- SchoolPro CI run #2392 on commit `9eb496084c58ea87edeb1e2beb924e0a46e02fef` passed the full application `validate` job (including TypeScript and production build) and all other listed integration jobs except `houses-and-house-allocation-integration`. Payment validation for this head was not reported in the workflow result inspected.
+- The remaining house/competition job failure was caused by the previous test-only rename replacing schema column names as well as the PL/pgSQL variable. The schema correctly uses `event_id` in competition criteria, entries and house-point ledger; only the PL/pgSQL local variable is `competition_event_id`.
+- Corrected the integration test to use the renamed local variable for values/RPC arguments while restoring the actual `event_id` column identifiers in INSERT column lists and the qualified ledger assertion.
+- This is a test-harness correction only. Exact-head PostgreSQL integration and payment validation remain required. No Supabase migration, production data change, deployment, workspace creation or PR merge occurred.

@@ -2041,3 +2041,12 @@ This section supersedes older stage-status summaries above where they conflict.
 - Corrected scripts/test-schoolpro-houses-and-allocation.integration.sql to include supabase/migrations/20261103144000_schoolpro_competition_result_approval_and_publication.sql before the result calculation assertions.
 - Commit: 4cf319b27f6600e6d6beff959f140ffa46726e0f.
 - New CI run is expected for this head. Result calculation, approval and publication remain unvalidated until that run completes. No production changes.
+
+## 2026-11-03 — B6 competition result integration CI correction
+
+- Latest validation of the B6 result approval/publication work found a test-harness syntax issue, not a database assertion failure: the psql include for `20261103144000_schoolpro_competition_result_approval_and_publication.sql` had two leading backslashes, so psql reported `invalid command \\\\ ` at line 143.
+- The preceding house, judge-panel, rubric-limit, tenant-safe-entry, point-ledger and standings assertions had passed in that run.
+- Corrected the include to the single-backslash psql directive `\\ir ../supabase/migrations/20261103144000_schoolpro_competition_result_approval_and_publication.sql`.
+- Fix committed on the existing Stage B branch as `076ae3be52f5e769499a4f6f4dd5cb935486366e`. This only changes the disposable PostgreSQL integration test script; no migration was applied to Supabase and no production data, deployment, or PR merge occurred.
+- Previous head `f109fc7aa22e2bbe802ad01b256908ad5b26ca16`: payment-page validation passed; SchoolPro CI failed only in `houses-and-house-allocation-integration` because of the malformed include. All other CI jobs passed; tenant acceptance was skipped because there are no active workspaces.
+- Await fresh CI and payment-page validation on the corrected head before treating B6 result aggregation/approval/publication as validated.

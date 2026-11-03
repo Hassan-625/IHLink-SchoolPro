@@ -23,6 +23,20 @@ assert.ok(sessionBar.includes('AcademicPeriodSelect'),'Working session bar must 
 assert.ok(!sessionBar.includes('Array.from({length:31}'),'Working session bar must not maintain a separate rolling range.');
 assert.ok(sessionBar.includes('does not promote students'),'Changing the working session must not imply student progression.');
 
+const workingSessionHook=readFileSync('src/hooks/useSchoolSession.ts','utf8');
+assert.ok(workingSessionHook.includes("schoolpro_current_academic_period"),'The shared working session must bootstrap from the school calendar when no prior choice exists.');
+assert.ok(workingSessionHook.includes("if(selected){setSession(selected);return;}"),'Calendar bootstrap must never overwrite a previously selected historical working session.');
+assert.ok(workingSessionHook.includes("localStorage.setItem(key,current)"),'A calendar-derived default must persist per user and school.');
+
+const studentPage=readFileSync('src/pages/schoolpro/SchoolProStudents.tsx','utf8');
+assert.ok(studentPage.includes("const {session:workingSession}=useSchoolSession()"),'New student enrolment must use the shared working session.');
+assert.ok(studentPage.includes("enrollment_session:workingSession||''"),'New admissions must follow the selected session instead of a separate current-session lookup.');
+assert.ok(!studentPage.includes("rpc('schoolpro_current_academic_period'"),'The student form must not race the shared working-session selection with its own current-period request.');
+
+const feePage=readFileSync('src/pages/schoolpro/SchoolProFees.tsx','utf8');
+assert.ok(!feePage.includes('2026/2027'),'Fee structures and session-scoped exceptions must not hard-code a single academic session.');
+assert.equal((feePage.match(/session:""/g)||[]).length,3,'Fee structures, fee exceptions and result-access exceptions must start from the shared selector rather than a hard-coded session.');
+
 const calendarManager=readFileSync('src/components/SchoolAcademicSessionManager.tsx','utf8');
 assert.ok(calendarManager.includes('updateWorkingSession={false}'),'Editing calendar metadata must not change the globally selected working session.');
 const calendarEditor=readFileSync('src/components/SchoolAcademicCalendar.tsx','utf8');

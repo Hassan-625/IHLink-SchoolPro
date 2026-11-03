@@ -24,9 +24,9 @@ assert.match(studio, /s\?\.status!=='graduated'/);
 assert.match(studio, /progression_session:t\?\.document_type==='certificate'\?issue\.session/);
 assert.match(studio, /Choose a certificate template and a class containing graduated students/);
 
-assert.match(integration, /Only graduated students are eligible/);
-assert.match(integration, /An applied graduation decision is required/);
-assert.match(integration, /Not authorized to issue graduation certificates/);
+assert.match(integration, /position\('Only graduated students'/);
+assert.match(integration, /position\('An applied graduation decision'/);
+assert.match(integration, /position\('Not authorized to issue graduation certificates'/);
 assert.match(integration, /schoolpro_document_issue_events/);
 assert.match(integration, /Generic document issuance regressed/);
 

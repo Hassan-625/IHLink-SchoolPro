@@ -2057,3 +2057,11 @@ This section supersedes older stage-status summaries above where they conflict.
 - The production approval and publication RPCs already check `private.schoolpro_module_allowed(p_school,'games')`; the failure was caused by test-fixture state leaking between assertions, not evidence that a judge bypassed the production permission check.
 - Restored the fixture membership role to `teacher` immediately after verifying that downgrading the role closed the House Master appointment. This keeps the downgrade-cleanup assertion while ensuring the later assigned-judge approval denial test exercises a non-Games role.
 - Test correction committed as `7bfadeec22fcec4cd94f6f8786e94f5ce63b8303`. Await fresh CI on this head; no production migration, Supabase change, deployment, or PR merge.
+
+## 2026-11-03 — B6 competition result workflow UI
+
+- Latest validated backend head before UI work: `9644efcb09e2949f1ddb85575c7e63ddbdf1dc93`; SchoolPro CI #2406 passed, including disposable PostgreSQL house allocation, competition judging, weighted result calculation, judge authorization denial, result approval/publication and snapshot assertions. Payment-page validation #2131 passed. Tenant acceptance skipped because there are no active workspaces.
+- Connected `src/pages/schoolpro/SchoolProGames.tsx` to the versioned result backend: load event result runs, select the newest calculated/approved/published version, load its immutable entry snapshot, calculate a new version, approve calculated versions, and publish approved versions only after the event is marked completed. Buttons are gated by the Games management role in the UI; RPCs remain the authoritative permission enforcement.
+- Kept manual house-point adjustments separate from competition-linked awards by making those manual awards unlinked to an event. Competition-linked awards must use the published-result RPC, which validates that the entry and house belong to the published snapshot.
+- UI commits: `7248166b4dfbf9f6ff163d6a60e0f3f728731c4c` and `b5a036b567805f5af5e175113e3f0942d1a0edae`. Await fresh CI/build validation on the UI head before treating this interface as complete.
+- No Supabase migration applied, no production data changed, no deployment, no PR merge, and no test workspace/account created.

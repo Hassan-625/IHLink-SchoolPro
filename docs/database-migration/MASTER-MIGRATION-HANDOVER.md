@@ -1,20 +1,22 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
-**Last updated:** 2026-11-02  
+**Last updated:** 2026-11-03  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
 **Database direction (confirmed 2026-10-28):** Continue on the existing Supabase PostgreSQL project; Render remains the production frontend host. MySQL and Aiven are no longer target platforms for SchoolPro.  
-**Status:** No database-platform migration is planned. Continue only with narrowly scoped Supabase security/application work; preserve existing real data and do not seed business/demo records.
+**Status:** Stage A accepted; Stage B1 academic sessions/calendar/shared selector complete; Stage B2 student identity/family records in progress. No database-platform migration is planned. Continue only with narrowly scoped Supabase security/application work; preserve existing real data and do not seed business/demo records.
 
 ## Operating rules
 - Preserve the live production architecture and shared IHLink/DataSub data.
 - Do not repeat completed checks unless new evidence requires them. Continue from the last known state.
-- The user explicitly authorized deletion of the two SchoolPro workspaces below; do not ask for the same approval again.
+- The previously authorized cleanup of the two SchoolPro workspaces below was completed on 2026-10-28. No active school workspaces remain; do not create test workspaces or recreate deleted operational records.
 - Do not delete global `profiles` or Supabase Auth accounts. Preserve global/default templates, platform-wide audit/security history, financial evidence that must be retained, and all Storage objects.
 - Keep SchoolPro migration work separate from DataSub.
 
-## Production workspace cleanup — authorized, pending a trigger-policy blocker
+## Historical production workspace cleanup — completed 2026-10-28
+
+**Current disposition:** The historical cleanup was subsequently completed; both target workspaces and their scoped operational rows were removed. The workspace IDs and counts below are retained as audit history, not as pending work. No active SchoolPro workspaces remain.
 
 | Workspace | School ID |
 |---|---|
@@ -1814,3 +1816,17 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Session pickers use `AcademicPeriodSelect`, which synchronizes session values with `useSchoolSession`; Results and Staff also consume the shared hook directly. The teacher-only Results session dropdown is intentionally constrained to that teacher's assigned session values, while the shared working session initializes it when the form loads.
 - The remaining literal `2026/2027` in Document & Certificate Studio is sample-template content and placeholder guidance, not an operational session default. Fee forms, student enrolment and the other inspected workflows have no hard-coded session default.
 - B1's calendar lifecycle migration passed its disposable PostgreSQL integration; exact-head CI/payment validation and the live term-settings/audit-log contract review are complete. B1 academic-session/session-selector scope is complete. B2 student identity/family semantics and B3 historical rosters/progression remain in progress.
+
+### Stage B2 student identity and family records — implementation pending CI validation — 2026-11-03
+
+- Read-only inspection of the connected Supabase schema confirmed the existing family model is sufficient; no new relationship table or duplicate relationship column is needed:
+  - schoolpro_guardian_links stores school_id, student_id, guardian_user_id, relationship, status and linked_by.
+  - schoolpro_access_invitations stores invited child IDs and relationship. The existing schoolpro_accept_access_invitation RPC validates that each selected child is active and belongs to the invitation school, then creates/activates the guardian links.
+  - profiles.phone and schoolpro_students.guardian_email already exist. Parent management reads the linked profile phone and displays the saved relationship.
+- Updated the parent account form to capture an optional guardian contact phone. The existing invitation Edge Function validates the length, saves it to a newly created parent profile, and fills an existing profile phone only when that field is blank. A non-empty global profile phone is never overwritten by a school invitation. Existing guardian relationship and invitation-acceptance behavior are unchanged.
+- Student enrolment now captures optional guardian email alongside the existing guardian name and phone fields. The student record list displays the email and includes guardian email in search. The parent-child selection list now displays the student's full name including middle name.
+- Removed the direct hard-delete handler from the student page. Student exit continues through the existing schoolpro_transfer_student_out RPC, which marks the student withdrawn, records transfer details, closes active enrollment history, releases active transport/hostel allocations and writes an audit event. Academic and financial history is not deleted.
+- Added scripts/test-schoolpro-student-family-records.mjs, registered it as test:schoolpro-student-family-records in package.json, and wired it into the SchoolPro CI validation job.
+- Implementation commits: parent phone form 50cfc29; initial invitation phone handling 45dd9f5; student guardian email and removal of delete UI 6b85e2f; delete-handler removal a6b3c22; invitation phone validation/preservation 27c2139; invitation-order correction c51f4bb; family-record regression test 09bff93; package script 2c03d9f; CI wiring 612f273; guardian-email search cfcafc0; full-name parent-child selector 63d1a7f.
+- The connected Supabase inspection was read-only. No migration, DDL, DML, production data change, deployment, workspace creation or test-account creation occurred. No additional Supabase branch was created.
+- Exact-head SchoolPro CI and payment validation for the B2 code are pending. Do not mark B2 complete or merge PR #111 until those checks pass and the resulting head is reviewed. PR #111 remains draft/open/unmerged.

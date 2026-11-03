@@ -2010,3 +2010,12 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The remaining house/competition job failure was caused by the previous test-only rename replacing schema column names as well as the PL/pgSQL variable. The schema correctly uses `event_id` in competition criteria, entries and house-point ledger; only the PL/pgSQL local variable is `competition_event_id`.
 - Corrected the integration test to use the renamed local variable for values/RPC arguments while restoring the actual `event_id` column identifiers in INSERT column lists and the qualified ledger assertion.
 - This is a test-harness correction only. Exact-head PostgreSQL integration and payment validation remain required. No Supabase migration, production data change, deployment, workspace creation or PR merge occurred.
+
+
+### B6 exact-head validation — competition test variable ambiguity — 2026-11-03
+
+- Exact-head SchoolPro CI #2394 on PR head `8393267ad8605a68813d1c4e80a33331f3979014` completed with only `houses-and-house-allocation-integration` failing. The application validate job (TypeScript, source assertions and production build), all other listed database integration jobs, and payment-page validation #2119 passed. Tenant acceptance remained skipped because there are no active workspaces.
+- The house/competition SQL test itself successfully passed the default-house, balanced automatic allocation, manual reassignment history, House Master eligibility and downgrade-cleanup assertions. The competition block then failed because local PL/pgSQL variable `house_id` shadowed the standings view column in its final assertion.
+- Renamed only the competition-block local variable to `competition_house_id`, retaining the real schema column names `house_id` and `event_id`. Also corrected the cross-school competition-entry INSERT column list to use the actual `event_id` column (not the similarly named local variable).
+- Test-only fixes committed as `2dd0229` and follow-up schema-column correction as `ee1e4aa`. Exact-head CI and payment validation must be checked again on the new head. Do not proceed to result aggregation/publication until the combined integration job passes.
+- No production migration, live data change, workspace creation, deployment or PR merge occurred.

@@ -1783,3 +1783,14 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Corrected the enrollment-reader helper to call `private.schoolpro_member_can_manage(s.id)` (not the nonexistent public-schema function). Fix commit: `60ab8c1e0c5ac4b981c2d3f0767b52e6ddc61c95`.
 - Exact-head SchoolPro CI run `41624177698` succeeded, including `Section leadership authorization (disposable PostgreSQL)` job `125877216094`. Payment validation run `41624177667` also succeeded. All executed database integration jobs passed; tenant acceptance was skipped because there are no active workspaces.
 - The migration remains unapplied to production. No production schema/data changes, deployments, workspaces or test accounts. PR #111 remains open/draft/unmerged.
+
+
+### Stage B1 academic calendar — expanded authenticated RLS and attendance stamping validated — 2026-11-03
+
+- Expanded `scripts/test-academic-sessions-postgres.integration.sql` to attach the activity-period trigger to the disposable attendance table and execute the migration's stamping function through actual attendance inserts.
+- Added a historical `2024/2025` term fixture and asserted that an explicitly supplied historical session is preserved together with its matching `First Term`; date-based inference for the configured `2025/2026` session continues to stamp the matching session and term.
+- Added a real foreign-school session/history row before authenticated role switching. The authenticated teacher is asserted to see only its own school's session and no calendar history; the exam officer is asserted to see all five own-school history events but no foreign-school session or history.
+- Extended `scripts/test-academic-sessions.mjs` to assert that these integration contracts remain present.
+- Exact code head `c7bd6d79402230229703126747af360b8de38c48`: SchoolPro CI run `41625879970` passed, including `Academic calendar migration (disposable PostgreSQL)` job `125882970885`. Its log ends with the explicit PASS for migration, calendar history, immutable guards, school cascades, authenticated RLS and activity session stamping. All other executed CI jobs also passed; tenant acceptance was skipped because there are no active workspaces.
+- Payment validation run `41625879709` passed on the same exact head.
+- This validates the calendar migration behavior in disposable PostgreSQL only. The migration remains unapplied to production; no production data/schema change, deployment, workspace or test account was created. PR #111 remains open/draft/unmerged.

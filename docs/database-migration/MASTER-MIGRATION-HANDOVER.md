@@ -1994,3 +1994,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Fixed malformed JSX closing syntax on the Staff and Games routes, and corrected house-points form state references.
 - Exact CI run #2384 reported a house-test PL/pgSQL ambiguity: the test variable `member_id` shadowed the same-named table column in assertions. Renamed the test variable to `teacher_member_id`. That run's TypeScript failure was from the malformed routes; those are now corrected. A subsequent exact-head run is still required.
 - Do not mark B6 validated until the latest TypeScript checks and the combined house/competition PostgreSQL integration job pass. No Supabase migration, deployment, or PR merge has been performed.
+
+
+### B6 exact-head validation findings and fixes — 2026-11-03
+
+- Exact PR-head validation on `b22da8ffa021882133593281918a8dbdb3c1e109` completed with failures in both SchoolPro CI run #2389 and payment-page validation run #2114. The payment validation failure was the same TypeScript issue as the main CI failure; it was not an independent payment-page defect.
+- TypeScript identified the Games page helper signature as too restrictive: Supabase PostgREST query/RPC builders are awaitable (`PromiseLike`) but are not native `Promise` instances. Updated the `run` helper argument type to `PromiseLike<{ error: any; data?: any }>` so it accepts the actual Supabase builder return types while preserving awaited error handling.
+- The house/competition PostgreSQL integration failed in the competition assertion because the PL/pgSQL variable `event_id` was ambiguous with the ledger table column `event_id`. Renamed the test-block variable and its references to `competition_event_id`; the ledger column remains explicitly qualified.
+- Both source/test fixes are committed to the PR branch. The next required action is exact-head CI and payment validation; neither failure is considered resolved until those workflows pass. No Supabase migration, production data change, deployment, workspace creation or PR merge occurred.

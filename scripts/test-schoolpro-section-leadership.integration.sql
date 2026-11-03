@@ -30,13 +30,13 @@ alter table public.schoolpro_enrollment_history enable row level security;
 create policy "Authorized school enrollment history" on public.schoolpro_enrollment_history for select to authenticated using(true);
 create table public.schoolpro_subjects(id uuid primary key, school_id uuid not null);
 create table public.schoolpro_guardian_links(school_id uuid,student_id uuid,guardian_user_id uuid,status text);
-create table public.schoolpro_subject_assignments(school_id uuid,class_id uuid,teacher_member_id uuid);
+create table public.schoolpro_subject_assignments(school_id uuid,class_id uuid,teacher_member_id uuid,subject_id uuid,session text);
 create table public.schoolpro_audit_logs(
  school_id uuid, actor_id uuid, action text, entity_type text, entity_id uuid, metadata jsonb
 );
 create table public.schoolpro_results(
  id uuid primary key, school_id uuid not null, student_id uuid not null, subject_id uuid not null,
- session text not null, ca_score numeric, exam_score numeric, assessment_scores jsonb,
+ session text not null, term text, ca_score numeric, exam_score numeric, assessment_scores jsonb,
  assessment_scheme_id uuid, status text not null, approved_by uuid, approved_at timestamptz,
  published_at timestamptz
 );
@@ -100,6 +100,15 @@ begin
  end if;
  if private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
    raise exception 'Head teacher must not lead an unassigned Primary section';
+ end if;
+ if private.schoolpro_can_read_student(student_p) then
+   raise exception 'Head teacher must not read students outside assigned section';
+ end if;
+ if not private.schoolpro_can_read_student(student_n) or not private.schoolpro_can_read_class(nursery_class) then
+   raise exception 'Head teacher must read students and classes in assigned section';
+ end if;
+ if private.schoolpro_can_read_class(primary_class) then
+   raise exception 'Head teacher must not read classes outside assigned section';
  end if;
  if not private.schoolpro_can_write_result(school,student_n,subject_id,'2025/2026') then
    raise exception 'Head teacher must be able to write results in assigned section';

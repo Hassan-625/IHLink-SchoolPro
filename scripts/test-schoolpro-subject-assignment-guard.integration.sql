@@ -45,7 +45,7 @@ create or replace function private.has_school_access(
 -- Execute the original migration to prove the replacement works against its real
 -- table and trigger definitions, then install the proposed corrected function.
 \ir ../supabase/migrations/20260916190636_school_academics_attendance_and_superadmin_access.sql
-\ir ../supabase/migrations/20261103110000_schoolpro_subject_assignment_teaching_role_guard.sql
+\ir ../supabase/migrations/20261103111000_schoolpro_subject_assignment_teaching_role_guard.sql
 \ir ../supabase/migrations/20261103130000_schoolpro_clear_ineligible_form_master.sql
 
 do $test$

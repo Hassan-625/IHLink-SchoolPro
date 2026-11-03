@@ -76,3 +76,65 @@ begin
 end
 $test$;
 select 'PASS: default houses, balanced automatic allocation, manual reassignment history, House Master eligibility and downgrade cleanup' as result;
+
+
+\ir ../supabase/migrations/20261103143000_schoolpro_competitions_staff_judges_scoring_and_house_points.sql
+
+do $competition_test$
+declare
+  school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  school_b uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  owner_id uuid := '10000000-0000-4000-8000-000000000001';
+  teacher_id uuid := '10000000-0000-4000-8000-000000000002';
+  event_id uuid;
+  criterion_id uuid;
+  entry_id uuid;
+  judge_id uuid;
+  house_id uuid;
+  score_id uuid;
+  award_id uuid;
+begin
+  select id into house_id from public.schoolpro_houses where school_id=school and code='red';
+  insert into public.schoolpro_competition_events(school_id,title,event_type,status,judging_guidelines,rules)
+  values(school,'Inter-house Debate','debate','open','Evidence, clarity, rebuttal and respectful conduct','{"format":"team debate"}'::jsonb)
+  returning id into event_id;
+  insert into public.schoolpro_competition_criteria(school_id,event_id,name,description,max_points,weight)
+  values(school,event_id,'Argument quality','Reasoning and evidence',40,1.5)
+  returning id into criterion_id;
+  insert into public.schoolpro_competition_entries(school_id,event_id,house_id,entry_name)
+  values(school,event_id,house_id,'Red House Debate Team') returning id into entry_id;
+  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+  judge_id := public.schoolpro_assign_competition_judge(school,event_id,
+    '20000000-0000-4000-8000-000000000002','chief_judge');
+  if judge_id is null or not exists(select 1 from public.schoolpro_competition_judges where id=judge_id and member_id='20000000-0000-4000-8000-000000000002' and panel_role='chief_judge' and ended_at is null) then
+    raise exception 'ASSERT: staff judge was not assigned to the event panel';
+  end if;
+  perform set_config('request.jwt.claim.sub',teacher_id::text,true);
+  score_id := public.schoolpro_record_competition_score(school,event_id,entry_id,criterion_id,35,'Strong evidence and rebuttal');
+  if not exists(select 1 from public.schoolpro_competition_scores where id=score_id and judge_assignment_id=judge_id and points=35) then
+    raise exception 'ASSERT: assigned staff judge score was not recorded';
+  end if;
+  begin
+    perform public.schoolpro_record_competition_score(school,event_id,entry_id,criterion_id,41,'Over maximum');
+    raise exception 'ASSERT: score above rubric maximum was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+  award_id := public.schoolpro_award_house_points(school,house_id,10,'Debate participation and result',event_id,entry_id);
+  if not exists(select 1 from public.schoolpro_house_point_ledger where id=award_id and points=10 and event_id=event_id) then
+    raise exception 'ASSERT: house points were not ledgered against the competition';
+  end if;
+  if not exists(select 1 from public.schoolpro_house_competition_standings where school_id=school and house_id=house_id and total_points=10) then
+    raise exception 'ASSERT: house competition standings did not include awarded points';
+  end if;
+  begin
+    insert into public.schoolpro_competition_entries(school_id,event_id,house_id,entry_name)
+    values(school,event_id,(select id from public.schoolpro_houses where school_id=school_b limit 1),'Foreign house entry');
+    raise exception 'ASSERT: cross-school house entry was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+  end;
+end
+$competition_test$;
+select 'PASS: staff judge panels, rubric scoring limits, tenant-safe entries, house point ledger and standings' as result;

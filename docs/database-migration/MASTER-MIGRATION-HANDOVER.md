@@ -1943,3 +1943,17 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - RLS protects house, appointment and student-house-history reads. Mutations are exposed through authenticated RPCs that require the school games permission. No direct table write policies were added.
 - Added disposable PostgreSQL integration coverage and a CI job for default-house seeding, balanced allocation, manual reassignment history, tenant boundaries and House Master eligibility/downgrade.
 - Competition/event/rubric/judging/points schema and UI remain the next B6 slice. No production migration, live data change, deployment, test workspace creation or PR merge was performed.
+
+
+## Stage B6 — Competition events, staff judging and house standings — 2026-11-03
+
+- Corrected the literal escaped-newline defect in the house-master helper grant statement in `20261103142000_schoolpro_houses_and_student_house_history.sql`. The prior CI failure stopped at this syntax defect before exercising house allocation behavior.
+- Added proposed migration `20261103143000_schoolpro_competitions_staff_judges_scoring_and_house_points.sql`.
+- Competition events support sports, athletics, debate, quiz, cultural, academic and custom event types; optional session/term labels; event rules and eligibility JSON; judging guidelines; lifecycle states; and start/end dates.
+- Added configurable weighted scoring criteria with maximum points, house/team entries and participant details.
+- Staff judges are explicit event assignments selected from the same school's staff records. A judging panel can designate chief judges, judges, timekeepers, referees and moderators; assignments have an end timestamp and retain history. Staff can be assigned to multiple events, but only once per event while active.
+- Assigned judges can submit scores only for events to which they are actively assigned. Scores are linked to the event, entry, rubric criterion and judge assignment; a database trigger enforces tenant consistency and rejects scores above the criterion maximum. A judge can revise their own criterion score through the scoring RPC while the event is open/scoring.
+- Added an append-only house-point ledger and a security-invoker standings view. Awards retain the awarding staff identity, reason, optional event and entry references; positive and negative adjustments are supported for corrections/penalties.
+- Added disposable PostgreSQL assertions for staff judge appointment, rubric score recording and maximum enforcement, cross-school house-entry rejection, point ledger insertion and house standings. These run in the existing house-allocation integration job; no live workspace or account is needed.
+- The first exact-head run `41643968457` failed because the house migration contained a literal `\\n` before a GRANT statement. The migration syntax has been corrected; the previous run is not evidence of a passing house or competition test. New exact-head CI/payment validation is required.
+- These migrations and tests are repository-only. Do not apply them to Supabase, deploy, create workspaces, or merge PR #111 without explicit authorization and passing exact-head validation.

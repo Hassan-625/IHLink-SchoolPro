@@ -2050,3 +2050,10 @@ This section supersedes older stage-status summaries above where they conflict.
 - Fix committed on the existing Stage B branch as `076ae3be52f5e769499a4f6f4dd5cb935486366e`. This only changes the disposable PostgreSQL integration test script; no migration was applied to Supabase and no production data, deployment, or PR merge occurred.
 - Previous head `f109fc7aa22e2bbe802ad01b256908ad5b26ca16`: payment-page validation passed; SchoolPro CI failed only in `houses-and-house-allocation-integration` because of the malformed include. All other CI jobs passed; tenant acceptance was skipped because there are no active workspaces.
 - Await fresh CI and payment-page validation on the corrected head before treating B6 result aggregation/approval/publication as validated.
+
+## 2026-11-03 — B6 result authorization test-fixture correction
+
+- After the psql include syntax fix, SchoolPro CI #2404 reached the competition result authorization assertion and failed because the test expected a teacher to be denied approval, but the shared teacher fixture had been changed to `administrator` earlier in the House Master downgrade-cleanup test.
+- The production approval and publication RPCs already check `private.schoolpro_module_allowed(p_school,'games')`; the failure was caused by test-fixture state leaking between assertions, not evidence that a judge bypassed the production permission check.
+- Restored the fixture membership role to `teacher` immediately after verifying that downgrading the role closed the House Master appointment. This keeps the downgrade-cleanup assertion while ensuring the later assigned-judge approval denial test exercises a non-Games role.
+- Test correction committed as `7bfadeec22fcec4cd94f6f8786e94f5ce63b8303`. Await fresh CI on this head; no production migration, Supabase change, deployment, or PR merge.

@@ -37,7 +37,7 @@ const classes=[
  {id:'class-old',name:'Primary 1',arm:'A',level:'primary'},
  {id:'class-final',name:'Basic 5',arm:'B',level:'primary'},
 ];
-assert.equal(studentClass(historical[0],classes)?.id,'class-old','Historical class count must use the selected-session class, not the student's current class.');
+assert.equal(studentClass(historical[0],classes)?.id,'class-old','Historical class count must use the selected-session class, not the current class assigned to the student.');
 assert.equal(historical.filter(student=>studentClass(student,classes)?.id==='class-old').length,1,'Historical class roster count must include the student after a current-class change.');
 assert.equal(studentClass(historical[1],classes)?.id,'class-final','Graduated students must remain visible in their historical class roster.');
 

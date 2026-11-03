@@ -19,4 +19,7 @@ assert.match(integration,/Head teacher must read students and classes in assigne
 assert.match(integration,/section leader approved result outside assigned section/i);
 assert.match(integration,/Vice principal must not lead unassigned Nursery section/i);
 assert.match(integration,/Section leader removal failed/i);
+assert.match(migration,/schoolpro_can_read_student/i);
+assert.match(migration,/schoolpro_can_read_class/i);
+assert.match(migration,/alter policy "Result access gate"/i);
 console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

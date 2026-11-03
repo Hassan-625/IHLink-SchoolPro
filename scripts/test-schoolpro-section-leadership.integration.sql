@@ -49,7 +49,7 @@ returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role=any(p_roles))
 $;
 create or replace function private.schoolpro_result_access(uuid,text,text)
-returns table(allowed boolean) language sql stable as $ select true $;
+returns table(allowed boolean) language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 create trigger enforce_result_workflow before update on public.schoolpro_results
 for each row execute function private.enforce_result_workflow();

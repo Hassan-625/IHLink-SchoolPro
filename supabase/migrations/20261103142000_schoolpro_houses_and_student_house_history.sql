@@ -71,7 +71,8 @@ as $$
       and m.role in ('teacher'::public.school_member_role, 'class_teacher'::public.school_member_role)
   )
 $$;
-revoke all on function private.schoolpro_is_house_master(uuid,uuid) from public, anon;\ngrant execute on function private.schoolpro_is_house_master(uuid,uuid) to authenticated;
+revoke all on function private.schoolpro_is_house_master(uuid,uuid) from public, anon;
+grant execute on function private.schoolpro_is_house_master(uuid,uuid) to authenticated;
 
 create policy "School games staff and assigned house masters read houses"
 on public.schoolpro_houses for select to authenticated

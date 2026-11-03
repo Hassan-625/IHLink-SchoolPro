@@ -50,7 +50,7 @@ assert.match(bulkActions,/student_id:student\.id,class_id:student\.class_id/,'Bu
 assert.match(subjectsPage,/members\.filter\(x=>\[\"teacher\",\"class_teacher\"\]\.includes\(x\.role\)\)\.map\(x=><option/,'Subject allocations must offer only staff whose school role carries teaching responsibility.');
 assert.match(staffPage,/eligibleTeachingMembers=new Set\(\(data\|\|\[\]\)\.filter\(m=>\[\"teacher\",\"class_teacher\"\]\.includes\(m\.role\)\)/,'Staff responsibility labels must not present former teaching allocations as active after a role change.');
 assert.match(classesPage,/schoolpro_set_form_master/,'Class management must expose the backend-validated Form Master assignment workflow.');
-assert.match(classesPage,/\.in\('role',\[\"teacher\",\"class_teacher\"\]\)/,'Form Master selection must offer only eligible teaching roles.');
+assert.match(classesPage,/\.in\(\"role\",\[\"teacher\",\"class_teacher\"\]\)/,'Form Master selection must offer only eligible teaching roles.');
 assert.match(assignmentGuard,/member_role not in \('teacher', 'class_teacher'\)/i,'The database trigger must accept only the teaching roles offered by the subject-assignment UI.');
 assert.match(assignmentGuard,/class_school <> new\.school_id/i,'Subject assignments must reject classes from another school.');
 assert.match(assignmentGuard,/subject_school <> new\.school_id/i,'Subject assignments must reject subjects from another school.');

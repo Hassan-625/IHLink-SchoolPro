@@ -2033,3 +2033,11 @@ This section supersedes older stage-status summaries above where they conflict.
 - New integration assertions were appended to `scripts/test-schoolpro-houses-and-allocation.integration.sql` for the 87.50 weighted score fixture, ranking, rejection of approval by a judge without Games management permission, approval/publication audit fields, and retained result snapshot.
 - These latest result-calculation changes are committed on the PR branch but have not yet completed CI. Do not claim them validated until the new head's full SchoolPro CI and payment-page validation complete.
 - Next action: inspect the latest commit and CI run. Fix only concrete failures. Once green, continue B6 UI work to expose result preview/version, approval, publication and published-result-based house awards. Preserve the no-production-write/no-merge/no-deployment boundary.
+
+
+### B6 result migration CI harness correction (2026-11-03)
+
+- CI run #41653140463 exposed that the house/competition disposable PostgreSQL script invoked the new result RPCs without first applying the result migration. The earlier house allocation and competition/judging tests passed; the failure was specifically that schoolpro_calculate_competition_results(uuid,uuid) did not exist in the test database.
+- Corrected scripts/test-schoolpro-houses-and-allocation.integration.sql to include supabase/migrations/20261103144000_schoolpro_competition_result_approval_and_publication.sql before the result calculation assertions.
+- Commit: 4cf319b27f6600e6d6beff959f140ffa46726e0f.
+- New CI run is expected for this head. Result calculation, approval and publication remain unvalidated until that run completes. No production changes.

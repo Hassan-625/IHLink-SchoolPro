@@ -1904,3 +1904,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Updated the responsibility projection to label Form Master / subject allocations only for members whose current role is `teacher` or `class_teacher`. This is a display correction; it does not delete or rewrite historical assignment records and does not change authorization.
 - Added a regression assertion to `scripts/test-school-session-rosters.mjs`.
 - Attendance remains governed separately by the Form Master scoped RLS migration and its disposable-PostgreSQL test; this UI correction does not grant attendance access.
+
+### Stage B4 — class-level Form Master assignment UI — 2026-11-03
+
+- The database RPC `schoolpro_set_form_master(p_class,p_member)` already validates school ownership, Classes-module access, leadership authority, and same-school membership with role `teacher` or `class_teacher`.
+- The Classes & Arms page previously had no control to assign or change a class Form Master, leaving the validated backend workflow inaccessible through the normal interface.
+- Added a Form Master selector to each class row. It loads only same-school teaching-role members and calls the existing RPC; it does not write `form_teacher_id` directly.
+- Added regression assertions for the RPC call and the eligible-role query to `scripts/test-school-session-rosters.mjs`, which runs in SchoolPro CI.
+- No database migration or production data change was made. Current-head CI is required to validate this UI and test update.

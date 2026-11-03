@@ -24,7 +24,8 @@ create table public.admin_product_access(
 );
 create table public.schoolpro_schools(id uuid primary key);
 create table public.schoolpro_classes(
-  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id)
+  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
+  form_teacher_id uuid
 );
 create table public.schoolpro_subjects(
   id uuid primary key, school_id uuid not null references public.schoolpro_schools(id)
@@ -83,6 +84,20 @@ begin
   set teacher_member_id=null
   where id=assignment_id;
 
+  -- Form Master is an active teaching responsibility. Demotion clears the
+  -- current class assignment, while subject allocation history is retained.
+  update public.schoolpro_subject_assignments
+  set teacher_member_id=teacher_a
+  where id=assignment_id;
+  update public.schoolpro_classes set form_teacher_id=teacher_a where id=class_a;
+  update public.schoolpro_members set role='administrator' where id=teacher_a;
+  if (select form_teacher_id from public.schoolpro_classes where id=class_a) is not null then
+    raise exception 'ASSERT: Form Master assignment survived a move out of teaching roles';
+  end if;
+  if (select teacher_member_id from public.schoolpro_subject_assignments where id=assignment_id) is distinct from teacher_a then
+    raise exception 'ASSERT: historical subject allocation was unexpectedly deleted';
+  end if;
+
   -- Leadership roles are not eligible teaching allocations.
   begin
     insert into public.schoolpro_subject_assignments(school_id,class_id,subject_id,teacher_member_id,session)
@@ -124,4 +139,4 @@ begin
 end;
 $test$;
 
-select 'PASS: subject assignment trigger accepts teacher/class_teacher and null allocations; rejects leadership roles and cross-school class, subject, and member references.' as result;
+select 'PASS: subject assignment trigger enforces teaching roles and tenant boundaries; Form Master assignment clears on role downgrade while subject allocation history remains.' as result;

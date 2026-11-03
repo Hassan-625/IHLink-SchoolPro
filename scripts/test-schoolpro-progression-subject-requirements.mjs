@@ -24,4 +24,10 @@ assert.match(migration,/private\.schoolpro_module_allowed\(p_school,'promotions'
 assert.match(migration,/All three terms must be published/i,'The annual publication gate must remain.');
 
 assert.match(prior,/v_average\s*<\s*45/i,'The preceding 45% migration remains the historical source.');
+assert.match(ui,/Configure subject pass requirements/i,'School managers need a configuration surface for subject requirements.');
+assert.match(ui,/schoolpro_progression_subject_requirements/i,'The UI must load and save school-scoped subject requirements.');
+assert.match(ui,/Minimum subject score percentage/i,'The configured subject minimum must be editable.');
+assert.match(integration,/Student failing a configured subject minimum should repeat/i,'Disposable PostgreSQL must cover subject failure decisions.');
+assert.match(integration,/Missing subject term evidence must be reported/i,'Disposable PostgreSQL must cover incomplete subject results.');
+assert.match(integration,/cross-school subject rule unexpectedly succeeded/i,'Disposable PostgreSQL must cover subject tenant isolation.');
 console.log('PASS: subject requirements are school-scoped, class-scoped, bounded, term-complete, audited, and integrated with reviewed progression.');

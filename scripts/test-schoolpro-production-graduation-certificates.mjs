@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 const migration = readFileSync('supabase/migrations/20261103110000_schoolpro_production_graduation_certificates.sql', 'utf8');
 const studio = readFileSync('src/pages/schoolpro/SchoolProDocumentStudio.tsx', 'utf8');
 const testingWorker = readFileSync('supabase/functions/schoolpro-testing-certificate-worker/index.ts', 'utf8');
+const integration = readFileSync('scripts/test-schoolpro-production-graduation-certificates.integration.sql', 'utf8');
 
 assert.match(migration, /trg_schoolpro_graduation_certificate_issue/);
 assert.match(migration, /v_student\.status <> 'graduated'/);
@@ -22,6 +23,12 @@ assert.match(studio, /s\.status==='graduated'/);
 assert.match(studio, /s\?\.status!=='graduated'/);
 assert.match(studio, /progression_session:t\?\.document_type==='certificate'\?issue\.session/);
 assert.match(studio, /Choose a certificate template and a class containing graduated students/);
+
+assert.match(integration, /Only graduated students are eligible/);
+assert.match(integration, /An applied graduation decision is required/);
+assert.match(integration, /Not authorized to issue graduation certificates/);
+assert.match(integration, /schoolpro_document_issue_events/);
+assert.match(integration, /Generic document issuance regressed/);
 
 // The existing synthetic-only worker must remain isolated and unchanged in purpose.
 assert.match(testingWorker, /IH-TST-/);

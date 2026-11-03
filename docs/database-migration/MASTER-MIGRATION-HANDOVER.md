@@ -1714,3 +1714,21 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The canonical `AcademicPeriodSelect` currently generates sessions from 2001/2002 through the current year plus next year (26 entries in 2026), includes a selected session if outside that range, and is shared by the session controls. Its test already checks the 2001/2002–2026/2027 range. No arbitrary shorter dropdown limit was found in the traced canonical selector.
 - Subject-specific promotion requirements (for example English and Mathematics minimums configured by each school) remain unimplemented and must be designed as a separate school-configurable rule set; the 45% annual-average default does not substitute for those optional requirements.
 - PR #111 remains open/draft/unmerged. No production migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.
+
+
+### Stage B1 progression threshold — validated — 2026-11-03
+
+- The 45% repeat-threshold implementation passed exact-head SchoolPro CI run `41601671962` and payment validation run `41601672162` on handover commit `29ce21fc8cd3f738e22d4c599abb013c63ef3466`.
+- Every executed SchoolPro CI job passed, including typecheck/build validation, Form Master attendance PostgreSQL integration, academic-calendar PostgreSQL integration, receipt Storage isolation, payment-review RLS, result-verification exposure, result-PIN, public-admission and tenant-integrity integrations. Tenant acceptance was skipped because there are no active workspaces.
+- The replacement progression function uses the agreed strict below-45% annual-average repeat default while retaining the three-published-term gate and reviewed-then-apply progression flow. The migration remains a draft proposal and has not been applied to production.
+
+
+### Stage B1 incremental assessment entry — implementation pending validation — 2026-11-03
+
+- Traced `SchoolProResults.tsx`: the assessment scheme already supports multiple independently named components (assignments, tests, examination), but the entry form required every component in one save and converted blank components to zero. This did not meet the requirement for a section head to enter one assignment/test at a time.
+- Updated `saveScore` to accept one or more entered components, reject an empty submission, validate entered values against the configured component maximums, and merge the entered values into the existing draft `assessment_scores` object. Previously saved components are retained; the database continues to calculate `total_score` from the full assessment score map.
+- The existing assessment scheme is retained for an existing result; switching schemes mid-entry is blocked. Existing approved/published/locked result protections remain in force. After a successful component save, the form retains the selected student/subject and clears only the current input values so the next component can be entered.
+- Added a user-facing explanation, `scripts/test-schoolpro-incremental-assessment-entry.mjs`, package script and SchoolPro CI step.
+- Implementation commits: UI `e5785ed`, regression test `a472abc`, package script `6431cbb`, CI wiring `3dd6317`.
+- Exact-head SchoolPro CI and payment validation for incremental entry are pending. Do not treat this change as validated until both finish successfully. No production schema or data change is involved.
+- PR #111 remains open/draft/unmerged. No production migration, production data change, deployment, workspace creation, new Supabase branch, or live tenant acceptance occurred.

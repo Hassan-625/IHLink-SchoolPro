@@ -28,7 +28,7 @@ declare
  owner_id uuid := '10000000-0000-4000-8000-000000000001';
  teacher_id uuid := '10000000-0000-4000-8000-000000000002';
  admin_id uuid := '10000000-0000-4000-8000-000000000003';
- member_id uuid := '20000000-0000-4000-8000-000000000002';
+ teacher_member_id uuid := '20000000-0000-4000-8000-000000000002';
  student_a uuid := '30000000-0000-4000-8000-000000000001';
  student_b uuid := '30000000-0000-4000-8000-000000000002';
  student_c uuid := '30000000-0000-4000-8000-000000000003';
@@ -44,7 +44,7 @@ begin
  select id into blue from public.schoolpro_houses where school_id=school and code='blue';
  select id into yellow from public.schoolpro_houses where school_id=school and code='yellow';
  insert into public.schoolpro_members values
-  (member_id,school,teacher_id,'teacher'),
+  (teacher_member_id,school,teacher_id,'teacher'),
   ('20000000-0000-4000-8000-000000000003',school,admin_id,'administrator');
  insert into public.schoolpro_students values
   (student_a,school,null,'active'),(student_b,school,null,'active'),(student_c,school,null,'active');
@@ -52,12 +52,12 @@ begin
    raise exception 'ASSERT: automatic allocation did not distribute students across the least-populated houses';
  end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_house_master(school,red,member_id);
- if not exists(select 1 from public.schoolpro_house_master_assignments where school_id=school and house_id=red and member_id=member_id and ended_at is null) then
+ perform public.schoolpro_set_house_master(school,red,teacher_member_id);
+ if not exists(select 1 from public.schoolpro_house_master_assignments where school_id=school and house_id=red and teacher_member_id=teacher_member_id and ended_at is null) then
    raise exception 'ASSERT: eligible teaching staff was not appointed as House Master';
  end if;
  begin
-   perform public.schoolpro_set_house_master(school_b,red,member_id);
+   perform public.schoolpro_set_house_master(school_b,red,teacher_member_id);
    raise exception 'ASSERT: cross-school house assignment succeeded';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
@@ -69,8 +69,8 @@ begin
  if not exists(select 1 from public.schoolpro_student_house_history where student_id=student_a and house_id<>blue and effective_to is not null) then
    raise exception 'ASSERT: previous house assignment history was overwritten';
  end if;
- update public.schoolpro_members set role='administrator' where id=member_id;
- if exists(select 1 from public.schoolpro_house_master_assignments where member_id=member_id and ended_at is null) then
+ update public.schoolpro_members set role='administrator' where id=teacher_member_id;
+ if exists(select 1 from public.schoolpro_house_master_assignments where teacher_member_id=teacher_member_id and ended_at is null) then
    raise exception 'ASSERT: House Master appointment survived teaching-role downgrade';
  end if;
 end

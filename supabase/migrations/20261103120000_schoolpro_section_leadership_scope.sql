@@ -187,7 +187,7 @@ as $$
    select 1 from public.schoolpro_students s
    where s.id=p_student and private.schoolpro_operationally_active(s.school_id)
    and (
-     private.is_admin(array['super_admin'::public.user_role[]])
+     private.is_admin(array['super_admin'::public.user_role])
      or s.user_id=auth.uid()
      or exists(select 1 from public.schoolpro_guardian_links g
        where g.school_id=s.school_id and g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')

@@ -1965,3 +1965,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Assigned judges receive read access only to their own event, its criteria and entries; they do not receive general games administration access. Judge score submission remains limited to active panel assignments.
 - The house and competition integration script now runs both migrations in sequence and covers a chief-judge staff assignment, valid score, over-maximum rejection, cross-school house-entry rejection and house standings.
 - Exact-head CI has not yet reported a run for the latest commit. Do not treat the migrations as validated until the new PostgreSQL integration job and the full SchoolPro CI/payment checks complete successfully.
+
+
+## B6 — Houses, Games and Competitions workspace UI — 2026-11-03
+
+- Added `src/pages/schoolpro/SchoolProGames.tsx` and registered `/schoolpro/games` behind the `games` permission. Added a school navigation item and path-to-permission mapping.
+- The workspace provides house configuration, House Master appointment and appointment history, manual house assignment for transfer/existing students, competition event creation, event-specific weighted rubric criteria, house/team entries, staff judging-panel assignments, judge score entry, manual house-point adjustments/penalties, and inter-house standings.
+- House Masters are selected from teachers/class teachers; event judges are selected from the school's staff records and can be assigned as chief judge, judge, timekeeper, referee or moderator.
+- Staff judges can use the score submission flow only when authenticated as an active judge assigned to that event. Games administrators manage event configuration and scoring panels.
+- The page uses the current school's scoped Supabase queries and existing RPCs; no client-side demo data or test workspaces were introduced.
+- UI is committed to PR #111. Typecheck/build and disposable PostgreSQL integration remain pending for the exact latest head. Do not apply migrations to Supabase or deploy until those checks pass and the user authorizes the next stage.

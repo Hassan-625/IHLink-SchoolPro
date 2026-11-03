@@ -14,7 +14,8 @@
     "test:academic-sessions": "node scripts/test-academic-sessions.mjs",
     "test:school-session-rosters": "node scripts/test-school-session-rosters.mjs",
     "test:form-master-attendance": "node scripts/test-schoolpro-form-master-attendance-scope.mjs",
-    "test:schoolpro-progression-threshold": "node scripts/test-schoolpro-progression-threshold.mjs"
+    "test:schoolpro-progression-threshold": "node scripts/test-schoolpro-progression-threshold.mjs",
+    "test:schoolpro-incremental-assessment": "node scripts/test-schoolpro-incremental-assessment-entry.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

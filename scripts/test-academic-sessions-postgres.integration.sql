@@ -188,8 +188,8 @@ end;
 $fixture$;
 
 -- Create a real foreign-tenant session/history row so negative visibility checks are not vacuous.
-select set_config('request.test.school_id', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', true);
-select set_config('request.test.school_role', 'proprietor', true);
+select set_config('request.test.school_id', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', false);
+select set_config('request.test.school_role', 'proprietor', false);
 select public.schoolpro_save_academic_session(
   'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', '2025/2026',
   date '2025-09-01', date '2026-07-31', 'Foreign tenant fixture'

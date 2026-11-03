@@ -1957,3 +1957,11 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - Added disposable PostgreSQL assertions for staff judge appointment, rubric score recording and maximum enforcement, cross-school house-entry rejection, point ledger insertion and house standings. These run in the existing house-allocation integration job; no live workspace or account is needed.
 - The first exact-head run `41643968457` failed because the house migration contained a literal `\\n` before a GRANT statement. The migration syntax has been corrected; the previous run is not evidence of a passing house or competition test. New exact-head CI/payment validation is required.
 - These migrations and tests are repository-only. Do not apply them to Supabase, deploy, create workspaces, or merge PR #111 without explicit authorization and passing exact-head validation.
+
+
+### B6 implementation refinement — judge access and setup permissions — 2026-11-03
+
+- Competition setup tables (events, rubric criteria and entries) grant authenticated insert/update/delete privileges guarded by the games-module RLS policy. Judge assignments, score writes and house-point ledger writes remain RPC-controlled.
+- Assigned judges receive read access only to their own event, its criteria and entries; they do not receive general games administration access. Judge score submission remains limited to active panel assignments.
+- The house and competition integration script now runs both migrations in sequence and covers a chief-judge staff assignment, valid score, over-maximum rejection, cross-school house-entry rejection and house standings.
+- Exact-head CI has not yet reported a run for the latest commit. Do not treat the migrations as validated until the new PostgreSQL integration job and the full SchoolPro CI/payment checks complete successfully.

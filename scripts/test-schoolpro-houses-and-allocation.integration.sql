@@ -101,7 +101,7 @@ begin
   insert into public.schoolpro_competition_criteria(school_id,event_id,name,description,max_points,weight)
   values(school,competition_event_id,'Argument quality','Reasoning and evidence',40,1.5)
   returning id into criterion_id;
-  insert into public.schoolpro_competition_entries(school_id,event_id,competition_house_id,entry_name)
+  insert into public.schoolpro_competition_entries(school_id,event_id,house_id,entry_name)
   values(school,competition_event_id,competition_house_id,'Red House Debate Team') returning id into entry_id;
   perform set_config('request.jwt.claim.sub',owner_id::text,true);
   judge_id := public.schoolpro_assign_competition_judge(school,competition_event_id,
@@ -125,7 +125,7 @@ begin
   if not exists(select 1 from public.schoolpro_house_point_ledger where schoolpro_house_point_ledger.id=award_id and points=10 and schoolpro_house_point_ledger.event_id=competition_event_id) then
     raise exception 'ASSERT: house points were not ledgered against the competition';
   end if;
-  if not exists(select 1 from public.schoolpro_house_competition_standings where schoolpro_house_competition_standings.school_id=school and schoolpro_house_competition_standings.competition_house_id=competition_house_id and total_points=10) then
+  if not exists(select 1 from public.schoolpro_house_competition_standings where schoolpro_house_competition_standings.school_id=school and schoolpro_house_competition_standings.house_id=competition_house_id and total_points=10) then
     raise exception 'ASSERT: house competition standings did not include awarded points';
   end if;
   begin

@@ -234,3 +234,20 @@ using (
    or private.schoolpro_member_leads_student_section(school_id,student_id,session))
   and coalesce((select a.allowed from private.schoolpro_result_access(student_id,term,session) a),false)
 );
+
+create or replace function private.schoolpro_prune_section_leadership_role()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+  if new.role not in ('head_teacher','vice_principal') then
+    delete from public.schoolpro_section_leaders
+    where school_id=new.school_id and member_id=new.id;
+  end if;
+  return new;
+end
+$$;
+revoke all on function private.schoolpro_prune_section_leadership_role() from public,anon,authenticated;
+drop trigger if exists schoolpro_prune_section_leadership_role on public.schoolpro_members;
+create trigger schoolpro_prune_section_leadership_role
+after update of role on public.schoolpro_members
+for each row execute function private.schoolpro_prune_section_leadership_role();

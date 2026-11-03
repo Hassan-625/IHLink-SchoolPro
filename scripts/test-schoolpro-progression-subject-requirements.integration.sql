@@ -151,10 +151,14 @@ begin
     (incomplete_student,english,'First Term',80),(incomplete_student,english,'Second Term',80),(incomplete_student,english,'Third Term',80)
   ) as data(student,subject,term,score);
 
+  insert into auth.users(id) values ('99999999-9999-4999-8999-999999999999');
   perform set_config('request.jwt.claim.sub','99999999-9999-4999-8999-999999999999',true);
 
   insert into public.schoolpro_progression_subject_requirements(school_id,subject_id,minimum_score)
   values(school,math,50);
+  if not exists(select 1 from public.schoolpro_progression_subject_requirements where school_id=school and subject_id=math and created_by='99999999-9999-4999-8999-999999999999' and updated_by='99999999-9999-4999-8999-999999999999') then
+    raise exception 'Requirement editor identity was not stamped';
+  end if;
 
   -- Cross-school subject references are rejected even when the caller can write.
   begin

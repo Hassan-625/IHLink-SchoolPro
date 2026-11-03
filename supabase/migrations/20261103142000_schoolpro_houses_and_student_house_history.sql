@@ -145,6 +145,8 @@ returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare chosen_house uuid;
 begin
+  -- Serialize per-school allocation so concurrent admissions cannot overfill the same house.
+  perform pg_advisory_xact_lock(hashtextextended(new.school_id::text, 0));
   -- Explicit assignment takes precedence; otherwise balance current active membership.
   if exists (select 1 from public.schoolpro_student_house_history
              where school_id = new.school_id and student_id = new.id and effective_to is null) then

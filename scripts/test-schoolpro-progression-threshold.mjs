@@ -11,5 +11,5 @@ assert.match(migration,/create_schoolpro_progression/,'The migration must contin
 assert.match(migration,/apply_schoolpro_promotion/,'The migration must preserve the reviewed-then-apply workflow.');
 assert.match(migration,/private\.schoolpro_module_allowed\(p_school,'promotions'\)/,'Progression module permission must remain enforced.');
 assert.match(bulk,/v_average<30/,'The original migration is preserved as historical migration source; the new migration supersedes it.');
-assert.match(ui,/annual average below 45% repeat/i,'The UI must explain the agreed 45% default threshold.');
+assert.match(ui,/annual averages below 45% repeat/i,'The UI must explain the agreed 45% default threshold.');
 console.log('PASS: default progression repeat threshold is below 45%; existing published-term and reviewed-apply guards remain.');

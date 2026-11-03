@@ -55,7 +55,7 @@ export function SchoolProGames(){
   ]);
   if(c.error||en.error||j.error||rr.error){setError('Competition details could not be loaded.');return;}
   setCriteria(c.data||[]);setEntries(en.data||[]);setJudges(j.data||[]);setResultRuns((rr.data||[]) as ResultRun[]);
-  const preferred=(rr.data||[]).find((r:any)=>r.status==='calculated'||r.status==='approved')||(rr.data||[]).find((r:any)=>r.status==='published');
+  const preferred=(rr.data||[]).find((r:any)=>['calculated','approved','published'].includes(r.status));
   setSelectedRun(preferred?.id||'');
  },[ctx.schoolId]);
  useEffect(()=>{void load()},[load]);

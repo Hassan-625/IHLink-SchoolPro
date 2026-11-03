@@ -23,6 +23,7 @@ jobs:
       - run: node scripts/test-schoolpro-form-master-attendance-scope.mjs
       - run: node scripts/test-schoolpro-progression-threshold.mjs
       - run: node scripts/test-schoolpro-progression-subject-requirements.mjs
+      - run: node scripts/test-schoolpro-production-graduation-certificates.mjs
       - run: node scripts/test-schoolpro-incremental-assessment-entry.mjs
       - run: node scripts/test-school-access-cache.mjs
       - run: node scripts/test-school-dashboard-roles.mjs

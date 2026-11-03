@@ -6,6 +6,7 @@ import ts from 'typescript';
 const source=readFileSync('src/lib/schoolSessionRoster.ts','utf8');
 const bulkActions=readFileSync('src/components/SchoolBulkAcademicActions.tsx','utf8');
 const classFilters=readFileSync('src/lib/schoolClassFilters.ts','utf8');
+const subjectsPage=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const exports={};
 vm.runInNewContext(compiled,{exports});
@@ -43,4 +44,5 @@ assert.equal(studentClass(historical[1],classes)?.id,'class-final','Graduated st
 
 assert.match(bulkActions,/schoolSessionStudents\(schoolId,session,pupils\.data\|\|\[\]\)/,'Bulk year-end actions must use the canonical session roster resolver, including the legacy fallback.');
 assert.match(bulkActions,/student_id:student\.id,class_id:student\.class_id/,'Bulk actions must pass resolved session-specific student IDs and class assignments.');
-console.log('PASS: legacy active-only fallback, empty historical session, historical class/arm projection, historical class counts, graduated roster visibility, and bulk-action roster consistency.');
+assert.match(subjectsPage,/members\.filter\(x=>\[\"teacher\",\"class_teacher\"\]\.includes\(x\.role\)\)\.map\(x=><option/,'Subject allocations must offer only staff whose school role carries teaching responsibility.');
+console.log('PASS: legacy active-only fallback, empty historical session, historical class/arm projection, historical class counts, graduated roster visibility, bulk-action roster consistency, and teaching-role-only subject allocation.');

@@ -1773,12 +1773,13 @@ Read-only inputs: live Supabase migration ledger for `lnqsroyiybutkfngbyge`, mig
 - The certificate workflow is validated in disposable PostgreSQL and exact-head CI. The migration remains a draft proposal and has not been applied to production. No production data/schema change, deployment, workspace creation, or test account creation occurred. PR #111 remains open/draft/unmerged.
 
 
-### Stage B1 section-scoped academic leadership — implementation added; CI pending — 2026-11-03
+### Stage B1 section-scoped academic leadership — implementation and exact-head CI validated — 2026-11-03
 
 - Added draft migration `supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql`. Section keys reuse `schoolpro_classes.level`: nursery, primary, junior_secondary, senior_secondary and other.
 - Added school-scoped assignments for head teachers and vice principals, managed through `schoolpro_set_section_leader`. The Staff & Access screen exposes per-section assignment checkboxes to school administrators.
-- Database authorization now scopes student/class reads, historical enrollment reads, result entry, and result approval/publication to explicit section assignments. Existing proprietor, administrator, exam-officer, subject-teacher, class-teacher, student and guardian paths are retained.
+- Database authorization scopes student/class reads, historical enrollment reads, result entry, and result approval/publication to explicit section assignments. Existing proprietor, administrator, exam-officer, subject-teacher, class-teacher, student and guardian paths are retained.
 - Role changes away from head_teacher/vice_principal automatically clear stale section assignments. Direct table writes are not granted to authenticated users; assignments are changed through the validated RPC and audit log.
 - Added source-contract and disposable PostgreSQL 16 integration tests at `scripts/test-schoolpro-section-leadership.mjs` and `scripts/test-schoolpro-section-leadership.integration.sql`; wired them into SchoolPro CI.
-- Exact current PR head: `6e2aa5883dde269fe9017a7e121fec99c9de5dca`. SchoolPro CI run `41619806993` and payment validation run `41619807061` are queued; the dedicated section-leadership PostgreSQL job has not executed yet. Do not mark this work validated until those runs complete successfully.
-- Migration remains unapplied to production. No production schema/data changes, deployments, workspaces or test accounts. PR #111 remains open/draft/unmerged.
+- Corrected the enrollment-reader helper to call `private.schoolpro_member_can_manage(s.id)` (not the nonexistent public-schema function). Fix commit: `60ab8c1e0c5ac4b981c2d3f0767b52e6ddc61c95`.
+- Exact-head SchoolPro CI run `41624177698` succeeded, including `Section leadership authorization (disposable PostgreSQL)` job `125877216094`. Payment validation run `41624177667` also succeeded. All executed database integration jobs passed; tenant acceptance was skipped because there are no active workspaces.
+- The migration remains unapplied to production. No production schema/data changes, deployments, workspaces or test accounts. PR #111 remains open/draft/unmerged.

@@ -1,4 +1,4 @@
-const schoolOperationalRoles=['administrator','bursar','accountant','vice_principal','head_teacher','exam_officer','registrar','admissions_officer','librarian','nurse','hostel_manager','transport_manager','inventory_officer','hr_officer','it_admin','counsellor','receptionist'];
+const schoolOperationalRoles=['administrator','bursar','accountant','vice_principal','head_teacher','exam_officer','registrar','admissions_officer','librarian','nurse','hostel_manager','transport_manager','inventory_officer','hr_officer','it_admin','counsellor','receptionist','discipline_master','game_master'];
 export function schoolRole(role:string){return role.trim().toLowerCase().replaceAll(' ','_');}
 export function canManageSchoolBilling(role:string){return ['proprietor','administrator','bursar'].includes(schoolRole(role));}
 export function schoolDashboard(role:string){

@@ -2086,3 +2086,14 @@ This section supersedes older stage-status summaries above where they conflict.
 - No school workspace, staff account, student, house, event, judge, score, result or other operational test record was created. No school operational data was populated or modified by this rollout.
 - A Vercel commit status reported `Account is blocked`; this is not a Render deployment result. The production frontend is hosted on Render. No Render deployment was triggered or verified as part of this database-only rollout.
 - **Next:** continue with the post-rollout application/production readiness step for the merged Stage B UI on Render, then move to Stage C only after confirming the live UI is compatible with the now-applied schema. Do not create test workspaces or seed demo records; use existing CI/disposable PostgreSQL coverage and read-only production checks.
+
+
+## Production registration hotfix — 2026-11-04
+
+- **Issue:** A real SchoolPro school-registration submission returned a generic UI error. Supabase logs showed the POST /rest/v1/schoolpro_onboarding_requests request returning HTTP 401 with PostgreSQL error permission denied for function schoolpro_can_register.
+- **Root cause:** The original INSERT policy combined anon and authenticated roles in one expression. Its anonymous branch allowed a null user_id, but PostgreSQL could still evaluate the authenticated-only private.schoolpro_can_register() predicate. The anon role has no USAGE on private and no EXECUTE on that helper.
+- **Production correction:** Replaced the combined policy with separate policies: anonymous inserts require user_id IS NULL and all review/workspace fields unset; authenticated inserts require user_id = auth.uid(), all review/workspace fields unset, and private.schoolpro_can_register(). No permissions were broadened on the private schema or helper.
+- **Migration:** 20261104113534_schoolpro_split_onboarding_insert_policies was applied to the existing Supabase project and is included in supabase/migrations/20261104113534_schoolpro_split_onboarding_insert_policies.sql.
+- **Data impact:** The failed request left no onboarding-request row and created no SchoolPro workspace for the submitting account. No school, staff, student, house, competition or other operational records were created.
+- **Source follow-up:** The migration is on branch fix-schoolpro-onboarding-anon-policy-20261104; merge through PR after CI. The production database hotfix is already active.
+- **User retry guidance:** If the initial registration created an Auth account but no active session (email verification flow), verify the email, sign in, and submit the school request again. The anonymous submission path is now independently permitted without invoking the authenticated eligibility helper; authenticated requests remain subject to proprietor eligibility.

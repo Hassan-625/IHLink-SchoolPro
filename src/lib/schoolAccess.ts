@@ -7,7 +7,20 @@ export function schoolDashboard(role:string){
   case 'parent':return '/schoolpro/parent-dashboard';
   case 'class_teacher':case 'teacher':return '/schoolpro/teacher-dashboard';
   case 'proprietor':return '/schoolpro/proprietor-dashboard';
-  case 'administrator':case 'bursar':case 'accountant':case 'super_administrator':return '/schoolpro/admin-dashboard';
+  case 'game_master':return '/schoolpro/games';
+  case 'discipline_master':case 'counsellor':return '/schoolpro/discipline';
+  case 'bursar':case 'accountant':return '/schoolpro/fees';
+  case 'exam_officer':return '/schoolpro/results';
+  case 'registrar':return '/schoolpro/students';
+  case 'admissions_officer':case 'receptionist':return '/schoolpro/admissions';
+  case 'librarian':return '/schoolpro/library';
+  case 'transport_manager':return '/schoolpro/transport';
+  case 'hostel_manager':return '/schoolpro/hostel';
+  case 'inventory_officer':return '/schoolpro/inventory';
+  case 'nurse':return '/schoolpro/medical';
+  case 'hr_officer':return '/schoolpro/staff';
+  case 'it_admin':return '/schoolpro/roles-permissions';
+  case 'administrator':case 'super_administrator':return '/schoolpro/admin-dashboard';
   default:return schoolOperationalRoles.includes(schoolRole(role))?'/schoolpro/admin-dashboard':'/schoolpro';
  }
 }

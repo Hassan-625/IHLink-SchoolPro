@@ -5,7 +5,7 @@ import {
   DollarSign, FileText, ClipboardCheck, MessageSquare, BarChart3,
   Shield, BookOpen, Calendar, Bell, Award, Users, GraduationCap,
   Cpu, Library, Bus, BedDouble, Package, CreditCard, Plane, HeartPulse,
-  Gavel, CalendarDays, ScrollText, MessageCircle,
+  Gavel, CalendarDays, ScrollText, MessageCircle, Trophy,
 } from 'lucide-react';
 
 const featureGroups = [
@@ -45,6 +45,7 @@ const featureGroups = [
       { icon: CreditCard, name: 'Payroll', desc: 'Staff salary management' },
       { icon: HeartPulse, name: 'Medical Records', desc: 'Student health tracking' },
       { icon: Gavel, name: 'Discipline', desc: 'Behaviour and incident records' },
+      { icon: Trophy, name: 'Houses, Games & Sports', desc: 'House allocation, House Masters, competitions, staff judges, scoring and inter-house standings' },
       { icon: CalendarDays, name: 'Events', desc: 'School calendar and events' },
       { icon: Award, name: 'Certificates', desc: 'Certificate generation' },
     ],

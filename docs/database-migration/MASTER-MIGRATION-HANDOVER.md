@@ -2181,3 +2181,12 @@ This section supersedes older stage-status summaries above where they conflict.
 - The correction register now links the specification and corrects the earlier statement about receipt integration (commit `d39c77351d3efdeeeadab3b7e1a95444a7b84385`).
 - This turn was documentation and read-only inspection only. No production database schema/function/row, subscription, price, payment or school operational data changed. No migration was created or applied; no PR was merged and no Render deployment was triggered.
 - **Next implementation step:** build the dedicated upgrade-request table/RLS/RPCs and the upgrade-aware branch of `private.review_school_subscription_transfer` as a forward-only migration on this correction branch, then implement the SchoolPro request/quote view and Central Admin upgrade queue. Test only with disposable fixtures; do not create production workspaces. Keep Stage C deferred.
+
+
+## Exact-head validation snapshot — 2026-11-04
+
+- Latest observed correction-branch commit after the workflow specification and handover updates: `74bda5b28bffe1c5728eaccdd0b121a1492af14c`.
+- PR #116 remains open and unmerged: https://github.com/Hassan-625/IHLink-SchoolPro/pull/116.
+- Exact-head SchoolPro CI run #2461 (`41847574639`) is queued.
+- Exact-head payment-page validation run #2187 (`41847574643`) is queued.
+- These checks have not passed yet. Do not merge, apply the correction migration, or deploy to Render until both exact-head validations complete successfully and remaining release blockers are resolved.

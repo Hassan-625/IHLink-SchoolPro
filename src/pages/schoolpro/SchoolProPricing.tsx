@@ -1,51 +1,63 @@
 import {customerMessage} from '@/lib/customerMessage';
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { PageShell } from '@/components/PageShell';
-import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { naira } from '@/lib/designTokens';
-import { Check, ArrowRight } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {PageShell} from '@/components/PageShell';
+import {Card} from '@/components/ui/Card';
+import {Button} from '@/components/ui/Button';
+import {Badge} from '@/components/ui/Badge';
+import {naira} from '@/lib/designTokens';
+import {Check,ArrowRight} from 'lucide-react';
+import {supabase} from '@/lib/supabase';
 
-type Plan = { name:string; price:number; desc:string; features:string[]; popular:boolean };
+type Plan={code:string;name:string;monthly:number;termly:number;annual:number;features:string[];popular:boolean};
+const planFeatures=(flags:Record<string,unknown>)=>[
+ 'Core school management',
+ 'Student, staff, class and academic-session management',
+ 'Attendance and fee management',
+ 'Standard results, report cards, class broadsheets and ordinary exports',
+ 'Parent and guardian portal',
+ 'Library, transport, hostel and inventory modules',
+ 'Payroll, discipline, certificates and school operations',
+ 'Houses, Games, Sports and Competitions',
+ ...(flags.website===true?['School website']:[]),
+ ...(flags.cbt===true?['Computer-Based Testing (CBT) and online examinations']:[]),
+ ...(flags.advanced_reports===true?['Enterprise Advanced Reports: school, class, subject, student, attendance, assessment and progression analytics']:[]),
+ ...(flags.custom_branding===true?['Custom branding by request and IHLink review/approval']:[])
+];
+const price=(value:number)=>value>0?naira(value):'Not configured';
 
-export function SchoolProPricing() {
-  const [plans,setPlans]=useState<Plan[]>([]);
-  const [loading,setLoading]=useState(true),[error,setError]=useState('');
-  useEffect(()=>{let active=true;if(!supabase){setError('Pricing is unavailable.');setLoading(false);return;}void supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price,features').eq('active',true).order('annual_price').then(({data,error:issue})=>{if(!active)return;if(issue)setError(customerMessage(issue.message));setPlans((data||[]).filter(p=>Number(p.annual_price)>0).map(p=>({name:p.name,price:Number(p.annual_price),desc:`${p.name} SchoolPro annual subscription`,features:Array.isArray(p.features)?p.features:[],popular:p.code==='professional'})));setLoading(false)});return()=>{active=false}},[]);
-  return (
-    <PageShell product="schoolpro">
-      <div className="px-6 lg:px-10 py-12 max-w-[1280px] mx-auto">
-        <div className="text-center mb-10">
-          <Badge className="mb-3 bg-purple-50 text-purple-700 border-purple-200">Pricing</Badge>
-          <h1 className="text-4xl font-extrabold text-ink mb-3">Pricing That Scales With Your School</h1>
-          <p className="text-base text-muted max-w-xl mx-auto">Compare the live SchoolPro annual packages. Prices are managed by IHLink from the Command Center.</p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {loading&&<p role="status">Loading current subscription prices…</p>}{error&&<p role="alert" className="text-rose-700">Pricing could not be loaded: {error}</p>}{!loading&&!error&&!plans.length&&<p>No active priced subscriptions are available.</p>}{plans.map((plan, i) => (
-            <Card key={i} padding="lg" className={`relative ${plan.popular ? 'border-2 border-purple-400 shadow-float' : ''}`}>
-              {plan.popular && <Badge className="absolute top-4 right-4 bg-purple-600 text-white border-purple-600">Most Popular</Badge>}
-              <h3 className="text-xl font-bold text-ink">{plan.name}</h3>
-              <p className="text-sm text-muted mb-4">{plan.desc}</p>
-              <p className="text-4xl font-extrabold text-ink mb-1">{naira(plan.price)}<span className="text-sm font-normal text-muted">/year</span></p>
-              <Link to="/schoolpro/register"><Button fullWidth themeClass={plan.popular ? 'bg-purple-600 hover:bg-purple-700' : undefined} variant={plan.popular ? undefined : 'secondary'}>Get Started</Button></Link>
-              <div className="mt-6 space-y-3">
-                {plan.features.map((f, j) => (
-                  <div key={j} className="flex items-center gap-2 text-sm text-ink"><Check className="w-4 h-4 text-purple-500 shrink-0" /> {f}</div>
-                ))}
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-12 text-center">
-          <p className="text-sm text-muted mb-4">Implementation, migration, training, support scope and service levels are confirmed in the school's final subscription agreement.</p>
-          <Link to="/schoolpro/book-demo"><Button variant="secondary" rightIcon={<ArrowRight className="w-4 h-4" />}>Book a Demo First</Button></Link>
-        </div>
-      </div>
-    </PageShell>
-  );
+export function SchoolProPricing(){
+ const[plans,setPlans]=useState<Plan[]>([]),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ useEffect(()=>{
+  let active=true;
+  if(!supabase){setError('Pricing is unavailable.');setLoading(false);return()=>{active=false;};}
+  void Promise.all([
+   supabase.from('schoolpro_subscription_catalog').select('code,name,monthly_price,termly_price,annual_price').eq('active',true).order('annual_price'),
+   supabase.from('schoolpro_plan_catalog').select('tier,features')
+  ]).then(([catalog,entitlements])=>{
+   if(!active)return;
+   if(catalog.error||entitlements.error){setError(customerMessage(catalog.error?.message||entitlements.error?.message||'Pricing could not be loaded.'));setLoading(false);return;}
+   const rows=(catalog.data||[]).filter(p=>['starter','professional','enterprise'].includes(p.code));
+   setPlans(rows.map(p=>{
+    const flags=(entitlements.data||[]).find(x=>x.tier===p.code)?.features||{};
+    return{code:p.code,name:p.name,monthly:Number(p.monthly_price||0),termly:Number(p.termly_price||0),annual:Number(p.annual_price||0),features:planFeatures(flags),popular:p.code==='professional'};
+   }));
+   setLoading(false);
+  }).catch(()=>{if(active){setError('Pricing could not be loaded.');setLoading(false);}});
+  return()=>{active=false;};
+ },[]);
+ return <PageShell product="schoolpro"><div className="mx-auto max-w-[1280px] px-6 py-12 lg:px-10">
+  <div className="mb-10 text-center"><Badge className="mb-3 border-purple-200 bg-purple-50 text-purple-700">Pricing</Badge><h1 className="mb-3 text-4xl font-extrabold text-ink">Pricing That Scales With Your School</h1><p className="mx-auto max-w-2xl text-base text-muted">Compare the live SchoolPro packages, their included modules and configured billing periods. Prices and plan entitlements are maintained by IHLink.</p></div>
+  <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+   {loading&&<p role="status">Loading current subscription prices…</p>}{error&&<p role="alert" className="text-rose-700">Pricing could not be loaded: {error}</p>}{!loading&&!error&&!plans.length&&<p>No active public SchoolPro plans are available.</p>}
+   {plans.map(plan=><Card key={plan.code} padding="lg" className={plan.popular?'relative border-2 border-purple-400 shadow-float':''}>
+    {plan.popular&&<Badge className="absolute right-4 top-4 border-purple-600 bg-purple-600 text-white">Most Popular</Badge>}
+    <h3 className="text-xl font-bold text-ink">{plan.name}</h3><p className="mb-4 text-sm text-muted">{plan.name} SchoolPro subscription</p>
+    <div className="space-y-1 border-b border-border pb-4 text-sm"><p><span className="font-bold">{price(plan.monthly)}</span> <span className="text-muted">/ month</span></p><p><span className="font-bold">{price(plan.termly)}</span> <span className="text-muted">/ term</span></p><p><span className="font-bold">{price(plan.annual)}</span> <span className="text-muted">/ year</span></p></div>
+    <Link to="/schoolpro/register"><Button fullWidth className="mt-4" themeClass={plan.popular?'bg-purple-600 hover:bg-purple-700':undefined} variant={plan.popular?undefined:'secondary'}>Register with {plan.name}</Button></Link>
+    <div className="mt-6 space-y-3">{plan.features.map((feature,index)=><div key={index} className="flex items-start gap-2 text-sm text-ink"><Check className="mt-0.5 h-4 w-4 shrink-0 text-purple-500"/><span>{feature}</span></div>)}</div>
+   </Card>)}
+  </div>
+  <div className="mt-12 text-center"><p className="mb-4 text-sm text-muted">Enterprise custom branding requires a separate request and IHLink approval. Subscription upgrades are reviewed and activated after the required payment is verified.</p><Link to="/schoolpro/book-demo"><Button variant="secondary" rightIcon={<ArrowRight className="h-4 w-4"/>}>Book a Demo First</Button></Link></div>
+ </div></PageShell>;
 }

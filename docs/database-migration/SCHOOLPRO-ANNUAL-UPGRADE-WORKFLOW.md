@@ -138,3 +138,28 @@ Security and concurrency requirements:
 - Do not rely on client-supplied quote amounts, tier order, term seconds, or reviewer identity. All are server-derived.
 
 No production rows were written by this inspection. This section is an implementation contract, not a migration or deployment.
+
+
+## 9. Application integration points (read-only source inspection, 2026-11-04)
+
+### SchoolPro subscription page
+- Current page: `src/pages/schoolpro/SchoolProSubscription.tsx`.
+- It loads active `schoolpro_subscription_catalog` rows, plan entitlements, the current `schoolpro_subscriptions` row, and the signed-in payer's bank-transfer intents.
+- The only purchase action currently calls `prepare_schoolpro_bank_subscription(p_school,p_catalog)`; every plan card exposes the same Subscribe / Renew action.
+- The page then passes the intents to the shared `BankTransferPayments` component for receipt upload. It has no upgrade-request list, quote breakdown, IHLink decision state, upgrade invoice distinction, or request cancellation control.
+- The upgrade UI must be a separate panel/action shown only when a paid annual subscription is active and a higher tier exists. It must call the dedicated upgrade RPC and must not call the ordinary prepare RPC for an upgrade.
+- Do not display the target plan as active until the request is settled by Finance. Keep the existing purchase/renewal cards and receipt upload flow unchanged for ordinary intents.
+
+### Public pricing page
+- `src/pages/schoolpro/SchoolProPricing.tsx` reads the live annual catalogue and feature flags and is informational. It should not be used to calculate or submit upgrade quotes.
+
+### Test harness
+- The repository already uses Node assertion scripts under `scripts/test-*.mjs` and npm scripts in `package.json`.
+- The current scripts include disposable-PostgreSQL checks for progression/section leadership and source-contract checks for Stage A–B corrections. Add upgrade quote/settlement regression coverage to the same established test conventions, and include an existing ordinary annual-purchase regression so the legacy path remains protected.
+
+## 10. Migration sequencing and current deployment boundary
+
+- The read-only Supabase migration ledger currently ends at `20261104113534 schoolpro_split_onboarding_insert_policies`. This is a ledger observation only; it does not authorize applying a new migration.
+- The Stage A–B dashboard/report entitlement correction is committed on the feature branch as part of PR #116, but no annual-upgrade migration has been created or applied.
+- Supabase CLI v3.0.0 was released on 2026-11-02. Before any local migration workflow, confirm the installed CLI version and use the v3 local-by-default command semantics. Do not use a hosted database command implicitly; hosted changes require a separately approved operation.
+- This environment exposes GitHub and Supabase MCP actions but not a checked-out repository shell in which to run `supabase migration new`, disposable PostgreSQL, or the app's npm scripts. Therefore the next code step must be performed in the repository's supported CLI/test environment; creating a migration blob directly through GitHub would bypass the required migration-generation and local verification workflow. No migration file has been fabricated as a substitute.

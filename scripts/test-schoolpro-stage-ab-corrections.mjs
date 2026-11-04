@@ -21,7 +21,7 @@ assert(register.includes('value="starter"')&&register.includes('value="professio
 assert(register.includes('form.plan_key'),'Selected plan must be submitted with the onboarding request');
 assert(access.includes("case 'game_master':return '/schoolpro/games';"),'Game Master must land on the Games dashboard');
 assert(access.includes("case 'discipline_master':case 'counsellor':return '/schoolpro/discipline';"),'Discipline specialists must land on their authorized workspace');
-assert(access.includes("case 'bursar':case 'accountant':return '/schoolpro/fees';")&&access.includes("case 'exam_officer':return '/schoolpro/results';")&&access.includes("case 'registrar':return '/schoolpro/students';'),'Finance, examination and registrar roles must land on their authorized workspace');
+assert(access.includes("case 'bursar':case 'accountant':return '/schoolpro/fees';")&&access.includes("case 'exam_officer':return '/schoolpro/results';")&&access.includes("case 'registrar':return '/schoolpro/students';"),'Finance, examination and registrar roles must land on their authorized workspace');
 assert(schoolPermissions.includes("'judge':'dashboard'"),'Assigned judges must see their judging portal link through the staff navigation permission filter');
 assert(schoolPermissions.includes("const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};")&&!schoolPermissions.includes("reports:'advanced_reports'"),'Standard report permission must not require the Enterprise advanced_reports entitlement');
 assert(shared.includes("href:'/schoolpro/subscription'"),'School billing managers must have a Plans & Subscription navigation entry');

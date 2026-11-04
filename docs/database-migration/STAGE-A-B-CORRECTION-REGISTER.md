@@ -162,3 +162,12 @@ No Stage C implementation until:
 - Central Admin's current `AdminSchoolProSubscriptions` page calls `control_center_activate_schoolpro` directly. That RPC changes the active subscription and school plan as a privileged override; it is not a school upgrade request queue and does not require a verified payment. Preserve it only as a separately audited override.
 - Consequently, do not bolt the upgrade workflow onto the existing generic purchase button or treat a pending subscription intent as an upgrade request. Implement a distinct request/review/payment state machine, then connect its verified payment to one atomic activation RPC. Reuse the receipt-verification capability only after verifying its exact SchoolPro subscription integration and idempotency behavior.
 - These were read-only schema/function/source inspections. No rows were inserted or updated; no function, policy, migration, price, payment or subscription was changed.
+
+
+## Annual upgrade workflow design completed — 2026-11-04
+
+- Added [`SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`](./SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md) as the implementation specification.
+- Corrected the earlier payment-integration finding: the current generic direct-transfer pipeline **does** support SchoolPro annual subscription receipts. It calls `submit_service_bank_transfer` → `review_direct_bank_transfer` → `private.review_school_subscription_transfer`; Finance approval currently activates the normal full-price annual purchase/renewal.
+- The missing piece is a distinct upgrade request/quote/review/invoice state machine and an upgrade-specific branch in the existing verified-payment finalizer. The existing ordinary renewal path must remain unchanged.
+- The specification defines a dedicated upgrade-request record, immutable current-term and price snapshots, proportional unused-term credit calculation, stale-quote rejection, annual-only higher-tier requests, IHLink approval/rejection, linked balance invoice, proof verification, atomic/idempotent activation, RLS/RPC boundaries, school UI, Central Admin queue and disposable test cases.
+- No schema or function was changed. No migration was created/applied, no production rows were changed, no subscription/payment was modified, and no merge/deployment occurred.

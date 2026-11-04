@@ -47,7 +47,7 @@
 - Preserve least-privilege staff/class/subject assignments.
 - Form Masters manage attendance within their assigned class/section scope; Subject Teachers do not receive attendance write permission by default.
 - Section leadership and incremental score-entry workflows must remain intact.
-- Audit dashboard coverage for every supported role. Current explicit landing dashboards are proprietor, administrator, teacher, parent and student; specialist roles mostly fall back to the generic admin dashboard. Add/verify purpose-specific entry points for Game Master, Discipline Master and assigned judges without granting broader administration permissions.
+- Audit dashboard coverage for every supported role. Current explicit dashboards are proprietor, administrator, teacher, parent and student. Specialist staff should land on their authorized workspaces: Game Master → Games; Discipline Master/Counsellor → Discipline; Bursar/Accountant → Fees; Exam Officer → Results; Registrar → Students; Admissions Officer/Receptionist → Admissions; Librarian → Library; Transport Manager → Transport; Hostel Manager → Hostel; Inventory Officer → Inventory; Nurse → Medical; HR Officer → Staff; IT Admin → Roles & Permissions. Vice Principal and Head Teacher retain the role-filtered school administration dashboard. Assigned judges need the My Judging Panel link without requiring the full Games management permission.
 
 ### B5. Attendance and academic operational access
 - Confirm attendance read/write access follows the role and assignment model, not generic teacher membership.
@@ -130,3 +130,6 @@ No Stage C implementation until:
 
 
 8. The generic admin dashboard also queried student, class and invoice data for every operational role, regardless of the role's permission set. That can cause specialist roles without `students` or `finance` access to receive a dashboard load error, and it risks exposing finance summaries to roles that should not see them. The correction branch now uses the live role-permission hook to query and render only permitted student/class/finance data, and clears previous workspace data while a new workspace's permissions resolve.
+
+
+9. Specialist role landing routes are now being aligned to their own authorized operational workspace rather than sending every role to the generic admin dashboard. The assigned-judge link also needs its own navigation mapping: active judges should be able to open the judge portal without receiving the Games Master management permission.

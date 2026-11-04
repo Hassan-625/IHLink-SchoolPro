@@ -118,3 +118,12 @@ No Stage C implementation until:
 - Games & Sports is visible and usable on Starter for authorized school roles;
 - Central Admin and school-side subscription workflow is implemented and validated;
 - PRs are merged and the Render production deployment is confirmed.
+
+
+## Additional subscription workflow findings from the Central Admin repository
+
+- Central Admin already contains `AdminSchoolProOnboarding`: it reviews/rejects onboarding requests, provisions a workspace, issues an unpaid annual invoice, and can approve a calendar-reviewed demo.
+- Central Admin already contains `AdminSchoolProSubscriptions`: it lists schools/subscriptions and allows a Super Admin to activate or change a tier through a direct Control Center override RPC with a reason. This is an administrative override, not the requested school-initiated upgrade approval workflow.
+- The live SchoolPro subscription table inventory includes `schoolpro_subscription_catalog`, `schoolpro_subscription_intents`, `schoolpro_subscription_payments`, `schoolpro_subscription_plans` and `schoolpro_subscriptions`; no dedicated SchoolPro upgrade-request table was found.
+- The remaining upgrade workflow must add a school-initiated request with target plan/cycle, current subscription snapshot, price/credit calculation, review status and audit history; Central Admin must approve/reject with reason, issue the outstanding payment request, verify the received payment, and only then activate the higher tier. The existing manual activation action must remain a separately audited emergency/administrative override.
+- The current custom branding admin page can edit branding records directly. Enterprise custom branding must instead be request-and-approval based for the school, with IHLink provisioning/approval controls and entitlement enforcement. Do not grant Starter/Professional self-service branding.

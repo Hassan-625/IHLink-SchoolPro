@@ -2185,8 +2185,7 @@ This section supersedes older stage-status summaries above where they conflict.
 
 ## Exact-head validation snapshot — 2026-11-04
 
-- Latest observed correction-branch commit after the workflow specification and handover updates: `74bda5b28bffe1c5728eaccdd0b121a1492af14c`.
-- PR #116 remains open and unmerged: https://github.com/Hassan-625/IHLink-SchoolPro/pull/116.
-- Exact-head SchoolPro CI run #2461 (`41847574639`) is queued.
-- Exact-head payment-page validation run #2187 (`41847574643`) is queued.
-- These checks have not passed yet. Do not merge, apply the correction migration, or deploy to Render until both exact-head validations complete successfully and remaining release blockers are resolved.
+- Validation-triggering commit after the specification/register updates: `74bda5b28bffe1c5728eaccdd0b121a1492af14c`. PR #116 remains open and unmerged: https://github.com/Hassan-625/IHLink-SchoolPro/pull/116.
+- SchoolPro CI run #2461 (`41847574639`) was queued at the last check. Payment-page validation run #2187 (`41847574643`) had moved to in progress; neither result was yet confirmed successful.
+- A subsequent handover-only documentation commit (`ee5b25d5368e87330f1f3835400aa1b78a4e5f42`) returned no associated workflow runs. Therefore #2461/#2187 are not verified as checks for that final documentation head. Recheck CI against the current PR head before any merge decision.
+- Do not merge, apply the correction migration, or deploy to Render until exact-head validations complete successfully and remaining release blockers are resolved.

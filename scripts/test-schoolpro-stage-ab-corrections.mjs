@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 const read=path=>readFile(path,'utf8');
-const [register,access,shared,app,pricing,subscription,games,migration]=await Promise.all([
+const [register,access,shared,app,pricing,subscription,games,migration,dashboard]=await Promise.all([
  read('src/pages/schoolpro/SchoolProRegister.tsx'),
  read('src/lib/schoolAccess.ts'),
  read('src/pages/schoolpro/schoolShared.tsx'),
@@ -10,7 +10,8 @@ const [register,access,shared,app,pricing,subscription,games,migration]=await Pr
  read('src/pages/schoolpro/SchoolProPricing.tsx'),
  read('src/pages/schoolpro/SchoolProSubscription.tsx'),
  read('src/pages/schoolpro/SchoolProGames.tsx'),
- read('supabase/migrations/20261104150000_schoolpro_stage_ab_dashboard_and_report_entitlement_corrections.sql')
+ read('supabase/migrations/20261104150000_schoolpro_stage_ab_dashboard_and_report_entitlement_corrections.sql'),
+ read('src/pages/schoolpro/SchoolProLiveDashboard.tsx')
 ]);
 
 assert(register.includes("'Games & Sports'"),'School registration must offer Games & Sports');
@@ -26,6 +27,8 @@ assert(pricing.includes("from('schoolpro_plan_catalog')")&&pricing.includes('mon
 assert(pricing.includes('Houses, Games, Sports and Competitions'),'Public plan comparison must include Games on every tier');
 assert(subscription.includes("games:'Houses, Games, Sports & Competitions'"),'Subscription view must show Games as a plan capability');
 assert(games.includes('House Masters')&&games.includes('Inter-house standings')&&games.includes('Staff judging panel'),'Games management must retain houses, judges and standings');
+assert(dashboard.includes("access.can('finance')")&&dashboard.includes('canViewFinance&&')&&dashboard.includes('canReadFinance?'),'Generic role dashboard must load and display financial data only for roles with finance permission');
+assert(dashboard.includes("access.can('students')")&&dashboard.includes('canReadStudents?'),'Generic role dashboard must only query student records for roles with student permission');
 assert(migration.includes("jsonb_build_object('games', true)"),'Migration must enable Games on every public/legacy plan');
 assert(migration.includes("when 'games' then private.schoolpro_plan_feature_allowed(target_school, 'games')"),'Games must be checked against plan entitlement and role permission');
 assert(migration.includes("needle text := $needle$'discipline','medical'$needle$"),'Migration must add Games to leadership permission arrays');

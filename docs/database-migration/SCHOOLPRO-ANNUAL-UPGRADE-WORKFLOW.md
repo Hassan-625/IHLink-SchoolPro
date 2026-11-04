@@ -170,7 +170,7 @@ No production rows were written by this inspection. This section is an implement
 The following was confirmed through catalog-only SELECT queries against the configured Supabase project. No rows were inserted, updated, or deleted.
 
 ### Existing payment ledger and indexes
-- `schoolpro_subscription_payments` has unique indexes on `reference` and `transaction_ref`, but no request/invoice foreign key today. The upgrade migration should add a nullable `upgrade_request_id` FK to the payment ledger (or a rigorously unique request reference in provider_payload plus a unique expression/index); prefer a typed FK and unique partial index for one credited payment per upgrade request.
+- `schoolpro_subscription_payments` has unique indexes on `reference` and `transaction_ref`, but no request/invoice foreign key today. The upgrade migration must add a nullable typed `upgrade_request_id` FK to `schoolpro_upgrade_requests` and a partial unique index for one credited payment per upgrade request. `provider_payload` may retain reconciliation metadata, but it is not the authoritative relationship and must not replace the typed FK.
 - `schoolpro_subscription_intents` has a unique `reference`, unique nullable `transaction_ref`, unique `replaces_invoice_id`, and unique `demo_request_id`. There are two partial unique indexes enforcing one pending invoice per school: `schoolpro_one_pending_ihlink_subscription` and `schoolpro_subscription_pending_school_unique`. Do not create the upgrade invoice while an unrelated pending purchase invoice exists; the approved-upgrade invoice should use the existing one-pending-per-school invariant and must not weaken it.
 - `direct_transfer_submissions` currently has a unique key on `(user_id, platform_code, source_reference, customer_reference)`; it does not have a unique index for normalized customer bank references across receiving accounts. Upgrade verification needs a concurrency-safe duplicate-reference control scoped to the intended platform reconciliation policy.
 
@@ -188,3 +188,16 @@ The following was confirmed through catalog-only SELECT queries against the conf
 4. Add typed linkage and uniqueness to the payment ledger so replay/idempotency can be proven by database constraints, not JSON-only metadata.
 5. Keep client access read-only; expose narrowly scoped security-definer RPCs for quote/request, IHLink decision, and Finance settlement, with explicit EXECUTE grants and audit metadata.
 6. Avoid unrelated catalogue RLS cleanup in the upgrade migration; track that separately.
+
+## 12. Typed payment linkage clarification (2026-11-04)
+
+This section resolves an inconsistency between the earlier schema-mapping bullet and the later design consequences. The implementation contract is:
+
+- Add nullable `upgrade_request_id uuid REFERENCES public.schoolpro_upgrade_requests(id)` to `schoolpro_subscription_payments`.
+- Add a partial unique index on `upgrade_request_id` for rows representing a credited/verified payment (use the exact existing ledger status values confirmed in the migration's preflight assertions).
+- Keep the nullable unique `upgrade_request_id` FK on `schoolpro_subscription_intents` as the one-to-one approved-upgrade invoice link.
+- `provider_payload` may carry a diagnostic snapshot of invoice/reference/receipt reconciliation details, but cannot be the sole relationship or idempotency mechanism.
+- The settlement RPC must prove the same request, invoice, direct-transfer submission and credited payment are linked before treating a repeated verification as successful. A request with a paid invoice but no corresponding unique credited ledger row is an integrity failure, not a successful idempotent replay.
+- Preserve the ordinary annual purchase/renewal rows with `upgrade_request_id IS NULL`; do not alter their existing unique reference/transaction constraints or their activation behaviour.
+
+This clarification is authoritative over the permissive parenthetical alternative in the earlier version of section 11. No schema change has been made.

@@ -2213,3 +2213,15 @@ This section supersedes older stage-status summaries above where they conflict.
 - Added consistent lock ordering and server-derived quote/tier/identity requirements to the specification. Receiving bank account must be locked and `is_active=true` at verification.
 - No migration or function code has been written/applied. No production rows, subscriptions, payment records, catalogue values or workspaces were changed. No merge or deployment occurred.
 - The remaining implementation depends on authoring and running the migration and regression tests against a disposable PostgreSQL environment. Do not use live production SQL as a substitute. Stage C remains deferred.
+
+
+## 2026-11-04 — Stage A–B correction PR #116 merged
+
+- User explicitly approved merging PR #116 after exact-head SchoolPro CI #2467 and payment-page validation #2193 both passed on head `c863831ca8c52028dd68093782816361730384ef`.
+- PR #116 was squash-merged into `main` successfully. Merge commit: `04e18a260ee5ad5d3028a3414b91a54f41563147`. PR status: merged.
+- The merged correction includes Games & Sports entitlement and registration selection, Game Master and judge navigation, standard-report access separated from the Enterprise Advanced Reports gate, annual plan pricing/feature display corrections, role-scoped dashboard data, specialist role landing routes, and Plans & Subscription navigation.
+- Post-merge validation has started on the exact main merge commit: SchoolPro CI #2468 and payment-page validation #2194. At the last check both were still in progress. Tenant acceptance was skipped because no active school workspaces exist; no test school was created.
+- Merge does not itself mean production rollout. No Supabase migration was applied and no Render deployment was triggered. Do not deploy until post-merge CI/payment validation completes and the remaining release blockers are reviewed.
+- Remaining Stage A–B blockers include implementing the actual Enterprise Advanced Reports workspace before advertising it, completing the separate school-initiated annual upgrade workflow (proportional unused-term credit, IHLink approval, difference-only invoice, Finance-verified receipt and atomic activation), reconciling the entitlement and subscription catalogues, and closing the full role/dashboard matrix.
+- Annual upgrade specification remains at `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`. Preserve the existing full-price annual purchase/renewal path; the upgrade workflow must be a separate branch and must not activate entitlements before verified payment.
+- Stage C remains deferred. No Stage C score-entry, result calculation, review or publication implementation is authorized by this merge.

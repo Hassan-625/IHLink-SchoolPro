@@ -133,3 +133,6 @@ No Stage C implementation until:
 
 
 9. Specialist role landing routes are now being aligned to their own authorized operational workspace rather than sending every role to the generic admin dashboard. The assigned-judge link also needs its own navigation mapping: active judges should be able to open the judge portal without receiving the Games Master management permission.
+
+
+10. The first standard-report correction removed the Enterprise check from the database permission function and kept the dedicated `/schoolpro/reports` page behind the explicit Enterprise Advanced Reports gate. A second frontend check in `permissionPlanFeature()` still mapped the generic `reports` permission to `advanced_reports`, which continued to hide standard broadsheets/reports in Starter and Professional. The frontend permission-to-plan map is now aligned with the database: only CBT and custom branding map to plan entitlements; Advanced Reports remains protected by its dedicated route-level entitlement gate.

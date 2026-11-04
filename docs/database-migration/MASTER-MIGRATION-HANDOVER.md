@@ -2148,3 +2148,14 @@ This section supersedes older stage-status summaries above where they conflict.
 - Updated `scripts/test-school-dashboard-roles.mjs` to match the specialist role landing routes introduced in this correction pass; the prior test still expected all specialists to land on the generic administration dashboard.
 - Latest PR #116 head: `a4fb67b1f5cce7f6fd850e0e5fedbbb10131dcd5`. Exact-head SchoolPro CI #2453 and payment validation #2179 are queued. Earlier payment validation #2171 passed on the preceding commit; do not treat it as validation of the current head.
 - Added Plans & Subscription to school management navigation, with role filtering for proprietor, administrator, bursar and platform super-administrator. No production deployment or migration application has occurred.
+
+
+## 2026-11-04 — Stage A–B upgrade credit policy confirmed
+
+- User approved **proportional credit for the unused portion of the existing annual subscription** for school-initiated annual plan upgrades.
+- The Stage A–B correction register now requires the review/payment breakdown to show the existing paid annual subscription, start/end dates, elapsed/unused period, proportional unused-term credit, target annual price and net outstanding balance.
+- Implementation must define deterministic date-boundary and currency-rounding rules and cover them with disposable tests. A negative balance must not silently become a refund or transferable credit; that treatment requires a separate explicit policy.
+- Higher-tier entitlements remain inactive through request, approval, invoice issuance and unverified payment. Activation occurs only after IHLink verifies payment and the plan/entitlement update succeeds atomically.
+- Existing manual Control Center activation remains a separate audited override. IHLINK Academy remains on Starter; no subscription, payment, production database or school operational data was changed.
+- Stage C remains deferred. Incremental subject/component score entry, result compilation, review, approval, publication, reopening and republication are Stage C requirements, not part of this Stage A–B implementation.
+- Documentation commit on the existing correction branch: `8121e4a32760642e0f8727634da59c8a0c388d47` (correction register). No merge, production migration or Render deployment occurred.

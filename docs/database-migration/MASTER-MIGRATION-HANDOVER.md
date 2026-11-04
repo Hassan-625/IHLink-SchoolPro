@@ -2272,3 +2272,12 @@ This section supersedes older stage-status summaries above where they conflict.
 - Existing Node assertion scripts and disposable PostgreSQL tests are the repository's regression convention.
 - Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these source integration points, the current migration-ledger boundary, and the local CLI/test requirement (commit `27856f50f0e276392f193d5b95720f910cc0a110`).
 - Environment limitation: GitHub/Supabase MCP is available, but no checked-out repository shell is exposed here to run `supabase migration new`, disposable PostgreSQL, or npm tests. Do not bypass that workflow by fabricating a migration blob. Implementation remains pending in the supported repository CLI/test environment; no migration or production change has been made.
+
+
+### Annual-upgrade schema/RLS verification — 2026-11-04
+- Read-only Supabase catalog inspection confirmed the current RLS boundary: subscription intents and payments are readable by scoped school roles/payer and IHLink Finance/super-admin; no direct client write policies were returned. Subscription writes remain super-admin-only at table-policy level. Upgrade implementation must preserve RPC-only writes and atomic settlement.
+- Confirmed two existing partial unique indexes enforcing one pending subscription invoice per school. Upgrade invoices must respect this invariant; create them only after IHLink approval and after resolving any other pending school invoice. Refresh the quote at approval.
+- Confirmed the payment ledger currently has unique reference/transaction_ref but no typed upgrade-request FK. The migration should add typed request linkage and a unique credited-payment-per-request guarantee rather than relying only on JSON metadata.
+- Confirmed existing catalogue SELECT policy overlap (including an authenticated `true` policy); deliberately leave this unrelated drift untouched in the upgrade migration.
+- Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these verified schema/RLS constraints (commit `ecf35fe82f663e64a1aa4cd8665fdfc4fc944d6b`).
+- All checks were catalog SELECTs only. No live data writes, DDL, migration application, or deployment occurred.

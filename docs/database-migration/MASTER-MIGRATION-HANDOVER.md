@@ -2128,3 +2128,7 @@ This section supersedes older stage-status summaries above where they conflict.
 
 
 - Additional dashboard defect found during the role review: `SchoolProLiveDashboard` previously queried student, class and invoice records for every operational role and always rendered fee totals/recent fee records. Roles without `students` or `finance` permission could receive RLS errors, and finance metrics were not permission-scoped. The correction branch now uses `useSchoolProPermissions` to conditionally fetch/render student, class and finance data and clears prior workspace data while permissions resolve. Added assertions to the Stage A-B correction regression test.
+
+
+- Extended the dashboard correction to route specialist roles to their authorized workspaces (e.g. Game Master → Games, Discipline Master/Counsellor → Discipline, Bursar/Accountant → Fees, Exam Officer → Results, Registrar → Students, Admissions Officer/Receptionist → Admissions, Librarian → Library, Transport/Hostel/Inventory managers → their modules, Nurse → Medical, HR Officer → Staff, IT Admin → Roles & Permissions). Vice Principal and Head Teacher retain the filtered school administration dashboard.
+- Found that the assigned-judge link was also filtered out of teacher/staff navigation because `permissionForSchoolPath` had no `judge` mapping. The correction maps the judge portal link to baseline dashboard access; the portal continues to verify active judge assignments and database policies restrict judge data/scoring.

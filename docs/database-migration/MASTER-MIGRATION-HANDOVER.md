@@ -2281,3 +2281,10 @@ This section supersedes older stage-status summaries above where they conflict.
 - Confirmed existing catalogue SELECT policy overlap (including an authenticated `true` policy); deliberately leave this unrelated drift untouched in the upgrade migration.
 - Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these verified schema/RLS constraints (commit `ecf35fe82f663e64a1aa4cd8665fdfc4fc944d6b`).
 - All checks were catalog SELECTs only. No live data writes, DDL, migration application, or deployment occurred.
+
+## 2026-11-04 annual-upgrade workflow continuation
+
+- Re-read the live SchoolPro subscription page and the annual-upgrade specification on `feat/schoolpro-annual-upgrade-workflow`. The page still exposes only the ordinary `prepare_schoolpro_bank_subscription` purchase/renewal path and shared receipt uploader; no upgrade request UI or request-status panel has been implemented.
+- Reviewed the documented Central Admin integration requirements. The intended queue remains separate from onboarding and from the privileged `control_center_activate_schoolpro` manual override. Code search in the connected Central Admin repository did not return the previously identified component names, so no Central Admin source changes are claimed; exact repository paths must be confirmed in its supported CLI environment.
+- Corrected a schema-contract inconsistency in `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`: the payment ledger must use a typed nullable `upgrade_request_id` FK plus a partial uniqueness constraint for a credited payment. `provider_payload` is diagnostic metadata only, not the authoritative relationship/idempotency mechanism. Specification commit: `d339787738045766f8488534cd4ce319f4f99030`.
+- No application code, SQL migration, database write, merge, or deployment was performed. The repository CLI/disposable-PostgreSQL environment is still unavailable through the current connector set. Continue by opening the repository in its supported CLI environment, implementing migration and regression tests locally, and separately inspecting Central Admin source before proposing a PR.

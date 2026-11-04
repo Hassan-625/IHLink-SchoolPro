@@ -1,11 +1,11 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
-**Last updated:** 2026-11-03  
+**Last updated:** 2026-11-04  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
 **Database direction (confirmed 2026-10-28):** Continue on the existing Supabase PostgreSQL project; Render remains the production frontend host. MySQL and Aiven are no longer target platforms for SchoolPro.  
-**Status:** Stage A accepted; Stage B1 academic sessions/calendar/shared selector complete; Stage B2 student identity/family records in progress. No database-platform migration is planned. Continue only with narrowly scoped Supabase security/application work; preserve existing real data and do not seed business/demo records.
+**Status:** Stage A accepted. Stage B database rollout complete: all 14 Stage B migrations are recorded in the existing Supabase project, covering sessions/calendar, student identity and progression, Form Master attendance scope, section leadership, houses, House Masters, competitions, staff judging, scoring, result approval/publication and house points. PR #111 and corrective PR #113 are merged. No school workspaces or operational test records were created. Render frontend deployment is not part of this database rollout and has not been verified here.
 
 ## Operating rules
 - Preserve the live production architecture and shared IHLink/DataSub data.
@@ -2066,3 +2066,23 @@ This section supersedes older stage-status summaries above where they conflict.
 - UI commits: `7248166b4dfbf9f6ff163d6a60e0f3f728731c4c` and `b5a036b567805f5af5e175113e3f0942d1a0edae`. Await fresh CI/build validation on the UI head before treating this interface as complete.
 - No Supabase migration applied, no production data changed, no deployment, no PR merge, and no test workspace/account created.
 - Follow-up UI addition: published result snapshots now expose a Games-manager award action per house entry. The action calls `schoolpro_award_published_competition_points`, so event-linked house points can only be recorded against a complete entry in the currently published version; free-form house adjustments remain separate and event-unlinked. Commit: `ac720370ffb280fca6e7b36671fbe1bdf8194994`.
+
+
+## 2026-11-04 — Stage B production database rollout completed
+
+- Corrective PR #113, **Fix section leadership helper schema reference**, merged successfully. Merge commit: `54b94b86c2c1cd60c3c411e652c35c8ad23a5b3e`. Its exact-head SchoolPro CI workflow run `41669205877` completed successfully, and payment-page validation run `41669206043` completed successfully. The section-leadership authorization integration check passed. Tenant acceptance was skipped because there are no active school workspaces; no workspace was created to force the check.
+- The separate Stage B feature PR #111 was already merged on 2026-11-03 (merge commit `7557e0ff3b8a1eaeb9b9a70cf77d3fb9aa54bf77`).
+- Preserved the first seven Stage B production migrations already applied on 2026-11-03. Resumed at migration eight; did not replay those first seven.
+- Applied the remaining seven migrations to Supabase project `lnqsroyiybutkfngbyge`, in order:
+  1. `schoolpro_section_leadership_scope`
+  2. `schoolpro_clear_ineligible_form_master`
+  3. `schoolpro_house_competition_roles`
+  4. `schoolpro_house_competition_role_permissions`
+  5. `schoolpro_houses_and_student_house_history`
+  6. `schoolpro_competitions_staff_judges_scoring_and_house_points`
+  7. `schoolpro_competition_result_approval_and_publication`
+- Supabase migration ledger records all seven newly applied migrations with versions `20261104101139` through `20261104101217`; together with the seven recorded on 2026-11-03, all 14 Stage B migrations are recorded.
+- Read-only catalog verification confirmed the section-leadership, houses, student-house history, competition events/criteria/entries/judges/scores, house-point ledger and competition result run/entry tables exist. It also confirmed the section-leader RPC, competition calculation/publication RPCs and published-result house-points RPC exist. The incorrect private-schema helper `private.schoolpro_member_can_manage(uuid)` does not exist; the migration correctly uses the existing public helper.
+- No school workspace, staff account, student, house, event, judge, score, result or other operational test record was created. No school operational data was populated or modified by this rollout.
+- A Vercel commit status reported `Account is blocked`; this is not a Render deployment result. The production frontend is hosted on Render. No Render deployment was triggered or verified as part of this database-only rollout.
+- **Next:** continue with the post-rollout application/production readiness step for the merged Stage B UI on Render, then move to Stage C only after confirming the live UI is compatible with the now-applied schema. Do not create test workspaces or seed demo records; use existing CI/disposable PostgreSQL coverage and read-only production checks.

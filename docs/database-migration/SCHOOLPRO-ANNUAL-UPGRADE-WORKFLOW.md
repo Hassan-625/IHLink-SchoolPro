@@ -201,3 +201,25 @@ This section resolves an inconsistency between the earlier schema-mapping bullet
 - Preserve the ordinary annual purchase/renewal rows with `upgrade_request_id IS NULL`; do not alter their existing unique reference/transaction constraints or their activation behaviour.
 
 This clarification is authoritative over the permissive parenthetical alternative in the earlier version of section 11. No schema change has been made.
+
+## 13. Central Admin source integration map (read-only inspection, 2026-11-04)
+
+The connected Central Admin repository is `Hassan-625/IHLink-Admin` (default branch `main`). The relevant source files were fetched directly and inspected; no Central Admin files were changed.
+
+- `src/pages/admin/AdminSchoolProSubscriptions.tsx` is the existing commercial-control page. It loads the catalogue, schools and subscriptions and exposes `control_center_activate_schoolpro` through a reason-required privileged manual activation action. Keep this page and its manual override semantics separate from customer-requested upgrades.
+- `src/components/InvoiceWorkbench.tsx` is the existing payment-proof workbench. For `schoolpro_subscription`, it reads `schoolpro_subscription_intents` and pending `direct_transfer_submissions`, and calls `review_direct_bank_transfer` for Finance approval. Reuse the existing workbench for approved upgrade invoices; the SchoolPro-specific finalizer branch must perform the linked request/invoice/proof/payment integrity checks and atomic activation. Do not add a second independent proof-verification path.
+- `src/pages/admin/DirectTransferReview.tsx` is the general transfer review list and calls the same `review_direct_bank_transfer` RPC. It is not the upgrade decision queue; keep the existing Finance proof-verification route and make the database finalizer recognize the typed upgrade invoice linkage regardless of which existing supported proof workbench initiates verification.
+- `src/App.tsx` currently routes `/admin/subscriptions` to `AdminSchoolProSubscriptions` behind `<Guard superOnly>`. Preserve this route as the privileged manual-override page. A dedicated upgrade-review route can be `/admin/subscriptions/upgrades`, with a new page component and the normal `<Guard>` role set (super_admin, platform_admin, support, finance); the existing `canOpenAdminPath` maps the `subscriptions` path segment to Finance-only for non-super-admin roles, while super_admin is allowed. Confirm backend RPC authorization independently; only active super_admin/finance may approve/reject requests.
+- `src/pages/admin/adminShared.tsx` defines the central navigation. Add the dedicated upgrade queue beside Finance/Subscriptions, not inside the onboarding queue. Ensure `canOpenAdminPath` filters the link consistently.
+- `src/lib/adminNavigationPermissions.ts` and `src/components/ProtectedRoute.tsx` are the client route gates. The new route should use the `subscriptions` path segment so Finance can access it without requiring a SchoolPro product grant; server-side reviewer authorization remains authoritative. Do not weaken the existing `/admin/subscriptions` super-admin-only override route.
+
+### Central Admin delivery requirements
+
+1. New `AdminSchoolProUpgradeRequests` page: list requests by status, school, requested target tier and request date; open a request detail panel showing immutable quote snapshot beside current live subscription/catalogue values.
+2. Decision controls: approve/reject only, mandatory reason, optimistic version check; stale quote must transition to stale and require a fresh school request. No editing quote amounts or manually activating tiers.
+3. After approval, display the linked difference-only invoice and payment status. Do not treat approval or receipt upload as activation.
+4. Reuse `InvoiceWorkbench` / existing `review_direct_bank_transfer` flow for Finance bank-statement reconciliation. The finalizer's upgrade branch is the only normal activation mechanism.
+5. Preserve `AdminSchoolProSubscriptions` and `control_center_activate_schoolpro` as an explicitly labelled, reason-required, separately audited emergency/manual override.
+6. Add navigation and route tests proving Finance and Super Admin access the review queue, while support/platform_admin and school users cannot approve/reject; only Super Admin retains the manual override route.
+
+No Central Admin application code or route was changed during this inspection.

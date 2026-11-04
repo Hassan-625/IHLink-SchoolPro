@@ -262,7 +262,7 @@ with leaders as materialized (
     and private.schoolpro_operationally_active(s.id)
     and (
       private.is_admin(array['super_admin'::public.user_role])
-      or (private.schoolpro_module_allowed(s.id,'students') and private.schoolpro_member_can_manage(s.id))
+      or (private.schoolpro_module_allowed(s.id,'students') and public.schoolpro_member_can_manage(s.id))
       or private.schoolpro_can_issue_transcript(s.id)
     )
 ), readable as (

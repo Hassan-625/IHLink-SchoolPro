@@ -2264,3 +2264,11 @@ This section supersedes older stage-status summaries above where they conflict.
 - Reviewed current Supabase database-function security guidance: prefer invoker; where definer is required, use `search_path = ''`, schema-qualify relations, and narrow EXECUTE grants.
 - Reviewed current RLS/API guidance: exposed tables require RLS, and function EXECUTE privileges must be scoped separately because RLS does not protect function calls.
 - Reviewed the 2026-11-02 Supabase CLI v3 breaking-change notice; local-by-default database commands and hosted confirmation requirements are relevant to release procedure.
+
+
+### Annual-upgrade source/UI mapping follow-up — 2026-11-04
+- Read-only source inspection confirmed `src/pages/schoolpro/SchoolProSubscription.tsx` currently offers only the ordinary `prepare_schoolpro_bank_subscription` purchase/renewal path and shared receipt upload; there is no upgrade quote/request/review state UI yet. The upgrade action must be separate and must never call the ordinary purchase RPC.
+- `src/pages/schoolpro/SchoolProPricing.tsx` is informational and must not calculate authoritative upgrade quotes.
+- Existing Node assertion scripts and disposable PostgreSQL tests are the repository's regression convention.
+- Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these source integration points, the current migration-ledger boundary, and the local CLI/test requirement (commit `27856f50f0e276392f193d5b95720f910cc0a110`).
+- Environment limitation: GitHub/Supabase MCP is available, but no checked-out repository shell is exposed here to run `supabase migration new`, disposable PostgreSQL, or npm tests. Do not bypass that workflow by fabricating a migration blob. Implementation remains pending in the supported repository CLI/test environment; no migration or production change has been made.

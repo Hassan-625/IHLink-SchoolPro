@@ -115,3 +115,26 @@ Enable RLS. School users may read their own school's request and create a reques
 - Existing annual purchase/renewal proof path regression passes.
 - No production migration is applied until explicit approval. No merge or Render deployment without explicit approval.
 - Stage C result entry/review/publication is outside this specification and remains deferred.
+
+
+## 8. Exact live-schema mapping (read-only recheck, 2026-11-04)
+
+The implementation was cross-checked against live `information_schema.columns`, constraints, and function definitions. These are the confirmed integration points:
+
+- `schoolpro_subscriptions`: `id, school_id, tier, billing_cycle, amount, status, starts_at, renews_at, managed_by_ihlink, customization_level, updated_at`. The existing row has one current subscription per school and is the authoritative proration snapshot.
+- `schoolpro_subscription_catalog`: `id, code, name, monthly_price, termly_price, annual_price, active, features, updated_at`. Active annual catalogue rows currently resolve to Starter ₦50,000, Professional ₦100,000, Enterprise ₦150,000.
+- `schoolpro_subscription_intents`: `id, school_id, payer_user_id, catalog_id, billing_cycle, amount, virtual_account_id, reference, status, transaction_ref, paid_at, created_at, updated_at, payment_method, replaces_invoice_id, invoice_kind, demo_request_id`. Existing constraints allow only invoice kinds `subscription` and `demo`; subscription invoice amount must be positive. Add a nullable unique `upgrade_request_id` FK and preserve all existing constraints and the ordinary purchase RPC.
+- `direct_transfer_submissions`: `id, user_id, platform_code, invoice_id, source_reference, bank_account_id, amount, sender_name, sender_bank, customer_reference, transferred_at, proof_storage_path, status, admin_note, verified_by, verified_at, created_at, updated_at`. The upgrade path must match invoice ID, payer user ID and exact amount against this row before settlement.
+- `ihlink_bank_accounts`: `id, label, bank_name, account_name, account_number, is_active, is_default, created_by, created_at, updated_at`. The payment finalizer must lock this row and require `is_active=true`; existence alone is insufficient.
+- `schoolpro_subscription_payments`: `id, school_id, subscription_id, payer_user_id, provider, reference, amount, status, virtual_account_id, transaction_ref, provider_payload, verified_at, credited_at, created_at, updated_at`. Record upgrade request and invoice identifiers in provider_payload and enforce unique payment identity/reference as supported by existing constraints.
+- `schoolpro_schools` contains `id, owner_id, name, code, address, plan, status, created_at, updated_at`; upgrade settlement must update `plan` only in the same transaction as the subscription and payment records.
+
+Security and concurrency requirements:
+- Existing school billing helper is `private.has_school_access(uuid, school_member_role[])`; invoke with only proprietor, administrator and bursar roles. This helper checks active profile and school ownership/member role.
+- Existing IHLink reviewer gate in the payment finalizer is active account plus `private.is_admin(ARRAY['super_admin','finance']::public.user_role[])`.
+- The transfer verifier currently returns early when a submission is already in the requested decision state. Upgrade settlement must not use that early return as proof of a paid upgrade: it must verify the linked upgrade request, paid invoice and unique credited payment are all already settled, otherwise raise an integrity exception.
+- The existing bank-reference collision check is scoped to same bank account and approved/verified submissions. The upgrade branch must use the agreed global reconciliation scope (normalized reference across active/reconciled transfer records, with bank account context retained), and must remain compatible with the ordinary branch's established behavior.
+- Lock ordering should be consistent across request, review and settlement RPCs (school → subscription → catalogue → upgrade request → invoice → transfer proof → bank account) to reduce deadlocks. Recheck the quote snapshot after locks are acquired.
+- Do not rely on client-supplied quote amounts, tier order, term seconds, or reviewer identity. All are server-derived.
+
+No production rows were written by this inspection. This section is an implementation contract, not a migration or deployment.

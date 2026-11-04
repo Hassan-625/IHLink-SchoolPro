@@ -47,7 +47,7 @@ export function SchoolProPricing(){
   return()=>{active=false;};
  },[]);
  return <PageShell product="schoolpro"><div className="mx-auto max-w-[1280px] px-6 py-12 lg:px-10">
-  <div className="mb-10 text-center"><Badge className="mb-3 border-purple-200 bg-purple-50 text-purple-700">Pricing</Badge><h1 className="mb-3 text-4xl font-extrabold text-ink">Pricing That Scales With Your School</h1><p className="mx-auto max-w-2xl text-base text-muted">Compare the live SchoolPro packages, their included modules and configured billing periods. Prices and plan entitlements are maintained by IHLink.</p></div>
+  <div className="mb-10 text-center"><Badge className="mb-3 border-purple-200 bg-purple-50 text-purple-700">Pricing</Badge><h1 className="mb-3 text-4xl font-extrabold text-ink">Pricing That Scales With Your School</h1><p className="mx-auto max-w-2xl text-base text-muted">Compare the live SchoolPro packages, their included modules and annual subscription prices. Prices and plan entitlements are maintained by IHLink.</p></div>
   <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
    {loading&&<p role="status">Loading current subscription prices…</p>}{error&&<p role="alert" className="text-rose-700">Pricing could not be loaded: {error}</p>}{!loading&&!error&&!plans.length&&<p>No active public SchoolPro plans are available.</p>}
    {plans.map(plan=><Card key={plan.code} padding="lg" className={plan.popular?'relative border-2 border-purple-400 shadow-float':''}>

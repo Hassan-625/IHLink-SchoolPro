@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 const read=path=>readFile(path,'utf8');
-const [register,access,shared,app,pricing,subscription,games,migration,dashboard,schoolPermissions]=await Promise.all([
+const [register,access,shared,app,pricing,subscription,games,migration,dashboard,schoolPermissions,permissionMap]=await Promise.all([
  read('src/pages/schoolpro/SchoolProRegister.tsx'),
  read('src/lib/schoolAccess.ts'),
  read('src/pages/schoolpro/schoolShared.tsx'),
@@ -12,6 +12,7 @@ const [register,access,shared,app,pricing,subscription,games,migration,dashboard
  read('src/pages/schoolpro/SchoolProGames.tsx'),
  read('supabase/migrations/20261104150000_schoolpro_stage_ab_dashboard_and_report_entitlement_corrections.sql'),
  read('src/pages/schoolpro/SchoolProLiveDashboard.tsx'),
+ read('src/lib/schoolPermissions.ts'),
  read('src/lib/schoolPermissions.ts')
 ]);
 
@@ -22,6 +23,7 @@ assert(access.includes("case 'game_master':return '/schoolpro/games';"),'Game Ma
 assert(access.includes("case 'discipline_master':case 'counsellor':return '/schoolpro/discipline';"),'Discipline specialists must land on their authorized workspace');
 assert(access.includes("case 'bursar':case 'accountant':return '/schoolpro/fees';")&&access.includes("case 'exam_officer':return '/schoolpro/results';")&&access.includes("case 'registrar':return '/schoolpro/students';'),'Finance, examination and registrar roles must land on their authorized workspace');
 assert(schoolPermissions.includes("'judge':'dashboard'"),'Assigned judges must see their judging portal link through the staff navigation permission filter');
+assert(permissionMap.includes("const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};")&&!permissionMap.includes("reports:'advanced_reports'"),'Standard report permission must not require the Enterprise advanced_reports entitlement');
 assert(shared.includes("label:'Houses, Games & Competitions',href:'/schoolpro/games'"),'School management navigation must expose Games');
 assert(shared.includes("label:'My Judging Panel',href:'/schoolpro/judge'"),'Teacher navigation must expose assigned judging panel');
 assert(app.includes('<Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>'),'Games route must retain its role/permission guard');

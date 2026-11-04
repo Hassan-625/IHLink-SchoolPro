@@ -2135,3 +2135,6 @@ This section supersedes older stage-status summaries above where they conflict.
 
 
 - PR #116: https://github.com/Hassan-625/IHLink-SchoolPro/pull/116 (open, not merged). Latest branch head at this handover update: `8a7ade425e0de7159d0f2301c3819374067360b9`. Latest exact-head CI #2440 and payment validation #2166 are queued. No production migration or Render deployment has occurred.
+ 
+
+- Follow-up found and corrected a second half of the standard-report plan gate: `permissionPlanFeature()` still mapped generic `reports` permission to Enterprise `advanced_reports`, even after the SQL function was corrected. It now maps only CBT and custom branding; the dedicated Advanced Reports route remains Enterprise-gated. Regression coverage asserts this separation.

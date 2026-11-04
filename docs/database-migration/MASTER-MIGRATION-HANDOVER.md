@@ -2143,3 +2143,8 @@ This section supersedes older stage-status summaries above where they conflict.
 - Added a Plans & Subscription entry to the school management navigation, visible only to proprietor, administrator, bursar and platform super-administrator roles. The subscription page continues to check billing-manager access. Regression coverage checks the menu item and role filter.
 - Confirmed the Enterprise Advanced Reports route currently renders a generic "module is being configured" fallback: `SchoolProModulePage` has no `reports` definition. Recorded this as an explicit release blocker in the correction register; do not claim Advanced Reports is implemented until its actual analytics workspace, report catalogue, filters, aggregation and exports exist.
 - Corrected the frontend plan-permission map so generic `reports` does not require Enterprise. Advanced Reports remains separately protected by the dedicated entitlement gate.
+
+
+- Updated `scripts/test-school-dashboard-roles.mjs` to match the specialist role landing routes introduced in this correction pass; the prior test still expected all specialists to land on the generic administration dashboard.
+- Latest PR #116 head: `a4fb67b1f5cce7f6fd850e0e5fedbbb10131dcd5`. Exact-head SchoolPro CI #2453 and payment validation #2179 are queued. Earlier payment validation #2171 passed on the preceding commit; do not treat it as validation of the current head.
+- Added Plans & Subscription to school management navigation, with role filtering for proprietor, administrator, bursar and platform super-administrator. No production deployment or migration application has occurred.

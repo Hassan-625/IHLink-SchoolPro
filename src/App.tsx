@@ -153,7 +153,7 @@ export default function App(){
   <Route path="/schoolpro/roles-permissions" element={<Guard permission="roles"><SchoolProRoles/></Guard>}/>
   <Route path="/schoolpro/user-permissions" element={<Guard permission="roles"><SchoolProPermissions/></Guard>}/>
   <Route path="/schoolpro/documents" element={<Guard permission="documents"><SchoolProDocumentStudio/></Guard>}/>
-  <Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProEntitlementGate feature="advanced_reports"><SchoolProBroadsheet/></SchoolProEntitlementGate></Guard>}/>
+  <Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProBroadsheet/></Guard>}/>
   <Route path="/schoolpro/settings" element={<Guard permission="branding"><SchoolProEntitlementGate feature="custom_branding"><SchoolProBrandingSettings/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/student-cbt" element={<Guard><SchoolProEntitlementGate feature="cbt"><SchoolProStudentCBT/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/question-bank" element={<Guard permission="cbt"><SchoolProEntitlementGate feature="cbt"><SchoolProQuestionBank/></SchoolProEntitlementGate></Guard>}/>

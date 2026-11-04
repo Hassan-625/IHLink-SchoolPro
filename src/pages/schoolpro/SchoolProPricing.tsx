@@ -9,7 +9,7 @@ import {naira} from '@/lib/designTokens';
 import {Check,ArrowRight} from 'lucide-react';
 import {supabase} from '@/lib/supabase';
 
-type Plan={code:string;name:string;monthly:number;termly:number;annual:number;features:string[];popular:boolean};
+type Plan={code:string;name:string;annual:number;features:string[];popular:boolean};
 const planFeatures=(flags:Record<string,unknown>)=>[
  'Core school management',
  'Student, staff, class and academic-session management',
@@ -32,7 +32,7 @@ export function SchoolProPricing(){
   let active=true;
   if(!supabase){setError('Pricing is unavailable.');setLoading(false);return()=>{active=false;};}
   void Promise.all([
-   supabase.from('schoolpro_subscription_catalog').select('code,name,monthly_price,termly_price,annual_price').eq('active',true).order('annual_price'),
+   supabase.from('schoolpro_subscription_catalog').select('code,name,annual_price').eq('active',true).order('annual_price'),
    supabase.from('schoolpro_plan_catalog').select('tier,features')
   ]).then(([catalog,entitlements])=>{
    if(!active)return;
@@ -40,7 +40,7 @@ export function SchoolProPricing(){
    const rows=(catalog.data||[]).filter(p=>['starter','professional','enterprise'].includes(p.code));
    setPlans(rows.map(p=>{
     const flags=(entitlements.data||[]).find(x=>x.tier===p.code)?.features||{};
-    return{code:p.code,name:p.name,monthly:Number(p.monthly_price||0),termly:Number(p.termly_price||0),annual:Number(p.annual_price||0),features:planFeatures(flags),popular:p.code==='professional'};
+    return{code:p.code,name:p.name,annual:Number(p.annual_price||0),features:planFeatures(flags),popular:p.code==='professional'};
    }));
    setLoading(false);
   }).catch(()=>{if(active){setError('Pricing could not be loaded.');setLoading(false);}});
@@ -53,7 +53,7 @@ export function SchoolProPricing(){
    {plans.map(plan=><Card key={plan.code} padding="lg" className={plan.popular?'relative border-2 border-purple-400 shadow-float':''}>
     {plan.popular&&<Badge className="absolute right-4 top-4 border-purple-600 bg-purple-600 text-white">Most Popular</Badge>}
     <h3 className="text-xl font-bold text-ink">{plan.name}</h3><p className="mb-4 text-sm text-muted">{plan.name} SchoolPro subscription</p>
-    <div className="space-y-1 border-b border-border pb-4 text-sm"><p><span className="font-bold">{price(plan.monthly)}</span> <span className="text-muted">/ month</span></p><p><span className="font-bold">{price(plan.termly)}</span> <span className="text-muted">/ term</span></p><p><span className="font-bold">{price(plan.annual)}</span> <span className="text-muted">/ year</span></p></div>
+    <div className="border-b border-border pb-4 text-sm"><p><span className="text-3xl font-extrabold">{price(plan.annual)}</span> <span className="text-muted">/ year</span></p></div>
     <Link to="/schoolpro/register"><Button fullWidth className="mt-4" themeClass={plan.popular?'bg-purple-600 hover:bg-purple-700':undefined} variant={plan.popular?undefined:'secondary'}>Register with {plan.name}</Button></Link>
     <div className="mt-6 space-y-3">{plan.features.map((feature,index)=><div key={index} className="flex items-start gap-2 text-sm text-ink"><Check className="mt-0.5 h-4 w-4 shrink-0 text-purple-500"/><span>{feature}</span></div>)}</div>
    </Card>)}

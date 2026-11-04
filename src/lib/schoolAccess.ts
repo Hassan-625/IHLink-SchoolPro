@@ -7,6 +7,7 @@ export function schoolDashboard(role:string){
   case 'parent':return '/schoolpro/parent-dashboard';
   case 'class_teacher':case 'teacher':return '/schoolpro/teacher-dashboard';
   case 'proprietor':return '/schoolpro/proprietor-dashboard';
+  case 'game_master':return '/schoolpro/games';
   case 'administrator':case 'bursar':case 'accountant':case 'super_administrator':return '/schoolpro/admin-dashboard';
   default:return schoolOperationalRoles.includes(schoolRole(role))?'/schoolpro/admin-dashboard':'/schoolpro';
  }

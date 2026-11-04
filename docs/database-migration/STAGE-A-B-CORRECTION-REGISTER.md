@@ -74,9 +74,9 @@
 
 ### B8. Plans, registration and upgrade workflow
 - Plan split: Starter = core school management + standard reports + Games & Sports; Professional = Starter + CBT; Enterprise = Professional + Advanced Reports + custom-branding request eligibility.
-- Show each plan's included features and configured prices/billing periods in the public pricing page and school subscription page.
+- Show each plan's included features and annual price in the public pricing page and school subscription page. The current paid activation workflow is annual-only; do not advertise monthly/termly billing until payment and activation support those cycles.
 - Registration module selection must include Games & Sports.
-- Use one authoritative entitlement catalogue. Current live data has two catalogues: `schoolpro_plan_catalog` for tier feature flags and `schoolpro_subscription_catalog` for billing prices; the subscription catalogue's feature arrays are empty, while its price periods are populated. The plan catalogue also has a legacy `premium` tier and separate `term_price` values. Reconcile the display to the authoritative feature catalogue and configured price catalogue; do not silently invent or overwrite prices.
+- Use one authoritative entitlement catalogue. Current live data has two catalogues: `schoolpro_plan_catalog` for tier feature flags and `schoolpro_subscription_catalog` for billing prices; the subscription catalogue's feature arrays are empty. Although monthly/termly/annual columns contain values, the live admin activation workflow explicitly supports annual billing only; only annual prices should be advertised. The plan catalogue also has a legacy `premium` tier and separate `term_price` values. Reconcile the display to the authoritative feature catalogue and configured price catalogue; do not silently invent or overwrite prices.
 - Upgrade lifecycle: school request → IHLink review → approve/reject with reason → invoice/outstanding amount → school payment → IHLink verification → atomic plan activation and audit history.
 - Approval alone must not activate the higher tier. Calculate any existing-payment credit/proration from an explicit billing policy before showing a final amount.
 - Central Admin needs a subscription/upgrade queue, review, payment verification, active subscription oversight and audited plan/feature pricing controls.

@@ -51,7 +51,7 @@ export function DashboardLayout({
   const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
   const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
-  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>(!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0)&&(item.href==='/schoolpro/profile'||(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href)))))})).filter(section=>section.items.length)):providedSections;
+  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>(!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0)&&(item.href==='/schoolpro/profile'||(item.href==='/schoolpro/subscription'&&!['proprietor','administrator','bursar','super_administrator'].includes(role))?false:(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href)))))})).filter(section=>section.items.length)):providedSections;
   const theme = productThemes[product];
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);

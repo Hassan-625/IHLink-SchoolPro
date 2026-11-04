@@ -2225,3 +2225,12 @@ This section supersedes older stage-status summaries above where they conflict.
 - Remaining Stage A–B blockers include implementing the actual Enterprise Advanced Reports workspace before advertising it, completing the separate school-initiated annual upgrade workflow (proportional unused-term credit, IHLink approval, difference-only invoice, Finance-verified receipt and atomic activation), reconciling the entitlement and subscription catalogues, and closing the full role/dashboard matrix.
 - Annual upgrade specification remains at `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`. Preserve the existing full-price annual purchase/renewal path; the upgrade workflow must be a separate branch and must not activate entitlements before verified payment.
 - Stage C remains deferred. No Stage C score-entry, result calculation, review or publication implementation is authorized by this merge.
+
+## 2026-11-04 — Post-merge Stage A–B validation and upgrade branch
+
+- Post-merge SchoolPro CI run #2468 (41851796251) completed successfully on merge commit 04e18a260ee5ad5d3028a3414b91a54f41563147. All executed jobs passed, including frontend/typecheck/build validation, local Supabase receipt-storage isolation, payment-review RLS/concurrency, academic calendar, progression subject requirements, section leadership, Form Master attendance, subject assignment guard, houses/House Master allocation, graduation certificates, result-verification exposure, public-admission abuse controls, result-PIN rate limiting, and tenant-integrity integration.
+- The live tenant-acceptance job was skipped because no active SchoolPro workspaces exist. No test school/workspace or operational records were created.
+- Post-merge payment-page validation #2194 (41851796252) completed successfully.
+- Created isolated implementation branch feat/schoolpro-annual-upgrade-workflow from the verified merge commit. No application code or SQL migration has yet been added to this branch.
+- No production Supabase migration, schema/data write, subscription/payment change, Render deployment, or Stage C implementation occurred.
+- Next: author the forward-only annual-upgrade migration and disposable PostgreSQL regression/security tests on this branch, then implement the SchoolPro upgrade request/quote interface and Central Admin review queue. Preserve the ordinary annual purchase/renewal path, the approved proportional unused-term credit policy, IHLink approval, difference-only invoice, and Finance-verified atomic activation. Stage C remains deferred.

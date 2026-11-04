@@ -2234,3 +2234,33 @@ This section supersedes older stage-status summaries above where they conflict.
 - Created isolated implementation branch feat/schoolpro-annual-upgrade-workflow from the verified merge commit. No application code or SQL migration has yet been added to this branch.
 - No production Supabase migration, schema/data write, subscription/payment change, Render deployment, or Stage C implementation occurred.
 - Next: author the forward-only annual-upgrade migration and disposable PostgreSQL regression/security tests on this branch, then implement the SchoolPro upgrade request/quote interface and Central Admin review queue. Preserve the ordinary annual purchase/renewal path, the approved proportional unused-term credit policy, IHLink approval, difference-only invoice, and Finance-verified atomic activation. Stage C remains deferred.
+
+
+## 2026-11-04 annual upgrade implementation — read-only payment-path verification
+
+**Status:** Implementation not yet started. This step performed read-only production function inspection and documented concrete safety gaps. No production DDL/DML, migration application, subscription/payment mutation, merge, or Render deployment occurred.
+
+### Existing RPC behaviour confirmed from live function definitions
+- `public.prepare_schoolpro_bank_subscription(uuid,uuid)` creates/reuses a pending full-price annual bank-transfer intent. It checks the school owner or proprietor/administrator/bursar membership and an active annual catalogue price. It is the ordinary purchase/renewal entry point and must remain intact.
+- `public.submit_service_bank_transfer(...)` validates a pending SchoolPro bank-transfer intent, exact amount, customer-owned receipt object, active receiving account at submission time, and duplicate pending/settled proof for that invoice.
+- `public.review_direct_bank_transfer(uuid,text,text)` delegates `schoolpro_subscription` submissions to `private.review_school_subscription_transfer`.
+- `private.review_school_subscription_transfer(uuid,text,text)` currently activates the plan as part of ordinary Finance approval, marks the intent paid, inserts a credited payment, and updates `schoolpro_schools.plan`. It is not upgrade-aware.
+
+### Exact settlement gaps to close in the upgrade-only branch
+1. The existing same-decision early return checks only the transfer status. Upgrade idempotency must additionally prove that the linked request is `paid`, the invoice is `paid`, and exactly one credited payment exists for the request/invoice before returning success.
+2. The existing finalizer locks a receiving bank account but does not require `is_active=true` at verification. The upgrade branch must require an active account at settlement.
+3. Existing duplicate-reference detection is scoped to the same bank account. The upgrade branch must reject a normalized duplicate reference across the agreed global reconciliation scope, while retaining bank-account context.
+4. The existing ordinary purchase/renewal branch must retain its current pricing, renewal-date, payment, and audit semantics; do not route it through the upgrade quote logic.
+5. School billing authorization must be explicit: owner or proprietor/administrator/bursar. Do not accidentally inherit the broader default role list of `private.has_school_access`, whose default includes teacher/accountant and whose helper also permits platform administrators.
+
+### Implementation controls
+- Continue on `feat/schoolpro-annual-upgrade-workflow`, based on Stage A–B merge commit `04e18a260ee5ad5d3028a3414b91a54f41563147`.
+- Author migration and regression tests only; do not apply the migration to the shared production Supabase project.
+- Before migration authoring, use the repository's Supabase CLI workflow to create the migration file. The current Supabase CLI v3 release (2026-11-02) changes database commands to local-by-default and requires explicit confirmation for hosted changes; any future hosted operation must be treated as a separately approved action.
+- Security-definer RPCs must pin an empty search_path, schema-qualify all relations, and explicitly revoke/grant EXECUTE to intended roles. RLS must be enabled on the exposed request table, and direct client writes to quote/review/payment/activation fields must remain unavailable.
+- Next implementation gate: inspect the exact repository migration/test harness and the current annual subscription UI + Central Admin invoice workbench; then author a forward-only migration and disposable PostgreSQL tests covering quote calculation, stale snapshots, access control, proof matching, active bank account, global reference replay, atomic settlement, and idempotency. Run the existing ordinary annual purchase/renewal regression before proposing a PR.
+
+### Supabase documentation check
+- Reviewed current Supabase database-function security guidance: prefer invoker; where definer is required, use `search_path = ''`, schema-qualify relations, and narrow EXECUTE grants.
+- Reviewed current RLS/API guidance: exposed tables require RLS, and function EXECUTE privileges must be scoped separately because RLS does not protect function calls.
+- Reviewed the 2026-11-02 Supabase CLI v3 breaking-change notice; local-by-default database commands and hosted confirmation requirements are relevant to release procedure.

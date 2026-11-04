@@ -23,7 +23,7 @@ assert(shared.includes("label:'My Judging Panel',href:'/schoolpro/judge'"),'Teac
 assert(app.includes('<Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>'),'Games route must retain its role/permission guard');
 assert(app.includes('<Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProBroadsheet/></Guard>}/>'),'Standard broadsheet must not be wrapped in the Enterprise advanced-reports gate');
 assert(app.includes('<Route path="/schoolpro/reports" element={<Guard><SchoolProEntitlementGate feature="advanced_reports">'),'Advanced reports must remain Enterprise-gated');
-assert(pricing.includes("from('schoolpro_plan_catalog')")&&pricing.includes('monthly_price')&&pricing.includes('termly_price')&&pricing.includes('annual_price'),'Pricing must combine authoritative entitlements with all configured billing periods');
+assert(pricing.includes("from('schoolpro_plan_catalog')")&&pricing.includes('annual_price')&&!pricing.includes('monthly_price')&&!pricing.includes('termly_price'),'Pricing must combine authoritative entitlements with the currently supported annual billing cycle');
 assert(pricing.includes('Houses, Games, Sports and Competitions'),'Public plan comparison must include Games on every tier');
 assert(subscription.includes("games:'Houses, Games, Sports & Competitions'"),'Subscription view must show Games as a plan capability');
 assert(games.includes('House Masters')&&games.includes('Inter-house standings')&&games.includes('Staff judging panel'),'Games management must retain houses, judges and standings');

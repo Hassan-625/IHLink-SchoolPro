@@ -2138,3 +2138,8 @@ This section supersedes older stage-status summaries above where they conflict.
  
 
 - Follow-up found and corrected a second half of the standard-report plan gate: `permissionPlanFeature()` still mapped generic `reports` permission to Enterprise `advanced_reports`, even after the SQL function was corrected. It now maps only CBT and custom branding; the dedicated Advanced Reports route remains Enterprise-gated. Regression coverage asserts this separation.
+
+
+- Added a Plans & Subscription entry to the school management navigation, visible only to proprietor, administrator, bursar and platform super-administrator roles. The subscription page continues to check billing-manager access. Regression coverage checks the menu item and role filter.
+- Confirmed the Enterprise Advanced Reports route currently renders a generic "module is being configured" fallback: `SchoolProModulePage` has no `reports` definition. Recorded this as an explicit release blocker in the correction register; do not claim Advanced Reports is implemented until its actual analytics workspace, report catalogue, filters, aggregation and exports exist.
+- Corrected the frontend plan-permission map so generic `reports` does not require Enterprise. Advanced Reports remains separately protected by the dedicated entitlement gate.

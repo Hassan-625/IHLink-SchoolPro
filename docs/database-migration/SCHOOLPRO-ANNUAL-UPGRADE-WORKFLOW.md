@@ -163,3 +163,28 @@ No production rows were written by this inspection. This section is an implement
 - The Stage A–B dashboard/report entitlement correction is committed on the feature branch as part of PR #116, but no annual-upgrade migration has been created or applied.
 - Supabase CLI v3.0.0 was released on 2026-11-02. Before any local migration workflow, confirm the installed CLI version and use the v3 local-by-default command semantics. Do not use a hosted database command implicitly; hosted changes require a separately approved operation.
 - This environment exposes GitHub and Supabase MCP actions but not a checked-out repository shell in which to run `supabase migration new`, disposable PostgreSQL, or the app's npm scripts. Therefore the next code step must be performed in the repository's supported CLI/test environment; creating a migration blob directly through GitHub would bypass the required migration-generation and local verification workflow. No migration file has been fabricated as a substitute.
+
+
+## 11. Live schema/RLS verification — read-only, 2026-11-04
+
+The following was confirmed through catalog-only SELECT queries against the configured Supabase project. No rows were inserted, updated, or deleted.
+
+### Existing payment ledger and indexes
+- `schoolpro_subscription_payments` has unique indexes on `reference` and `transaction_ref`, but no request/invoice foreign key today. The upgrade migration should add a nullable `upgrade_request_id` FK to the payment ledger (or a rigorously unique request reference in provider_payload plus a unique expression/index); prefer a typed FK and unique partial index for one credited payment per upgrade request.
+- `schoolpro_subscription_intents` has a unique `reference`, unique nullable `transaction_ref`, unique `replaces_invoice_id`, and unique `demo_request_id`. There are two partial unique indexes enforcing one pending invoice per school: `schoolpro_one_pending_ihlink_subscription` and `schoolpro_subscription_pending_school_unique`. Do not create the upgrade invoice while an unrelated pending purchase invoice exists; the approved-upgrade invoice should use the existing one-pending-per-school invariant and must not weaken it.
+- `direct_transfer_submissions` currently has a unique key on `(user_id, platform_code, source_reference, customer_reference)`; it does not have a unique index for normalized customer bank references across receiving accounts. Upgrade verification needs a concurrency-safe duplicate-reference control scoped to the intended platform reconciliation policy.
+
+### Current RLS observations
+- `schoolpro_subscription_intents` currently exposes SELECT only to the payer, school proprietor/administrator/bursar, or IHLink super_admin/finance. No direct client INSERT/UPDATE/DELETE policy was returned. Preserve RPC-only writes for the new workflow.
+- `schoolpro_subscription_payments` exposes SELECT to payer, proprietor/administrator/accountant/bursar, or IHLink super_admin/finance; no direct client write policy was returned. Preserve server-only settlement writes.
+- `schoolpro_subscriptions` has member-read policies and a super_admin-only write policy; do not widen client writes for upgrades. The authoritative settlement RPC must update the subscription and school plan atomically.
+- `schoolpro_subscription_catalog` has overlapping authenticated SELECT policies (active-only and unrestricted `true`) plus an anon active-only policy. This is existing catalogue policy drift; it is not required to implement upgrades and should not be silently changed in this migration.
+- `schoolpro_audit_logs` is readable by IHLink super_admin or school proprietor/administrator/IT admin scope. Record the request/approval/rejection/settlement events through the existing audit table without granting client writes.
+
+### Design consequences
+1. Model the upgrade request separately from `schoolpro_subscription_intents`; do not broaden `invoice_kind` or relax its existing positive-amount subscription constraint.
+2. Only after IHLink approves a request should the system create a positive difference-only annual subscription invoice linked by a typed `upgrade_request_id`. If the computed balance is zero/negative, reject the request into commercial review and do not create an invoice.
+3. Keep existing one-pending-invoice-per-school constraints intact. A pending ordinary renewal/purchase must be resolved before issuing an upgrade invoice; the quote should be refreshed at approval because subscription dates/prices may have changed.
+4. Add typed linkage and uniqueness to the payment ledger so replay/idempotency can be proven by database constraints, not JSON-only metadata.
+5. Keep client access read-only; expose narrowly scoped security-definer RPCs for quote/request, IHLink decision, and Finance settlement, with explicit EXECUTE grants and audit metadata.
+6. Avoid unrelated catalogue RLS cleanup in the upgrade migration; track that separately.

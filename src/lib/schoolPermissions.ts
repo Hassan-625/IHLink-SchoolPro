@@ -21,6 +21,6 @@ export const studentReadPermissions=['dashboard','results','finance','attendance
 export const parentReadPermissions=['dashboard','results','finance','attendance','announcements','notifications'];
 
 export function permissionPlanFeature(permission:string){
- const features:Record<string,string>={cbt:'cbt',reports:'advanced_reports',branding:'custom_branding'};
+ const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};
  return features[permission]||null;
 }

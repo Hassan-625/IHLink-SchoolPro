@@ -16,7 +16,7 @@ export function useSchoolProContext():SchoolContext{
  const ownerPortal=pathname==='/schoolpro/proprietor-dashboard'||pathname==='/schoolpro/admin-dashboard';
  const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':rememberedPortal==='owner'?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
- const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=valid||(user?localStorage.getItem(storageKey):null)||(profile?.role==='super_admin'?localStorage.getItem('ihlink_schoolpro_admin_school'):null);
+ const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=profile?.role==='super_admin'?(valid||localStorage.getItem('ihlink_schoolpro_admin_school')):(valid||(user?localStorage.getItem(storageKey):null));
  const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);
  const [state,setState]=useState<SchoolContext&{key:string}>(()=>{const cached=cachedSchoolAccess<SchoolContext>('context:'+key,true);return cached?{...cached,key}:{...empty,key:'',loading:true}});
  useEffect(()=>{const refresh=()=>setRevision(v=>v+1);window.addEventListener('ihlink:school-refresh',refresh);return()=>window.removeEventListener('ihlink:school-refresh',refresh);},[]);

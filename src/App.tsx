@@ -30,6 +30,8 @@ import { SchoolProFees } from "@/pages/schoolpro/SchoolProFees";
 import { SchoolProReportCard } from "@/pages/schoolpro/SchoolProReportCard";
 import { SchoolProClassResultsPrint } from "@/pages/schoolpro/SchoolProClassResultsPrint";
 import { SchoolProStaff } from "@/pages/schoolpro/SchoolProStaff";
+import { SchoolProGames } from "@/pages/schoolpro/SchoolProGames";
+import { SchoolProJudgePortal } from "@/pages/schoolpro/SchoolProJudgePortal";
 import { SchoolProClasses } from "@/pages/schoolpro/SchoolProClasses";
 import { SchoolProSubjects } from "@/pages/schoolpro/SchoolProSubjects";
 import { SchoolProAttendance } from "@/pages/schoolpro/SchoolProAttendance";
@@ -132,6 +134,8 @@ export default function App(){
   <Route path="/schoolpro/receipts/:receiptId" element={<Guard permission="finance"><SchoolProReceipt/></Guard>}/>
   <Route path="/schoolpro/invoices/:invoiceId" element={<Guard permission="finance"><SchoolProInvoice/></Guard>}/>
   <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard>}/>
+  <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
+  <Route path="/schoolpro/judge" element={<Guard><SchoolProJudgePortal/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>
   <Route path="/schoolpro/subjects" element={<Guard permission="subjects"><SchoolProSubjects/></Guard>}/>
   <Route path="/schoolpro/attendance" element={<Guard permission="attendance"><SchoolProAttendance/></Guard>}/>
@@ -149,7 +153,7 @@ export default function App(){
   <Route path="/schoolpro/roles-permissions" element={<Guard permission="roles"><SchoolProRoles/></Guard>}/>
   <Route path="/schoolpro/user-permissions" element={<Guard permission="roles"><SchoolProPermissions/></Guard>}/>
   <Route path="/schoolpro/documents" element={<Guard permission="documents"><SchoolProDocumentStudio/></Guard>}/>
-  <Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProEntitlementGate feature="advanced_reports"><SchoolProBroadsheet/></SchoolProEntitlementGate></Guard>}/>
+  <Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProBroadsheet/></Guard>}/>
   <Route path="/schoolpro/settings" element={<Guard permission="branding"><SchoolProEntitlementGate feature="custom_branding"><SchoolProBrandingSettings/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/student-cbt" element={<Guard><SchoolProEntitlementGate feature="cbt"><SchoolProStudentCBT/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/question-bank" element={<Guard permission="cbt"><SchoolProEntitlementGate feature="cbt"><SchoolProQuestionBank/></SchoolProEntitlementGate></Guard>}/>

@@ -10,16 +10,25 @@ CREATE SCHEMA private;
 CREATE SCHEMA storage;
 
 CREATE TYPE public.user_role AS ENUM ('super_admin');
-CREATE TYPE public.school_member_role AS ENUM ('owner','proprietor','administrator','admin','registrar','head_teacher','vice_principal');
+CREATE TYPE public.school_member_role AS ENUM (
+  'owner','proprietor','administrator','admin','registrar',
+  'head_teacher','vice_principal','teacher','class_teacher','exam_officer'
+);
 
 CREATE FUNCTION auth.uid() RETURNS uuid
 LANGUAGE sql STABLE
 AS $$ SELECT NULLIF(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 
+CREATE TABLE public.schoolpro_schools (
+  id uuid PRIMARY KEY,
+  owner_id uuid
+);
+
 CREATE TABLE public.schoolpro_students (
   id uuid PRIMARY KEY,
   school_id uuid NOT NULL,
   user_id uuid,
+  class_id uuid,
   status text NOT NULL DEFAULT 'active'
 );
 CREATE TABLE public.schoolpro_guardian_links (
@@ -34,6 +43,17 @@ CREATE TABLE public.schoolpro_members (
   school_id uuid NOT NULL,
   user_id uuid NOT NULL,
   role public.school_member_role NOT NULL
+);
+CREATE TABLE public.schoolpro_classes (
+  id uuid PRIMARY KEY,
+  school_id uuid NOT NULL,
+  form_teacher_id uuid
+);
+CREATE TABLE public.schoolpro_permission_denials (
+  school_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  module text NOT NULL,
+  PRIMARY KEY (school_id, user_id, module)
 );
 CREATE TABLE public.schoolpro_document_issues (
   id uuid PRIMARY KEY,
@@ -61,7 +81,23 @@ LANGUAGE sql STABLE
 AS $body$ SELECT false $body$;
 CREATE FUNCTION private.schoolpro_module_allowed(p_school uuid, p_module text) RETURNS boolean
 LANGUAGE sql STABLE
-AS $body$ SELECT EXISTS (SELECT 1 FROM public.schoolpro_members m WHERE m.school_id=p_school AND m.user_id=auth.uid()) $body$;
+AS $body$
+  SELECT
+    EXISTS (
+      SELECT 1
+      FROM public.schoolpro_members m
+      WHERE m.school_id = p_school
+        AND m.user_id = auth.uid()
+        AND m.role::text IN ('proprietor', 'administrator')
+    )
+    AND NOT EXISTS (
+      SELECT 1
+      FROM public.schoolpro_permission_denials d
+      WHERE d.school_id = p_school
+        AND d.user_id = auth.uid()
+        AND d.module = p_module
+    )
+$body$;
 CREATE FUNCTION storage.foldername(p_name text) RETURNS text[]
 LANGUAGE sql IMMUTABLE
 AS $body$ SELECT CASE WHEN array_length(parts,1)>1 THEN parts[1:array_length(parts,1)-1] ELSE ARRAY[]::text[] END FROM (SELECT string_to_array(p_name,'/') AS parts) s $body$;
@@ -124,6 +160,46 @@ USING (
                AND m.role::text IN ('registrar','head_teacher','vice_principal'))
 );
 
+-- Reproduce both original permissive production policies. These are important:
+-- PostgreSQL ORs permissive policies, including SELECT access from FOR ALL.
+CREATE POLICY "school members read document issues"
+ON public.schoolpro_document_issues FOR SELECT TO authenticated
+USING (
+  EXISTS (
+    SELECT 1 FROM public.schoolpro_schools s
+    WHERE s.id = school_id AND s.owner_id = auth.uid()
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.schoolpro_members m
+    WHERE m.school_id = school_id AND m.user_id = auth.uid()
+  )
+  OR EXISTS (
+    SELECT 1 FROM public.schoolpro_students st
+    WHERE st.id = student_id AND st.user_id = auth.uid()
+  )
+);
+
+CREATE POLICY "school managers manage document issues"
+ON public.schoolpro_document_issues FOR ALL TO authenticated
+USING (
+  public.schoolpro_member_can_manage(school_id)
+  OR EXISTS (
+    SELECT 1 FROM public.schoolpro_members m
+    WHERE m.school_id = school_id
+      AND m.user_id = auth.uid()
+      AND m.role::text IN ('registrar','head_teacher','vice_principal')
+  )
+)
+WITH CHECK (
+  public.schoolpro_member_can_manage(school_id)
+  OR EXISTS (
+    SELECT 1 FROM public.schoolpro_members m
+    WHERE m.school_id = school_id
+      AND m.user_id = auth.uid()
+      AND m.role::text IN ('registrar','head_teacher','vice_principal')
+  )
+);
+
 CREATE POLICY "schoolpro document outputs read"
 ON storage.objects FOR SELECT TO authenticated
 USING (
@@ -175,12 +251,38 @@ GRANT EXECUTE ON FUNCTION private.is_admin(public.user_role[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION private.schoolpro_module_allowed(uuid,text) TO authenticated;
 GRANT EXECUTE ON FUNCTION storage.foldername(text) TO authenticated;
 GRANT SELECT ON public.schoolpro_students, public.schoolpro_guardian_links,
-  public.schoolpro_members, public.schoolpro_document_issues TO authenticated, anon;
+  public.schoolpro_members, public.schoolpro_classes, public.schoolpro_schools,
+  public.schoolpro_permission_denials, public.schoolpro_document_issues
+  TO authenticated, anon;
+GRANT INSERT, UPDATE, DELETE
+  ON public.schoolpro_document_issues TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON storage.objects TO authenticated, anon;
 
-INSERT INTO public.schoolpro_students(id,school_id,user_id) VALUES
-('00000000-0000-0000-0000-000000000201','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000301'),
-('00000000-0000-0000-0000-000000000202','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000302');
+INSERT INTO public.schoolpro_schools(id,owner_id) VALUES
+('00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000503'),
+('00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000504');
+INSERT INTO public.schoolpro_members(id,school_id,user_id,role) VALUES
+('00000000-0000-0000-0000-000000000705','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000505','exam_officer'),
+('00000000-0000-0000-0000-000000000706','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000506','teacher'),
+('00000000-0000-0000-0000-000000000707','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000507','teacher'),
+('00000000-0000-0000-0000-000000000708','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000508','administrator'),
+('00000000-0000-0000-0000-000000000709','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000509','administrator');
+
+INSERT INTO public.schoolpro_classes(id,school_id,form_teacher_id) VALUES
+('00000000-0000-0000-0000-000000000901',
+ '00000000-0000-0000-0000-000000000001',
+ '00000000-0000-0000-0000-000000000706'),
+('00000000-0000-0000-0000-000000000902',
+ '00000000-0000-0000-0000-000000000002',
+ NULL);
+
+INSERT INTO public.schoolpro_students(id,school_id,user_id,class_id) VALUES
+('00000000-0000-0000-0000-000000000201','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000301','00000000-0000-0000-0000-000000000901'),
+('00000000-0000-0000-0000-000000000202','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000302','00000000-0000-0000-0000-000000000902');
+
+INSERT INTO public.schoolpro_permission_denials(school_id,user_id,module) VALUES
+('00000000-0000-0000-0000-000000000001',
+ '00000000-0000-0000-0000-000000000509','documents');
 INSERT INTO public.schoolpro_guardian_links(id,school_id,student_id,guardian_user_id,status) VALUES
 ('00000000-0000-0000-0000-000000000601','00000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000201','00000000-0000-0000-0000-000000000401','active'),
 ('00000000-0000-0000-0000-000000000602','00000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000202','00000000-0000-0000-0000-000000000402','active');
@@ -276,6 +378,8 @@ GRANT EXECUTE ON FUNCTION public.assert_delete_noop(uuid) TO authenticated;
 
 
 -- Before the fix: Student B and Guardian B can see the deliberately mismatched issue 103.
+GRANT SELECT ON public.schoolpro_schools TO authenticated;
+
 BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000302',true);
@@ -297,6 +401,7 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000501',true);
 SELECT public.assert_visible_issue_ids(ARRAY[
  '00000000-0000-0000-0000-000000000101'::uuid,
+ '00000000-0000-0000-0000-000000000102'::uuid,
  '00000000-0000-0000-0000-000000000103'::uuid,
  '00000000-0000-0000-0000-000000000104'::uuid,
  '00000000-0000-0000-0000-000000000105'::uuid
@@ -353,9 +458,21 @@ SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000402',true);
 SELECT public.assert_visible_issue_ids(ARRAY['00000000-0000-0000-0000-000000000102'::uuid]);
 ROLLBACK;
+-- Only the assigned Form Master, Exam Officer, and permitted school admin
+-- may read School A staff documents. Registrar and unassigned teacher cannot.
 BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000501',true);
+SELECT public.assert_visible_issue_ids(ARRAY[]::uuid[]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000502',true);
+SELECT public.assert_visible_issue_ids(ARRAY[]::uuid[]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000505',true);
 SELECT public.assert_visible_issue_ids(ARRAY[
  '00000000-0000-0000-0000-000000000101'::uuid,
  '00000000-0000-0000-0000-000000000104'::uuid,
@@ -364,8 +481,31 @@ SELECT public.assert_visible_issue_ids(ARRAY[
 ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
-SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000502',true);
-SELECT public.assert_visible_issue_ids(ARRAY['00000000-0000-0000-0000-000000000102'::uuid]);
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000506',true);
+SELECT public.assert_visible_issue_ids(ARRAY[
+ '00000000-0000-0000-0000-000000000101'::uuid,
+ '00000000-0000-0000-0000-000000000104'::uuid,
+ '00000000-0000-0000-0000-000000000105'::uuid
+]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000507',true);
+SELECT public.assert_visible_issue_ids(ARRAY[]::uuid[]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000508',true);
+SELECT public.assert_visible_issue_ids(ARRAY[
+ '00000000-0000-0000-0000-000000000101'::uuid,
+ '00000000-0000-0000-0000-000000000104'::uuid,
+ '00000000-0000-0000-0000-000000000105'::uuid
+]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000509',true);
+SELECT public.assert_visible_issue_ids(ARRAY[]::uuid[]);
 ROLLBACK;
 BEGIN;
 SET LOCAL ROLE anon;
@@ -381,14 +521,48 @@ SELECT public.assert_visible_output_names(ARRAY[
  '00000000-0000-0000-0000-000000000002/issued/102.pdf'
 ]);
 ROLLBACK;
+-- Storage follows the same staff authorization as the document table.
 BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000501',true);
+SELECT public.assert_visible_output_names(ARRAY[]::text[]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000505',true);
 SELECT public.assert_visible_output_names(ARRAY[
  '00000000-0000-0000-0000-000000000001/draft/104.pdf',
  '00000000-0000-0000-0000-000000000001/issued/101.pdf',
  '00000000-0000-0000-0000-000000000001/issued/105.pdf'
 ]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000506',true);
+SELECT public.assert_visible_output_names(ARRAY[
+ '00000000-0000-0000-0000-000000000001/draft/104.pdf',
+ '00000000-0000-0000-0000-000000000001/issued/101.pdf',
+ '00000000-0000-0000-0000-000000000001/issued/105.pdf'
+]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000507',true);
+SELECT public.assert_visible_output_names(ARRAY[]::text[]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000508',true);
+SELECT public.assert_visible_output_names(ARRAY[
+ '00000000-0000-0000-0000-000000000001/draft/104.pdf',
+ '00000000-0000-0000-0000-000000000001/issued/101.pdf',
+ '00000000-0000-0000-0000-000000000001/issued/105.pdf'
+]);
+ROLLBACK;
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000509',true);
+SELECT public.assert_visible_output_names(ARRAY[]::text[]);
 ROLLBACK;
 BEGIN;
 SET LOCAL ROLE authenticated;
@@ -415,6 +589,70 @@ BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000503',true);
 SELECT public.assert_delete_noop('00000000-0000-0000-0000-000000000802');
+ROLLBACK;
+
+-- Authorized registrar A retains document issue INSERT, UPDATE and DELETE.
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000501',true);
+DO $write_test$
+DECLARE changed integer;
+BEGIN
+  INSERT INTO public.schoolpro_document_issues
+    (id, school_id, student_id, status, output_storage_path)
+  VALUES
+    ('00000000-0000-0000-0000-000000000106',
+     '00000000-0000-0000-0000-000000000001',
+     '00000000-0000-0000-0000-000000000201',
+     'draft', NULL);
+
+  -- Reject a School B student linked to a School A document issue.
+  DECLARE
+    cross_school_rejected boolean := false;
+  BEGIN
+    BEGIN
+      INSERT INTO public.schoolpro_document_issues
+        (id, school_id, student_id, status, output_storage_path)
+      VALUES
+        ('00000000-0000-0000-0000-000000000107',
+         '00000000-0000-0000-0000-000000000001',
+         '00000000-0000-0000-0000-000000000202',
+         'draft', NULL);
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        cross_school_rejected := true;
+    END;
+
+    IF NOT cross_school_rejected THEN
+      RAISE EXCEPTION 'cross-school document issue INSERT was accepted';
+    END IF;
+  END;
+
+  -- UPDATE/DELETE policies remain defined for authorized writers, but
+  -- PostgreSQL also applies SELECT visibility when targeting existing rows.
+  -- Registrar SELECT is intentionally denied by the clarified access rule.
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'schoolpro_document_issues'
+      AND policyname = 'school managers update document issues'
+      AND cmd = 'UPDATE'
+  ) THEN
+    RAISE EXCEPTION 'registrar UPDATE policy was not retained';
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'schoolpro_document_issues'
+      AND policyname = 'school managers delete document issues'
+      AND cmd = 'DELETE'
+  ) THEN
+    RAISE EXCEPTION 'registrar DELETE policy was not retained';
+  END IF;
+END
+$write_test$;
 ROLLBACK;
 
 SELECT 'issued-document and storage RLS regression passed' AS result;

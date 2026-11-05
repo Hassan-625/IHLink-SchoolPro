@@ -16,6 +16,12 @@ begin
  update public.schoolpro_members set role='counsellor' where id=member_id;
  permissions:=public.schoolpro_user_permissions(school_id);
  if not ('discipline'=any(permissions)) or 'results'=any(permissions) then raise exception 'Counsellor scope failed';end if;
+ update public.schoolpro_members set role='discipline_master' where id=member_id;
+ permissions:=public.schoolpro_user_permissions(school_id);
+ if not ('discipline'=any(permissions)) or 'games'=any(permissions) or 'finance'=any(permissions) then raise exception 'Discipline Master scope failed';end if;
+ update public.schoolpro_members set role='game_master' where id=member_id;
+ permissions:=public.schoolpro_user_permissions(school_id);
+ if not ('games'=any(permissions)) or 'discipline'=any(permissions) or 'finance'=any(permissions) then raise exception 'Game Master scope failed';end if;
  update public.schoolpro_members set role='receptionist' where id=member_id;
  permissions:=public.schoolpro_user_permissions(school_id);
  if not ('admissions'=any(permissions)) or 'finance'=any(permissions) then raise exception 'Receptionist scope failed';end if;

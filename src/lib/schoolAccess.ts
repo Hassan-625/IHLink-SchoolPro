@@ -1,4 +1,4 @@
-const schoolOperationalRoles=['administrator','bursar','accountant','vice_principal','head_teacher','exam_officer','registrar','admissions_officer','librarian','nurse','hostel_manager','transport_manager','inventory_officer','hr_officer','it_admin','counsellor','receptionist'];
+const schoolOperationalRoles=['administrator','bursar','accountant','vice_principal','head_teacher','exam_officer','registrar','admissions_officer','librarian','nurse','hostel_manager','transport_manager','inventory_officer','hr_officer','it_admin','counsellor','receptionist','discipline_master','game_master'];
 export function schoolRole(role:string){return role.trim().toLowerCase().replaceAll(' ','_');}
 export function canManageSchoolBilling(role:string){return ['proprietor','administrator','bursar'].includes(schoolRole(role));}
 export function schoolDashboard(role:string){
@@ -7,7 +7,20 @@ export function schoolDashboard(role:string){
   case 'parent':return '/schoolpro/parent-dashboard';
   case 'class_teacher':case 'teacher':return '/schoolpro/teacher-dashboard';
   case 'proprietor':return '/schoolpro/proprietor-dashboard';
-  case 'administrator':case 'bursar':case 'accountant':case 'super_administrator':return '/schoolpro/admin-dashboard';
+  case 'game_master':return '/schoolpro/games';
+  case 'discipline_master':case 'counsellor':return '/schoolpro/discipline';
+  case 'bursar':case 'accountant':return '/schoolpro/fees';
+  case 'exam_officer':return '/schoolpro/results';
+  case 'registrar':return '/schoolpro/students';
+  case 'admissions_officer':case 'receptionist':return '/schoolpro/admissions';
+  case 'librarian':return '/schoolpro/library';
+  case 'transport_manager':return '/schoolpro/transport';
+  case 'hostel_manager':return '/schoolpro/hostel';
+  case 'inventory_officer':return '/schoolpro/inventory';
+  case 'nurse':return '/schoolpro/medical';
+  case 'hr_officer':return '/schoolpro/staff';
+  case 'it_admin':return '/schoolpro/roles-permissions';
+  case 'administrator':case 'super_administrator':return '/schoolpro/admin-dashboard';
   default:return schoolOperationalRoles.includes(schoolRole(role))?'/schoolpro/admin-dashboard':'/schoolpro';
  }
 }

@@ -9,8 +9,8 @@ const modules:Record<string,string>={
   'library':'library','staff':'staff','parents':'parents','transport':'transport','hostel':'hostel',
   'inventory':'inventory','discipline':'discipline','medical':'medical','documents':'documents',
   'announcements':'announcements','roles-permissions':'roles','user-permissions':'roles',
-  'settings':'branding','notifications':'notifications','payroll':'payroll','calendar':'calendar',
-  'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations',
+  'settings':'branding','judge':'dashboard','notifications':'notifications','payroll':'payroll','calendar':'calendar',
+  'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations','games':'games',
 };
 export function permissionForSchoolPath(href:string){
  const page=href.split(/[?#]/)[0].replace(/^\/schoolpro\//,'').split('/')[0];
@@ -21,6 +21,6 @@ export const studentReadPermissions=['dashboard','results','finance','attendance
 export const parentReadPermissions=['dashboard','results','finance','attendance','announcements','notifications'];
 
 export function permissionPlanFeature(permission:string){
- const features:Record<string,string>={cbt:'cbt',reports:'advanced_reports',branding:'custom_branding'};
+ const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};
  return features[permission]||null;
 }

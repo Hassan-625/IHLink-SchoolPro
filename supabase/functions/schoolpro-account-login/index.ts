@@ -10,8 +10,9 @@ Deno.serve(async(req)=>{
   const body=await req.json(),email=String(body.email||'').trim().toLowerCase(),password=String(body.password||'');
   if(!/^\S+@\S+\.\S+$/.test(email)||email.length>254||!password||password.length>256)return reply({error:'Enter your email and password.'},400);
   const url=Deno.env.get('SUPABASE_URL')!,options={auth:{persistSession:false,autoRefreshToken:false}},admin=createClient(url,Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,options),client=createClient(url,Deno.env.get('SUPABASE_ANON_KEY')!,options);
-  const ip=req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()||'unknown';
-  for(const[bucket,limit]of[['email:'+email,8],['ip:'+ip,60]]as const){const{data,error}=await admin.rpc('schoolpro_take_login_attempt',{p_key:await hash('school-account:'+bucket),p_limit:limit});if(error)throw error;if(!data)return reply({error:'Too many attempts. Please try again in 15 minutes.'},429);}
+  // No forwarding header is used as a security identity until trusted proxy provenance is verified.
+  // The normalized account bucket remains the enforced server-side throttle.
+  for(const[bucket,limit]of[['email:'+email,8]]as const){const{data,error}=await admin.rpc('schoolpro_take_login_attempt',{p_key:await hash('school-account:'+bucket),p_limit:limit});if(error)throw error;if(!data)return reply({error:'Too many attempts. Please try again in 15 minutes.'},429);}
   const {data:profile,error:pe}=await admin.from('profiles').select('id,status').eq('email',email).maybeSingle();if(pe)throw pe;
   if(!profile||profile.status!=='active')return reply({error:'Your sign-in details were not recognised. Please check with your school.'},401);
   const {data:credential,error:ce}=await admin.from('schoolpro_initial_credentials').select('user_id').eq('user_id',profile.id).gt('expires_at',new Date().toISOString()).is('consumed_at',null).maybeSingle();if(ce)throw ce;

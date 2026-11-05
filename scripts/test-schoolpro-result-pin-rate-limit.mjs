@@ -1,0 +1,33 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const path = 'supabase/migrations/20261016122000_schoolpro_result_pin_attempt_rate_limit.sql';
+const sql = readFileSync(path, 'utf8');
+
+assert.match(sql, /create table if not exists private\.schoolpro_result_pin_attempts/i);
+assert.match(sql, /attempt_key text primary key/i);
+assert.ok(sql.includes('extensions.digest('), 'Admission/PIN hashes must use schema-qualified pgcrypto');
+assert.match(sql, /failed_attempts \+ 1 >= 8/i, 'Eight failures must trigger cooldown');
+assert.match(sql, /interval '15 minutes'/i, 'Cooldown/window must be bounded to 15 minutes');
+assert.match(sql, /blocked_until > now\(\)/i, 'Blocked attempt keys must be rejected before student/PIN lookup');
+assert.doesNotMatch(sql, /current_setting\('request\.headers'/i, 'Do not trust caller-controlled request headers for database security rate-limit identity');
+assert.doesNotMatch(sql, /cf-connecting-ip|x-forwarded-for|x-real-ip|forwarded/i, 'Do not derive database rate-limit identity from unverified network headers');
+assert.match(sql, /extensions\.digest\(\s*lower\(trim\(coalesce\(p_admission, ''\)\)\)\s*,\s*'sha256'/i, 'Rate-limit key must hash normalized admission identity alone');
+const lockAt = sql.indexOf('pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_attempt_key, 0))');
+const blockedAt = sql.indexOf('select a.blocked_until');
+const studentLookupAt = sql.indexOf('from public.schoolpro_students st');
+assert.ok(lockAt >= 0, 'Same attempt key must serialize concurrent checks');
+assert.ok(blockedAt > lockAt, 'Cooldown must be checked after acquiring the per-key transaction lock');
+assert.ok(studentLookupAt > blockedAt, 'Blocked attempts must be rejected before student lookup');
+assert.ok(sql.includes('perform private.record_schoolpro_result_pin_failure(v_attempt_key)'), 'Unknown admission and incorrect PIN paths must both count failures');
+assert.match(sql, /and exists \(\s*select 1\s+from public\.schoolpro_result_access_pins candidate_pin[\s\S]*?candidate_pin\.pin_hash = encode\([\s\S]*?extensions\.digest\(upper\(trim\(p_pin\)/i, 'Resolve duplicate admission numbers by matching the supplied PIN to its tenant-scoped student before choosing a student');
+assert.match(sql, /select count\(\*\)::integer\s+into v_candidate_count/i, 'Count matching admission/PIN candidates before selecting a student');
+assert.match(sql, /if v_candidate_count > 1 then[\s\S]*?record_schoolpro_result_pin_failure[\s\S]*?Result details or access PIN are invalid/i, 'Ambiguous matching credentials must fail closed and count as a failed attempt');
+assert.doesNotMatch(sql, /order by st\.created_at desc\s+limit 1/i, 'Do not silently choose the newest school when admission/PIN credentials are ambiguous');
+assert.match(sql, /delete from private\.schoolpro_result_pin_attempts\s+where attempt_key = v_attempt_key/i, 'Successful published-result access must clear the failure counter');
+assert.match(sql, /revoke all on table private\.schoolpro_result_pin_attempts from public, anon, authenticated/i, 'Attempt table must not be directly accessible from API roles');
+assert.match(sql, /revoke all on function private\.record_schoolpro_result_pin_failure\(text\) from public, anon, authenticated/i, 'Internal counter function must not be callable from API roles');
+assert.match(sql, /set search_path to ''/i, 'Security-definer functions must pin an empty search_path');
+assert.doesNotMatch(sql, /(?<!extensions\.)digest\(lower\(trim\(coalesce\(p_admission/i, 'pgcrypto digest must be schema-qualified under empty search_path');
+
+console.log('PASS: result-PIN rate-limit migration has hashed normalized admission identifiers, atomic failure counts, cooldown and restricted private storage.');

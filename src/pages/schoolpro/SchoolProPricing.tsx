@@ -8,22 +8,9 @@ import {Badge} from '@/components/ui/Badge';
 import {naira} from '@/lib/designTokens';
 import {Check,ArrowRight} from 'lucide-react';
 import {supabase} from '@/lib/supabase';
+import {schoolProPlanFeatures} from '@/lib/schoolProPlanFeatures';
 
 type Plan={code:string;name:string;annual:number;features:string[];popular:boolean};
-const planFeatures=(flags:Record<string,unknown>)=>[
- 'Core school management',
- 'Student, staff, class and academic-session management',
- 'Attendance and fee management',
- 'Standard results, report cards, class broadsheets and ordinary exports',
- 'Parent and guardian portal',
- 'Library, transport, hostel and inventory modules',
- 'Payroll, discipline, certificates and school operations',
- 'Houses, Games, Sports and Competitions',
- ...(flags.website===true?['School website']:[]),
- ...(flags.cbt===true?['Computer-Based Testing (CBT) and online examinations']:[]),
- ...(flags.advanced_reports===true?['Enterprise Advanced Reports: school, class, subject, student, attendance, assessment and progression analytics']:[]),
- ...(flags.custom_branding===true?['Custom branding by request and IHLink review/approval']:[])
-];
 const price=(value:number)=>value>0?naira(value):'Not configured';
 
 export function SchoolProPricing(){
@@ -40,7 +27,7 @@ export function SchoolProPricing(){
    const rows=(catalog.data||[]).filter(p=>['starter','professional','enterprise'].includes(p.code));
    setPlans(rows.map(p=>{
     const flags=(entitlements.data||[]).find(x=>x.tier===p.code)?.features||{};
-    return{code:p.code,name:p.name,annual:Number(p.annual_price||0),features:planFeatures(flags),popular:p.code==='professional'};
+    return{code:p.code,name:p.name,annual:Number(p.annual_price||0),features:schoolProPlanFeatures(flags),popular:p.code==='professional'};
    }));
    setLoading(false);
   }).catch(()=>{if(active){setError('Pricing could not be loaded.');setLoading(false);}});

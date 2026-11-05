@@ -2317,3 +2317,12 @@ This section supersedes older stage-status summaries above where they conflict.
 - Final TypeScript typecheck: PASS.
 - Final `git diff --check`: PASS.
 - No production workspace or subscription records were created or modified.
+
+
+## SchoolPro dashboard access and Super Admin workspace selection — 2026-11-05
+
+- PR #119: `fix/schoolpro-pending-subscription-workspace-access` allows pending-payment schools to open a restricted core workspace while paid-plan entitlements remain independently gated. The PR's SchoolPro CI and payment-page validation workflows passed; PR #119 remains open and unmerged.
+- Follow-up branch: `fix/schoolpro-super-admin-workspace-persistence`, based on PR #119 head `74a03c28bb1ba8530e6b2a6939d752fa6bf7c069`.
+- Updated `SchoolProLiveDashboard` so the platform Super Admin's selected school is saved in `ihlink_schoolpro_admin_school`, restored on dashboard load, and broadcast through the existing `ihlink:school-refresh` event. The shared `useSchoolProContext` already resolves this key on subsequent routes and validates the selected school against `schoolpro_schools`; no new cross-tenant membership or ownership grant is introduced.
+- Scope is limited to persistent workspace selection. Sports dashboard and House assignment/student visibility work, plus plan-versus-role UI indicators, remain outstanding.
+- No SQL migration, production Supabase change, test workspace, merge, or deployment was performed. CI for this follow-up branch is pending.

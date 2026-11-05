@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/Button";
 import {supabase} from "@/lib/supabase";
 import {useAuth} from "@/context/AuthContext";
 import {useSchoolProContext} from "@/hooks/useSchoolProContext";
+import {schoolProPlanFeatures} from "@/lib/schoolProPlanFeatures";
 const money=(n:number)=>new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(n);
 export function SchoolProSubscription(){
  const ctx=useSchoolProContext(),{profile}=useAuth();
@@ -61,7 +62,7 @@ function SchoolBillingWorkspace(){
   <Card><p className="font-bold">Annual subscription</p><p className="mt-1 text-sm text-muted">Paid yearly plans include 14 days after expiry to renew before access is paused. Complete any pending payment before choosing another plan.</p></Card>
   <div className="grid gap-4 md:grid-cols-3">{plans.map(p=>{
    const price=Number(p.annual_price||0),valid=Number.isFinite(price)&&price>0;
-   return <Card key={p.id}><h3 className="font-bold">{p.name}</h3><p className="mt-2 text-2xl font-bold">{valid?money(price)+" / year":"Not priced"}</p><ul className="mt-3 space-y-2 text-sm"><li>Core school management</li><li>Standard results, report cards and broadsheets (all plans)</li>{Object.entries({website:'School website',games:'Houses, Games, Sports & Competitions',cbt:'CBT and online tests',advanced_reports:'Enterprise Advanced Reports',custom_branding:'Enterprise custom branding (request and IHLink approval)'}).map(([feature,label])=><li key={feature} className={p.planFeatures[feature]===true?'text-emerald-700':'text-muted'}>{p.planFeatures[feature]===true?'Included: ':'Not included: '}{label}</li>)}</ul><Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button></Card>;
+   return <Card key={p.id}><h3 className="font-bold">{p.name}</h3><p className="mt-2 text-2xl font-bold">{valid?money(price)+" / year":"Not priced"}</p><ul className="mt-3 space-y-2 text-sm">{schoolProPlanFeatures(p.planFeatures||{}).map((feature,index)=><li key={index}>{feature}</li>)}</ul><Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button></Card>;
   })}{!loading&&!error&&!plans.length&&<Card><p className="text-sm text-muted">No SchoolPro subscription plan has been published by IHLink yet.</p></Card>}</div>
  <BankTransferPayments key={ctx.schoolId||"no-school"} platform="schoolpro_subscription" instructions={intents}/></ModulePage>;
 }

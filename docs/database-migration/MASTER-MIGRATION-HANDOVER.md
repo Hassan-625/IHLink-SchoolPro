@@ -2297,3 +2297,18 @@ This section supersedes older stage-status summaries above where they conflict.
 - Specified the new review route as `/admin/subscriptions/upgrades`, using the normal admin Guard so Finance and Super Admin can enter. Existing `canOpenAdminPath` classifies the `subscriptions` segment as Finance-only for non-super-admin roles; the existing `/admin/subscriptions` route remains Super Admin-only. Server-side RPC checks must independently restrict decisions to active Finance/Super Admin accounts.
 - Added the Central Admin source integration map and delivery requirements to `SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`. Specification commit: `8f8cd14774d35241fb0e5e78413e29c7106d365e`.
 - Inspection only: no Central Admin code, SchoolPro application code, SQL migration, production schema/data, merge, or deployment was changed.
+
+## Annual SchoolPro Subscription Upgrade Workflow — 2026-11-05
+
+- Branch: `feat/schoolpro-annual-upgrade-workflow`
+- Migration: `20261105100048_schoolpro_annual_upgrade_workflow.sql`
+- Scope: annual tier upgrades, immutable prorated quote snapshots, IHLink Finance approval, bank-transfer invoice settlement, payment ledger, cancellation and stale-quote protection.
+- Production migration status: NOT APPLIED.
+- Disposable PostgreSQL migration execution: PASS.
+- Disposable PostgreSQL lifecycle: PASS — request, prorated credit, approval, invoice, Finance settlement, payment ledger and repeat-settlement idempotency.
+- Build: PASS.
+- Typecheck: PASS.
+- Stage A/B corrections: PASS.
+- SQL parser: PASS.
+- Negative-path and duplicate-reference integration assertions: NOT YET COMPLETED.
+- No production workspace or subscription records were created or modified.

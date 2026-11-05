@@ -414,3 +414,221 @@ end;
 $upgrade_lifecycle$;
 
 select 'PASS: annual upgrade end-to-end lifecycle' as result;
+
+-- Negative-path coverage: rejection, stale quote, cancellation and duplicate reference.
+do $upgrade_negative_paths$
+declare
+  v_owner uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_finance uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  v_school uuid := '11111111-1111-4111-8111-111111111111';
+  v_subscription uuid := '22222222-2222-4222-8222-222222222222';
+  v_catalog uuid := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  v_bank uuid := 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  v_request_id uuid;
+  v_invoice_id uuid;
+  v_submission_id uuid;
+  v_request jsonb;
+  v_result jsonb;
+  v_error text;
+begin
+  insert into public.schoolpro_schools
+    (id, owner_id, name, plan, status)
+  values
+    (v_school, v_owner, 'Synthetic Negative Path School', 'starter', 'active');
+
+  insert into public.schoolpro_subscriptions
+    (id, school_id, tier, billing_cycle, amount, status, starts_at, renews_at)
+  values
+    (v_subscription, v_school, 'starter', 'annual', 50000, 'active',
+     clock_timestamp() - interval '180 days',
+     clock_timestamp() + interval '185 days');
+
+  -- Owner context.
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+  perform set_config('request.test.active', 'true', true);
+  perform set_config('request.test.admin_role', '', true);
+  perform set_config('request.test.school_id', v_school::text, true);
+  perform set_config('request.test.school_role', 'proprietor', true);
+
+  -- 1. Rejection must not create an invoice.
+  v_request := public.request_schoolpro_upgrade(v_school, v_catalog);
+  v_request_id := (v_request->>'id')::uuid;
+
+  perform set_config('request.jwt.claim.sub', v_finance::text, true);
+  perform set_config('request.test.admin_role', 'finance', true);
+
+  v_result := public.review_schoolpro_upgrade(
+    v_request_id, 'rejected', 'Synthetic rejection test', 1
+  );
+
+  if not exists (
+    select 1 from public.schoolpro_upgrade_requests
+    where id = v_request_id and status = 'rejected'
+  ) or exists (
+    select 1 from public.schoolpro_subscription_intents
+    where upgrade_request_id = v_request_id
+  ) then
+    raise exception 'Rejection test failed: request state or invoice is incorrect';
+  end if;
+
+  -- 2. A changed source subscription must make the quote stale.
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+  perform set_config('request.test.admin_role', '', true);
+
+  v_request := public.request_schoolpro_upgrade(v_school, v_catalog);
+  v_request_id := (v_request->>'id')::uuid;
+
+  update public.schoolpro_subscriptions
+     set amount = 51000
+   where id = v_subscription;
+
+  perform set_config('request.jwt.claim.sub', v_finance::text, true);
+  perform set_config('request.test.admin_role', 'finance', true);
+
+  v_result := public.review_schoolpro_upgrade(
+    v_request_id, 'approved', 'Synthetic stale quote test', 1
+  );
+
+  if not exists (
+    select 1 from public.schoolpro_upgrade_requests
+    where id = v_request_id and status = 'stale'
+  ) or exists (
+    select 1 from public.schoolpro_subscription_intents
+    where upgrade_request_id = v_request_id
+  ) then
+    raise exception 'Stale quote test failed: stale request or invoice state is incorrect';
+  end if;
+
+  update public.schoolpro_subscriptions
+     set amount = 50000
+   where id = v_subscription;
+
+  -- 3. The school billing manager can cancel a pending review.
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+  perform set_config('request.test.admin_role', '', true);
+
+  v_request := public.request_schoolpro_upgrade(v_school, v_catalog);
+  v_request_id := (v_request->>'id')::uuid;
+
+  v_result := public.cancel_schoolpro_upgrade(
+    v_request_id, 'Synthetic pending cancellation'
+  );
+
+  if not exists (
+    select 1 from public.schoolpro_upgrade_requests
+    where id = v_request_id and status = 'cancelled'
+  ) then
+    raise exception 'Pending cancellation test failed';
+  end if;
+
+  -- 4. IHLink Finance can cancel an approved request and its pending invoice.
+  v_request := public.request_schoolpro_upgrade(v_school, v_catalog);
+  v_request_id := (v_request->>'id')::uuid;
+
+  perform set_config('request.jwt.claim.sub', v_finance::text, true);
+  perform set_config('request.test.admin_role', 'finance', true);
+
+  perform public.review_schoolpro_upgrade(
+    v_request_id, 'approved', 'Synthetic approval before cancellation', 1
+  );
+
+  select id into v_invoice_id
+    from public.schoolpro_subscription_intents
+   where upgrade_request_id = v_request_id;
+
+  if v_invoice_id is null then
+    raise exception 'Approved cancellation test did not create an invoice';
+  end if;
+
+  perform public.cancel_schoolpro_upgrade(
+    v_request_id, 'Synthetic approved cancellation'
+  );
+
+  if not exists (
+    select 1 from public.schoolpro_upgrade_requests
+    where id = v_request_id and status = 'cancelled'
+  ) or not exists (
+    select 1 from public.schoolpro_subscription_intents
+    where id = v_invoice_id and status = 'cancelled'
+  ) then
+    raise exception 'Approved cancellation did not cancel both request and invoice';
+  end if;
+
+  -- 5. A previously reconciled bank reference must be rejected,
+  -- including when case and surrounding whitespace differ.
+  perform set_config('request.jwt.claim.sub', v_owner::text, true);
+  perform set_config('request.test.admin_role', '', true);
+
+  v_request := public.request_schoolpro_upgrade(v_school, v_catalog);
+  v_request_id := (v_request->>'id')::uuid;
+
+  perform set_config('request.jwt.claim.sub', v_finance::text, true);
+  perform set_config('request.test.admin_role', 'finance', true);
+
+  perform public.review_schoolpro_upgrade(
+    v_request_id, 'approved', 'Synthetic duplicate reference test', 1
+  );
+
+  select id into v_invoice_id
+    from public.schoolpro_subscription_intents
+   where upgrade_request_id = v_request_id
+     and status = 'pending';
+
+  if v_invoice_id is null then
+    raise exception 'Duplicate-reference test did not create a pending invoice';
+  end if;
+
+  insert into storage.objects(bucket_id, name)
+  values ('direct-transfer-proofs', v_owner::text || '/duplicate-upgrade-receipt.png');
+
+  v_submission_id := gen_random_uuid();
+
+  insert into public.direct_transfer_submissions (
+    id, user_id, platform_code, invoice_id, source_reference,
+    bank_account_id, amount, sender_name, customer_reference,
+    proof_storage_path, status
+  )
+  select
+    v_submission_id, v_owner, 'schoolpro_subscription', i.id, i.reference,
+    v_bank, i.amount, 'Synthetic Duplicate Payer',
+    ' synthetic-upgrade-ref-001 ',
+    v_owner::text || '/duplicate-upgrade-receipt.png',
+    'awaiting_verification'
+  from public.schoolpro_subscription_intents i
+  where i.id = v_invoice_id;
+
+  v_error := null;
+
+  begin
+    perform private.review_school_subscription_transfer(
+      v_submission_id, 'approved', 'Synthetic duplicate reference rejection'
+    );
+  exception when others then
+    v_error := sqlerrm;
+  end;
+
+  if v_error is null or v_error not like '%Bank reference already reconciled%' then
+    raise exception 'Duplicate-reference test failed; received error: %', v_error;
+  end if;
+
+  if not exists (
+    select 1 from public.direct_transfer_submissions
+    where id = v_submission_id and status = 'awaiting_verification'
+  ) or not exists (
+    select 1 from public.schoolpro_subscription_intents
+    where id = v_invoice_id and status = 'pending'
+  ) or not exists (
+    select 1 from public.schoolpro_upgrade_requests
+    where id = v_request_id and status = 'approved'
+  ) or not exists (
+    select 1 from public.schoolpro_subscriptions
+    where id = v_subscription and tier = 'starter'
+  ) then
+    raise exception 'Duplicate-reference rejection changed protected billing state';
+  end if;
+
+  raise notice 'PASS: rejection, stale quote, pending cancellation, approved cancellation and duplicate-reference rejection';
+end;
+$upgrade_negative_paths$;
+
+select 'PASS: annual upgrade negative-path integration tests' as result;

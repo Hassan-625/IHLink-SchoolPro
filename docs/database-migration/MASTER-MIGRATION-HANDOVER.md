@@ -2310,5 +2310,10 @@ This section supersedes older stage-status summaries above where they conflict.
 - Typecheck: PASS.
 - Stage A/B corrections: PASS.
 - SQL parser: PASS.
-- Negative-path and duplicate-reference integration assertions: NOT YET COMPLETED.
+- Negative-path integration: PASS — rejection without invoice, stale-quote protection, pending-request cancellation, approved-request/invoice cancellation.
+- Duplicate bank-reference protection: PASS — case-insensitive and whitespace-normalized duplicate rejected without changing billing state.
+- Complete disposable PostgreSQL integration fixture: PASS.
+- Final production build: PASS (existing large-chunk advisory only).
+- Final TypeScript typecheck: PASS.
+- Final `git diff --check`: PASS.
 - No production workspace or subscription records were created or modified.

@@ -2325,4 +2325,15 @@ This section supersedes older stage-status summaries above where they conflict.
 - Follow-up branch: `fix/schoolpro-super-admin-workspace-persistence`; PR #120 has been retargeted to `main` after PR #119 merged.
 - Updated `SchoolProLiveDashboard` so the platform Super Admin's selected school is saved in `ihlink_schoolpro_admin_school`, restored on dashboard load, and broadcast through the existing `ihlink:school-refresh` event. The shared `useSchoolProContext` already resolves this key on subsequent routes and validates the selected school against `schoolpro_schools`; no new cross-tenant membership or ownership grant is introduced.
 - Scope is limited to persistent workspace selection. Sports dashboard and House assignment/student visibility work, plus plan-versus-role UI indicators, remain outstanding.
-- No SQL migration, production Supabase change, test workspace, or deployment was performed. PR #120 remains open pending final merge.
+- No SQL migration, production Supabase change, test workspace, or deployment was performed. PR #120 was merged into `main` on 2026-11-05 (squash commit `f70575d1351bf5925f8ede86d07c0e3ef1745e67`).
+
+
+## SchoolPro Super Admin selector and House Master roster — 2026-11-05
+
+- Working branch: `fix/schoolpro-house-master-and-super-admin-selector`, based on the merged `main` containing PRs #119 and #120.
+- Super Admin selector finding: `DashboardLayout` rendered `SchoolSessionBar` and replaced all page children with the session-required message whenever no working session existed. This hid the Live Workspace school selector because it is rendered inside `SchoolProLiveDashboard`.
+- Frontend correction on this branch: the Super Admin Live Workspace renders its school selector before the academic-session picker and is not blocked by the missing session. The selected school still resolves through the existing `ihlink_schoolpro_admin_school` context mechanism; no new membership, ownership, or tenant bypass is introduced.
+- House Master frontend groundwork: added `/schoolpro/house-dashboard`, a teacher navigation entry, and a read-only roster component calling `schoolpro_house_master_roster`. The House Master route does not require a working academic session. The existing `/schoolpro/games` Game Master management dashboard remains unchanged.
+- Verified production schema read-only: house assignments use `ended_at IS NULL`; current student-house allocation uses `effective_to IS NULL`; the relevant tables expose `school_id`, student name/admission/class fields, and the active assignment keys needed for a narrow roster.
+- **Outstanding before PR completion:** create the Supabase migration through `supabase migration new schoolpro_house_master_roster` in the repository CLI environment; implement the private, tightly scoped roster helper plus authenticated-only public RPC wrapper; add regression coverage; run the repository tests/build and Supabase advisors. The frontend currently expects that RPC and must not be merged/deployed before the migration and tests are complete.
+- Production status: no DDL or data writes were made to Supabase production for this correction; no Render deployment was made. Apply the reviewed migration to the existing production project only as a separately approved rollout step.

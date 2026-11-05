@@ -2225,3 +2225,95 @@ This section supersedes older stage-status summaries above where they conflict.
 - Remaining Stage A–B blockers include implementing the actual Enterprise Advanced Reports workspace before advertising it, completing the separate school-initiated annual upgrade workflow (proportional unused-term credit, IHLink approval, difference-only invoice, Finance-verified receipt and atomic activation), reconciling the entitlement and subscription catalogues, and closing the full role/dashboard matrix.
 - Annual upgrade specification remains at `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`. Preserve the existing full-price annual purchase/renewal path; the upgrade workflow must be a separate branch and must not activate entitlements before verified payment.
 - Stage C remains deferred. No Stage C score-entry, result calculation, review or publication implementation is authorized by this merge.
+
+## 2026-11-04 — Post-merge Stage A–B validation and upgrade branch
+
+- Post-merge SchoolPro CI run #2468 (41851796251) completed successfully on merge commit 04e18a260ee5ad5d3028a3414b91a54f41563147. All executed jobs passed, including frontend/typecheck/build validation, local Supabase receipt-storage isolation, payment-review RLS/concurrency, academic calendar, progression subject requirements, section leadership, Form Master attendance, subject assignment guard, houses/House Master allocation, graduation certificates, result-verification exposure, public-admission abuse controls, result-PIN rate limiting, and tenant-integrity integration.
+- The live tenant-acceptance job was skipped because no active SchoolPro workspaces exist. No test school/workspace or operational records were created.
+- Post-merge payment-page validation #2194 (41851796252) completed successfully.
+- Created isolated implementation branch feat/schoolpro-annual-upgrade-workflow from the verified merge commit. No application code or SQL migration has yet been added to this branch.
+- No production Supabase migration, schema/data write, subscription/payment change, Render deployment, or Stage C implementation occurred.
+- Next: author the forward-only annual-upgrade migration and disposable PostgreSQL regression/security tests on this branch, then implement the SchoolPro upgrade request/quote interface and Central Admin review queue. Preserve the ordinary annual purchase/renewal path, the approved proportional unused-term credit policy, IHLink approval, difference-only invoice, and Finance-verified atomic activation. Stage C remains deferred.
+
+
+## 2026-11-04 annual upgrade implementation — read-only payment-path verification
+
+**Status:** Implementation not yet started. This step performed read-only production function inspection and documented concrete safety gaps. No production DDL/DML, migration application, subscription/payment mutation, merge, or Render deployment occurred.
+
+### Existing RPC behaviour confirmed from live function definitions
+- `public.prepare_schoolpro_bank_subscription(uuid,uuid)` creates/reuses a pending full-price annual bank-transfer intent. It checks the school owner or proprietor/administrator/bursar membership and an active annual catalogue price. It is the ordinary purchase/renewal entry point and must remain intact.
+- `public.submit_service_bank_transfer(...)` validates a pending SchoolPro bank-transfer intent, exact amount, customer-owned receipt object, active receiving account at submission time, and duplicate pending/settled proof for that invoice.
+- `public.review_direct_bank_transfer(uuid,text,text)` delegates `schoolpro_subscription` submissions to `private.review_school_subscription_transfer`.
+- `private.review_school_subscription_transfer(uuid,text,text)` currently activates the plan as part of ordinary Finance approval, marks the intent paid, inserts a credited payment, and updates `schoolpro_schools.plan`. It is not upgrade-aware.
+
+### Exact settlement gaps to close in the upgrade-only branch
+1. The existing same-decision early return checks only the transfer status. Upgrade idempotency must additionally prove that the linked request is `paid`, the invoice is `paid`, and exactly one credited payment exists for the request/invoice before returning success.
+2. The existing finalizer locks a receiving bank account but does not require `is_active=true` at verification. The upgrade branch must require an active account at settlement.
+3. Existing duplicate-reference detection is scoped to the same bank account. The upgrade branch must reject a normalized duplicate reference across the agreed global reconciliation scope, while retaining bank-account context.
+4. The existing ordinary purchase/renewal branch must retain its current pricing, renewal-date, payment, and audit semantics; do not route it through the upgrade quote logic.
+5. School billing authorization must be explicit: owner or proprietor/administrator/bursar. Do not accidentally inherit the broader default role list of `private.has_school_access`, whose default includes teacher/accountant and whose helper also permits platform administrators.
+
+### Implementation controls
+- Continue on `feat/schoolpro-annual-upgrade-workflow`, based on Stage A–B merge commit `04e18a260ee5ad5d3028a3414b91a54f41563147`.
+- Author migration and regression tests only; do not apply the migration to the shared production Supabase project.
+- Before migration authoring, use the repository's Supabase CLI workflow to create the migration file. The current Supabase CLI v3 release (2026-11-02) changes database commands to local-by-default and requires explicit confirmation for hosted changes; any future hosted operation must be treated as a separately approved action.
+- Security-definer RPCs must pin an empty search_path, schema-qualify all relations, and explicitly revoke/grant EXECUTE to intended roles. RLS must be enabled on the exposed request table, and direct client writes to quote/review/payment/activation fields must remain unavailable.
+- Next implementation gate: inspect the exact repository migration/test harness and the current annual subscription UI + Central Admin invoice workbench; then author a forward-only migration and disposable PostgreSQL tests covering quote calculation, stale snapshots, access control, proof matching, active bank account, global reference replay, atomic settlement, and idempotency. Run the existing ordinary annual purchase/renewal regression before proposing a PR.
+
+### Supabase documentation check
+- Reviewed current Supabase database-function security guidance: prefer invoker; where definer is required, use `search_path = ''`, schema-qualify relations, and narrow EXECUTE grants.
+- Reviewed current RLS/API guidance: exposed tables require RLS, and function EXECUTE privileges must be scoped separately because RLS does not protect function calls.
+- Reviewed the 2026-11-02 Supabase CLI v3 breaking-change notice; local-by-default database commands and hosted confirmation requirements are relevant to release procedure.
+
+
+### Annual-upgrade source/UI mapping follow-up — 2026-11-04
+- Read-only source inspection confirmed `src/pages/schoolpro/SchoolProSubscription.tsx` currently offers only the ordinary `prepare_schoolpro_bank_subscription` purchase/renewal path and shared receipt upload; there is no upgrade quote/request/review state UI yet. The upgrade action must be separate and must never call the ordinary purchase RPC.
+- `src/pages/schoolpro/SchoolProPricing.tsx` is informational and must not calculate authoritative upgrade quotes.
+- Existing Node assertion scripts and disposable PostgreSQL tests are the repository's regression convention.
+- Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these source integration points, the current migration-ledger boundary, and the local CLI/test requirement (commit `27856f50f0e276392f193d5b95720f910cc0a110`).
+- Environment limitation: GitHub/Supabase MCP is available, but no checked-out repository shell is exposed here to run `supabase migration new`, disposable PostgreSQL, or npm tests. Do not bypass that workflow by fabricating a migration blob. Implementation remains pending in the supported repository CLI/test environment; no migration or production change has been made.
+
+
+### Annual-upgrade schema/RLS verification — 2026-11-04
+- Read-only Supabase catalog inspection confirmed the current RLS boundary: subscription intents and payments are readable by scoped school roles/payer and IHLink Finance/super-admin; no direct client write policies were returned. Subscription writes remain super-admin-only at table-policy level. Upgrade implementation must preserve RPC-only writes and atomic settlement.
+- Confirmed two existing partial unique indexes enforcing one pending subscription invoice per school. Upgrade invoices must respect this invariant; create them only after IHLink approval and after resolving any other pending school invoice. Refresh the quote at approval.
+- Confirmed the payment ledger currently has unique reference/transaction_ref but no typed upgrade-request FK. The migration should add typed request linkage and a unique credited-payment-per-request guarantee rather than relying only on JSON metadata.
+- Confirmed existing catalogue SELECT policy overlap (including an authenticated `true` policy); deliberately leave this unrelated drift untouched in the upgrade migration.
+- Updated `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md` with these verified schema/RLS constraints (commit `ecf35fe82f663e64a1aa4cd8665fdfc4fc944d6b`).
+- All checks were catalog SELECTs only. No live data writes, DDL, migration application, or deployment occurred.
+
+## 2026-11-04 annual-upgrade workflow continuation
+
+- Re-read the live SchoolPro subscription page and the annual-upgrade specification on `feat/schoolpro-annual-upgrade-workflow`. The page still exposes only the ordinary `prepare_schoolpro_bank_subscription` purchase/renewal path and shared receipt uploader; no upgrade request UI or request-status panel has been implemented.
+- Reviewed the documented Central Admin integration requirements. The intended queue remains separate from onboarding and from the privileged `control_center_activate_schoolpro` manual override. Code search in the connected Central Admin repository did not return the previously identified component names, so no Central Admin source changes are claimed; exact repository paths must be confirmed in its supported CLI environment.
+- Corrected a schema-contract inconsistency in `docs/database-migration/SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`: the payment ledger must use a typed nullable `upgrade_request_id` FK plus a partial uniqueness constraint for a credited payment. `provider_payload` is diagnostic metadata only, not the authoritative relationship/idempotency mechanism. Specification commit: `d339787738045766f8488534cd4ce319f4f99030`.
+- No application code, SQL migration, database write, merge, or deployment was performed. The repository CLI/disposable-PostgreSQL environment is still unavailable through the current connector set. Continue by opening the repository in its supported CLI environment, implementing migration and regression tests locally, and separately inspecting Central Admin source before proposing a PR.
+
+## 2026-11-04 Central Admin integration inspection
+
+- Inspected the connected `Hassan-625/IHLink-Admin` repository directly (default branch `main`) rather than relying on earlier unsuccessful code-search results. Confirmed the actual integration files: `src/pages/admin/AdminSchoolProSubscriptions.tsx`, `src/components/InvoiceWorkbench.tsx`, `src/pages/admin/DirectTransferReview.tsx`, `src/App.tsx`, `src/pages/admin/adminShared.tsx`, `src/lib/adminNavigationPermissions.ts`, and `src/components/ProtectedRoute.tsx`.
+- Confirmed `/admin/subscriptions` is the existing Super Admin-only manual plan activation page and calls `control_center_activate_schoolpro`; it must remain a separate reason-required, audited override.
+- Confirmed `InvoiceWorkbench` already handles SchoolPro subscription intents and pending transfer proofs, then invokes `review_direct_bank_transfer`. The upgrade invoice should reuse this established Finance proof path; the upgrade-specific private finalizer branch must enforce request linkage and atomic activation. `DirectTransferReview` also calls the same RPC, so server-side finalization must be correct regardless of which existing review UI initiates it.
+- Specified the new review route as `/admin/subscriptions/upgrades`, using the normal admin Guard so Finance and Super Admin can enter. Existing `canOpenAdminPath` classifies the `subscriptions` segment as Finance-only for non-super-admin roles; the existing `/admin/subscriptions` route remains Super Admin-only. Server-side RPC checks must independently restrict decisions to active Finance/Super Admin accounts.
+- Added the Central Admin source integration map and delivery requirements to `SCHOOLPRO-ANNUAL-UPGRADE-WORKFLOW.md`. Specification commit: `8f8cd14774d35241fb0e5e78413e29c7106d365e`.
+- Inspection only: no Central Admin code, SchoolPro application code, SQL migration, production schema/data, merge, or deployment was changed.
+
+## Annual SchoolPro Subscription Upgrade Workflow — 2026-11-05
+
+- Branch: `feat/schoolpro-annual-upgrade-workflow`
+- Migration: `20261105100048_schoolpro_annual_upgrade_workflow.sql`
+- Scope: annual tier upgrades, immutable prorated quote snapshots, IHLink Finance approval, bank-transfer invoice settlement, payment ledger, cancellation and stale-quote protection.
+- Production migration status: NOT APPLIED.
+- Disposable PostgreSQL migration execution: PASS.
+- Disposable PostgreSQL lifecycle: PASS — request, prorated credit, approval, invoice, Finance settlement, payment ledger and repeat-settlement idempotency.
+- Build: PASS.
+- Typecheck: PASS.
+- Stage A/B corrections: PASS.
+- SQL parser: PASS.
+- Negative-path integration: PASS — rejection without invoice, stale-quote protection, pending-request cancellation, approved-request/invoice cancellation.
+- Duplicate bank-reference protection: PASS — case-insensitive and whitespace-normalized duplicate rejected without changing billing state.
+- Complete disposable PostgreSQL integration fixture: PASS.
+- Final production build: PASS (existing large-chunk advisory only).
+- Final TypeScript typecheck: PASS.
+- Final `git diff --check`: PASS.
+- No production workspace or subscription records were created or modified.

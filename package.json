@@ -20,7 +20,8 @@
     "test:schoolpro-production-graduation-certificates": "node scripts/test-schoolpro-production-graduation-certificates.mjs",
     "test:schoolpro-section-leadership": "node scripts/test-schoolpro-section-leadership.mjs",
     "test:schoolpro-student-family-records": "node scripts/test-schoolpro-student-family-records.mjs",
-    "test:schoolpro-stage-ab-corrections": "node scripts/test-schoolpro-stage-ab-corrections.mjs"
+    "test:schoolpro-stage-ab-corrections": "node scripts/test-schoolpro-stage-ab-corrections.mjs",
+    "test:schoolpro-annual-upgrade": "node scripts/test-schoolpro-annual-upgrade-postgres.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

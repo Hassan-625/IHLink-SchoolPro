@@ -138,3 +138,88 @@ Security and concurrency requirements:
 - Do not rely on client-supplied quote amounts, tier order, term seconds, or reviewer identity. All are server-derived.
 
 No production rows were written by this inspection. This section is an implementation contract, not a migration or deployment.
+
+
+## 9. Application integration points (read-only source inspection, 2026-11-04)
+
+### SchoolPro subscription page
+- Current page: `src/pages/schoolpro/SchoolProSubscription.tsx`.
+- It loads active `schoolpro_subscription_catalog` rows, plan entitlements, the current `schoolpro_subscriptions` row, and the signed-in payer's bank-transfer intents.
+- The only purchase action currently calls `prepare_schoolpro_bank_subscription(p_school,p_catalog)`; every plan card exposes the same Subscribe / Renew action.
+- The page then passes the intents to the shared `BankTransferPayments` component for receipt upload. It has no upgrade-request list, quote breakdown, IHLink decision state, upgrade invoice distinction, or request cancellation control.
+- The upgrade UI must be a separate panel/action shown only when a paid annual subscription is active and a higher tier exists. It must call the dedicated upgrade RPC and must not call the ordinary prepare RPC for an upgrade.
+- Do not display the target plan as active until the request is settled by Finance. Keep the existing purchase/renewal cards and receipt upload flow unchanged for ordinary intents.
+
+### Public pricing page
+- `src/pages/schoolpro/SchoolProPricing.tsx` reads the live annual catalogue and feature flags and is informational. It should not be used to calculate or submit upgrade quotes.
+
+### Test harness
+- The repository already uses Node assertion scripts under `scripts/test-*.mjs` and npm scripts in `package.json`.
+- The current scripts include disposable-PostgreSQL checks for progression/section leadership and source-contract checks for Stage A–B corrections. Add upgrade quote/settlement regression coverage to the same established test conventions, and include an existing ordinary annual-purchase regression so the legacy path remains protected.
+
+## 10. Migration sequencing and current deployment boundary
+
+- The read-only Supabase migration ledger currently ends at `20261104113534 schoolpro_split_onboarding_insert_policies`. This is a ledger observation only; it does not authorize applying a new migration.
+- The Stage A–B dashboard/report entitlement correction is committed on the feature branch as part of PR #116, but no annual-upgrade migration has been created or applied.
+- Supabase CLI v3.0.0 was released on 2026-11-02. Before any local migration workflow, confirm the installed CLI version and use the v3 local-by-default command semantics. Do not use a hosted database command implicitly; hosted changes require a separately approved operation.
+- This environment exposes GitHub and Supabase MCP actions but not a checked-out repository shell in which to run `supabase migration new`, disposable PostgreSQL, or the app's npm scripts. Therefore the next code step must be performed in the repository's supported CLI/test environment; creating a migration blob directly through GitHub would bypass the required migration-generation and local verification workflow. No migration file has been fabricated as a substitute.
+
+
+## 11. Live schema/RLS verification — read-only, 2026-11-04
+
+The following was confirmed through catalog-only SELECT queries against the configured Supabase project. No rows were inserted, updated, or deleted.
+
+### Existing payment ledger and indexes
+- `schoolpro_subscription_payments` has unique indexes on `reference` and `transaction_ref`, but no request/invoice foreign key today. The upgrade migration must add a nullable typed `upgrade_request_id` FK to `schoolpro_upgrade_requests` and a partial unique index for one credited payment per upgrade request. `provider_payload` may retain reconciliation metadata, but it is not the authoritative relationship and must not replace the typed FK.
+- `schoolpro_subscription_intents` has a unique `reference`, unique nullable `transaction_ref`, unique `replaces_invoice_id`, and unique `demo_request_id`. There are two partial unique indexes enforcing one pending invoice per school: `schoolpro_one_pending_ihlink_subscription` and `schoolpro_subscription_pending_school_unique`. Do not create the upgrade invoice while an unrelated pending purchase invoice exists; the approved-upgrade invoice should use the existing one-pending-per-school invariant and must not weaken it.
+- `direct_transfer_submissions` currently has a unique key on `(user_id, platform_code, source_reference, customer_reference)`; it does not have a unique index for normalized customer bank references across receiving accounts. Upgrade verification needs a concurrency-safe duplicate-reference control scoped to the intended platform reconciliation policy.
+
+### Current RLS observations
+- `schoolpro_subscription_intents` currently exposes SELECT only to the payer, school proprietor/administrator/bursar, or IHLink super_admin/finance. No direct client INSERT/UPDATE/DELETE policy was returned. Preserve RPC-only writes for the new workflow.
+- `schoolpro_subscription_payments` exposes SELECT to payer, proprietor/administrator/accountant/bursar, or IHLink super_admin/finance; no direct client write policy was returned. Preserve server-only settlement writes.
+- `schoolpro_subscriptions` has member-read policies and a super_admin-only write policy; do not widen client writes for upgrades. The authoritative settlement RPC must update the subscription and school plan atomically.
+- `schoolpro_subscription_catalog` has overlapping authenticated SELECT policies (active-only and unrestricted `true`) plus an anon active-only policy. This is existing catalogue policy drift; it is not required to implement upgrades and should not be silently changed in this migration.
+- `schoolpro_audit_logs` is readable by IHLink super_admin or school proprietor/administrator/IT admin scope. Record the request/approval/rejection/settlement events through the existing audit table without granting client writes.
+
+### Design consequences
+1. Model the upgrade request separately from `schoolpro_subscription_intents`; do not broaden `invoice_kind` or relax its existing positive-amount subscription constraint.
+2. Only after IHLink approves a request should the system create a positive difference-only annual subscription invoice linked by a typed `upgrade_request_id`. If the computed balance is zero/negative, reject the request into commercial review and do not create an invoice.
+3. Keep existing one-pending-invoice-per-school constraints intact. A pending ordinary renewal/purchase must be resolved before issuing an upgrade invoice; the quote should be refreshed at approval because subscription dates/prices may have changed.
+4. Add typed linkage and uniqueness to the payment ledger so replay/idempotency can be proven by database constraints, not JSON-only metadata.
+5. Keep client access read-only; expose narrowly scoped security-definer RPCs for quote/request, IHLink decision, and Finance settlement, with explicit EXECUTE grants and audit metadata.
+6. Avoid unrelated catalogue RLS cleanup in the upgrade migration; track that separately.
+
+## 12. Typed payment linkage clarification (2026-11-04)
+
+This section resolves an inconsistency between the earlier schema-mapping bullet and the later design consequences. The implementation contract is:
+
+- Add nullable `upgrade_request_id uuid REFERENCES public.schoolpro_upgrade_requests(id)` to `schoolpro_subscription_payments`.
+- Add a partial unique index on `upgrade_request_id` for rows representing a credited/verified payment (use the exact existing ledger status values confirmed in the migration's preflight assertions).
+- Keep the nullable unique `upgrade_request_id` FK on `schoolpro_subscription_intents` as the one-to-one approved-upgrade invoice link.
+- `provider_payload` may carry a diagnostic snapshot of invoice/reference/receipt reconciliation details, but cannot be the sole relationship or idempotency mechanism.
+- The settlement RPC must prove the same request, invoice, direct-transfer submission and credited payment are linked before treating a repeated verification as successful. A request with a paid invoice but no corresponding unique credited ledger row is an integrity failure, not a successful idempotent replay.
+- Preserve the ordinary annual purchase/renewal rows with `upgrade_request_id IS NULL`; do not alter their existing unique reference/transaction constraints or their activation behaviour.
+
+This clarification is authoritative over the permissive parenthetical alternative in the earlier version of section 11. No schema change has been made.
+
+## 13. Central Admin source integration map (read-only inspection, 2026-11-04)
+
+The connected Central Admin repository is `Hassan-625/IHLink-Admin` (default branch `main`). The relevant source files were fetched directly and inspected; no Central Admin files were changed.
+
+- `src/pages/admin/AdminSchoolProSubscriptions.tsx` is the existing commercial-control page. It loads the catalogue, schools and subscriptions and exposes `control_center_activate_schoolpro` through a reason-required privileged manual activation action. Keep this page and its manual override semantics separate from customer-requested upgrades.
+- `src/components/InvoiceWorkbench.tsx` is the existing payment-proof workbench. For `schoolpro_subscription`, it reads `schoolpro_subscription_intents` and pending `direct_transfer_submissions`, and calls `review_direct_bank_transfer` for Finance approval. Reuse the existing workbench for approved upgrade invoices; the SchoolPro-specific finalizer branch must perform the linked request/invoice/proof/payment integrity checks and atomic activation. Do not add a second independent proof-verification path.
+- `src/pages/admin/DirectTransferReview.tsx` is the general transfer review list and calls the same `review_direct_bank_transfer` RPC. It is not the upgrade decision queue; keep the existing Finance proof-verification route and make the database finalizer recognize the typed upgrade invoice linkage regardless of which existing supported proof workbench initiates verification.
+- `src/App.tsx` currently routes `/admin/subscriptions` to `AdminSchoolProSubscriptions` behind `<Guard superOnly>`. Preserve this route as the privileged manual-override page. A dedicated upgrade-review route can be `/admin/subscriptions/upgrades`, with a new page component and the normal `<Guard>` role set (super_admin, platform_admin, support, finance); the existing `canOpenAdminPath` maps the `subscriptions` path segment to Finance-only for non-super-admin roles, while super_admin is allowed. Confirm backend RPC authorization independently; only active super_admin/finance may approve/reject requests.
+- `src/pages/admin/adminShared.tsx` defines the central navigation. Add the dedicated upgrade queue beside Finance/Subscriptions, not inside the onboarding queue. Ensure `canOpenAdminPath` filters the link consistently.
+- `src/lib/adminNavigationPermissions.ts` and `src/components/ProtectedRoute.tsx` are the client route gates. The new route should use the `subscriptions` path segment so Finance can access it without requiring a SchoolPro product grant; server-side reviewer authorization remains authoritative. Do not weaken the existing `/admin/subscriptions` super-admin-only override route.
+
+### Central Admin delivery requirements
+
+1. New `AdminSchoolProUpgradeRequests` page: list requests by status, school, requested target tier and request date; open a request detail panel showing immutable quote snapshot beside current live subscription/catalogue values.
+2. Decision controls: approve/reject only, mandatory reason, optimistic version check; stale quote must transition to stale and require a fresh school request. No editing quote amounts or manually activating tiers.
+3. After approval, display the linked difference-only invoice and payment status. Do not treat approval or receipt upload as activation.
+4. Reuse `InvoiceWorkbench` / existing `review_direct_bank_transfer` flow for Finance bank-statement reconciliation. The finalizer's upgrade branch is the only normal activation mechanism.
+5. Preserve `AdminSchoolProSubscriptions` and `control_center_activate_schoolpro` as an explicitly labelled, reason-required, separately audited emergency/manual override.
+6. Add navigation and route tests proving Finance and Super Admin access the review queue, while support/platform_admin and school users cannot approve/reject; only Super Admin retains the manual override route.
+
+No Central Admin application code or route was changed during this inspection.

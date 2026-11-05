@@ -1,0 +1,40 @@
+name: Issued-document RLS regression
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261017150000_fix_student_issued_document_school_scope.sql"
+      - "tests/security/issued-document-rls-regression.sql"
+      - ".github/workflows/issued-document-rls-regression.yml"
+  workflow_dispatch:
+
+jobs:
+  disposable-postgres-rls:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Run adversarial two-school RLS regression
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file tests/security/issued-document-rls-regression.sql

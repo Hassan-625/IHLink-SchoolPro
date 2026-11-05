@@ -53,7 +53,7 @@ export function DashboardLayout({
   // before a school-specific working session exists. All other school pages remain gated.
   const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&location.pathname==='/schoolpro/proprietor-dashboard';
   const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
-  const scopedChildren=product==='schoolpro'?<><SchoolSessionBar/>{sessionScope.session||showSuperAdminSchoolSelector||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>:children;
+  const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
   const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
   const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;

@@ -33,7 +33,7 @@ assert(app.includes('<Route path="/schoolpro/games" element={<Guard permission="
 assert(app.includes('<Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProBroadsheet/></Guard>}/>'),'Standard broadsheet must not be wrapped in the Enterprise advanced-reports gate');
 assert(app.includes('<Route path="/schoolpro/reports" element={<Guard><SchoolProEntitlementGate feature="advanced_reports">'),'Advanced reports must remain Enterprise-gated');
 assert(pricing.includes("from('schoolpro_plan_catalog')")&&pricing.includes('annual_price')&&!pricing.includes('monthly_price')&&!pricing.includes('termly_price'),'Pricing must combine authoritative entitlements with the currently supported annual billing cycle');
-assert(pricing.includes('Houses, Games, Sports and Competitions'),'Public plan comparison must include Games on every tier');
+assert(pricing.includes('schoolProPlanFeatures(flags)')&&sharedPlanFeatures.includes('Houses, Games, Sports and Competitions'),'Public plan comparison must use the shared plan-feature definitions, including Games on every tier');
 assert(subscription.includes('schoolProPlanFeatures(p.planFeatures||{})')&&sharedPlanFeatures.includes('Houses, Games, Sports and Competitions'),'Subscription view must use the shared plan-feature definitions, including Games');
 assert(games.includes('House Masters')&&games.includes('Inter-house standings')&&games.includes('Staff judging panel'),'Games management must retain houses, judges and standings');
 assert(dashboard.includes("access.can('finance')")&&dashboard.includes('canViewFinance&&')&&dashboard.includes('canReadFinance?'),'Generic role dashboard must load and display financial data only for roles with finance permission');

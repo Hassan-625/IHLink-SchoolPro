@@ -2367,3 +2367,9 @@ This section supersedes older stage-status summaries above where they conflict.
 - Completed the disposable House Master PostgreSQL fixture with the minimal Auth users, profiles, school, and default-house structures required by the regression. Synthetic house rows are seeded only inside the disposable test transaction.
 - Updated the local receipt-storage integration harness to allocate distinct available ports for PostgreSQL and Supabase Inbucket SMTP/POP3 services, avoiding collisions with ports already occupied by hosted CI runners.
 - These changes affect isolated test infrastructure only; no production schema, records, Supabase project, or Render deployment was changed.
+
+
+### Supabase CLI v3 receipt-storage harness compatibility — 2026-11-06
+
+- Updated the isolated receipt-storage test's generated Supabase config from the removed `[inbucket]` section to `[local_smtp]`, retaining the dynamically allocated web, SMTP, and POP3 ports.
+- The failure was a Supabase CLI v3 config-breaking change, not a Storage policy failure. The test continues to start an isolated local stack and does not link to or contact the production Supabase project.

@@ -10,7 +10,7 @@ import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 
 export function SchoolProAccessDenied(){
  const ctx=useSchoolProContext();
- const {user}=useAuth();
+ const {user,profile}=useAuth();
  const access=useSchoolProPermissions();
  const location=useLocation();
 
@@ -23,16 +23,12 @@ export function SchoolProAccessDenied(){
  const portalOnly=Boolean(origin&&/\/schoolpro\/(student-|parent-dashboard|cbt\/take)/.test(origin));
  const portal=portalOnly||Boolean(origin&&/\/schoolpro\/(report-card|transcript|receipts|invoices|payments|notifications)(\/|$)/.test(origin));
 
- const roleAllowed=permission
-  ?access.hasRolePermission(permission,portal)
-  :null;
-
- const planAllowed=permission
-  ?access.isPlanAllowed(permission)
-  :null;
+ const roleAllowed=permission?access.hasRolePermission(permission,portal):null;
+ const planFeature=permission?permissionForSchoolPath(origin||''):null;
+ const planAllowed=permission?access.isPlanAllowed(permission):null;
 
  const checking=access.loading||
-  Boolean(permission&&access.planLoading);
+  Boolean(planFeature&&access.planLoading);
 
  const diagnosis=checking
   ?'Checking the required school access…'
@@ -46,13 +42,20 @@ export function SchoolProAccessDenied(){
       ?'Your school role has the required permission, but this feature is not enabled on the current subscription plan.'
       :'SchoolPro could not authorize this page for the current signed-in account. Contact your school administrator.';
 
+ const planStatus=permission&&!planFeature
+  ?'No separate plan feature gate'
+  :planAllowed===true
+   ?'Enabled'
+   :planAllowed===false
+    ?'Not enabled'
+    :'Not verified';
+
  return <main className="grid min-h-screen place-items-center bg-slate-50 p-6">
   <div className="max-w-lg rounded-3xl border bg-white p-9 text-center shadow-sm">
    <ShieldX className="mx-auto h-10 w-10 text-rose-600"/>
    <h1 className="mt-4 text-2xl font-extrabold">
     {user&&!ctx.schoolId?'School registration status':'Permission required'}
    </h1>
-
    <p className="mt-2 text-sm text-muted">
     {user&&!ctx.schoolId
      ?'Your account is signed in, but it is not linked to an active school workspace yet. If you have submitted a school registration request, you can follow its review status here.'
@@ -64,7 +67,8 @@ export function SchoolProAccessDenied(){
     {origin&&<p>Requested page: {origin}</p>}
     {permission&&<p>Required permission: {permission}</p>}
     {permission&&!checking&&<p>Role permission: {roleAllowed?'Granted':'Not granted'}</p>}
-    {permission&&!checking&&<p>Plan entitlement: {planAllowed?'Allowed':'Not enabled or not required'}</p>}
+    {permission&&!checking&&<p>Plan feature: {planStatus}</p>}
+    {profile?.role==='super_admin'&&<p>Super Admin access bypass: active</p>}
     {ctx.error&&<p>Context: {ctx.error}</p>}
    </div>}
 

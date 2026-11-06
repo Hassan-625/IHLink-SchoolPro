@@ -111,6 +111,11 @@ VALUES
   ('a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'House Master Test School A', 'HMTESTA'),
   ('a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 'House Master Test School B', 'HMTESTB');
 
+-- Seed the two default houses that the production school-creation trigger provides.
+INSERT INTO public.schoolpro_houses (id, school_id, name, color, code) VALUES
+  ('d0000000-0000-0000-0000-000000000011','a0000000-0000-0000-0000-000000000001','Red House','#ef4444','red'),
+  ('d0000000-0000-0000-0000-000000000012','a0000000-0000-0000-0000-000000000002','Blue House','#3b82f6','blue');
+
 -- Synthetic fixtures are confined to this disposable PostgreSQL service.
 INSERT INTO public.schoolpro_members (id, school_id, user_id, role) VALUES
   ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','teacher'),

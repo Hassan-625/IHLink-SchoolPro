@@ -11,5 +11,6 @@ export function SchoolProPermissionGate({permission,portal=false,portalOnly=fals
  if(loading||scope.loading)return <div className="p-8 text-sm text-muted">Checking school permission…</div>;
  if(error)return <div role="alert" className="p-8 text-rose-700">School permissions could not be verified. Please reload.</div>;
  if(['teacher','class_teacher'].includes(role.toLowerCase())&&['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(path)&&!scope.coordinatorClassIds.length)return <Navigate to="/schoolpro/access-denied" replace/>;
- return ((portal&&canPortal(permission))||(!portalOnly&&can(permission)))?<>{children}</>:<Navigate to="/schoolpro/access-denied" replace/>;
-}
+  return ((portal&&canPortal(permission))||(!portalOnly&&can(permission)))
+  ?<>{children}</>
+  :<Navigate to="/schoolpro/access-denied" replace state={{from:path}}/>;

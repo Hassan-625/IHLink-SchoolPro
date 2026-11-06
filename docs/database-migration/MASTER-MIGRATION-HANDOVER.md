@@ -2353,3 +2353,11 @@ This section supersedes older stage-status summaries above where they conflict.
 - Production schema was inspected read-only to confirm the relevant columns and existing House Master policies. No production DDL/DML was executed. The migration was applied only to the isolated review database.
 - No test workspaces or fabricated student records were created.
 - **Completed:** isolated PostgreSQL House Master security regression passed on 2026-11-06. Fixture rows were rolled back. No production DDL/DML or test workspaces were created.
+
+### Super Admin workspace selector correction — 2026-11-06
+
+- Removed automatic selection of the first SchoolPro workspace when a Super Admin has no saved school selection.
+- Added an explicit workspace-selection screen and distinguished an empty workspace list from an unselected workspace.
+- Preserved selection updates through `ihlink:school-refresh` so the shared SchoolPro context follows the selected school.
+- Browser verification confirmed that the workspace dropdown now works.
+- Frontend-only correction; no database schema changes or production data modifications.

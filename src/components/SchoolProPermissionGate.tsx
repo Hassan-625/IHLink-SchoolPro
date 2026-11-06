@@ -3,6 +3,7 @@ import {useLocation,Navigate} from 'react-router-dom';
 import type {ReactNode} from 'react';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
 import {useAuth} from '@/context/AuthContext';
+import {permissionPlanFeature} from '@/lib/schoolPermissions';
 
 export function SchoolProPermissionGate({
  permission,
@@ -16,13 +17,15 @@ export function SchoolProPermissionGate({
  children:ReactNode
 }){
  const {profile}=useAuth();
- const {can,canPortal,loading,error,role}=useSchoolProPermissions();
+ const {can,canPortal,loading,planLoading,error,role}=useSchoolProPermissions();
  const scope=useSchoolClassScope();
  const path=useLocation().pathname;
 
  if(profile?.role==='super_admin')return <>{children}</>;
 
- if(loading||scope.loading)
+ const requiresPlanCheck=Boolean(permissionPlanFeature(permission));
+
+ if(loading||(requiresPlanCheck&&planLoading)||scope.loading)
   return <div className="p-8 text-sm text-muted">Checking school permission…</div>;
 
  if(error)

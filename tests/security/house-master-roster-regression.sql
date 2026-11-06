@@ -26,7 +26,13 @@ BEGIN
     RAISE EXCEPTION 'private roster helper must be SECURITY DEFINER to perform the narrow RLS bypass';
   END IF;
 
-  IF NOT (SELECT coalesce(proconfig::text, '') LIKE '%search_path=""%' FROM pg_proc WHERE oid = helper_oid) THEN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_proc p
+    CROSS JOIN LATERAL unnest(p.proconfig) AS cfg(setting)
+    WHERE p.oid = helper_oid
+      AND cfg.setting = 'search_path=""'
+  ) THEN
     RAISE EXCEPTION 'private roster helper must pin an empty search_path';
   END IF;
 
@@ -82,40 +88,70 @@ $test$;
 
 SELECT 'House Master roster security contract: PASS' AS result;
 
+BEGIN;
+
+INSERT INTO auth.users (
+  id, aud, role, email, encrypted_password,
+  confirmed_at, raw_app_meta_data, raw_user_meta_data,
+  created_at, updated_at
+)
+VALUES
+  ('b0000000-0000-0000-0000-000000000001', 'authenticated', 'authenticated', 'house-master-a@test.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('b0000000-0000-0000-0000-000000000002', 'authenticated', 'authenticated', 'house-master-b@test.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now()),
+  ('b0000000-0000-0000-0000-000000000003', 'authenticated', 'authenticated', 'unassigned-teacher@test.invalid', '', now(), '{}'::jsonb, '{}'::jsonb, now(), now());
+
+INSERT INTO public.profiles (id, email, status)
+VALUES
+  ('b0000000-0000-0000-0000-000000000001', 'house-master-a@test.invalid', 'active'),
+  ('b0000000-0000-0000-0000-000000000002', 'house-master-b@test.invalid', 'active'),
+  ('b0000000-0000-0000-0000-000000000003', 'unassigned-teacher@test.invalid', 'active');
+
+INSERT INTO public.schoolpro_schools (id, owner_id, name, code)
+VALUES
+  ('a0000000-0000-0000-0000-000000000001', 'b0000000-0000-0000-0000-000000000001', 'House Master Test School A', 'HMTESTA'),
+  ('a0000000-0000-0000-0000-000000000002', 'b0000000-0000-0000-0000-000000000002', 'House Master Test School B', 'HMTESTB');
+
 -- Synthetic fixtures are confined to this disposable PostgreSQL service.
 INSERT INTO public.schoolpro_members (id, school_id, user_id, role) VALUES
   ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','teacher'),
   ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000002','class_teacher'),
   ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000003','teacher');
 
-INSERT INTO public.schoolpro_houses (id, school_id, name, color) VALUES
-  ('d0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Red House','#DC2626'),
-  ('d0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','Blue House','#2563EB');
+-- Reuse houses seeded automatically by schoolpro_seed_default_houses.
+UPDATE public.schoolpro_houses
+SET id = 'd0000000-0000-0000-0000-000000000001'
+WHERE school_id = 'a0000000-0000-0000-0000-000000000001'
+  AND code = 'red';
+
+UPDATE public.schoolpro_houses
+SET id = 'd0000000-0000-0000-0000-000000000002'
+WHERE school_id = 'a0000000-0000-0000-0000-000000000002'
+  AND code = 'blue';
 
 INSERT INTO public.schoolpro_house_master_assignments (id, school_id, house_id, member_id) VALUES
   ('e0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001'),
   ('e0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000002');
 
-INSERT INTO public.schoolpro_classes (id, school_id, name, arm) VALUES
-  ('g0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Primary 1','A');
+INSERT INTO public.schoolpro_classes (id, school_id, name, arm, level) VALUES
+  ('70000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Primary 1','A','primary');
 
 INSERT INTO public.schoolpro_students
   (id, school_id, admission_number, first_name, middle_name, last_name, class_name, class_id, status)
 VALUES
-  ('f0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','ADM-001','Amina','Zainab','Yusuf','Primary 1','g0000000-0000-0000-0000-000000000001','active'),
-  ('f0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','ADM-002','Inactive','Test','Student','Primary 1','g0000000-0000-0000-0000-000000000001','inactive'),
+  ('f0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','ADM-001','Amina','Zainab','Yusuf','Primary 1','70000000-0000-0000-0000-000000000001','active'),
+  ('f0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','ADM-002','Inactive','Test','Student','Primary 1','70000000-0000-0000-0000-000000000001','withdrawn'),
   ('f0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000002','ADM-003','Foreign','School','Student','Primary 2',null,'active'),
-  ('f0000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','ADM-004','Former','House','Student','Primary 1','g0000000-0000-0000-0000-000000000001','active');
+  ('f0000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','ADM-004','Former','House','Student','Primary 1','70000000-0000-0000-0000-000000000001','active');
 
+DELETE FROM public.schoolpro_student_house_history WHERE student_id IN ('f0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000002','f0000000-0000-0000-0000-000000000003','f0000000-0000-0000-0000-000000000004');
 INSERT INTO public.schoolpro_student_house_history
-  (id, school_id, student_id, house_id, assigned_at, effective_to)
+  (id, school_id, student_id, house_id, assignment_type, assigned_at, effective_to)
 VALUES
-  ('h0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001',now(),null),
-  ('h0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000001',now(),null),
-  ('h0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000003','d0000000-0000-0000-0000-000000000001',now(),null),
-  ('h0000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000004','d0000000-0000-0000-0000-000000000001',now() - interval '2 days',now() - interval '1 day');
+  ('80000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','manual',now(),null),
+  ('80000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000001','manual',now(),null),
+  ('80000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000002','f0000000-0000-0000-0000-000000000003','d0000000-0000-0000-0000-000000000002','manual',now(),null),
+  ('80000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000004','d0000000-0000-0000-0000-000000000001','manual',now() - interval '2 days',now() - interval '1 day');
 
-BEGIN;
 SET LOCAL ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000001', true);
 

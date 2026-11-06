@@ -1,4 +1,3 @@
-
 import {cachedSchoolAccess,schoolAccessRequest} from '@/lib/schoolAccessCache';
 import {useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabase';
@@ -30,7 +29,7 @@ export function useSchoolProPermissions(){
   key:string;
   permissions:string[];
   loading:boolean;
-  error:string|null;
+  error:string|null
  }>({key:'',permissions:[],loading:true,error:null});
 
  const key=String(user?.id||'')+':'+String(ctx.schoolId||'')+':'+ctx.role;
@@ -41,8 +40,7 @@ export function useSchoolProPermissions(){
 
   setState(cached
    ?{key,permissions:cached.data||[],loading:false,error:cached.error?.message||null}
-   :{key,permissions:[],loading:true,error:null}
-  );
+   :{key,permissions:[],loading:true,error:null});
 
   if(ctx.loading)return;
 
@@ -86,31 +84,27 @@ export function useSchoolProPermissions(){
     :[]
   :[];
 
- const hasRolePermission=(permission:string|null,portal=false)=>{
-  if(!permission)return false;
+ const hasRolePermission=(p:string|null,portal=false)=>{
+  if(!p)return false;
   if(profile?.role==='super_admin')return true;
-  return portal
-   ?portalPermissions.includes(permission)
-   :permissions.includes(permission);
+  return portal?portalPermissions.includes(p):permissions.includes(p);
  };
-
- const can=(permission:string|null)=>
-  Boolean(permission&&hasRolePermission(permission)&&isPlanAllowed(permission));
-
- const canPortal=(permission:string|null)=>
-  Boolean(permission&&hasRolePermission(permission,true)&&isPlanAllowed(permission));
 
  return {
   permissions,
   portalPermissions,
-  loading:ctx.loading||(!['student','parent'].includes(role)&&!cached&&(state.key!==key||state.loading)),
-  role:ctx.role,
+  role,
+  loading:ctx.loading||(
+   !['student','parent'].includes(role)&&
+   !cached&&
+   (state.key!==key||state.loading)
+  ),
   error:state.error,
   planLoading:plan.loading,
-  planError:plan.error,
+  planError:plan.error||null,
   hasRolePermission,
   isPlanAllowed,
-  can,
-  canPortal
+  can:(p:string|null)=>Boolean(p&&hasRolePermission(p)&&isPlanAllowed(p)),
+  canPortal:(p:string|null)=>Boolean(p&&hasRolePermission(p,true)&&isPlanAllowed(p))
  };
 }

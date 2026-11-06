@@ -38,7 +38,7 @@ export function useSchoolProPermissions(){
 
  useEffect(()=>{
   let active=true;
-  const cached=cachedSchoolAccess<any>('permissions:'+key,true);
+  const cached=cachedSchoolAccess<PermissionCache>('permissions:'+key,true);
 
   setState(cached
    ?{key,permissions:cached.data||[],loading:false,error:cached.error?.message||null}

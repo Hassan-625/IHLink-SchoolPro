@@ -8,6 +8,11 @@ import {useSchoolProEntitlements} from './useSchoolProEntitlements';
 import {permissionPlanFeature} from '@/lib/schoolPermissions';
 import {studentReadPermissions,parentReadPermissions} from '@/lib/schoolPermissions';
 
+type PermissionCache = {
+ data: string[] | null;
+ error: {message: string} | null;
+};
+
 export function useSchoolProPermissions(){
  const {user,profile}=useAuth();
  const ctx=useSchoolProContext();

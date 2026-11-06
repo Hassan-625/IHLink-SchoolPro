@@ -1,6 +1,6 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
-**Last updated:** 2026-11-04  
+**Last updated:** 2026-11-06  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
@@ -2337,3 +2337,19 @@ This section supersedes older stage-status summaries above where they conflict.
 - Verified production schema read-only: house assignments use `ended_at IS NULL`; current student-house allocation uses `effective_to IS NULL`; the relevant tables expose `school_id`, student name/admission/class fields, and the active assignment keys needed for a narrow roster.
 - **Outstanding before PR completion:** create the Supabase migration through `supabase migration new schoolpro_house_master_roster` in the repository CLI environment; implement the private, tightly scoped roster helper plus authenticated-only public RPC wrapper; add regression coverage; run the repository tests/build and Supabase advisors. The frontend currently expects that RPC and must not be merged/deployed before the migration and tests are complete.
 - Production status: no DDL or data writes were made to Supabase production for this correction; no Render deployment was made. Apply the reviewed migration to the existing production project only as a separately approved rollout step.
+
+
+## 2026-11-06 — Super Admin selector and House Master roster correction
+
+**Branch:** `fix/schoolpro-house-master-and-super-admin-selector`  
+**Base:** latest `main` after PRs #119 and #120 were merged.
+
+- The Super Admin proprietor-dashboard content is rendered before the academic-session prompt so the school selector remains visible even when no working session is selected. The session gate is not globally bypassed.
+- The House Master dashboard route and teacher navigation entry are present. It is read-only and calls `public.schoolpro_house_master_roster(p_school)`.
+- Existing Games dashboard remains the management surface for Game Masters; no duplicate sports dashboard was introduced.
+- Generated migration filename with the Supabase CLI as required: `supabase/migrations/20261106085018_schoolpro_house_master_roster.sql`.
+- Added a private, narrowly scoped `SECURITY DEFINER` roster helper and authenticated-only public `SECURITY INVOKER` RPC. The helper checks the active account, exact school membership, teaching role, active appointment and current active student-house history; it returns only house/student/class roster fields. General student RLS was not modified.
+- Added `tests/security/house-master-roster-regression.sql` to assert function security mode, search-path pinning, execute grants and return-column contract.
+- Production schema was inspected read-only to confirm the relevant columns and existing House Master policies. No production DDL/DML was executed; the new migration has not been applied.
+- No test workspaces or fabricated student records were created.
+- Still pending: run the SQL security regression in the disposable CI database, run frontend typecheck/build and CI for this branch, review the remaining dashboard plan-entitlement versus role-permission UI correction, then open a PR. Production Supabase migration application and Render deployment remain separate rollout gates requiring explicit authorization.

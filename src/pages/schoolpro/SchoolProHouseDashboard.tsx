@@ -11,7 +11,7 @@ export function SchoolProHouseDashboard(){
  const ctx=useSchoolProContext();const {user,profile}=useAuth();
  const [records,setRecords]=useState<RosterRow[]>([]);const [loading,setLoading]=useState(false);const [error,setError]=useState('');
  useEffect(()=>{let active=true;
-  if(!supabase||!ctx.schoolId||!user){setRecords([]);return()=>{active=false};}
+  if(!supabase||!ctx.schoolId||!user?.id){setRecords([]);return()=>{active=false};}
   setLoading(true);setError('');
   void supabase.rpc('schoolpro_house_master_roster',{p_school:ctx.schoolId}).then(({data,error})=>{
    if(!active)return;

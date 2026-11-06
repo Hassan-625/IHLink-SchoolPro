@@ -10,7 +10,11 @@ const statusClasses: Record<string, string> = {
 };
 
 export const status = (text: string, tone = 'emerald') => (
-  <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${statusClasses[tone] || statusClasses.emerald}`}>
+  <span
+    className={`inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${
+      statusClasses[tone] || statusClasses.emerald
+    }`}
+  >
     {text}
   </span>
 );

@@ -1,5 +1,5 @@
 -- Minimal disposable PostgreSQL schema for the House Master roster migration test.
-\\set ON_ERROR_STOP on
+\set ON_ERROR_STOP on
 
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;

@@ -2361,3 +2361,9 @@ This section supersedes older stage-status summaries above where they conflict.
 - Preserved selection updates through `ihlink:school-refresh` so the shared SchoolPro context follows the selected school.
 - Browser verification confirmed that the workspace dropdown now works.
 - Frontend-only correction; no database schema changes or production data modifications.
+
+### CI fixture corrections — 2026-11-06
+
+- Completed the disposable House Master PostgreSQL fixture with the minimal Auth users, profiles, school, and default-house structures required by the regression. Synthetic house rows are seeded only inside the disposable test transaction.
+- Updated the local receipt-storage integration harness to allocate distinct available ports for PostgreSQL and Supabase Inbucket SMTP/POP3 services, avoiding collisions with ports already occupied by hosted CI runners.
+- These changes affect isolated test infrastructure only; no production schema, records, Supabase project, or Render deployment was changed.

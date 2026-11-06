@@ -79,6 +79,12 @@ try {
   // Supabase CLI defaults to 54322, which can already be occupied on hosted CI runners.
   // Select a free local port so this isolated stack does not collide with runner services.
   const dbPort = await allocateAvailablePort();
+  const usedPorts = new Set([dbPort]);
+  const inbucketPort = await allocateAvailablePort(usedPorts);
+  usedPorts.add(inbucketPort);
+  const smtpPort = await allocateAvailablePort(usedPorts);
+  usedPorts.add(smtpPort);
+  const pop3Port = await allocateAvailablePort(usedPorts);
   await writeFile(path.join(supabaseDir, 'config.toml'), [
     'project_id = "schoolpro-receipt-storage-test"',
     '',
@@ -100,6 +106,13 @@ try {
     '[auth.email]',
     'enable_signup = true',
     'enable_confirmations = false',
+    '',
+    // Hosted CI runners may already occupy Supabase CLI's default Inbucket ports.
+    '[inbucket]',
+    'enabled = true',
+    `port = ${inbucketPort}`,
+    `smtp_port = ${smtpPort}`,
+    `pop3_port = ${pop3Port}`,
     '',
   ].join('\n'));
   await copyFile(fixtureSql, path.join(migrationDir, '20261017145900_receipt_storage_test_fixture.sql'));

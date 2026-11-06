@@ -6,7 +6,7 @@ import {useSchoolProContext} from '@/hooks/useSchoolProContext';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
 import {useAuth} from '@/context/AuthContext';
 import {schoolDashboard} from '@/lib/schoolAccess';
-import {permissionForSchoolPath} from '@/lib/schoolPermissions';
+import {permissionForSchoolPath,permissionPlanFeature} from '@/lib/schoolPermissions';
 
 export function SchoolProAccessDenied(){
  const ctx=useSchoolProContext();
@@ -24,7 +24,7 @@ export function SchoolProAccessDenied(){
  const portal=portalOnly||Boolean(origin&&/\/schoolpro\/(report-card|transcript|receipts|invoices|payments|notifications)(\/|$)/.test(origin));
 
  const roleAllowed=permission?access.hasRolePermission(permission,portal):null;
- const planFeature=permission?permissionForSchoolPath(origin||''):null;
+ const planFeature=permission?permissionPlanFeature(permission):null;
  const planAllowed=permission?access.isPlanAllowed(permission):null;
 
  const checking=access.loading||

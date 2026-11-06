@@ -108,7 +108,7 @@ try {
     'enable_confirmations = false',
     '',
     // Hosted CI runners may already occupy Supabase CLI's default Inbucket ports.
-    '[inbucket]',
+    '[local_smtp]',
     'enabled = true',
     `port = ${inbucketPort}`,
     `smtp_port = ${smtpPort}`,

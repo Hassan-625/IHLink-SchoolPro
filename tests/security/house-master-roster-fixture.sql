@@ -1,10 +1,37 @@
 -- Minimal disposable PostgreSQL schema for the House Master roster migration test.
-\set ON_ERROR_STOP on
+\\set ON_ERROR_STOP on
 
 CREATE ROLE anon NOLOGIN;
 CREATE ROLE authenticated NOLOGIN;
 CREATE SCHEMA auth;
 CREATE SCHEMA private;
+
+-- Supabase Auth subset used by the regression's disposable identities.
+CREATE TABLE auth.users (
+  id uuid PRIMARY KEY,
+  aud text,
+  role text,
+  email text UNIQUE,
+  encrypted_password text,
+  confirmed_at timestamptz,
+  raw_app_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  raw_user_meta_data jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE public.profiles (
+  id uuid PRIMARY KEY REFERENCES auth.users(id),
+  email text,
+  status text NOT NULL DEFAULT 'active'
+);
+
+CREATE TABLE public.schoolpro_schools (
+  id uuid PRIMARY KEY,
+  owner_id uuid NOT NULL REFERENCES auth.users(id),
+  name text NOT NULL,
+  code text NOT NULL UNIQUE
+);
 
 CREATE TYPE public.school_member_role AS ENUM ('teacher', 'class_teacher', 'administrator');
 
@@ -29,6 +56,7 @@ CREATE TABLE public.schoolpro_houses (
   school_id uuid NOT NULL,
   name text NOT NULL,
   color text NOT NULL,
+  code text NOT NULL,
   is_active boolean NOT NULL DEFAULT true
 );
 CREATE TABLE public.schoolpro_house_master_assignments (
@@ -44,6 +72,7 @@ CREATE TABLE public.schoolpro_student_house_history (
   school_id uuid NOT NULL,
   student_id uuid NOT NULL,
   house_id uuid NOT NULL,
+  assignment_type text NOT NULL,
   assigned_at timestamptz NOT NULL DEFAULT now(),
   effective_to timestamptz
 );
@@ -62,5 +91,6 @@ CREATE TABLE public.schoolpro_classes (
   id uuid PRIMARY KEY,
   school_id uuid NOT NULL,
   name text NOT NULL,
-  arm text
+  arm text,
+  level text
 );

@@ -1,0 +1,55 @@
+name: House Master roster security regression
+
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261106085018_schoolpro_house_master_roster.sql"
+      - "tests/security/house-master-roster-fixture.sql"
+      - "tests/security/house-master-roster-regression.sql"
+      - ".github/workflows/house-master-roster-regression.yml"
+  workflow_dispatch:
+
+jobs:
+  disposable-postgres-roster:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Create disposable schema
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file tests/security/house-master-roster-fixture.sql
+      - name: Apply House Master roster migration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file supabase/migrations/20261106085018_schoolpro_house_master_roster.sql
+      - name: Verify roster security contract and tenant scope
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql "postgresql://postgres:postgres@127.0.0.1:5432/postgres" \
+            --set ON_ERROR_STOP=1 \
+            --file tests/security/house-master-roster-regression.sql

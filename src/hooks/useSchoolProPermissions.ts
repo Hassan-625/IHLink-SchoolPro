@@ -5,8 +5,7 @@ import {supabase} from '@/lib/supabase';
 import {useAuth} from '@/context/AuthContext';
 import {useSchoolProContext} from './useSchoolProContext';
 import {useSchoolProEntitlements} from './useSchoolProEntitlements';
-import {permissionPlanFeature} from '@/lib/schoolPermissions';
-import {studentReadPermissions,parentReadPermissions} from '@/lib/schoolPermissions';
+import {permissionPlanFeature,studentReadPermissions,parentReadPermissions} from '@/lib/schoolPermissions';
 
 type PermissionCache = {
  data: string[] | null;
@@ -52,7 +51,6 @@ export function useSchoolProPermissions(){
    return;
   }
 
-  // Student and parent portals have fixed, least-privilege read scopes.
   if(['student','parent'].includes(ctx.role.toLowerCase())){
    setState({key,permissions:[],loading:false,error:null});
    return;
@@ -74,9 +72,9 @@ export function useSchoolProPermissions(){
   });
 
   return()=>{active=false};
- },[key,ctx.loading,ctx.error,ctx.role]);
+ },[key,ctx.schoolId,ctx.loading,ctx.error,ctx.role]);
 
- const cached=cachedSchoolAccess<any>('permissions:'+key,true);
+ const cached=cachedSchoolAccess<PermissionCache>('permissions:'+key,true);
  const permissions=state.key===key?state.permissions:cached?.data||[];
  const role=ctx.role.toLowerCase();
 

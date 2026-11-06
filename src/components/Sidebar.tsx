@@ -46,14 +46,19 @@ export function DashboardLayout({
   pageBreadcrumb,
   rightActions,
 }: DashboardLayoutProps) {
+  const location = useLocation();
+  const { signOut, profile } = useAuth();
   const sessionScope=useSchoolSession();
-  const scopedChildren=product==='schoolpro'?<><SchoolSessionBar/>{sessionScope.session?children:<p role="status">Select the academic session above to open this page.</p>}</>:children;
+  // The platform Super Admin must be able to reach the Live Workspace school selector
+  // before a school-specific working session exists. All other school pages remain gated.
+  const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&location.pathname==='/schoolpro/proprietor-dashboard';
+  const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
+  const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
   const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
   const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
-  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>(!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0)&&(item.href==='/schoolpro/profile'||(item.href==='/schoolpro/subscription'?['proprietor','administrator','bursar','super_administrator'].includes(role):(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href))))))})).filter(section=>section.items.length)):providedSections;
+  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>(!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0)&&(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile'||(item.href==='/schoolpro/subscription'?['proprietor','administrator','bursar','super_administrator'].includes(role):(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href))))))})).filter(section=>section.items.length)):providedSections;
   const theme = productThemes[product];
-  const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const [toolsExpanded,setToolsExpanded]=useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -68,7 +73,6 @@ export function DashboardLayout({
   const [profileOpen, setProfileOpen] = useState(false);
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
-  const { signOut, profile } = useAuth();
   const accountDisplayName=product==='schoolpro'&&userName.includes('@students.ihlink.invalid')?[profile?.first_name,profile?.last_name].filter(Boolean).join(' ')||'Student':userName;
   const roleKey = String(profile?.role || '');
   const canSeeAdministration = profile?.status === 'active' && ['super_admin', 'platform_admin', 'content_admin', 'finance', 'support'].includes(roleKey);

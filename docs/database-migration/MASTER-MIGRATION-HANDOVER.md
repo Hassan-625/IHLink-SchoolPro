@@ -1,6 +1,6 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
-**Last updated:** 2026-11-04  
+**Last updated:** 2026-11-06  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
@@ -2325,4 +2325,51 @@ This section supersedes older stage-status summaries above where they conflict.
 - Follow-up branch: `fix/schoolpro-super-admin-workspace-persistence`; PR #120 has been retargeted to `main` after PR #119 merged.
 - Updated `SchoolProLiveDashboard` so the platform Super Admin's selected school is saved in `ihlink_schoolpro_admin_school`, restored on dashboard load, and broadcast through the existing `ihlink:school-refresh` event. The shared `useSchoolProContext` already resolves this key on subsequent routes and validates the selected school against `schoolpro_schools`; no new cross-tenant membership or ownership grant is introduced.
 - Scope is limited to persistent workspace selection. Sports dashboard and House assignment/student visibility work, plus plan-versus-role UI indicators, remain outstanding.
-- No SQL migration, production Supabase change, test workspace, or deployment was performed. PR #120 remains open pending final merge.
+- No SQL migration, production Supabase change, test workspace, or deployment was performed. PR #120 was merged into `main` on 2026-11-05 (squash commit `f70575d1351bf5925f8ede86d07c0e3ef1745e67`).
+
+
+## SchoolPro Super Admin selector and House Master roster — 2026-11-05
+
+- Working branch: `fix/schoolpro-house-master-and-super-admin-selector`, based on the merged `main` containing PRs #119 and #120.
+- Super Admin selector finding: `DashboardLayout` rendered `SchoolSessionBar` and replaced all page children with the session-required message whenever no working session existed. This hid the Live Workspace school selector because it is rendered inside `SchoolProLiveDashboard`.
+- Frontend correction on this branch: the Super Admin Live Workspace renders its school selector before the academic-session picker and is not blocked by the missing session. The selected school still resolves through the existing `ihlink_schoolpro_admin_school` context mechanism; no new membership, ownership, or tenant bypass is introduced.
+- House Master frontend groundwork: added `/schoolpro/house-dashboard`, a teacher navigation entry, and a read-only roster component calling `schoolpro_house_master_roster`. The House Master route does not require a working academic session. The existing `/schoolpro/games` Game Master management dashboard remains unchanged.
+- Verified production schema read-only: house assignments use `ended_at IS NULL`; current student-house allocation uses `effective_to IS NULL`; the relevant tables expose `school_id`, student name/admission/class fields, and the active assignment keys needed for a narrow roster.
+- Migration and regression coverage are implemented. The migration is committed as `ed15018`; it was applied only to the isolated review database. The House Master security regression passed, including same-school roster access and rejection of unauthorized access.
+- Production status: no DDL or data writes were made to Supabase production for this correction; no Render deployment was made. Apply the reviewed migration to the existing production project only as a separately approved rollout step.
+
+
+## 2026-11-06 — Super Admin selector and House Master roster correction
+
+**Branch:** `fix/schoolpro-house-master-and-super-admin-selector`  
+**Base:** latest `main` after PRs #119 and #120 were merged.
+
+- The Super Admin proprietor-dashboard content is rendered before the academic-session prompt so the school selector remains visible even when no working session is selected. The session gate is not globally bypassed.
+- The House Master dashboard route and teacher navigation entry are present. It is read-only and calls `public.schoolpro_house_master_roster(p_school)`.
+- Existing Games dashboard remains the management surface for Game Masters; no duplicate sports dashboard was introduced.
+- Generated migration filename with the Supabase CLI as required: `supabase/migrations/20261106085018_schoolpro_house_master_roster.sql`.
+- Added a private, narrowly scoped `SECURITY DEFINER` roster helper and authenticated-only public `SECURITY INVOKER` RPC. The helper checks the active account, exact school membership, teaching role, active appointment and current active student-house history; it returns only house/student/class roster fields. General student RLS was not modified.
+- Added a disposable PostgreSQL fixture, `tests/security/house-master-roster-regression.sql`, and a dedicated GitHub Actions workflow. The regression asserts function security mode, search-path pinning, execute grants and return-column contract, then checks positive same-school roster access and rejects another school's user, staff without an appointment, inactive students, cross-school student references and historical assignments.
+- Production schema was inspected read-only to confirm the relevant columns and existing House Master policies. No production DDL/DML was executed. The migration was applied only to the isolated review database.
+- No test workspaces or fabricated student records were created.
+- **Completed:** isolated PostgreSQL House Master security regression passed on 2026-11-06. Fixture rows were rolled back. No production DDL/DML or test workspaces were created.
+
+### Super Admin workspace selector correction — 2026-11-06
+
+- Removed automatic selection of the first SchoolPro workspace when a Super Admin has no saved school selection.
+- Added an explicit workspace-selection screen and distinguished an empty workspace list from an unselected workspace.
+- Preserved selection updates through `ihlink:school-refresh` so the shared SchoolPro context follows the selected school.
+- Browser verification confirmed that the workspace dropdown now works.
+- Frontend-only correction; no database schema changes or production data modifications.
+
+### CI fixture corrections — 2026-11-06
+
+- Completed the disposable House Master PostgreSQL fixture with the minimal Auth users, profiles, school, and default-house structures required by the regression. Synthetic house rows are seeded only inside the disposable test transaction.
+- Updated the local receipt-storage integration harness to allocate distinct available ports for PostgreSQL and Supabase Inbucket SMTP/POP3 services, avoiding collisions with ports already occupied by hosted CI runners.
+- These changes affect isolated test infrastructure only; no production schema, records, Supabase project, or Render deployment was changed.
+
+
+### Supabase CLI v3 receipt-storage harness compatibility — 2026-11-06
+
+- Updated the isolated receipt-storage test's generated Supabase config from the removed `[inbucket]` section to `[local_smtp]`, retaining the dynamically allocated web, SMTP, and POP3 ports.
+- The failure was a Supabase CLI v3 config-breaking change, not a Storage policy failure. The test continues to start an isolated local stack and does not link to or contact the production Supabase project.

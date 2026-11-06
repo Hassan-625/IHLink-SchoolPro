@@ -81,3 +81,92 @@ END
 $test$;
 
 SELECT 'House Master roster security contract: PASS' AS result;
+
+-- Synthetic fixtures are confined to this disposable PostgreSQL service.
+INSERT INTO public.schoolpro_members (id, school_id, user_id, role) VALUES
+  ('c0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000001','teacher'),
+  ('c0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','b0000000-0000-0000-0000-000000000002','class_teacher'),
+  ('c0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','b0000000-0000-0000-0000-000000000003','teacher');
+
+INSERT INTO public.schoolpro_houses (id, school_id, name, color) VALUES
+  ('d0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Red House','#DC2626'),
+  ('d0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','Blue House','#2563EB');
+
+INSERT INTO public.schoolpro_house_master_assignments (id, school_id, house_id, member_id) VALUES
+  ('e0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001','c0000000-0000-0000-0000-000000000001'),
+  ('e0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000002','c0000000-0000-0000-0000-000000000002');
+
+INSERT INTO public.schoolpro_classes (id, school_id, name, arm) VALUES
+  ('g0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','Primary 1','A');
+
+INSERT INTO public.schoolpro_students
+  (id, school_id, admission_number, first_name, middle_name, last_name, class_name, class_id, status)
+VALUES
+  ('f0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','ADM-001','Amina','Zainab','Yusuf','Primary 1','g0000000-0000-0000-0000-000000000001','active'),
+  ('f0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','ADM-002','Inactive','Test','Student','Primary 1','g0000000-0000-0000-0000-000000000001','inactive'),
+  ('f0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000002','ADM-003','Foreign','School','Student','Primary 2',null,'active'),
+  ('f0000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','ADM-004','Former','House','Student','Primary 1','g0000000-0000-0000-0000-000000000001','active');
+
+INSERT INTO public.schoolpro_student_house_history
+  (id, school_id, student_id, house_id, assigned_at, effective_to)
+VALUES
+  ('h0000000-0000-0000-0000-000000000001','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000001','d0000000-0000-0000-0000-000000000001',now(),null),
+  ('h0000000-0000-0000-0000-000000000002','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000002','d0000000-0000-0000-0000-000000000001',now(),null),
+  ('h0000000-0000-0000-0000-000000000003','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000003','d0000000-0000-0000-0000-000000000001',now(),null),
+  ('h0000000-0000-0000-0000-000000000004','a0000000-0000-0000-0000-000000000001','f0000000-0000-0000-0000-000000000004','d0000000-0000-0000-0000-000000000001',now() - interval '2 days',now() - interval '1 day');
+
+BEGIN;
+SET LOCAL ROLE authenticated;
+SELECT set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000001', true);
+
+DO $runtime$
+DECLARE
+  visible_active integer;
+  roster_row record;
+BEGIN
+  SELECT count(*) FILTER (WHERE student_id IS NOT NULL)
+    INTO visible_active
+  FROM public.schoolpro_house_master_roster('a0000000-0000-0000-0000-000000000001');
+
+  IF visible_active <> 1 THEN
+    RAISE EXCEPTION 'House Master should see exactly one current active same-school student; got %', visible_active;
+  END IF;
+
+  SELECT * INTO roster_row
+  FROM public.schoolpro_house_master_roster('a0000000-0000-0000-0000-000000000001')
+  WHERE student_id = 'f0000000-0000-0000-0000-000000000001';
+
+  IF roster_row.house_name <> 'Red House'
+     OR roster_row.admission_number <> 'ADM-001'
+     OR roster_row.first_name <> 'Amina'
+     OR roster_row.middle_name <> 'Zainab'
+     OR roster_row.class_name <> 'Primary 1'
+     OR roster_row.class_arm <> 'A' THEN
+    RAISE EXCEPTION 'House Master roster did not return the expected minimal student/class details';
+  END IF;
+
+  IF EXISTS (
+    SELECT 1 FROM public.schoolpro_house_master_roster('a0000000-0000-0000-0000-000000000001')
+    WHERE student_id IN (
+      'f0000000-0000-0000-0000-000000000002',
+      'f0000000-0000-0000-0000-000000000003',
+      'f0000000-0000-0000-0000-000000000004'
+    )
+  ) THEN
+    RAISE EXCEPTION 'Roster leaked an inactive, cross-school or historical student assignment';
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000002', true);
+  IF EXISTS (SELECT 1 FROM public.schoolpro_house_master_roster('a0000000-0000-0000-0000-000000000001')) THEN
+    RAISE EXCEPTION 'House Master from another school read the requested school roster';
+  END IF;
+
+  PERFORM set_config('request.jwt.claim.sub', 'b0000000-0000-0000-0000-000000000003', true);
+  IF EXISTS (SELECT 1 FROM public.schoolpro_house_master_roster('a0000000-0000-0000-0000-000000000001')) THEN
+    RAISE EXCEPTION 'Teaching staff without an active House Master appointment received a roster';
+  END IF;
+END
+$runtime$;
+
+ROLLBACK;
+

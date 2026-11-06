@@ -40,15 +40,15 @@ BEGIN
     RAISE EXCEPTION 'private roster helper returns an unexpected column contract: %', helper_result;
   END IF;
 
-  IF helper_def NOT LIKE '%auth.uid()%'
-     OR helper_def NOT LIKE '%private.is_active_account()%'
-     OR helper_def NOT LIKE '%a.ended_at IS NULL%'
-     OR helper_def NOT LIKE '%m.user_id = auth.uid()%'
-     OR helper_def NOT LIKE '%effective_to IS NULL%'
-     OR helper_def NOT LIKE '%st.status = ''active''%'
-     OR helper_def NOT LIKE '%teacher%'
-     OR helper_def NOT LIKE '%class_teacher%'
-     OR helper_def NOT LIKE '%a.school_id = p_school%' THEN
+  IF lower(helper_def) NOT LIKE '%auth.uid()%'
+     OR lower(helper_def) NOT LIKE '%private.is_active_account()%'
+     OR lower(helper_def) NOT LIKE '%a.ended_at is null%'
+     OR lower(helper_def) NOT LIKE '%m.user_id = auth.uid()%'
+     OR lower(helper_def) NOT LIKE '%effective_to is null%'
+     OR lower(helper_def) NOT LIKE '%st.status = ''active''%'
+     OR lower(helper_def) NOT LIKE '%teacher%'
+     OR lower(helper_def) NOT LIKE '%class_teacher%'
+     OR lower(helper_def) NOT LIKE '%a.school_id = p_school%' THEN
     RAISE EXCEPTION 'private roster helper is missing a required caller, membership, appointment, school or current-student restriction';
   END IF;
 

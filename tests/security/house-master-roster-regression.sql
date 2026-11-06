@@ -31,7 +31,7 @@ BEGIN
   END IF;
 
   IF has_function_privilege('anon', helper_oid, 'EXECUTE')
-     OR has_function_privilege('public', helper_oid, 'EXECUTE')
+     OR exists (select 1 from aclexplode(coalesce((select proacl from pg_proc where oid = helper_oid), acldefault('f', (select proowner from pg_proc where oid = helper_oid)))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE')
      OR NOT has_function_privilege('authenticated', helper_oid, 'EXECUTE') THEN
     RAISE EXCEPTION 'private roster helper execute grants are not least-privilege';
   END IF;
@@ -69,7 +69,7 @@ BEGIN
   END IF;
 
   IF has_function_privilege('anon', public_oid, 'EXECUTE')
-     OR has_function_privilege('public', public_oid, 'EXECUTE')
+     OR exists (select 1 from aclexplode(coalesce((select proacl from pg_proc where oid = public_oid), acldefault('f', (select proowner from pg_proc where oid = public_oid)))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE')
      OR NOT has_function_privilege('authenticated', public_oid, 'EXECUTE') THEN
     RAISE EXCEPTION 'public RPC execute grants are not least-privilege';
   END IF;

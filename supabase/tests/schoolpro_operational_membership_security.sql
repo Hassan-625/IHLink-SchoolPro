@@ -1,7 +1,7 @@
 -- C0 operational membership regression; run after the complete ordered lifecycle migrations.
 begin;
 do $test$
-declare n integer; permission_reader text; audit_reader text; audit_table text; invitation_reader text; audit_reader text; audit_table text;
+declare n integer; permission_reader text; audit_reader text; audit_table text; invitation_reader text;
 begin
   -- The central permission RPC must reference the role on schoolpro_members.
   -- schoolpro_board_members has title/previous_role, not a role column.

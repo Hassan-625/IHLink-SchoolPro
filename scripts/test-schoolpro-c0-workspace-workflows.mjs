@@ -169,11 +169,13 @@ console.log('SchoolPro C0 workflow and class/member deletion source-contract che
 const appSource=read('src/App.tsx');
 const sharedSource=read('src/pages/schoolpro/schoolShared.tsx');
 const operationsSource=read('src/pages/schoolpro/SchoolProOperations.tsx');
+const dashboardSource=read('src/pages/schoolpro/SchoolProLiveDashboard.tsx');
 const rolesSource=read('src/pages/schoolpro/SchoolProRoles.tsx');
 const auditPage=read('src/pages/schoolpro/SchoolProAuditLogs.tsx');
 assert.ok(appSource.includes('path="/schoolpro/audit-logs"'));
 assert.ok(appSource.includes('path="/schoolpro/admission-operations"'));
 assert.match(sharedSource,/Admissions Workspace/);
+assert.match(dashboardSource,/sections=\\{schoolSections\\}/);
 assert.match(sharedSource,/Audit Logs/);
 assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
 assert.match(rolesSource,/Principal/);

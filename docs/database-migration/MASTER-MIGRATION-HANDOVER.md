@@ -2502,3 +2502,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - 2026-11-07 Parents & Guardians responsive layout: workspace selector and refresh control now wrap on narrow screens; the two-column layout uses a shrink-safe `minmax(0,1fr)` content track; the links card/table container is shrink-safe; and the table has a keyboard-focusable, assistive-technology-labelled horizontal scroll region with a readable minimum width. Added C0 source-contract assertions. Branch-only UI/test change; no production changes.
+
+
+- 2026-11-07 Houses, Games & Competitions responsive layout: made the house and event grids/cards shrink-safe, allowed House Master/standing rows and event titles to wrap, and added a keyboard-focusable horizontally scrollable competition results table with a readable minimum width and accessible label. Added C0 source-contract assertions. Branch-only UI/test change; no production changes.

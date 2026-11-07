@@ -40,6 +40,17 @@ before insert or update on public.schoolpro_members
 for each row execute function private.guard_schoolpro_employment_status();
 revoke all on function private.guard_schoolpro_employment_status() from public,anon,authenticated;
 
+drop policy if exists "leave own read" on public.schoolpro_leave_requests;
+create policy "leave own read" on public.schoolpro_leave_requests
+for select to authenticated using (
+  exists (
+    select 1 from public.schoolpro_members m
+    where m.id=schoolpro_leave_requests.member_id
+      and m.school_id=schoolpro_leave_requests.school_id
+      and m.user_id=auth.uid()
+  )
+);
+
 alter table public.schoolpro_leave_requests
   add column if not exists request_type text not null default 'planned_leave',
   add column if not exists absence_reported_at timestamptz,
@@ -229,7 +240,7 @@ as $function$
 declare v_member uuid; v_id uuid; v_reason text:=nullif(btrim(coalesce(p_reason,'')),'');
 begin
   if auth.uid() is null or not private.is_active_account()
-    or not private.schoolpro_module_allowed(p_school,'leave') then
+    or not private.schoolpro_operationally_active(p_school) then
     raise exception 'Active school leave access is required';
   end if;
   select id into v_member from public.schoolpro_members

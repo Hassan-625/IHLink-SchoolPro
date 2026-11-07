@@ -7,6 +7,7 @@ const sidebar=read('src/components/Sidebar.tsx');
 const staff=read('src/pages/schoolpro/SchoolProStaffDiscipline.tsx');
 const leave=read('src/pages/schoolpro/SchoolProLeave.tsx');
 const student=read('src/pages/schoolpro/SchoolProDiscipline.tsx');
+const classes=read('src/pages/schoolpro/SchoolProClasses.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
@@ -57,6 +58,10 @@ assert.match(student,/Cases with follow-up scheduled/);
 assert.match(student,/Showing \{visibleRows.length\} of/);
 assert.match(student,/No cases match the selected filters/);
 assert.match(student,/profile\\?\\.\\[0\\]/);
+assert.match(classes,/flex flex-wrap items-center justify-between gap-3/);
+assert.match(classes,/min-w-\\[980px\\]/);
+assert.match(classes,/min-w-\\[480px\\]/);
+assert.match(classes,/overflow-x-auto/);
 assert.match(leave,/profile\\?\\.\\[0\\]/);
 assert.match(staff,/profile\\?\\.\\[0\\]/);
 assert.match(sidebar,/\\/schoolpro\\/staff-discipline/);

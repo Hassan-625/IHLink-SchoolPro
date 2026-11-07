@@ -26,6 +26,24 @@ begin
   if not has_function_privilege('authenticated','public.schoolpro_set_member_suspension_state(uuid,uuid,boolean,text)','EXECUTE') then
     raise exception 'Audited staff suspension/restore RPC is not executable by authenticated users';
   end if;
+  if to_regclass('public.schoolpro_workspace_deletion_requests') is null then
+    raise exception 'Workspace removal request table is missing';
+  end if;
+  if not (select relrowsecurity from pg_class where oid='public.schoolpro_workspace_deletion_requests'::regclass) then
+    raise exception 'Workspace removal request RLS is not enabled';
+  end if;
+  if has_table_privilege('anon','public.schoolpro_workspace_deletion_requests','INSERT')
+     or has_table_privilege('authenticated','public.schoolpro_workspace_deletion_requests','INSERT')
+     or has_table_privilege('authenticated','public.schoolpro_workspace_deletion_requests','UPDATE')
+     or has_table_privilege('authenticated','public.schoolpro_workspace_deletion_requests','DELETE') then
+    raise exception 'Direct writes remain on workspace removal requests';
+  end if;
+  if not has_function_privilege('authenticated','public.schoolpro_request_workspace_deletion(uuid,text,text)','EXECUTE')
+     or not has_function_privilege('authenticated','public.schoolpro_review_workspace_deletion(uuid,text,text)','EXECUTE')
+     or not has_function_privilege('authenticated','public.schoolpro_execute_workspace_deletion(uuid,text)','EXECUTE')
+     or not has_function_privilege('authenticated','public.schoolpro_cancel_workspace_deletion(uuid,text)','EXECUTE') then
+    raise exception 'Workspace removal lifecycle RPC grants are incomplete';
+  end if;
 
   foreach rel in array array['schoolpro_classes','schoolpro_members'] loop
     if has_table_privilege('anon','public.'||rel,'DELETE')

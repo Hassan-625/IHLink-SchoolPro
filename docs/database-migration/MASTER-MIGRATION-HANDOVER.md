@@ -2435,3 +2435,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - 2026-11-07: added branch-only follow-up migration `20261107143000_schoolpro_active_membership_authorization.sql` (commit `24a464d60a948d0bcb740fa88e738f3116d69d83`). After the lifecycle foundation, it requires active membership in the central school-access helper and core class-read, section-leader, House Master, and lesson authorization helpers, while retaining independent owner/Super Admin access and student/guardian historical reads. This is a partial dependency correction only: remaining direct membership readers/validators, suspension appointment cleanup, archived-class write blocking, DELETE policy/grant removal, explicit replacement of Super Admin ALL policies, and full SQL regression tests remain outstanding. Neither migration is approved for production application yet. No production mutation, merge, or Render deployment occurred.
+
+
+- Follow-up review of live function privileges found authenticated EXECUTE grants on private helpers used directly by RLS policies. The initial C0 follow-up draft would have revoked these and broken policy evaluation; corrected the migration in commit `93fc97222e1d8d3790a791c0a448458c5a3a7db2` to preserve deployed grants. No production privileges were changed.

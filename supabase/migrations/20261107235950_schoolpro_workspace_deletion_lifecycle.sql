@@ -15,6 +15,7 @@ create table if not exists public.schoolpro_workspace_deletion_requests (
   reviewed_by uuid references auth.users(id) on delete set null,
   reviewed_at timestamptz,
   review_note text,
+  cancellation_note text,
   executed_by uuid references auth.users(id) on delete set null,
   executed_at timestamptz,
   execution_note text,
@@ -148,7 +149,7 @@ begin
   end if;
   update public.schoolpro_workspace_deletion_requests
     set status='cancelled',updated_at=now(),
-        execution_note=case when length(btrim(coalesce(p_note,'')))>=10 then btrim(p_note) else 'Cancelled by the original requester before platform review.' end
+        cancellation_note=case when length(btrim(coalesce(p_note,'')))>=10 then btrim(p_note) else 'Cancelled by the original requester before platform review.' end
   where id=p_request;
   insert into public.schoolpro_audit_logs
     (school_id,actor_id,action,entity_type,entity_id,metadata)

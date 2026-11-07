@@ -94,6 +94,23 @@ begin
   if position('status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Form Master assignment does not require active staff and class'; end if;
   select pg_get_functiondef('private.validate_subject_assignment()'::regprocedure) into def;
   if position('member_status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Subject assignment validator does not require active staff/class'; end if;
+  select pg_get_functiondef('private.schoolpro_is_house_master(uuid,uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('ended_at' in def)=0 then raise exception 'House Master reader includes inactive or ended appointments'; end if;
+  select pg_get_functiondef('private.schoolpro_member_leads_class(uuid,uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('sl.ended_at' in def)=0 or position('archived_at' in def)=0 then raise exception 'Section class reader includes inactive staff or archived class'; end if;
+  select pg_get_functiondef('private.schoolpro_member_leads_student_section(uuid,uuid,text)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('sl.ended_at' in def)=0 then raise exception 'Section student reader includes inactive or ended appointments'; end if;
+  select pg_get_functiondef('private.schoolpro_validate_house_master()'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'House Master assignment validator allows inactive staff'; end if;
+  select pg_get_functiondef('private.schoolpro_set_section_leader(uuid,uuid,text,boolean)'::regprocedure) into def;
+  if position('target.status' in def)=0 or position('ended_at' in def)=0 then raise exception 'Section leader appointment writer does not enforce active membership/history'; end if;
+  select pg_get_functiondef('private.schoolpro_set_board_role(uuid,uuid,text)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('ended_at' in def)=0 then raise exception 'Board appointment writer does not enforce active membership/history'; end if;
+  select pg_get_functiondef('private.schoolpro_cached_access_schools(text,text)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'Cached access reader includes inactive memberships'; end if;
+  select pg_get_functiondef('private.schoolpro_cached_staff_schools()'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'Cached staff reader includes inactive memberships'; end if;
+
 
   -- Attendance and timetable legacy permissive policies must be removed.
   select count(*) into n from pg_policy p

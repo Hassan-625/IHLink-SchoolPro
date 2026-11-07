@@ -1,6 +1,8 @@
 -- Stage C0: richer student discipline case management and immutable case history.
 begin;
 
+revoke delete,truncate on public.schoolpro_discipline_records from anon,authenticated;
+
 alter table public.schoolpro_discipline_records
   add column if not exists category text not null default 'general',
   add column if not exists severity text not null default 'moderate',

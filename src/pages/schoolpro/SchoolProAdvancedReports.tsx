@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useMemo,useState} from 'react';
-import ExcelJS from 'exceljs/dist/exceljs.min.js';
+import ExcelJS from 'exceljs';
 import {AcademicPeriodSelect} from '@/components/AcademicPeriodSelect';
 import {ModulePage} from '@/components/ModulePage';
 import {Card} from '@/components/ui/Card';

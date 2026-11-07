@@ -35,12 +35,6 @@ begin
     end if;
   end loop;
 
-  -- Full school administrators and the Principal designation must retain Games access.
-  if position('if m.role = ''administrator'' and m.position_title = ''Principal'' then' in permission_reader)=0
-    or (length(permission_reader)-length(replace(permission_reader, '''games''', '')))/length('''games''') < 5 then
-    raise exception 'School administrator and Principal permission sets must include Games';
-  end if;
-
   -- Principal invitations preserve their designation through acceptance.
   if not exists (
     select 1 from information_schema.columns

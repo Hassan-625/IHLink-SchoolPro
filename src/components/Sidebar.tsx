@@ -4,7 +4,6 @@ import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
-import {useSchoolProEntitlements} from '@/hooks/useSchoolProEntitlements';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -52,23 +51,27 @@ export function DashboardLayout({
   const sessionScope=useSchoolSession();
   // The platform Super Admin must be able to reach the Live Workspace school selector
   // before a school-specific working session exists. All other school pages remain gated.
-  const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&location.pathname==='/schoolpro/proprietor-dashboard';
+  const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname);
   const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
-  const permissions=useSchoolProPermissions();const planAccess=useSchoolProEntitlements();const classScope=useSchoolClassScope();
+  const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
-  const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
+  const isPlatformSchoolProSuperAdmin=product==='schoolpro'&&profile?.role==='super_admin';
+  const canonical=isPlatformSchoolProSuperAdmin?schoolSections:role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
   const sections=product==='schoolpro'
-    ? (permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>{
+    ? (isPlatformSchoolProSuperAdmin?canonical:(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>{
+      if(isPlatformSchoolProSuperAdmin)return true;
       const teacherScopeAllowed=!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0;
       if(!teacherScopeAllowed)return false;
       if(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile')return true;
       if(item.href==='/schoolpro/workspace-deletion')return role==='proprietor';
-      if(item.href==='/schoolpro/reports')return Boolean(permissions.can('reports')&&planAccess.entitlements?.active===true&&planAccess.entitlements?.advanced_reports===true);
+      if(item.href==='/schoolpro/reports')return permissions.hasRolePermission('reports');
+      if(['/schoolpro/cbt','/schoolpro/question-bank'].includes(item.href))return permissions.hasRolePermission('cbt');
+      if(item.href==='/schoolpro/settings')return permissions.hasRolePermission('branding');
       if(item.href==='/schoolpro/subscription')return ['proprietor','administrator','bursar','super_administrator'].includes(role);
       if(['/schoolpro/leave','/schoolpro/staff-discipline','/schoolpro/discipline'].includes(item.href))return role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href));
       return permissions.can(permissionForSchoolPath(item.href));
-    })})).filter(section=>section.items.length))
+    })})).filter(section=>section.items.length)))
     : providedSections;
   const theme = productThemes[product];
   const [collapsed, setCollapsed] = useState(false);

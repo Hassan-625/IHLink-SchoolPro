@@ -1,8 +1,16 @@
 -- C0 operational membership regression; run after the complete ordered lifecycle migrations.
 begin;
 do $test$
-declare n integer;
+declare n integer; permission_reader text;
 begin
+  -- The central permission RPC must reference the role on schoolpro_members.
+  -- schoolpro_board_members has title/previous_role, not a role column.
+  permission_reader := pg_get_functiondef('public.schoolpro_user_permissions(uuid)'::regprocedure);
+  if position('bm.role = ''administrator''' in permission_reader)=0
+    or position('b.role' in permission_reader)>0 then
+    raise exception 'School permission reader has an invalid board-role reference';
+  end if;
+
   -- Legacy direct membership policies must not survive on timetable or attendance.
   select count(*) into n from pg_policy p join pg_class c on c.oid=p.polrelid
   join pg_namespace s on s.oid=c.relnamespace

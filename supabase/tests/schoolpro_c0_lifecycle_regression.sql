@@ -20,6 +20,12 @@ begin
   if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_members' and column_name='employment_status') then
     raise exception 'schoolpro_members.employment_status is missing';
   end if;
+  if not has_function_privilege('authenticated','public.schoolpro_set_class_archive_state(uuid,uuid,boolean,text)','EXECUTE') then
+    raise exception 'Audited class archive/restore RPC is not executable by authenticated users';
+  end if;
+  if not has_function_privilege('authenticated','public.schoolpro_set_member_suspension_state(uuid,uuid,boolean,text)','EXECUTE') then
+    raise exception 'Audited staff suspension/restore RPC is not executable by authenticated users';
+  end if;
 
   foreach rel in array array['schoolpro_classes','schoolpro_members'] loop
     if has_table_privilege('anon','public.'||rel,'DELETE')

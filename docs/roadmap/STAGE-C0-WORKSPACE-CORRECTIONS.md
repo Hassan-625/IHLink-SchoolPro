@@ -275,3 +275,25 @@ The exact production policy names and grants were inspected read-only before aut
 - Dedicated Staff Disciplinary, improved Leave & Absence, and expanded Student Discipline case-management pages and secure audited RPCs are not implemented yet.
 - Full SQL security/lifecycle regression suite remains incomplete and unexecuted. It must run on a disposable isolated database against the entire ordered migration chain before C0 acceptance.
 - Production schema remains unchanged; no merge or Render deployment has occurred.
+
+### Active-membership operational readers and validators — 2026-11-07
+
+Branch-only migration 20261107210000_schoolpro_active_membership_operational_guards.sql:
+- Attendance insert/update no longer uses broad legacy ALL policies. Writes require an active Form Master appointment or active school leadership; attendance validation rejects inactive/transferred pupils and archived classes. Existing student/guardian and historic family reads remain.
+- CBT author/manager helpers require active membership. New eligibility requires an active student and non-archived class. Plan-feature access on CBT tests is SELECT-only, not an alternate write path.
+- Timetable legacy direct-membership policies are replaced by active-membership reads; teachers see classes where their Form Master or subject appointment remains active. Family historical timetable access is retained. Timetable write/delete is restricted to active leadership roles.
+- New payroll/leave rows must reference active memberships. Staff can report an absence without an immediate reason and later update their own pending reason through an audited RPC. HR review remains separately authorised.
+- Result-lock RPC uses the active-membership-aware private.has_school_access; the existing result write helper from the ended-appointment migration remains the central result writer gate.
+
+### Staff disciplinary, leave/absence and student discipline workflows — 2026-11-07
+
+Branch-only migration 20261107220000_schoolpro_staff_discipline_leave_workflows.sql and frontend pages implement:
+- Dedicated Staff Disciplinary dashboard with warnings, investigation, performance plan, suspension, dismissal, staff response, appeal and case closure.
+- Suspension/dismissal call the existing membership suspension lifecycle; active appointments end and their historical rows/events remain. Dismissal additionally sets employment_status='dismissed'; the ordinary restore RPC cannot reactivate a dismissed member. Accepted appeals do not auto-reinstate staff.
+- Leave & Absence supports planned leave, retrospective absence without an initial reason, own-reason update, HR decision/review note and immutable leave-event history. Own read is retained for historical records. Direct leave/absence DELETE/TRUNCATE is revoked.
+- Student discipline migration 20261107230000_schoolpro_student_discipline_case_management.sql adds categories, severity, incident location/time, student response, guardian contact, follow-up owner/date/outcome, resolution and immutable case events. The broad manager ALL policy is removed and replaced by explicit SELECT/INSERT/UPDATE; direct case DELETE/TRUNCATE is revoked.
+- Frontend routes and navigation are branch-only. Do not deploy the UI before the complete migration chain is validated.
+
+### C0 regression execution status
+
+Added focused SQL regressions and a consolidated supabase/tests/schoolpro_c0_lifecycle_regression.sql catalog-contract suite. Added .github/workflows/schoolpro-c0-regression.yml to build/typecheck, start disposable local Supabase, apply the entire migration chain and execute the SQL regressions. **Execution has not been confirmed; do not report tests as passing.** Remaining membership consumers (competition/judges, library loans, promotions/progression, result publication/review and staff utilities) still require exact definition and policy review. No production changes, merge or Render deployment occurred.

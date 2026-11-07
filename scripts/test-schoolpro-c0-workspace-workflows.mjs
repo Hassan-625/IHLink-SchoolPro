@@ -8,6 +8,7 @@ const staff=read('src/pages/schoolpro/SchoolProStaffDiscipline.tsx');
 const leave=read('src/pages/schoolpro/SchoolProLeave.tsx');
 const student=read('src/pages/schoolpro/SchoolProDiscipline.tsx');
 const classes=read('src/pages/schoolpro/SchoolProClasses.tsx');
+const staffPage=read('src/pages/schoolpro/SchoolProStaff.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
@@ -62,6 +63,10 @@ assert.match(classes,/flex flex-wrap items-center justify-between gap-3/);
 assert.match(classes,/min-w-\\[980px\\]/);
 assert.match(classes,/min-w-\\[480px\\]/);
 assert.match(classes,/overflow-x-auto/);
+assert.match(staffPage,/flex min-w-0 flex-wrap items-center gap-3/);
+assert.match(staffPage,/aria-label="Staff access table, scroll horizontally to view all columns"/);
+assert.match(staffPage,/min-w-\\[920px\\]/);
+assert.match(staffPage,/overflow-x-auto overscroll-x-contain/);
 assert.match(leave,/profile\\?\\.\\[0\\]/);
 assert.match(staff,/profile\\?\\.\\[0\\]/);
 assert.match(sidebar,/\\/schoolpro\\/staff-discipline/);

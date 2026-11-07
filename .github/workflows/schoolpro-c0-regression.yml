@@ -58,8 +58,27 @@ jobs:
         with:
           version: latest
 
-      - name: Start disposable local Supabase
-        run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+      - name: Start disposable local Supabase without replaying historical migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This repository's legacy migration chain starts from an incomplete
+          # schema. Keep it out of Supabase CLI startup; restore the production
+          # baseline next, then explicitly apply only post-baseline migrations.
+          backup_dir="$(mktemp -d)"
+          restore_migrations() {
+            if [[ -d "$backup_dir/migrations" ]]; then
+              rm -rf supabase/migrations
+              mv "$backup_dir/migrations" supabase/migrations
+            fi
+          }
+          trap restore_migrations EXIT
+          mv supabase/migrations "$backup_dir/migrations"
+          mkdir -p supabase/migrations
+          supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+          restore_migrations
+          trap - EXIT
+          rmdir "$backup_dir"
 
       # Restore into the disposable Supabase postgres database itself. This
       # retains Supabase's local auth schema/users and platform roles required by

@@ -259,3 +259,19 @@ These migrations have not been run against any database. They require SQL syntax
 
 
 **Appointment history preservation correction — 2026-11-07:** Added migration 20261107190000_schoolpro_staff_appointment_history.sql (commit b2fc3512321af3e1c3888bbf9a5645809b68ca80). It records immutable JSON snapshots for initial appointment, ending, reassignment and reappointment events in schoolpro_staff_appointment_history. This is necessary because legacy board/section uniqueness constraints reuse appointment rows when staff are reappointed. Direct client INSERT/UPDATE/DELETE on the history table is revoked; authenticated SELECT is scoped to authorised school leadership/HR or the affected member. The earlier appointment migrations now have a static contract test at scripts/test-schoolpro-lifecycle-appointment-contract.mjs, registered as npm run test:schoolpro-lifecycle-appointments. The test has not yet been run in a local checkout or isolated database.
+
+
+### Class/member DELETE closure — 2026-11-07
+
+Added branch-only migration `20261107200000_schoolpro_revoke_class_member_delete.sql`. It removes the confirmed school-leader DELETE policies and broad Super Admin ALL policies for classes and memberships, then defines explicit Super Admin SELECT, INSERT and UPDATE policies. It also revokes direct DELETE and TRUNCATE privileges from `anon` and `authenticated`; existing school-leader create/update policies and privileged server-side lifecycle paths are retained.
+
+A focused SQL regression was added at `supabase/tests/schoolpro_class_member_delete_security.sql`. It asserts the absence of DELETE/TRUNCATE grants, DELETE/ALL policies, and the presence of the six explicit Super Admin policies. **Not yet executed.** This does not close the full regression-suite requirement.
+
+The exact production policy names and grants were inspected read-only before authoring. The migration is branch-only and has not been applied to production.
+
+### Remaining C0 blockers — updated 2026-11-07
+
+- Attendance, CBT, timetable, leave and result validators/readers still require full call-graph review and active membership + active appointment + non-archived class checks where operational.
+- Dedicated Staff Disciplinary, improved Leave & Absence, and expanded Student Discipline case-management pages and secure audited RPCs are not implemented yet.
+- Full SQL security/lifecycle regression suite remains incomplete and unexecuted. It must run on a disposable isolated database against the entire ordered migration chain before C0 acceptance.
+- Production schema remains unchanged; no merge or Render deployment has occurred.

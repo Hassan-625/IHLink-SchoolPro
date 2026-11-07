@@ -184,7 +184,7 @@ with check (
   )
   and (class_id is null or exists (
     select 1 from public.schoolpro_classes c
-    where c.id=class_id and c.school_id=school_id and c.archived_at is null
+    where c.id=schoolpro_timetable_entries.class_id and c.school_id=schoolpro_timetable_entries.school_id and c.archived_at is null
   ))
 );
 
@@ -203,7 +203,7 @@ with check (
   ]::public.school_member_role[])
   and (class_id is null or exists (
     select 1 from public.schoolpro_classes c
-    where c.id=class_id and c.school_id=school_id and c.archived_at is null
+    where c.id=schoolpro_timetable_entries.class_id and c.school_id=schoolpro_timetable_entries.school_id and c.archived_at is null
   ))
 );
 
@@ -313,7 +313,7 @@ with check (
   and status='pending'
   and exists (
     select 1 from public.schoolpro_members m
-    where m.id=member_id and m.school_id=school_id
+    where m.id=schoolpro_leave_requests.member_id and m.school_id=schoolpro_leave_requests.school_id
       and m.user_id=auth.uid() and m.status='active'
   )
 );
@@ -324,7 +324,7 @@ using (
   status='pending'
   and exists (
     select 1 from public.schoolpro_members m
-    where m.id=member_id and m.school_id=school_id
+    where m.id=schoolpro_leave_requests.member_id and m.school_id=schoolpro_leave_requests.school_id
       and m.user_id=auth.uid() and m.status='active'
   )
 )
@@ -332,7 +332,7 @@ with check (
   status='pending'
   and exists (
     select 1 from public.schoolpro_members m
-    where m.id=member_id and m.school_id=school_id
+    where m.id=schoolpro_leave_requests.member_id and m.school_id=schoolpro_leave_requests.school_id
       and m.user_id=auth.uid() and m.status='active'
   )
 );

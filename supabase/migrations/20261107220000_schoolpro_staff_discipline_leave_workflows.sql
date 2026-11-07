@@ -4,6 +4,38 @@
 
 begin;
 
+alter table public.schoolpro_members
+  add column if not exists employment_status text not null default 'active';
+alter table public.schoolpro_members
+  drop constraint if exists schoolpro_members_employment_status_check;
+alter table public.schoolpro_members
+  add constraint schoolpro_members_employment_status_check
+  check (employment_status in ('active','suspended','dismissed'));
+
+create or replace function private.guard_schoolpro_employment_status()
+returns trigger language plpgsql set search_path=''
+as $guard$
+begin
+  if current_user in ('anon','authenticated') and new.employment_status is distinct from old.employment_status then
+    raise exception 'Employment status must be changed through the audited HR workflow';
+  end if;
+  if old.employment_status='dismissed' and new.status='active' then
+    raise exception 'A dismissed staff member cannot be restored through the suspension workflow';
+  end if;
+  if new.status is distinct from old.status then
+    if new.status='suspended' and old.employment_status<>'dismissed' then new.employment_status:='suspended';
+    elsif new.status='active' and old.employment_status<>'dismissed' then new.employment_status:='active';
+    end if;
+  end if;
+  return new;
+end;
+$guard$;
+drop trigger if exists schoolpro_guard_employment_status on public.schoolpro_members;
+create trigger schoolpro_guard_employment_status
+before update on public.schoolpro_members
+for each row execute function private.guard_schoolpro_employment_status();
+revoke all on function private.guard_schoolpro_employment_status() from public,anon,authenticated;
+
 alter table public.schoolpro_leave_requests
   add column if not exists request_type text not null default 'planned_leave',
   add column if not exists absence_reported_at timestamptz,
@@ -237,8 +269,8 @@ begin
     where m.id=target.member_id and m.school_id=target.school_id
       and m.user_id=auth.uid()
   ) then raise exception 'You can update only your own absence reason'; end if;
-  if target.status not in ('pending','approved','rejected') then
-    raise exception 'This leave record is no longer editable';
+  if target.status<>'pending' then
+    raise exception 'Only a pending leave or absence record can have its reason updated';
   end if;
   update public.schoolpro_leave_requests
   set reason=btrim(p_reason),reason_updated_at=now(),reason_updated_by=auth.uid()
@@ -293,9 +325,11 @@ begin
     raise exception 'Choose a valid action, severity and case summary';
   end if;
   if not exists(select 1 from public.schoolpro_members m
-    where m.id=p_member and m.school_id=p_school and m.status='active') then
-    raise exception 'Choose an active staff membership';
+    where m.id=p_member and m.school_id=p_school
+      and (m.status='active' or (p_action='dismissal' and m.status='suspended' and m.employment_status<>'dismissed'))) then
+    raise exception 'Choose an eligible active or suspended staff membership';
   end if;
+  if p_effective_at>now() then raise exception 'Future-dated disciplinary actions are not supported; use an approved HR decision when effective'; end if;
   if p_action in ('suspension','dismissal')
     and not private.has_school_access(
       p_school,array['proprietor','administrator']::public.school_member_role[]
@@ -311,7 +345,13 @@ begin
 
   if p_action in ('suspension','dismissal') then
     v_reason:='Disciplinary case '||v_case::text||': '||btrim(p_summary);
-    perform private.schoolpro_set_member_suspension_state(p_school,p_member,true,v_reason);
+    if exists(select 1 from public.schoolpro_members m where m.id=p_member and m.status='active') then
+      perform private.schoolpro_set_member_suspension_state(p_school,p_member,true,v_reason);
+    end if;
+    if p_action='dismissal' then
+      update public.schoolpro_members set employment_status='dismissed'
+      where id=p_member and school_id=p_school;
+    end if;
   end if;
 
   update public.schoolpro_staff_disciplinary_cases
@@ -374,6 +414,8 @@ begin
   where id=target.id;
 end;
 $function$;
+
+drop policy if exists "C0 leave own pending update" on public.schoolpro_leave_requests;
 
 revoke all on function public.schoolpro_report_own_absence(uuid,date,date,text) from public,anon;
 revoke all on function public.schoolpro_update_own_leave_reason(uuid,text) from public,anon;

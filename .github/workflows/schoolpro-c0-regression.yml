@@ -61,20 +61,19 @@ jobs:
       - name: Start disposable local Supabase
         run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
 
-      # The checked-in baseline is a schema-only snapshot through production
-      # migration 20261106164431. Restore it into a separate disposable database
-      # so the incomplete historical migration chain is not replayed.
-      - name: Restore C0 schema baseline into disposable database
+      # Restore into the disposable Supabase postgres database itself. This
+      # retains Supabase's local auth schema/users and platform roles required by
+      # the schema-only dump's foreign keys and policies. No production DB is used.
+      - name: Restore C0 schema baseline into disposable local Supabase
         env:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
-            -v ON_ERROR_STOP=1 \
-            -c "CREATE DATABASE schoolpro_c0_regression"
-          psql "postgresql://postgres:postgres@127.0.0.1:54322/schoolpro_c0_regression" \
-            -v ON_ERROR_STOP=1 \
-            -f supabase/baselines/schoolpro-c0-baseline.sql
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # Supabase already creates public in its local database; the dump's
+          # CREATE SCHEMA public would otherwise stop the restore immediately.
+          sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
+            | psql "$database_url" -v ON_ERROR_STOP=1
 
       - name: Apply migrations newer than the baseline
         env:
@@ -82,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           baseline_cutoff="20261106164431"
-          database_url="postgresql://postgres:postgres@127.0.0.1:54322/schoolpro_c0_regression"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           while IFS= read -r migration; do
             filename="${migration##*/}"
             migration_stamp="${filename%%_*}"
@@ -97,7 +96,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          database_url="postgresql://postgres:postgres@127.0.0.1:54322/schoolpro_c0_regression"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
           for test_file in \
             supabase/tests/schoolpro_class_member_delete_security.sql \
             supabase/tests/schoolpro_operational_membership_security.sql \

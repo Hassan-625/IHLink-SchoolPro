@@ -2438,3 +2438,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - Follow-up review of live function privileges found authenticated EXECUTE grants on private helpers used directly by RLS policies. The initial C0 follow-up draft would have revoked these and broken policy evaluation; corrected the migration in commit `93fc97222e1d8d3790a791c0a448458c5a3a7db2` to preserve deployed grants. No production privileges were changed.
+
+
+- 2026-11-07: added branch-only migration `20261107160000_schoolpro_active_staff_and_class_assignment_guards.sql` (commit `029acb9ede0fcad73f5c4eaae77f3c57ac7534f3`). Updates staff-directory/coordinator readers, teacher allocation visibility, Form Master and section-leader appointment RPCs, and class/subject assignment validators to require active staff and reject archived classes for new operational assignments. Existing academic/assignment history is retained; helper EXECUTE grants remain unchanged. Appointment termination on suspension, remaining membership consumers, DELETE policy/grant removal, broad Super Admin policy replacement, and full regression coverage remain outstanding. Branch only; no production changes.

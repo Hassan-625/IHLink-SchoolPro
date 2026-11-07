@@ -112,3 +112,23 @@ Read-only production catalog inspection confirmed that the current class/member 
 - The class/member table grants currently include DELETE to `authenticated`; RLS policy removal must be paired with privilege revocation so there is no alternate API path.
 
 This inventory is a migration design gate. The migration must preserve school-owner and Super Admin access, retain appropriate read access to historic records, block all new operational assignments to archived classes or suspended memberships, and remove direct DELETE capability at both policy and table-privilege layers. No production writes were performed.
+
+
+### Lifecycle schema baseline and migration sequencing — 2026-11-07
+
+The live schema baseline is now confirmed precisely:
+
+- `schoolpro_classes` currently has only: `id`, `school_id`, `name`, `arm`, `level`, `capacity`, `form_teacher_id`, `created_at`, `updated_at`. It has no archive metadata.
+- `schoolpro_members` currently has only: `id`, `school_id`, `user_id`, `role`, `created_at`, `position_title`. It has no active/suspended state.
+- Existing member lifecycle cannot be represented by a UI-only filter. Additive schema is required, with all existing memberships backfilled as active and all existing classes backfilled as unarchived.
+- The existing table grants expose DELETE to both `anon` and `authenticated` on these two tables. The migration must revoke DELETE from both roles; policy changes alone are insufficient. The migration should also explicitly verify the final table privileges rather than assume default grants.
+
+Implementation sequencing is now fixed to avoid a partially secure rollout:
+
+1. **Schema and audit foundation:** additive lifecycle columns; append-only audit events; constraints/indexes; existing rows remain active/unarchived.
+2. **RPC-only transitions:** security-definer archive/reactivate and suspend/reactivate operations; school leadership authorization; non-empty reason; lock target row; record actor/time and before/after state; reject cross-school IDs and self-suspension of the final proprietor; prevent direct lifecycle-column edits outside the RPC.
+3. **Authorization and RLS:** active membership in every membership-derived helper; preserve owner/Super Admin paths; preserve student/guardian historic reads; remove DELETE policies and table privileges; replace Super Admin `FOR ALL` policies with explicit operation policies.
+4. **Operational eligibility:** update all direct membership readers and assignment validators, including section leaders, Form Masters, subject allocations, House Masters, competition judges, lesson author scope, payroll/leave operations and class-linked attendance/CBT/timetable/result writes. Historical records remain readable and are never cascaded by archive/suspension.
+5. **UI and tests:** active/archived filters and restore actions; suspended-member display; SQL tests for owner/admin authorization, cross-tenant isolation, direct DELETE denial, lifecycle audit, operational write denial, history preservation and reactivation.
+
+No migration file is added until the complete dependent-function definitions and table-specific policy/privilege set have been reconciled. This avoids introducing a partially applied lifecycle model that could disable valid roles or leave an alternate access path.

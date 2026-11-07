@@ -21,7 +21,8 @@
     "test:schoolpro-section-leadership": "node scripts/test-schoolpro-section-leadership.mjs",
     "test:schoolpro-student-family-records": "node scripts/test-schoolpro-student-family-records.mjs",
     "test:schoolpro-stage-ab-corrections": "node scripts/test-schoolpro-stage-ab-corrections.mjs",
-    "test:schoolpro-annual-upgrade": "node scripts/test-schoolpro-annual-upgrade-postgres.mjs"
+    "test:schoolpro-annual-upgrade": "node scripts/test-schoolpro-annual-upgrade-postgres.mjs",
+    "test:schoolpro-lifecycle-appointments": "node scripts/test-schoolpro-lifecycle-appointment-contract.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

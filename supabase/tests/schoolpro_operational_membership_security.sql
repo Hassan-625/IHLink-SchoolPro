@@ -1,7 +1,7 @@
 -- C0 operational membership regression; run after the complete ordered lifecycle migrations.
 begin;
 do $test$
-declare n integer; permission_reader text;
+declare n integer; permission_reader text; access_reader text;
 begin
   -- The central permission RPC must reference the role on schoolpro_members.
   -- schoolpro_board_members has title/previous_role, not a role column.
@@ -10,6 +10,26 @@ begin
     or position('b.role' in permission_reader)>0 then
     raise exception 'School permission reader has an invalid board-role reference';
   end if;
+
+  -- Principal is a first-class school role, but remains a school-scoped identity.
+  if not exists (
+    select 1 from pg_enum e join pg_type t on t.oid=e.enumtypid
+    where t.typname='school_member_role' and e.enumlabel='principal'
+  ) then raise exception 'Principal school role is missing'; end if;
+  permission_reader := pg_get_functiondef('public.schoolpro_user_permissions(uuid)'::regprocedure);
+  if position('m.role::text = ''principal''' in permission_reader)=0 then
+    raise exception 'Principal permission mapping is missing';
+  end if;
+  access_reader := pg_get_functiondef('private.has_school_access(uuid,public.school_member_role[])'::regprocedure);
+  if position('m.role::text = ''principal''' in access_reader)=0 then
+    raise exception 'Principal is not recognized by school membership authorization';
+  end if;
+  if not exists(select 1 from pg_trigger t join pg_class c on c.oid=t.tgrelid
+    where c.relname='schoolpro_admissions' and t.tgname='schoolpro_audit_capture' and not t.tgisinternal)
+    then raise exception 'School admissions audit capture trigger missing'; end if;
+  if not exists(select 1 from pg_trigger t join pg_class c on c.oid=t.tgrelid
+    where c.relname='schoolpro_admission_events' and t.tgname='schoolpro_audit_capture' and not t.tgisinternal)
+    then raise exception 'Admission event audit capture trigger missing'; end if;
 
   -- Legacy direct membership policies must not survive on timetable or attendance.
   select count(*) into n from pg_policy p join pg_class c on c.oid=p.polrelid

@@ -46,6 +46,9 @@ jobs:
       - name: C0 workflow and class/member deletion source contracts
         run: npm run test:schoolpro-c0-workflows
 
+      - name: Advanced Reports source contracts
+        run: npm run test:schoolpro-advanced-reports
+
       - name: Student, guardian, class and staff lifecycle source contracts
         run: npm run test:schoolpro-student-family-records
 

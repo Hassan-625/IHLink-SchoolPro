@@ -7,7 +7,7 @@ import {Card} from '@/components/ui/Card';
 import {Button} from '@/components/ui/Button';
 import {schoolSections} from './schoolShared';
 
-type Member={id:string;user_id:string;role:string;status:string;profile?:{first_name:string|null;last_name:string|null;email:string}|null};
+type Member={id:string;user_id:string;role:string;status:string;employment_status:string;profile?:{first_name:string|null;last_name:string|null;email:string}|null};
 type CaseRow={id:string;member_id:string;action_type:string;severity:string;summary:string;details:string|null;status:string;effective_at:string;staff_response:string|null;response_at:string|null;appeal_status:string;appeal_review_note:string|null;created_at:string};
 
 const managers=['proprietor','administrator','hr_officer','super administrator','super_admin'];
@@ -23,7 +23,7 @@ export function SchoolProStaffDiscipline(){
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
   const [m,c]=await Promise.all([
-   supabase.from('schoolpro_members').select('id,user_id,role,status,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name,email)').eq('school_id',ctx.schoolId).order('created_at'),
+   supabase.from('schoolpro_members').select('id,user_id,role,status,employment_status,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name,email)').eq('school_id',ctx.schoolId).order('created_at'),
    supabase.from('schoolpro_staff_disciplinary_cases').select('id,member_id,action_type,severity,summary,details,status,effective_at,staff_response,response_at,appeal_status,appeal_review_note,created_at').eq('school_id',ctx.schoolId).order('created_at',{ascending:false}).limit(200)
   ]);
   if(m.error||c.error){setMessage('Staff disciplinary records could not be loaded.');return;}
@@ -53,7 +53,7 @@ export function SchoolProStaffDiscipline(){
  }
  return <ModulePage product="schoolpro" sections={schoolSections} title="Staff disciplinary management" description="Record investigations, warnings, performance concerns, suspension, dismissal, staff responses and appeals with an auditable case history." userName={ctx.schoolName} userRole={ctx.role}>
   {canManage&&<Card><h2 className="font-bold">Open a staff case</h2><div className="mt-3 grid gap-3 md:grid-cols-2">
-   <label className="text-sm font-semibold">Staff member<select className="mt-1 w-full rounded-xl border p-3" value={memberId} onChange={e=>setMemberId(e.target.value)}><option value="">Select active staff</option>{members.filter(m=>m.status==='active').map(m=><option key={m.id} value={m.id}>{memberNames.get(m.id)} · {label(m.role)}</option>)}</select></label>
+   <label className="text-sm font-semibold">Staff member<select className="mt-1 w-full rounded-xl border p-3" value={memberId} onChange={e=>setMemberId(e.target.value)}><option value="">Select active staff</option>{members.filter(m=>action==='dismissal'?m.employment_status!=='dismissed':m.status==='active').map(m=><option key={m.id} value={m.id}>{memberNames.get(m.id)} · {label(m.role)} · {label(m.employment_status||m.status)}</option>)}</select></label>
    <label className="text-sm font-semibold">Action<select className="mt-1 w-full rounded-xl border p-3" value={action} onChange={e=>setAction(e.target.value)}>{['verbal_warning','written_warning','final_warning','investigation','performance_plan','suspension','dismissal'].map(v=><option key={v} value={v}>{label(v)}</option>)}</select></label>
    <label className="text-sm font-semibold">Severity<select className="mt-1 w-full rounded-xl border p-3" value={severity} onChange={e=>setSeverity(e.target.value)}>{['low','moderate','high','critical'].map(v=><option key={v} value={v}>{label(v)}</option>)}</select></label>
    <label className="text-sm font-semibold md:col-span-2">Case summary<input className="mt-1 w-full rounded-xl border p-3" maxLength={500} value={summary} onChange={e=>setSummary(e.target.value)} placeholder="Brief, factual summary (10–500 characters)"/></label>

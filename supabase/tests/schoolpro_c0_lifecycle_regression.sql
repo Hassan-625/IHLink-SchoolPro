@@ -134,9 +134,13 @@ begin
     or not has_function_privilege('authenticated','public.schoolpro_close_staff_disciplinary_case(uuid,text)','EXECUTE') then
     raise exception 'Staff disciplinary RPC grants are incomplete';
   end if;
-  if has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','INSERT')
+  if has_table_privilege('anon','public.schoolpro_staff_disciplinary_cases','INSERT')
+    or has_table_privilege('anon','public.schoolpro_staff_disciplinary_cases','UPDATE')
+    or has_table_privilege('anon','public.schoolpro_staff_disciplinary_cases','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','INSERT')
     or has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','UPDATE')
-    or has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','DELETE') then
+    or has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','TRUNCATE') then
     raise exception 'Direct staff disciplinary case writes must remain RPC-only';
   end if;
 

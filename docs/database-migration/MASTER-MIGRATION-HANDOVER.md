@@ -2407,3 +2407,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Therefore class and staff hard-delete controls are not safe. They remain explicitly blocked from lifecycle implementation until a reviewed archive/deactivation schema and dependent-record behaviour are designed. No production schema or data was changed by these inspections.
 - The two active verification workspaces, IHLINK Academy (`eb601205-cffd-420d-97d0-7d5ca081628a`) and HA ACADEMY (`ac7ac8a8-5035-4e39-8868-cad54add84a6`), remain protected from all lifecycle actions without separate explicit approval.
 - Code and test changes are on `feat/schoolpro-stage-c0-workspace-corrections`; no PR merge, Render deployment, or production migration was performed.
+
+- Follow-up safety correction: removed the class hard-delete handler/button and the staff-membership hard-delete handler/button from their management pages. Both now display “Archive pending” rather than offering destructive deletion. Extended the focused regression script to reject class/staff hard-delete handlers and retain the student non-delete and guardian suspend/restore checks.

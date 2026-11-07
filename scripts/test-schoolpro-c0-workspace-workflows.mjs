@@ -196,6 +196,12 @@ assert.match(sidebarSource,/canonical=isPlatformSchoolProSuperAdmin\?schoolSecti
 assert.ok(sidebarSource.includes("['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname)"));
 assert.match(permissionMapSource,/'admission-operations':'admissions'/);
 assert.match(permissionMapSource,/'staff-discipline':'dashboard'/);
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('reports')"));
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('cbt')"));
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('branding')"));
+const permissionGateSource=read('src/components/SchoolProPermissionGate.tsx');
+assert.match(permissionGateSource,/SchoolProEntitlementGate feature=\{planFeature\}/);
+
 assert.match(sharedSource,/Houses & House Allocation/);
 assert.match(sharedSource,/Games & Competitions/);
 

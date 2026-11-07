@@ -175,3 +175,12 @@ Read-only inspection of triggers on the two lifecycle tables found additional in
 - `guard_schoolpro_operational_write` explicitly permits trusted backend operations when `auth.uid()` is null and the request role is not `anon`. The lifecycle design must preserve legitimate service maintenance while preventing browser clients from editing lifecycle metadata directly.
 
 This trigger review is now a prerequisite in the migration checklist. No trigger or production data was changed.
+
+
+## 2026-11-07 — lifecycle foundation migration committed (not production-applied)
+
+Branch-only migration: `supabase/migrations/20261107130000_schoolpro_class_staff_lifecycle_foundation.sql` (commit `5f2c59c`). It adds nullable archive metadata to classes; an `active|suspended` state plus suspension metadata to school memberships; partial indexes for active classes/members; metadata consistency constraints; and audited, school-scoped SECURITY DEFINER RPCs to archive/restore classes and suspend/restore memberships. The RPCs lock the exact tenant-scoped row, require an active account and proprietor/administrator access, validate a 10–1000 character reason, write `schoolpro_audit_logs`, and prevent suspension of the final active proprietor. A trigger blocks authenticated browser sessions from inserting or directly changing lifecycle metadata; the RPCs execute under their owner context.
+
+**Important: this is a schema/RPC foundation, not an enabled end-user lifecycle rollout.** It does not yet make archived classes invisible/ineligible in all class readers and operational writes; it does not yet enforce active membership across the full authorization/function dependency graph; it does not remove existing DELETE policies or DELETE grants; and it does not end all operational appointments on staff suspension. Do not expose Archive/Suspend controls or treat lifecycle acceptance as passed until the coordinated follow-up migration covers the dependency inventory above, replaces Super Admin ALL policies with explicit operation policies, removes direct DELETE access, and adds SQL regression coverage. Existing guardian-link suspend/restore is a separate workflow.
+
+No production migration was applied, no production data was changed, and no PR was merged or Render deployment triggered. The protected active verification workspaces remain untouched: IHLINK Academy (`eb601205-cffd-420d-97d0-7d5ca081628a`) and HA ACADEMY (`ac7ac8a8-5035-4e39-8868-cad54add84a6`).

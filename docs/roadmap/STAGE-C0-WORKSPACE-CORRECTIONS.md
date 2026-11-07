@@ -86,3 +86,15 @@ Read-only production inspection on 2026-11-07 found that neither `schoolpro_clas
 - Preserve self-membership reads only where needed for account/workspace discovery; do not let that policy restore operational access.
 
 **Acceptance blocker:** The production helper `private.has_school_access(uuid, school_member_role[])` currently treats any matching membership as active because `schoolpro_members` has no status column. `private.schoolpro_can_read_class(uuid)` also reads membership rows directly. A partial archive migration would therefore be unsafe. Implement the schema, helper/policy changes, all relevant assignment/write guards, UI filters and SQL regression tests together in one reviewed migration series. Do not enable archive/reactivation UI until that complete path is validated.
+
+
+### Class and staff lifecycle dependency inventory — 2026-11-07
+
+The current production catalog exposes the following direct class references, which must be classified before archive guards are enabled:
+
+- Operational/assignment candidates: `schoolpro_assignments`, `schoolpro_attendance`, `schoolpro_cbt_eligibility`, `schoolpro_subject_assignments`, `schoolpro_timetable_entries`.
+- Potentially historical or mixed-purpose references requiring per-workflow review: `schoolpro_calendar_events`, `schoolpro_cbt_tests`, `schoolpro_class_result_submissions`, `schoolpro_enrollment_history`, `schoolpro_lesson_notes`, `schoolpro_question_bank`, `schoolpro_students`.
+
+Direct staff membership references include `schoolpro_board_members`, `schoolpro_competition_judges`, `schoolpro_house_master_assignments`, `schoolpro_leave_requests`, `schoolpro_library_loans`, `schoolpro_member_permissions`, `schoolpro_payroll_records`, `schoolpro_section_leaders`, and `schoolpro_subject_assignments.teacher_member_id`; `schoolpro_classes.form_teacher_id` is also a membership reference. These must not be bulk-deleted during suspension. Active appointment rows need an audited end/revoke transition, while payroll, leave and governance history must remain.
+
+The next migration must be delivered as a coordinated unit: additive lifecycle columns and append-only audit records; safe archive/reactivate RPCs; removal of direct DELETE policies; updated active-membership authorization helpers; assignment eligibility guards; and SQL regression tests. The application must then filter active classes/members from operational selectors while retaining historical records in history/report views. Do not ship a partial migration that changes `has_school_access` without updating direct membership checks and the House Master, Form Master, section leadership, competition judge, payroll and leave workflows.

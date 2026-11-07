@@ -67,9 +67,13 @@ begin
       raise exception 'A discipline case cannot be moved or have its reporter changed';
     end if;
   end if;
-  if new.status='resolved' and (tg_op='INSERT' or old.status is distinct from 'resolved') then
-    new.resolved_at:=now();new.resolved_by:=auth.uid();
-  elsif new.status<>'resolved' then
+  if new.status='resolved' then
+    if tg_op='INSERT' then
+      new.resolved_at:=now();new.resolved_by:=auth.uid();
+    elsif old.status is distinct from 'resolved' then
+      new.resolved_at:=now();new.resolved_by:=auth.uid();
+    end if;
+  else
     new.resolved_at:=null;new.resolved_by:=null;
   end if;
   return new;

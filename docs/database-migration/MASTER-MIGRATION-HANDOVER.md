@@ -2493,3 +2493,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - 2026-11-07 Staff Disciplinary runtime correction: moved the `memberNames` memo before the `visibleCases` memo. The previous declaration order referenced `memberNames` while its `const` binding was still in the temporal dead zone, which could prevent the dashboard from rendering. Also repaired literal escaped newline sequences in the C0 source-contract test file and added a regression assertion for the declaration order. This is a branch-only frontend/test correction; no production changes.
+
+
+- 2026-11-07 Classes & Arms responsive layout: made the session/school/refresh toolbar wrap on narrow screens, set a deliberate minimum width for the full class grid inside its existing two-axis scroll region, and added a dedicated horizontal scroll wrapper plus minimum width for the selected-class student roster. This keeps all columns accessible on mobile without shrinking controls into unreadable widths. Added source-contract assertions. Branch-only UI/test change; no production data or schema changes.

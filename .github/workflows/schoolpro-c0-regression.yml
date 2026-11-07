@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'src/**'
+      - 'docs/**'
       - 'scripts/test-schoolpro-c0-workspace-workflows.mjs'
       - 'scripts/test-schoolpro-student-family-records.mjs'
       - 'supabase/**'

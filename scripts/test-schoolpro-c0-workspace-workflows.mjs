@@ -183,3 +183,18 @@ assert.ok(operationsSource.includes("'schoolpro_houses','games'"));
 assert.ok(operationsSource.includes("'schoolpro_staff_disciplinary_cases','staff-discipline'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);
+
+const staffRoleSource=read('src/lib/schoolStaffRoles.ts');
+const staffFormSource=read('src/components/SchoolAccountForm.tsx');
+const staffPageSource=read('src/pages/schoolpro/SchoolProStaff.tsx');
+const invitationSource=read('supabase/functions/invite-school-staff/index.ts');
+const principalInvitationMigration=read('supabase/migrations/20261107235958_schoolpro_principal_invitation_designation.sql');
+assert.ok(staffRoleSource.includes("['principal', 'Principal']"));
+assert.ok(staffFormSource.includes('schoolStaffRoles.map'));
+assert.ok(staffPageSource.includes('row.position_title||'));
+assert.ok(invitationSource.includes("const storedRole=role==='principal'?'administrator':role;"));
+assert.ok(invitationSource.includes('position_title:positionTitle'));
+const principalInvitationInserts=invitationSource.split('\n').filter(line=>line.includes("schoolpro_access_invitations').insert"));
+assert.ok(principalInvitationInserts.length>=3&&principalInvitationInserts.every(line=>line.includes('role:storedRole')&&line.includes('position_title:positionTitle')));
+assert.ok(principalInvitationMigration.includes('add column if not exists position_title'));
+assert.ok(principalInvitationMigration.includes('invitation.position_title'));

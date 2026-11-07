@@ -21,8 +21,10 @@ begin
     then raise exception 'Active payroll membership trigger missing'; end if;
   if not exists(select 1 from pg_trigger where tgname='schoolpro_active_leave_member' and not tgisinternal)
     then raise exception 'Active leave membership trigger missing'; end if;
-  if not exists(select 1 from pg_policy where polname='C0 leave own pending update')
-    then raise exception 'Own pending leave reason-update policy missing'; end if;
+  if exists(select 1 from pg_policy where polname='C0 leave own pending update')
+    then raise exception 'Direct own leave updates must use the audited reason-update RPC'; end if;
+  if not has_function_privilege('authenticated','public.schoolpro_update_own_leave_reason(uuid,text)','EXECUTE')
+    then raise exception 'Audited own leave reason-update RPC is missing'; end if;
 end
 $test$;
 rollback;

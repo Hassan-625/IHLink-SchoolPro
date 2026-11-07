@@ -303,6 +303,19 @@ with check (
 -- policy now delegates to the active-membership-aware helper above.
 drop policy if exists "schoolpro_plan_access" on public.schoolpro_cbt_eligibility;
 
+-- Retain plan-gated CBT test discovery for eligible users as SELECT only;
+-- never let the plan feature policy grant test INSERT/UPDATE/DELETE.
+drop policy if exists "schoolpro_plan_access" on public.schoolpro_cbt_tests;
+create policy "C0 CBT plan read"
+on public.schoolpro_cbt_tests for select to authenticated
+using (
+  private.schoolpro_module_allowed(school_id,'cbt')
+  or (
+    coalesce(private.is_active_account(),false)
+    and private.schoolpro_plan_feature_allowed(school_id,'cbt')
+  )
+);
+
 -- A staff member can update the reason on their own still-pending leave request.
 -- This is deliberately not an approval path; review remains leadership/HR only.
 drop policy if exists "leave own request" on public.schoolpro_leave_requests;

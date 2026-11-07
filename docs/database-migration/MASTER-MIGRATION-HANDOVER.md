@@ -2554,14 +2554,25 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Authenticated SQL simulation returned 31 permissions for a retained workspace without error.
 - Render SchoolPro deploy for merge commit `9d417bba9e7bca244e0a545fb663f81aee223893` is live (`dep-dbnk6j7b9u1s73coso00`).
 
-## 2026-11-07 — Follow-up PR #124 (pending CI and production approval)
+## 2026-11-07 — Follow-up PR #124 (merged and deployed)
 
 - PR #124: workspace navigation, Principal role-catalogue visibility, admissions routes, school audit-log UI and trigger-based audit capture.
 - Super Admin's live SchoolPro dashboard previously supplied a three-link sidebar (Dashboard, Students, Fees) rather than the full `schoolSections` navigation. PR #124 switches the live dashboard to the complete school workspace navigation.
 - Principal remains compatible with the established authorization model: stored membership role `administrator` plus `position_title = 'Principal'`. The staff role editor already maps the Principal selection to that representation; PR #124 makes it visible in the role catalogue.
 - The Admissions Workspace was already implemented and its database tables/RPCs exist, but its entry was not exposed consistently in navigation. The standalone Admission Operations component was not routed. PR #124 exposes the workspace links and mounts the page.
 - Production schema inspection found `schoolpro_admission_events` and `schoolpro_admission_documents` are application-scoped through `application_id`, not `school_id`. IHLink Admin's generic control-panel query incorrectly applied a `school_id` filter; PR #71 scopes those tables through the selected school's application IDs.
-- Production currently has the admission tables and event workflow objects, but zero application, event, offer or document rows. Empty tables are not missing backend objects.
-- Production `schoolpro_audit_logs` existed but had zero rows and no insert policy or audit-capture triggers. PR #124 adds a security-definer trigger writer for core school operations. It records actor ID/name/role and changed field names only; it does not copy row values or sensitive data. The migration remains pending CI and explicit production rollout.
-- SchoolPro audit page and operations link are added in PR #124. IHLink Admin central audit page actor attribution and SchoolPro Control Panel module links/query scoping are in IHLink-Admin PR #71.
+- Production has the admission tables and event workflow RPCs, but currently zero application, event, offer or document rows. Empty tables are not missing backend objects.
+- PR #124 merged as `44afbf6c26874d39263318a68dae1aa6e38812ec`; C0 SQL regression, TypeScript validation, production build, source contracts and SchoolPro integration CI passed.
+- Production migration `20261107235956_schoolpro_audit_event_capture` applied to Supabase project `lnqsroyiybutkfngbyge`; migration ledger contains only the repository version. The trigger function and 46 row-level audit triggers were verified. It records actor ID/name/role and changed field names only; it does not copy row values or sensitive data. Existing school audit records remain unchanged; future activity is captured.
+- Render SchoolPro deployment `dep-dbnkh2vb9u1s73cp9o10` for merge commit `44afbf6c26874d39263318a68dae1aa6e38812ec` is live.
+- IHLink-Admin PR #71 merged as `a6c1f15f3c139d9f951e18c429dfc62c251595a3`; Render Admin deployment `dep-dbnkfm7avr4c73aiakk0` is live. The central Audit Logs page now displays actor name, role and metadata details, with a fallback for historical rows that have no actor ID. The Control Panel exposes the added SchoolPro modules and scopes admission events/documents through their application IDs.
 - Stage C remains deferred until Stage B/C0 live acceptance is completed.
+
+
+## 2026-11-07 — Production acceptance checks after PR #124
+
+- The corrected permission RPC returned 31 permissions for each of the three retained production SchoolPro workspaces when called under the authenticated Super Admin JWT context.
+- The SchoolPro live dashboard now uses the full `schoolSections` navigation instead of its former three-link dashboard-only sidebar.
+- Principal is presented as a distinct selectable staff appointment while preserving the database-compatible authorization representation: `schoolpro_members.role = 'administrator'` and `position_title = 'Principal'`. The permission reader already grants the Principal appointment the school-management permission set.
+- No production workspaces, memberships, student records, admissions, invoices, financial evidence, Auth users or Storage objects were created, deleted or rewritten during these corrections.
+- Stage C remains deferred pending explicit Stage B/C0 live acceptance.

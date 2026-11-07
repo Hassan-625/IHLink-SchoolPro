@@ -19,7 +19,8 @@ export function SchoolProLeave(){
  const canReview=managerRoles.includes(ctx.role.toLowerCase().replaceAll(' ','_'))||managerRoles.includes(ctx.role.toLowerCase());
  const [members,setMembers]=useState<Member[]>([]),[rows,setRows]=useState<LeaveRow[]>([]);
  const [start,setStart]=useState(''),[end,setEnd]=useState(''),[reason,setReason]=useState(''),[kind,setKind]=useState('planned_leave'),[leaveType,setLeaveType]=useState('Annual leave');
- const [reasonDraft,setReasonDraft]=useState<Record<string,string>>({}),[reviewNotes,setReviewNotes]=useState<Record<string,string>>({});\n const [statusFilter,setStatusFilter]=useState('all'),[typeFilter,setTypeFilter]=useState('all'),[search,setSearch]=useState('');
+ const [reasonDraft,setReasonDraft]=useState<Record<string,string>>({}),[reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
+ const [statusFilter,setStatusFilter]=useState('all'),[typeFilter,setTypeFilter]=useState('all'),[search,setSearch]=useState('');
  const [busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
@@ -77,8 +78,12 @@ export function SchoolProLeave(){
    <Card><p className="text-xs text-muted">Approved</p><p className="mt-1 text-2xl font-bold tabular-nums">{approvedCount}</p></Card>
    <Card><p className="text-xs text-muted">Absence reports</p><p className="mt-1 text-2xl font-bold tabular-nums">{absenceCount}</p></Card>
   </div>
-  <Card><div className="grid gap-3 md:grid-cols-3">\n   <label className="text-sm font-semibold">Search requests<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Staff name, leave type, reason or date"/></label>\n   <label className="text-sm font-semibold">Status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['pending','approved','rejected','cancelled'].map(x=><option key={x} value={x}>{pretty(x)}</option>)}</select></label>
-   <label className="text-sm font-semibold">Record type<select className="mt-1 w-full rounded-xl border p-3" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="all">All record types</option><option value="planned_leave">Planned leave</option><option value="absence_report">Absence reports</option></select></label>\n  </div><p className="mt-2 text-xs text-muted">Showing {visible.length} of {scopedRows.length} records in your authorised view.</p></Card>\n  <div className="grid gap-4">{visible.map(r=><Card key={r.id}>
+  <Card><div className="grid gap-3 md:grid-cols-3">
+   <label className="text-sm font-semibold">Search requests<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Staff name, leave type, reason or date"/></label>
+   <label className="text-sm font-semibold">Status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['pending','approved','rejected','cancelled'].map(x=><option key={x} value={x}>{pretty(x)}</option>)}</select></label>
+   <label className="text-sm font-semibold">Record type<select className="mt-1 w-full rounded-xl border p-3" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="all">All record types</option><option value="planned_leave">Planned leave</option><option value="absence_report">Absence reports</option></select></label>
+  </div><p className="mt-2 text-xs text-muted">Showing {visible.length} of {scopedRows.length} records in your authorised view.</p></Card>
+  <div className="grid gap-4">{visible.map(r=><Card key={r.id}>
    <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{canReview?memberNames.get(r.member_id)||'Staff member':'My request'} · {r.request_type==='absence_report'?'Absence report':r.leave_type}</h3><p className="text-xs text-muted">{r.start_date} to {r.end_date} · Submitted {new Date(r.created_at).toLocaleDateString()}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{pretty(r.status)}</span></div>
    {r.reason?<p className="mt-3 whitespace-pre-wrap text-sm">{r.reason}</p>:<p className="mt-3 text-sm italic text-muted">No reason supplied yet.</p>}
    {r.request_type==='absence_report'&&r.absence_reported_at&&<p className="mt-1 text-xs text-muted">Absence reported {new Date(r.absence_reported_at).toLocaleString()}</p>}

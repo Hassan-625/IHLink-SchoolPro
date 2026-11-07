@@ -280,14 +280,7 @@ begin
 end;
 $function$;
 
--- Retain the existing private-schema-only execution model. Callers are the
--- existing SECURITY DEFINER functions/triggers; do not grant these helpers
--- directly to browser roles.
-revoke all on function private.has_school_access(uuid,public.school_member_role[]) from public, anon, authenticated;
-revoke all on function private.schoolpro_can_read_class(uuid) from public, anon, authenticated;
-revoke all on function private.schoolpro_member_leads_class(uuid,uuid) from public, anon, authenticated;
-revoke all on function private.schoolpro_member_leads_student_section(uuid,uuid,text) from public, anon, authenticated;
-revoke all on function private.schoolpro_is_house_master(uuid,uuid) from public, anon, authenticated;
-revoke all on function private.schoolpro_lesson_author_scope(uuid,uuid,uuid) from public, anon, authenticated;
-revoke all on function private.schoolpro_lesson_leader(uuid) from public, anon, authenticated;
-revoke all on function private.schoolpro_validate_house_master() from public, anon, authenticated;
+-- Preserve the deployed EXECUTE grants exactly. Several of these helpers are
+-- called directly by authenticated RLS policies; revoking authenticated EXECUTE
+-- here would silently break those policies. Trigger-only validators remain
+-- ungranted as in the current production baseline.

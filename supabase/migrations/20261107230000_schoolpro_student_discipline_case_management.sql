@@ -171,13 +171,13 @@ with check (
   and private.schoolpro_can_read_student(student_id)
   and exists (
     select 1 from public.schoolpro_students s
-    where s.id=student_id and s.school_id=school_id
+    where s.id=schoolpro_discipline_records.student_id and s.school_id=schoolpro_discipline_records.school_id
   )
   and status='open'
   and coalesce(action_taken,'')=''
   and exists (
     select 1 from public.schoolpro_members m
-    where m.school_id=school_id and m.user_id=auth.uid()
+    where m.school_id=schoolpro_discipline_records.school_id and m.user_id=auth.uid()
       and m.status='active'
       and m.role::text in ('teacher','class_teacher','discipline_master')
   )

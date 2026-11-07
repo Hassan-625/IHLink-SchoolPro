@@ -20,7 +20,7 @@ export function permissionForSchoolPath(href:string){
 export const studentReadPermissions=['dashboard','results','finance','attendance','timetable','assignments','announcements','library','cbt','notifications'];
 export const parentReadPermissions=['dashboard','results','finance','attendance','announcements','notifications'];
 
-export function permissionPlanFeature(permission:string){
- const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};
+export function permissionPlanFeature(permission:string):'cbt'|'custom_branding'|null{
+ const features:Record<string,'cbt'|'custom_branding'>={cbt:'cbt',branding:'custom_branding'};
  return features[permission]||null;
 }

@@ -359,7 +359,7 @@ language plpgsql security definer
 set search_path = ''
 as $function$
 begin
-  if tg_op='INSERT' or new.member_id is distinct from old.member_id then
+  if tg_op='INSERT' then
     if new.member_id is null or not exists (
       select 1 from public.schoolpro_members m
       where m.id=new.member_id and m.school_id=new.school_id
@@ -367,6 +367,11 @@ begin
     ) then
       raise exception 'Payroll must reference an active staff membership';
     end if;
+  elsif new.member_id is distinct from old.member_id then
+    if new.member_id is null or not exists (
+      select 1 from public.schoolpro_members m
+      where m.id=new.member_id and m.school_id=new.school_id and m.status='active'
+    ) then raise exception 'Payroll must reference an active staff membership'; end if;
   end if;
   return new;
 end;
@@ -385,7 +390,7 @@ language plpgsql security definer
 set search_path = ''
 as $function$
 begin
-  if tg_op='INSERT' or new.member_id is distinct from old.member_id then
+  if tg_op='INSERT' then
     if new.member_id is null or not exists (
       select 1 from public.schoolpro_members m
       where m.id=new.member_id and m.school_id=new.school_id
@@ -393,6 +398,11 @@ begin
     ) then
       raise exception 'Leave requests must belong to an active staff membership';
     end if;
+  elsif new.member_id is distinct from old.member_id then
+    if new.member_id is null or not exists (
+      select 1 from public.schoolpro_members m
+      where m.id=new.member_id and m.school_id=new.school_id and m.status='active'
+    ) then raise exception 'Leave requests must belong to an active staff membership'; end if;
   end if;
   return new;
 end;

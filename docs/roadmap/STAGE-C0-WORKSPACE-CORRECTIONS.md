@@ -33,6 +33,9 @@ Stage C0 is a mandatory stabilization and workspace-administration phase. Stage 
 - Give authorised workspace owners controlled view/edit/archive/delete operations for students, classes, teachers, staff, memberships, parents/guardians and other school-owned records.
 - Enforce school scope and role permissions in the database, not only in the UI.
 - Use archive/deactivate where hard deletion would break historical academic, financial, safeguarding or audit records.
+- Guardian access is a school-owned relationship, not ownership of the global parent profile: suspend or restore the school-scoped link; never delete the global profile or Auth account from this workflow.
+- Student exits must use the existing audited transfer/withdrawal lifecycle; do not hard-delete students from the enrolment UI.
+- Do not hard-delete classes or staff memberships until a reviewed archive lifecycle and all dependent-record retention rules are implemented.
 - Show dependency impact and require confirmation for destructive actions.
 
 ### C0.5 — Consistent table scrolling

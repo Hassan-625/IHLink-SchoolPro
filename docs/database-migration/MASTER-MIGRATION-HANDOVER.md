@@ -2511,3 +2511,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - 2026-11-07 Optional enrolment photo guarantee and attendance responsiveness: added regression assertions proving student insertion occurs before the optional photo-upload branch, that upload is conditional on a selected file, and that the enrolment photo input is not required. Improved Daily Attendance filters to a responsive one/two/four-column grid and made the class register a keyboard-focusable horizontally scrollable table with a 760px minimum width and accessible label. Branch-only changes; no production data or Storage changes.
+
+
+- 2026-11-07 Admissions responsiveness: application form now uses a shrink-safe one-column mobile/two-column tablet layout; applicant register remains scrollable within its bounded viewport, with a 900px table minimum width and non-wrapping decision actions to preserve usability on narrow screens. Added C0 source-contract regression assertions. Branch-only; no production records changed.

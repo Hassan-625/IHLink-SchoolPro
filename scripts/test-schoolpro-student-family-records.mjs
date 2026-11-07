@@ -16,7 +16,7 @@ assert.doesNotMatch(students,/\.from\(["']schoolpro_students["']\)\.delete\(/,'S
 assert.doesNotMatch(students,/async function remove\(/,'The student page must not expose a destructive delete handler.');
 assert.match(students,/schoolpro_transfer_student_out/,'Student exit must use the audited transfer/withdrawal workflow.');
 assert.match(students,/archived_at/,'New enrolments must not offer archived classes.');
-assert.match(students,/is\('archived_at',null\)/,'New enrolments must query active classes only.');
+assert.ok(students.includes('.is("archived_at",null)'),'New enrolments must query active classes only.');
 assert.doesNotMatch(classes,/\.from\([\"']schoolpro_classes[\"']\)\.delete\(/,'Class rows must not be hard-deleted while historical child rows may cascade.');
 assert.doesNotMatch(classes,/async function remove\(/,'The class page must not expose a destructive delete handler.');
 assert.match(classes,/schoolpro_set_class_archive_state/,'Class archive and restore must use the audited lifecycle RPC.');

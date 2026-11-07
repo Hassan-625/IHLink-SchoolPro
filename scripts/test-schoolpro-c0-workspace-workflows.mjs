@@ -7,6 +7,8 @@ const sidebar=read('src/components/Sidebar.tsx');
 const staff=read('src/pages/schoolpro/SchoolProStaffDiscipline.tsx');
 const leave=read('src/pages/schoolpro/SchoolProLeave.tsx');
 const student=read('src/pages/schoolpro/SchoolProDiscipline.tsx');
+const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
+const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
  'supabase/migrations/20261107210000_schoolpro_active_membership_operational_guards.sql',
  'supabase/migrations/20261107220000_schoolpro_staff_discipline_leave_workflows.sql',
@@ -14,12 +16,12 @@ const migrations=[
  'supabase/migrations/20261107235900_schoolpro_central_active_membership_readers.sql',
  'supabase/migrations/20261107235930_schoolpro_active_member_rpc_guards.sql',
  'supabase/migrations/20261107235945_schoolpro_remaining_active_member_consumers.sql'
-].map(read).join('\n');
+].map(read).join('\\n');
 
 assert.match(app,/SchoolProStaffDiscipline/);
 assert.match(app,/SchoolProLeave/);
-assert.match(app,/path="\/schoolpro\/staff-discipline"/);
-assert.match(app,/path="\/schoolpro\/leave"/);
+assert.match(app,/path="\\/schoolpro\\/staff-discipline"/);
+assert.match(app,/path="\\/schoolpro\\/leave"/);
 assert.match(staff,/schoolpro_create_staff_disciplinary_case/);
 assert.match(staff,/schoolpro_submit_staff_disciplinary_response/);
 assert.match(staff,/schoolpro_review_staff_appeal/);
@@ -32,12 +34,12 @@ assert.match(student,/guardian_contact_status/);
 assert.match(student,/follow_up_outcome/);
 assert.match(student,/student_response/);
 assert.match(student,/assigned_to/);
-assert.match(student,/profile\?\.\[0\]/);
-assert.match(leave,/profile\?\.\[0\]/);
-assert.match(staff,/profile\?\.\[0\]/);
-assert.match(sidebar,/\/schoolpro\/staff-discipline/);
-assert.match(sidebar,/\/schoolpro\/leave/);
-assert.match(migrations,/m\.status='active'/);
+assert.match(student,/profile\\?\\.\\[0\\]/);
+assert.match(leave,/profile\\?\\.\\[0\\]/);
+assert.match(staff,/profile\\?\\.\\[0\\]/);
+assert.match(sidebar,/\\/schoolpro\\/staff-discipline/);
+assert.match(sidebar,/\\/schoolpro\\/leave/);
+assert.match(migrations,/m\\.status='active'/);
 assert.match(migrations,/schoolpro_staff_disciplinary_events/);
 assert.match(migrations,/schoolpro_leave_events/);
 assert.match(migrations,/schoolpro_discipline_events/);
@@ -52,5 +54,17 @@ assert.match(migrations,/schoolpro_cached_staff_schools/);
 assert.match(migrations,/schoolpro_can_author_cbt/);
 assert.match(migrations,/schoolpro_can_manage_cbt/);
 
+// Guard the non-negotiable direct class/member deletion boundary.
+for (const table of ['schoolpro_classes','schoolpro_members']) {
+  assert.match(deleteMigration,new RegExp('revoke delete, truncate on public\\.'+table+' from anon, authenticated','i'));
+  assert.doesNotMatch(deleteMigration,new RegExp('create policy[^;]+on public\\.'+table+'[^;]+for (all|delete)','i'));
+}
+assert.match(deleteMigration,/drop policy if exists "School leaders delete classes"/);
+assert.match(deleteMigration,/drop policy if exists "School leaders delete members"/);
+assert.match(deleteMigration,/drop policy if exists "Super admin full access schoolpro_classes"/);
+assert.match(deleteMigration,/drop policy if exists "Super admin full access schoolpro_members"/);
+assert.match(deleteSqlTest,/has_table_privilege/);
+assert.match(deleteSqlTest,/pg_policies/);
+assert.match(deleteSqlTest,/TRUNCATE/i);
 
-console.log('SchoolPro C0 workflow source-contract checks passed.');
+console.log('SchoolPro C0 workflow and class/member deletion source-contract checks passed.');

@@ -164,3 +164,19 @@ assert.match(deleteSqlTest,/pg_policy/);
 assert.match(deleteSqlTest,/TRUNCATE/i);
 
 console.log('SchoolPro C0 workflow and class/member deletion source-contract checks passed.');
+
+// Workspace navigation and role catalogue must expose the modules already backed by production tables.
+const appSource=read('src/App.tsx');
+const sharedSource=read('src/pages/schoolpro/schoolShared.tsx');
+const operationsSource=read('src/pages/schoolpro/SchoolProOperations.tsx');
+const dashboardSource=read('src/pages/schoolpro/SchoolProLiveDashboard.tsx');
+const rolesSource=read('src/pages/schoolpro/SchoolProRoles.tsx');
+const auditPage=read('src/pages/schoolpro/SchoolProAuditLogs.tsx');
+assert.ok(appSource.includes('path="/schoolpro/audit-logs"'));
+assert.ok(appSource.includes('path="/schoolpro/admission-operations"'));
+assert.match(sharedSource,/Admissions Workspace/);
+assert.ok(dashboardSource.includes('sections={schoolSections}'));
+assert.match(sharedSource,/Audit Logs/);
+assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
+assert.match(rolesSource,/Principal/);
+assert.match(auditPage,/schoolpro_audit_logs/);

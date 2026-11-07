@@ -49,6 +49,8 @@ import {SchoolProWorkspaceDeletion} from "@/pages/schoolpro/SchoolProWorkspaceDe
 import { SchoolProQuestionBank } from "@/pages/schoolpro/SchoolProQuestionBank";
 import { SchoolProBrandingSettings } from "@/pages/schoolpro/SchoolProBrandingSettings";
 import { SchoolProAdmissions } from "@/pages/schoolpro/SchoolProAdmissions";
+import { SchoolProAdmissionOperations } from "@/pages/schoolpro/SchoolProAdmissionOperations";
+import { SchoolProAuditLogs } from "@/pages/schoolpro/SchoolProAuditLogs";
 import { SchoolProRoles } from "@/pages/schoolpro/SchoolProRoles";
 import { SchoolProPublicAdmission } from "@/pages/schoolpro/SchoolProPublicAdmission";
 import { SchoolProCBTRunner } from "@/pages/schoolpro/SchoolProCBTRunner";
@@ -157,6 +159,8 @@ export default function App(){
   <Route path="/schoolpro/student-dashboard" element={<Guard><SchoolProStudentDashboard/></Guard>}/>
   <Route path="/schoolpro/admissions" element={<Guard permission="admissions"><SchoolProAdmissions/></Guard>}/>
   <Route path="/schoolpro/admissions/workspace" element={<Guard permission="admissions"><SchoolProAdmissionsWorkspace/></Guard>}/>
+  <Route path="/schoolpro/admission-operations" element={<Guard permission="admissions"><SchoolProAdmissionOperations/></Guard>}/>
+  <Route path="/schoolpro/audit-logs" element={<Guard permission="roles"><SchoolProAuditLogs/></Guard>}/>
   <Route path="/schoolpro/operations" element={<Guard permission="operations"><SchoolProOperations/></Guard>}/>
   <Route path="/schoolpro/roles-permissions" element={<Guard permission="roles"><SchoolProRoles/></Guard>}/>
   <Route path="/schoolpro/user-permissions" element={<Guard permission="roles"><SchoolProPermissions/></Guard>}/>

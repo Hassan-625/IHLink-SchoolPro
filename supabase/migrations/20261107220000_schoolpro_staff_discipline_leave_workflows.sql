@@ -100,6 +100,8 @@ create table if not exists public.schoolpro_staff_disciplinary_cases (
   appeal_review_note text,
   appeal_reviewed_by uuid references auth.users(id),
   appeal_reviewed_at timestamptz,
+  closure_note text,
+  closed_by uuid references auth.users(id),
   created_by uuid not null references auth.users(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -431,6 +433,35 @@ end;
 $function$;
 
 drop policy if exists "C0 leave own pending update" on public.schoolpro_leave_requests;
+
+
+create or replace function public.schoolpro_close_staff_disciplinary_case(
+  p_case uuid,p_note text
+) returns void
+language plpgsql security definer set search_path=''
+as $function$
+declare target public.schoolpro_staff_disciplinary_cases;
+begin
+  select * into target from public.schoolpro_staff_disciplinary_cases
+  where id=p_case for update;
+  if target.id is null then raise exception 'Disciplinary case not found'; end if;
+  if auth.uid() is null or not private.is_active_account()
+    or not private.schoolpro_module_allowed(target.school_id,'staff')
+    or not private.has_school_access(
+      target.school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
+    ) then raise exception 'HR or school leadership access is required'; end if;
+  if target.status='closed' or length(btrim(coalesce(p_note,''))) not between 5 and 2000 then
+    raise exception 'Provide a closure note for an open case';
+  end if;
+  update public.schoolpro_staff_disciplinary_cases
+  set status='closed',closure_note=btrim(p_note),closed_by=auth.uid(),
+      closed_at=now(),updated_at=now()
+  where id=target.id;
+end;
+$function$;
+
+revoke all on function public.schoolpro_close_staff_disciplinary_case(uuid,text) from public,anon;
+grant execute on function public.schoolpro_close_staff_disciplinary_case(uuid,text) to authenticated;
 
 revoke all on function public.schoolpro_report_own_absence(uuid,date,date,text) from public,anon;
 revoke all on function public.schoolpro_update_own_leave_reason(uuid,text) from public,anon;

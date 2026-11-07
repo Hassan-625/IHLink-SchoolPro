@@ -16,6 +16,8 @@ const studentsPage=read('src/pages/schoolpro/SchoolProStudents.tsx');
 const attendancePage=read('src/pages/schoolpro/SchoolProAttendance.tsx');
 const admissionsPage=read('src/pages/schoolpro/SchoolProAdmissions.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
+const deletionMigration=read('supabase/migrations/20261107235950_schoolpro_workspace_deletion_lifecycle.sql');
+const workspaceDeletionPage=read('src/pages/schoolpro/SchoolProWorkspaceDeletion.tsx');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
  'supabase/migrations/20261107130000_schoolpro_class_staff_lifecycle_foundation.sql',
@@ -30,7 +32,8 @@ const migrations=[
  'supabase/migrations/20261107230000_schoolpro_student_discipline_case_management.sql',
  'supabase/migrations/20261107235900_schoolpro_central_active_membership_readers.sql',
  'supabase/migrations/20261107235930_schoolpro_active_member_rpc_guards.sql',
- 'supabase/migrations/20261107235945_schoolpro_remaining_active_member_consumers.sql'
+ 'supabase/migrations/20261107235945_schoolpro_remaining_active_member_consumers.sql',
+ 'supabase/migrations/20261107235950_schoolpro_workspace_deletion_lifecycle.sql'
 ].map(read).join('\n');
 
 assert.match(app,/SchoolProStaffDiscipline/);
@@ -40,6 +43,17 @@ assert.match(styles,/overflow: auto/);
 assert.match(app,/SchoolProLeave/);
 assert.ok(app.includes('path="/schoolpro/staff-discipline"'));
 assert.ok(app.includes('path="/schoolpro/leave"'));
+assert.ok(app.includes('path="/schoolpro/workspace-deletion"'));
+assert.match(workspaceDeletionPage,/schoolpro_request_workspace_deletion/);
+assert.match(workspaceDeletionPage,/schoolpro_cancel_workspace_deletion/);
+assert.match(workspaceDeletionPage,/Only the school's Proprietor/);
+assert.match(deletionMigration,/schoolpro_review_workspace_deletion/);
+assert.match(deletionMigration,/schoolpro_execute_workspace_deletion/);
+assert.match(deletionMigration,/target\.requested_by=auth\.uid\(\)/);
+assert.match(deletionMigration,/target\.reviewed_by=auth\.uid\(\)/);
+assert.match(deletionMigration,/deactivated_history_retained/);
+assert.match(deletionMigration,/storage_objects_retained/);
+assert.match(deletionMigration,/status='suspended'/);
 assert.match(staff,/schoolpro_create_staff_disciplinary_case/);
 assert.match(staff,/schoolpro_submit_staff_disciplinary_response/);
 assert.match(staff,/schoolpro_review_staff_appeal/);

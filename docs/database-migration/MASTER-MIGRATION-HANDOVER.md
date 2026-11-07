@@ -2373,3 +2373,13 @@ This section supersedes older stage-status summaries above where they conflict.
 
 - Updated the isolated receipt-storage test's generated Supabase config from the removed `[inbucket]` section to `[local_smtp]`, retaining the dynamically allocated web, SMTP, and POP3 ports.
 - The failure was a Supabase CLI v3 config-breaking change, not a Storage policy failure. The test continues to start an isolated local stack and does not link to or contact the production Supabase project.
+
+## 2026-11-07 — Stage C0 workspace deletion inventory (read-only)
+
+- Added `docs/roadmap/STAGE-C0-WORKSPACE-DELETION-INVENTORY.md` on `feat/schoolpro-stage-c0-workspace-corrections` (commit `5b258d867c166e64d58085ba93a5b93f9527458a`).
+- Read-only inspection of Supabase project `lnqsroyiybutkfngbyge` found two SchoolPro school rows, both currently marked active. This is a schema/status observation only; neither workspace is selected for deletion and no deletion was authorized or performed.
+- The live FK catalog identified direct school references requiring special treatment rather than blind cascade: `ihlink_email_queue`, `schoolpro_custom_requests`, `schoolpro_demo_requests`, `schoolpro_document_issue_events`, `schoolpro_enrollment_history`, `schoolpro_onboarding_requests`, `schoolpro_result_events`, `schoolpro_transcript_issues`, and `schoolpro_transcript_settings`.
+- Read-only Storage inventory found 95 objects across SchoolPro document-output, document-template, invoice-template, and result-output buckets. UUID path prefixes are not sufficient proof of tenant ownership; unclassified/shared objects must remain untouched. Storage deletion must use the supported Storage API, never direct SQL against `storage.objects`.
+- The implementation must retain global profiles/Auth users, reusable role/permission definitions, global/default templates, unrelated tenants, DataSub/IHLink data, external payment ledger rows, and required financial/legal/audit evidence. School-scoped subscription/payment records and school audit logs must not be lost merely because their FK currently cascades.
+- No production schema, rows, Storage objects, subscriptions, payments, or workspaces were changed. No migration was created/applied, no test workspace was created, no PR was merged, and no Render deployment occurred.
+- Next bounded task: finish the full FK and record-retention matrix, resolve the exact ownership map for Storage objects, then design the request/approval/execution state machine and disposable PostgreSQL regression fixture. Do not apply production DDL/DML or delete any live workspace.

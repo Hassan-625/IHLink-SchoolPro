@@ -177,7 +177,7 @@ export default function App(){
   <Route path="/schoolpro/workspace-deletion" element={<Guard permission="dashboard"><SchoolProWorkspaceDeletion/></Guard>} />
 
   {["timetable","assignments","announcements"].map(module=><Route key={module} path={"/schoolpro/"+module} element={<Guard><SchoolProModulePage module={module as "timetable"|"assignments"|"announcements"}/></Guard>}/>)}
-  {["library","transport","hostel","inventory","payroll","discipline","calendar","lesson-notes","promotions","medical"].map(kind=><Route key={kind} path={"/schoolpro/"+kind} element={<Guard><SchoolProOperationalModule kind={kind as any}/></Guard>}/>)}
+  {["library","transport","hostel","inventory","payroll","calendar","lesson-notes","promotions","medical"].map(kind=><Route key={kind} path={"/schoolpro/"+kind} element={<Guard><SchoolProOperationalModule kind={kind as any}/></Guard>}/>)}
   {studentViews.map(kind=><Route key={kind} path={"/schoolpro/student-"+kind} element={<Guard><SchoolProStudentPortalView kind={kind}/></Guard>}/>)}
 
   <Route path="/signin" element={<Navigate to="/schoolpro/login" replace/>}/>

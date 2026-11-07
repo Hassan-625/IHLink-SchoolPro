@@ -7,7 +7,7 @@ import {Card} from '@/components/ui/Card';
 import {Button} from '@/components/ui/Button';
 import {schoolSections} from './schoolShared';
 
-type Member={id:string;user_id:string;role:string;status:string;employment_status:string;profile?:{first_name:string|null;last_name:string|null;email:string}|null};
+type Member={id:string;user_id:string;role:string;status:string;employment_status:string;profile?:{first_name:string|null;last_name:string|null;email:string}[]|null};
 type CaseRow={id:string;member_id:string;action_type:string;severity:string;summary:string;details:string|null;status:string;effective_at:string;staff_response:string|null;response_at:string|null;appeal_status:string;appeal_review_note:string|null;closure_note:string|null;created_at:string};
 
 const managers=['proprietor','administrator','hr_officer','super administrator','super_admin'];
@@ -32,7 +32,7 @@ export function SchoolProStaffDiscipline(){
  useEffect(()=>{setMembers([]);setCases([]);setMessage('');void load();},[load]);
  const ownMemberIds=useMemo(()=>new Set(members.filter(m=>m.user_id===user?.id).map(m=>m.id)),[members,user?.id]);
  const visibleCases=useMemo(()=>canManage?cases:cases.filter(c=>ownMemberIds.has(c.member_id)),[cases,canManage,ownMemberIds]);
- const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.first_name,m.profile?.last_name].filter(Boolean).join(' ')||m.profile?.email||m.role])),[members]);
+ const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
  async function createCase(){
   if(!supabase||!ctx.schoolId||!memberId||!summary.trim()||busy)return;
   setBusy(true);setMessage('');

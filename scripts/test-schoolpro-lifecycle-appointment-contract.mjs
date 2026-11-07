@@ -13,12 +13,14 @@ for (const table of [
   'schoolpro_section_leaders',
   'schoolpro_subject_assignments',
 ]) {
-  assert.match(suspension,new RegExp('update public\\\\.'+table+'\\\\s+set ended_at'),`Suspension must end active ${table} appointments.`);
+  assert.ok(suspension.includes('update public.'+table),`Suspension must end active ${table} appointments.`);
 }
-assert.match(suspension,/form_teacher_id=null/,'Suspension must clear the active Form Master pointer.');
-assert.match(suspension,/Form Master appointment ended/,'Former Form Master assignments must be auditable.');
-assert.match(suspension,/appointments_restored',false/,'Reactivation must not silently restore previous appointments.');
-assert.doesNotMatch(suspension,/delete from public\\.schoolpro_(board_members|section_leaders|subject_assignments)/,'Appointment history must not be hard-deleted.');
+assert.ok(suspension.includes('form_teacher_id=null'),'Suspension must clear the active Form Master pointer.');
+assert.ok(suspension.includes('Form Master appointment ended'),'Former Form Master assignments must be auditable.');
+assert.ok(suspension.includes("'appointments_restored',false"),'Reactivation must not silently restore previous appointments.');
+for (const table of ['schoolpro_board_members','schoolpro_section_leaders','schoolpro_subject_assignments']) {
+  assert.ok(!suspension.includes('delete from public.'+table),'Appointment history must not be hard-deleted: '+table);
+}
 
 for (const fn of [
   'schoolpro_member_leads_class',
@@ -30,18 +32,18 @@ for (const fn of [
   'schoolpro_house_master_roster',
   'schoolpro_is_house_master',
 ]) {
-  assert.match(readers,new RegExp('function private\\\\.'+fn+'\\\\('),`Expected updated helper ${fn}.`);
+  assert.ok(readers.includes('create or replace function private.'+fn+'('),'Expected updated helper '+fn+'.');
 }
-assert.match(readers,/sl\\.ended_at is null/,'Ended section leadership must not grant access.');
-assert.match(readers,/a\\.ended_at is null/,'Ended subject and House Master appointments must not grant access.');
-assert.match(readers,/m\\.status='active'/,'Membership-derived access must require an active membership.');
-assert.match(readers,/c\\.archived_at is null/,'Archived classes must not grant current operational access.');
+assert.ok(readers.includes('sl.ended_at is null'),'Ended section leadership must not grant access.');
+assert.ok(readers.includes('a.ended_at is null'),'Ended subject and House Master appointments must not grant access.');
+assert.ok(readers.includes("m.status='active'"),'Membership-derived access must require an active membership.');
+assert.ok(readers.includes('c.archived_at is null'),'Archived classes must not grant current operational access.');
 
-assert.match(staff,/status:"active"\\|"suspended"/,'Staff UI must load membership lifecycle state.');
-assert.match(staff,/is\\("ended_at",null\\)/,'Staff UI must hide ended section and subject assignments.');
-assert.match(staff,/is\\("archived_at",null\\)/,'Staff UI must hide archived classes from current responsibilities.');
-assert.match(staff,/member\\.status==="suspended"\\?"Suspended":"Active"/,'Staff UI must show the real membership status.');
-assert.match(governance,/is\\('ended_at',null\\)/,'Board UI must show only current appointments.');
-assert.match(governance,/m\\.status!=='suspended'/,'Suspended staff must not be offered for new board appointments.');
+assert.ok(staff.includes('status:"active"|"suspended"'),'Staff UI must load membership lifecycle state.');
+assert.ok(staff.includes('.is("ended_at",null)'),'Staff UI must hide ended section and subject assignments.');
+assert.ok(staff.includes('.is("archived_at",null)'),'Staff UI must hide archived classes from current responsibilities.');
+assert.ok(staff.includes('member.status==="suspended"?"Suspended":"Active"'),'Staff UI must show the real membership status.');
+assert.ok(governance.includes(".is('ended_at',null)"),'Board UI must show only current appointments.');
+assert.ok(governance.includes("m.status!=='suspended'"),'Suspended staff must not be offered for new board appointments.');
 
 console.log('PASS: SchoolPro appointment termination and active-reader contract.');

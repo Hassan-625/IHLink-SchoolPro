@@ -45,6 +45,7 @@ import { SchoolProReceipt } from "@/pages/schoolpro/SchoolProReceipt";
 import { SchoolProStudentDashboard } from "@/pages/schoolpro/SchoolProStudentDashboard";
 import { SchoolProModulePage } from "@/pages/schoolpro/SchoolProModulePage";
 import {SchoolProAdvancedReports} from "@/pages/schoolpro/SchoolProAdvancedReports";
+import {SchoolProWorkspaceDeletion} from "@/pages/schoolpro/SchoolProWorkspaceDeletion";
 import { SchoolProQuestionBank } from "@/pages/schoolpro/SchoolProQuestionBank";
 import { SchoolProBrandingSettings } from "@/pages/schoolpro/SchoolProBrandingSettings";
 import { SchoolProAdmissions } from "@/pages/schoolpro/SchoolProAdmissions";
@@ -167,6 +168,7 @@ export default function App(){
   <Route path="/schoolpro/cbt" element={<Guard permission="cbt"><SchoolProEntitlementGate feature="cbt"><SchoolProCBTManager/></SchoolProEntitlementGate></Guard>}/>
   <Route path="/schoolpro/cbt/take/:testId" element={<Guard><SchoolProEntitlementGate feature="cbt"><SchoolProCBTRunner/></SchoolProEntitlementGate></Guard>}/>
 <Route path="/schoolpro/reports" element={<Guard permission="reports"><SchoolProEntitlementGate feature="advanced_reports"><SchoolProAdvancedReports/></SchoolProEntitlementGate></Guard>} />
+  <Route path="/schoolpro/workspace-deletion" element={<Guard permission="dashboard"><SchoolProWorkspaceDeletion/></Guard>} />
 
   {["timetable","assignments","announcements"].map(module=><Route key={module} path={"/schoolpro/"+module} element={<Guard><SchoolProModulePage module={module as "timetable"|"assignments"|"announcements"}/></Guard>}/>)}
   {["library","transport","hostel","inventory","payroll","discipline","calendar","lesson-notes","promotions","medical"].map(kind=><Route key={kind} path={"/schoolpro/"+kind} element={<Guard><SchoolProOperationalModule kind={kind as any}/></Guard>}/>)}

@@ -19,7 +19,7 @@ export function SchoolProLeave(){
  const canReview=managerRoles.includes(ctx.role.toLowerCase().replaceAll(' ','_'))||managerRoles.includes(ctx.role.toLowerCase());
  const [members,setMembers]=useState<Member[]>([]),[rows,setRows]=useState<LeaveRow[]>([]);
  const [start,setStart]=useState(''),[end,setEnd]=useState(''),[reason,setReason]=useState(''),[kind,setKind]=useState('planned_leave'),[leaveType,setLeaveType]=useState('Annual leave');
- const [reasonDraft,setReasonDraft]=useState<Record<string,string>>({}),[reviewNotes,setReviewNotes]=useState<Record<string,string>>({});\n const [statusFilter,setStatusFilter]=useState('all'),[search,setSearch]=useState('');
+ const [reasonDraft,setReasonDraft]=useState<Record<string,string>>({}),[reviewNotes,setReviewNotes]=useState<Record<string,string>>({});\n const [statusFilter,setStatusFilter]=useState('all'),[typeFilter,setTypeFilter]=useState('all'),[search,setSearch]=useState('');
  const [busy,setBusy]=useState(false),[message,setMessage]=useState('');
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
@@ -34,7 +34,11 @@ export function SchoolProLeave(){
  const ownMembers=useMemo(()=>members.filter(m=>m.user_id===user?.id),[members,user?.id]);
  const ownIds=useMemo(()=>new Set(ownMembers.map(m=>m.id)),[ownMembers]);
  const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
- const visible=useMemo(()=>{const scoped=canReview?rows:rows.filter(r=>ownIds.has(r.member_id));const q=search.trim().toLowerCase();return scoped.filter(r=>(statusFilter==='all'||r.status===statusFilter)&&(!q||[memberNames.get(r.member_id),r.leave_type,r.request_type,r.reason,r.review_note,r.start_date,r.end_date].filter(Boolean).join(' ').toLowerCase().includes(q)));},[rows,canReview,ownIds,statusFilter,search,memberNames]);
+ const visible=useMemo(()=>{const scoped=canReview?rows:rows.filter(r=>ownIds.has(r.member_id));const q=search.trim().toLowerCase();return scoped.filter(r=>(statusFilter==='all'||r.status===statusFilter)&&(typeFilter==='all'||r.request_type===typeFilter)&&(!q||[memberNames.get(r.member_id),r.leave_type,r.request_type,r.reason,r.review_note,r.start_date,r.end_date].filter(Boolean).join(' ').toLowerCase().includes(q)));},[rows,canReview,ownIds,statusFilter,typeFilter,search,memberNames]);
+ const scopedRows=useMemo(()=>canReview?rows:rows.filter(r=>ownIds.has(r.member_id)),[rows,canReview,ownIds]);
+ const pendingCount=scopedRows.filter(r=>r.status==='pending').length;
+ const approvedCount=scopedRows.filter(r=>r.status==='approved').length;
+ const absenceCount=scopedRows.filter(r=>r.request_type==='absence_report').length;
  async function submit(){
   if(!supabase||!ctx.schoolId||!start||!end||end<start||busy)return;
   setBusy(true);setMessage('');
@@ -68,14 +72,22 @@ export function SchoolProLeave(){
    <label className="text-sm font-semibold">End date<input type="date" className="mt-1 w-full rounded-xl border p-3" value={end} onChange={e=>setEnd(e.target.value)}/></label>
    <label className="text-sm font-semibold md:col-span-2">{kind==='absence_report'?'Reason (optional; you can submit it later)':'Reason / supporting explanation'}<textarea className="mt-1 w-full rounded-xl border p-3" rows={3} maxLength={4000} value={reason} onChange={e=>setReason(e.target.value)} placeholder={kind==='absence_report'?'You may leave this blank and update it after reporting the absence.':'Explain the reason for your leave request.'}/></label>
   </div><Button className="mt-3" disabled={busy||!start||!end||end<start} onClick={()=>void submit()}>{busy?'Submitting…':kind==='absence_report'?'Report absence':'Submit leave request'}</Button>{message&&<p role="status" className="mt-3 text-sm">{message}</p>}</Card>
-  <Card><div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_220px]">\n   <label className="text-sm font-semibold">Search requests<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Staff name, leave type, reason or date"/></label>\n   <label className="text-sm font-semibold">Status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['pending','approved','rejected','cancelled'].map(x=><option key={x} value={x}>{pretty(x)}</option>)}</select></label>\n  </div><p className="mt-2 text-xs text-muted">Showing {visible.length} of {canReview?rows.length:rows.filter(r=>ownIds.has(r.member_id)).length} records.</p></Card>\n  <div className="grid gap-4">{visible.map(r=><Card key={r.id}>
+  <div className="grid gap-3 sm:grid-cols-3">
+   <Card><p className="text-xs text-muted">Awaiting review</p><p className="mt-1 text-2xl font-bold tabular-nums">{pendingCount}</p></Card>
+   <Card><p className="text-xs text-muted">Approved</p><p className="mt-1 text-2xl font-bold tabular-nums">{approvedCount}</p></Card>
+   <Card><p className="text-xs text-muted">Absence reports</p><p className="mt-1 text-2xl font-bold tabular-nums">{absenceCount}</p></Card>
+  </div>
+  <Card><div className="grid gap-3 md:grid-cols-3">\n   <label className="text-sm font-semibold">Search requests<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Staff name, leave type, reason or date"/></label>\n   <label className="text-sm font-semibold">Status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['pending','approved','rejected','cancelled'].map(x=><option key={x} value={x}>{pretty(x)}</option>)}</select></label>
+   <label className="text-sm font-semibold">Record type<select className="mt-1 w-full rounded-xl border p-3" value={typeFilter} onChange={e=>setTypeFilter(e.target.value)}><option value="all">All record types</option><option value="planned_leave">Planned leave</option><option value="absence_report">Absence reports</option></select></label>\n  </div><p className="mt-2 text-xs text-muted">Showing {visible.length} of {scopedRows.length} records in your authorised view.</p></Card>\n  <div className="grid gap-4">{visible.map(r=><Card key={r.id}>
    <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{canReview?memberNames.get(r.member_id)||'Staff member':'My request'} · {r.request_type==='absence_report'?'Absence report':r.leave_type}</h3><p className="text-xs text-muted">{r.start_date} to {r.end_date} · Submitted {new Date(r.created_at).toLocaleDateString()}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{pretty(r.status)}</span></div>
    {r.reason?<p className="mt-3 whitespace-pre-wrap text-sm">{r.reason}</p>:<p className="mt-3 text-sm italic text-muted">No reason supplied yet.</p>}
+   {r.request_type==='absence_report'&&r.absence_reported_at&&<p className="mt-1 text-xs text-muted">Absence reported {new Date(r.absence_reported_at).toLocaleString()}</p>}
    {r.reason_updated_at&&<p className="mt-1 text-xs text-muted">Reason last updated {new Date(r.reason_updated_at).toLocaleString()}</p>}
+   {r.reviewed_at&&<p className="mt-1 text-xs text-muted">Reviewed {new Date(r.reviewed_at).toLocaleString()}</p>}
    {r.review_note&&<div className="mt-3 rounded-lg bg-slate-50 p-3"><b className="text-sm">HR review note</b><p className="mt-1 text-sm">{r.review_note}</p></div>}
    {ownIds.has(r.member_id)&&r.status==='pending'&&<div className="mt-3 space-y-2"><label className="block text-sm font-semibold">Add or update your reason<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={reasonDraft[r.id]??r.reason??''} onChange={e=>setReasonDraft(x=>({...x,[r.id]:e.target.value}))}/></label><Button variant="secondary" disabled={busy||!reasonDraft[r.id]?.trim()} onClick={()=>void updateReason(r.id)}>Update reason</Button></div>}
    {canReview&&!ownIds.has(r.member_id)&&r.status==='pending'&&<div className="mt-3 space-y-2"><label className="block text-sm font-semibold">Review note<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={reviewNotes[r.id]||''} onChange={e=>setReviewNotes(x=>({...x,[r.id]:e.target.value}))} placeholder="Optional note for the staff member."/></label><div className="flex flex-wrap gap-2"><Button disabled={busy} onClick={()=>void review(r.id,'approved')}>Approve</Button><Button variant="secondary" disabled={busy} onClick={()=>void review(r.id,'rejected')}>Decline</Button></div></div>}
   </Card>)}</div>
-  {!visible.length&&<Card><p className="text-sm text-muted">{search||statusFilter!=='all'?'No records match these filters.':'No leave or absence records are available yet.'}</p></Card>}
+  {!visible.length&&<Card><p className="text-sm text-muted">{search||statusFilter!=='all'||typeFilter!=='all'?'No records match these filters.':'No leave or absence records are available yet.'}</p></Card>}
  </ModulePage>;
 }

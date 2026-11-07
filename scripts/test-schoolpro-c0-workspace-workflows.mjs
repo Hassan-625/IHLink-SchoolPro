@@ -42,5 +42,15 @@ assert.match(migrations,/schoolpro_staff_disciplinary_events/);
 assert.match(migrations,/schoolpro_leave_events/);
 assert.match(migrations,/schoolpro_discipline_events/);
 assert.match(migrations,/cannot be restored through the suspension workflow/);
+assert.match(migrations,/schoolpro_is_house_master/);
+assert.match(migrations,/schoolpro_member_leads_class/);
+assert.match(migrations,/schoolpro_member_leads_student_section/);
+assert.match(migrations,/schoolpro_set_section_leader/);
+assert.match(migrations,/schoolpro_set_board_role/);
+assert.match(migrations,/schoolpro_cached_access_schools/);
+assert.match(migrations,/schoolpro_cached_staff_schools/);
+assert.match(migrations,/schoolpro_can_author_cbt/);
+assert.match(migrations,/schoolpro_can_manage_cbt/);
+
 
 console.log('SchoolPro C0 workflow source-contract checks passed.');

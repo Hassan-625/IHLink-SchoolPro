@@ -393,4 +393,43 @@ for each row execute function private.guard_schoolpro_active_leave_member();
 revoke all on function private.guard_schoolpro_active_payroll_member() from public,anon,authenticated;
 revoke all on function private.guard_schoolpro_active_leave_member() from public,anon,authenticated;
 
+-- Result lock changes were another direct membership reader. Preserve the
+-- published-result correction guard, but route authorization through the
+-- active-membership-aware central helper.
+create or replace function public.schoolpro_set_result_lock(
+  p_school uuid,p_term text,p_session text,p_locked boolean
+) returns integer
+language plpgsql security definer
+set search_path = ''
+as $function$
+declare n integer;
+begin
+  if auth.uid() is null or not private.is_active_account() then
+    raise exception 'Authentication required';
+  end if;
+  if not private.schoolpro_module_allowed(p_school,'results') then
+    raise exception 'Module permission denied: results';
+  end if;
+  if not private.has_school_access(
+    p_school,array[
+      'proprietor','administrator','exam_officer','head_teacher','vice_principal'
+    ]::public.school_member_role[]
+  ) then
+    raise exception 'Not authorized';
+  end if;
+  if p_locked=false and exists(
+    select 1 from public.schoolpro_results
+    where school_id=p_school and term=trim(p_term)
+      and session=trim(p_session) and status='published'
+  ) then
+    raise exception 'Published results must be reopened individually through the audited correction workflow';
+  end if;
+  update public.schoolpro_results
+  set locked=p_locked
+  where school_id=p_school and term=trim(p_term) and session=trim(p_session);
+  get diagnostics n=row_count;
+  return n;
+end;
+$function$;
+
 commit;

@@ -10,6 +10,7 @@ on:
     paths:
       - 'src/**'
       - 'scripts/test-schoolpro-c0-workspace-workflows.mjs'
+      - 'scripts/test-schoolpro-student-family-records.mjs'
       - 'supabase/**'
       - 'package.json'
       - 'package-lock.json'
@@ -42,8 +43,11 @@ jobs:
       - name: Production build
         run: npm run build
 
-      - name: C0 workflow source contracts
+      - name: C0 workflow and class/member deletion source contracts
         run: npm run test:schoolpro-c0-workflows
+
+      - name: Student, guardian, class and staff lifecycle source contracts
+        run: npm run test:schoolpro-student-family-records
 
       - name: Existing appointment lifecycle source contracts
         run: npm run test:schoolpro-lifecycle-appointments

@@ -178,5 +178,7 @@ assert.match(sharedSource,/Admissions Workspace/);
 assert.ok(dashboardSource.includes('sections={schoolSections}'));
 assert.match(sharedSource,/Audit Logs/);
 assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
+assert.ok(operationsSource.includes("'schoolpro_houses','games'"));
+assert.ok(operationsSource.includes("'schoolpro_staff_disciplinary_cases','staff-discipline'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);

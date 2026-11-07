@@ -139,7 +139,7 @@ assert.match(deleteMigration,/drop policy if exists "School leaders delete membe
 assert.match(deleteMigration,/drop policy if exists "Super admin full access schoolpro_classes"/);
 assert.match(deleteMigration,/drop policy if exists "Super admin full access schoolpro_members"/);
 assert.match(deleteSqlTest,/has_table_privilege/);
-assert.match(deleteSqlTest,/pg_policies/);
+assert.match(deleteSqlTest,/pg_policy/);
 assert.match(deleteSqlTest,/TRUNCATE/i);
 
 console.log('SchoolPro C0 workflow and class/member deletion source-contract checks passed.');

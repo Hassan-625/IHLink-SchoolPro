@@ -57,8 +57,8 @@ export function DashboardLayout({
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
   const permissions=useSchoolProPermissions();const planAccess=useSchoolProEntitlements();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
-  const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
   const isPlatformSchoolProSuperAdmin=product==='schoolpro'&&profile?.role==='super_admin';
+  const canonical=isPlatformSchoolProSuperAdmin?schoolSections:role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
   const sections=product==='schoolpro'
     ? (isPlatformSchoolProSuperAdmin?canonical:(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>{
       if(isPlatformSchoolProSuperAdmin)return true;

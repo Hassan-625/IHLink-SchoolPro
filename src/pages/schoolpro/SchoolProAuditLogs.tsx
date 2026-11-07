@@ -100,7 +100,7 @@ export function SchoolProAuditLogs() {
               {filtered.map(row => <tr key={row.id} className="border-t align-top">
                 <td className="p-3 font-semibold">{row.action}</td>
                 <td className="p-3">{row.actor?.name || String(row.metadata?.actor_name || (row.actor_id ? 'Staff profile unavailable' : 'System'))}<div className="text-xs text-muted">{row.actor?.email || ''}</div></td>
-                <td className="p-3 capitalize">{row.actor?.role || '—'}</td>
+                <td className="p-3 capitalize">{row.actor?.role || String(row.metadata?.actor_role || '—').replaceAll('_', ' ')}</td>
                 <td className="p-3">{row.entity_type || '—'}<div className="text-xs text-muted">{row.entity_id || ''}</div></td>
                 <td className="max-w-[320px] whitespace-pre-wrap break-words p-3 text-xs">{row.metadata ? JSON.stringify(row.metadata, null, 2) : '—'}</td>
                 <td className="p-3 whitespace-nowrap">{new Date(row.created_at).toLocaleString()}</td>

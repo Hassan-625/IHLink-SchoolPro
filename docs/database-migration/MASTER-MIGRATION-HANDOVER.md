@@ -5,18 +5,18 @@
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  
 **Shared Supabase project:** `lnqsroyiybutkfngbyge` (IHLink Platform, West EU Ireland)  
 **Database direction (confirmed 2026-10-28):** Continue on the existing Supabase PostgreSQL project; Render remains the production frontend host. MySQL and Aiven are no longer target platforms for SchoolPro.  
-**Status:** Stage A accepted. Stage B database rollout complete: all 14 Stage B migrations are recorded in the existing Supabase project, covering sessions/calendar, student identity and progression, Form Master attendance scope, section leadership, houses, House Masters, competitions, staff judging, scoring, result approval/publication and house points. PR #111 and corrective PR #113 are merged. No school workspaces or operational test records were created. Render frontend deployment is not part of this database rollout and has not been verified here.
+**Status:** Stage A accepted. Stage B database rollout complete: all 14 Stage B migrations are recorded in the existing Supabase project, covering sessions/calendar, student identity and progression, Form Master attendance scope, section leadership, houses, House Masters, competitions, staff judging, scoring, result approval/publication and house points. PR #111 and corrective PR #113 are merged. The historical cleanup of two earlier workspaces completed on 2026-10-28; a read-only production recheck on 2026-11-07 confirms two different active SchoolPro workspace rows created on 2026-11-04 and 2026-11-05. Their operational purpose and ownership must be confirmed before any lifecycle action. Render frontend deployment is not part of this database rollout and has not been verified here.
 
 ## Operating rules
 - Preserve the live production architecture and shared IHLink/DataSub data.
 - Do not repeat completed checks unless new evidence requires them. Continue from the last known state.
-- The previously authorized cleanup of the two SchoolPro workspaces below was completed on 2026-10-28. No active school workspaces remain; do not create test workspaces or recreate deleted operational records.
+- The previously authorized cleanup of the two historical SchoolPro workspaces below was completed on 2026-10-28. A read-only production recheck on 2026-11-07 found two different active school rows created on 2026-11-04 and 2026-11-05. Do not assume these are test records or historical leftovers, and do not delete, archive, or otherwise mutate them without separate explicit authorization.
 - Do not delete global `profiles` or Supabase Auth accounts. Preserve global/default templates, platform-wide audit/security history, financial evidence that must be retained, and all Storage objects.
 - Keep SchoolPro migration work separate from DataSub.
 
 ## Historical production workspace cleanup — completed 2026-10-28
 
-**Current disposition:** The historical cleanup was subsequently completed; both target workspaces and their scoped operational rows were removed. The workspace IDs and counts below are retained as audit history, not as pending work. No active SchoolPro workspaces remain.
+**Historical disposition:** The cleanup completed on 2026-10-28; both target workspaces and their scoped operational rows were removed. The workspace IDs and counts below are retained as audit history, not as pending work. This statement describes the state immediately after that historical cleanup, not the current production state. A separate read-only recheck on 2026-11-07 found two newer active workspaces, documented below.
 
 | Workspace | School ID |
 |---|---|
@@ -2383,3 +2383,15 @@ This section supersedes older stage-status summaries above where they conflict.
 - The implementation must retain global profiles/Auth users, reusable role/permission definitions, global/default templates, unrelated tenants, DataSub/IHLink data, external payment ledger rows, and required financial/legal/audit evidence. School-scoped subscription/payment records and school audit logs must not be lost merely because their FK currently cascades.
 - No production schema, rows, Storage objects, subscriptions, payments, or workspaces were changed. No migration was created/applied, no test workspace was created, no PR was merged, and no Render deployment occurred.
 - Next bounded task: finish the full FK and record-retention matrix, resolve the exact ownership map for Storage objects, then design the request/approval/execution state machine and disposable PostgreSQL regression fixture. Do not apply production DDL/DML or delete any live workspace.
+
+
+## Current production workspace state recheck — 2026-11-07
+
+**Read-only evidence only; no rows or schema were changed.** A direct query of `public.schoolpro_schools` returned these two active rows:
+
+| School | School ID | Created at (UTC) | Status |
+|---|---|---|---|
+| IHLINK Academy | `eb601205-cffd-420d-97d0-7d5ca081628a` | 2026-11-04 13:26:29 | active |
+| HA ACADEMY | `ac7ac8a8-5035-4e39-8868-cad54add84a6` | 2026-11-05 13:37:52 | active |
+
+These IDs do not match the two historical workspace IDs listed in the 2026-10-28 cleanup section. Do not infer that either current workspace is synthetic, disposable, or eligible for deletion. Confirm their intended owner/business purpose and associated operational records with the user before any lifecycle operation. The C0 deletion workflow must be designed to protect these current workspaces by default.

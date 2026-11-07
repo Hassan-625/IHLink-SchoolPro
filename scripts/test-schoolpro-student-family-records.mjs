@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 
 const students=readFileSync('src/pages/schoolpro/SchoolProStudents.tsx','utf8');
 const parents=readFileSync('src/pages/schoolpro/SchoolProParents.tsx','utf8');
+const classes=readFileSync('src/pages/schoolpro/SchoolProClasses.tsx','utf8');
+const staff=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
 const parentForm=readFileSync('src/components/SchoolAccountForm.tsx','utf8');
 const parentDashboard=readFileSync('src/pages/schoolpro/SchoolProParentDashboard.tsx','utf8');
 const invitation=readFileSync('supabase/functions/invite-school-staff/index.ts','utf8');
@@ -13,6 +15,12 @@ assert.match(students,/student\.guardian_email&&/,'Student records must display 
 assert.doesNotMatch(students,/\.from\(["']schoolpro_students["']\)\.delete\(/,'Student records must not be hard-deleted from the enrolment screen.');
 assert.doesNotMatch(students,/async function remove\(/,'The student page must not expose a destructive delete handler.');
 assert.match(students,/schoolpro_transfer_student_out/,'Student exit must use the audited transfer/withdrawal workflow.');
+assert.doesNotMatch(classes,/\.from\([\"']schoolpro_classes[\"']\)\.delete\(/,'Class rows must not be hard-deleted while historical child rows may cascade.');
+assert.doesNotMatch(classes,/async function remove\(/,'The class page must not expose a destructive delete handler.');
+assert.match(classes,/Archive pending/,'The class page must disclose that safe archive lifecycle is pending.');
+assert.doesNotMatch(staff,/\.from\([\"']schoolpro_members[\"']\)\.delete\(/,'Staff memberships must not be hard-deleted while dependent operational history exists.');
+assert.doesNotMatch(staff,/async function remove\(/,'The staff page must not expose a destructive removal handler.');
+assert.match(staff,/Archive pending/,'The staff page must disclose that safe archive lifecycle is pending.');
 
 assert.match(parentForm,/guardianPhone/,'Parent account form must capture a guardian contact phone.');
 assert.match(parentForm,/body:\{schoolId,\.\.\.form/,'Guardian phone must be sent through the existing invitation workflow.');

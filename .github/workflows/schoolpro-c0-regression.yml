@@ -1,9 +1,6 @@
 name: SchoolPro Stage C0 security and workflow regression
 
 on:
-  push:
-    branches:
-      - feat/schoolpro-stage-c0-workspace-corrections
   pull_request:
     branches:
       - main

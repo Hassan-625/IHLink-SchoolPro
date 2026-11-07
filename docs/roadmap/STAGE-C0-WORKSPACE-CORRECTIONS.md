@@ -65,3 +65,24 @@ Stage C0 is a mandatory stabilization and workspace-administration phase. Stage 
 - Do not delete global `profiles` or `auth.users`, shared templates/permissions, unrelated tenant data, or required financial/audit evidence.
 - Preserve unrelated untracked Codespace files; do not stage or delete them.
 - A UI control is not considered complete unless the corresponding backend authorization and data-integrity behaviour are verified.
+
+
+### C0.4 implementation findings — class and staff lifecycle
+
+Read-only production inspection on 2026-11-07 found that neither `schoolpro_classes` nor `schoolpro_members` currently has archive/deactivation columns. Their existing RLS policies still include authenticated DELETE policies for school leaders (and a Super Admin all-operations policy). Hiding destructive UI controls is therefore only a UI safeguard; it does not close the backend deletion path.
+
+**Class lifecycle requirements before enabling archive actions**
+- Add a school-scoped archive state and audit metadata; keep the class row and its UUID so historical attendance, assignments, result submissions, enrollment history, promotions, lesson notes, CBT records and timetables remain linked.
+- Remove direct authenticated DELETE policies for classes; retain the existing owner/admin authorization for create/update only.
+- Provide a narrowly scoped archive/reactivate RPC that validates the active school, role, class ID and reason, records actor/time, and cannot alter `school_id` or historical child rows.
+- Prevent new enrolments, attendance, assignments, timetables, Form Master assignments and other operational writes against archived classes. Existing history must remain readable by users with legitimate historical access.
+- Update every active-class selector and write path, not only the Classes page, before exposing the archive action.
+
+**Staff membership lifecycle requirements before enabling archive actions**
+- Add a membership-level active/suspended state and audit metadata; do not delete the membership row, global profile or Auth account.
+- Remove direct authenticated DELETE policies for memberships; retain only scoped owner/admin create/update operations.
+- Update `private.has_school_access` and every direct membership/role check so suspended memberships cannot authenticate into that school's operational data or receive new assignments, while ownership and Super Admin access continue to work.
+- End or detach active teaching, House Master, section-leader, judge and governance assignments through audited, school-scoped transitions; retain payroll, leave, board, permission and other historical records.
+- Preserve self-membership reads only where needed for account/workspace discovery; do not let that policy restore operational access.
+
+**Acceptance blocker:** The production helper `private.has_school_access(uuid, school_member_role[])` currently treats any matching membership as active because `schoolpro_members` has no status column. `private.schoolpro_can_read_class(uuid)` also reads membership rows directly. A partial archive migration would therefore be unsafe. Implement the schema, helper/policy changes, all relevant assignment/write guards, UI filters and SQL regression tests together in one reviewed migration series. Do not enable archive/reactivation UI until that complete path is validated.

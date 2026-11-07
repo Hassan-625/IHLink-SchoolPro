@@ -36,6 +36,7 @@ Stage C0 is a mandatory stabilization and workspace-administration phase. Stage 
 - Guardian access is a school-owned relationship, not ownership of the global parent profile: suspend or restore the school-scoped link; never delete the global profile or Auth account from this workflow.
 - Student exits must use the existing audited transfer/withdrawal lifecycle; do not hard-delete students from the enrolment UI.
 - Do not hard-delete classes or staff memberships until a reviewed archive lifecycle and all dependent-record retention rules are implemented.
+- Until then, their destructive UI actions must remain unavailable and clearly indicate that archive support is pending.
 - Show dependency impact and require confirmation for destructive actions.
 
 ### C0.5 — Consistent table scrolling

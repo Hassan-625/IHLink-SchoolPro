@@ -183,6 +183,15 @@ assert.ok(operationsSource.includes("'schoolpro_houses','house-dashboard'"));
 assert.ok(operationsSource.includes("'schoolpro_competition_events','games'"));
 assert.match(sharedSource,/Houses & House Allocation/);
 assert.match(sharedSource,/Games & Competitions/);
+const sidebarSource=read('src/components/Sidebar.tsx');
+const permissionMapSource=read('src/lib/schoolPermissions.ts');
+assert.match(sidebarSource,/isPlatformSchoolProSuperAdmin\?canonical/);
+assert.match(sidebarSource,/location\.pathname\.includes/);
+assert.match(permissionMapSource,/'admission-operations':'admissions'/);
+assert.match(permissionMapSource,/'staff-discipline':'dashboard'/);
+assert.match(sharedSource,/Houses & House Allocation/);
+assert.match(sharedSource,/Games & Competitions/);
+
 assert.ok(operationsSource.includes("'schoolpro_staff_disciplinary_cases','staff-discipline'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);

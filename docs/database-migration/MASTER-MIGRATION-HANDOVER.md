@@ -2395,3 +2395,15 @@ This section supersedes older stage-status summaries above where they conflict.
 | HA ACADEMY | `ac7ac8a8-5035-4e39-8868-cad54add84a6` | 2026-11-05 13:37:52 | active |
 
 These IDs do not match the two historical workspace IDs listed in the 2026-10-28 cleanup section. On 2026-11-07, the user explicitly confirmed that **both IHLINK Academy and HA ACADEMY must be retained** because they are actively being used for verification. Treat both as protected active workspaces. Do not submit, approve, archive, delete, or otherwise mutate either workspace as part of C0 lifecycle work unless the user gives separate, explicit authorization. The C0 deletion workflow and its tests must ensure these two workspaces are excluded from deletion by default.
+
+
+## Stage C0 owner-managed record lifecycle — 2026-11-07
+
+- Inspected the current student, class, staff and guardian management pages and the production FK catalog using read-only queries only.
+- Confirmed student status already supports `active`, `graduated` and `withdrawn`; student exit uses the audited `schoolpro_transfer_student_out` RPC and retains enrollment history. The enrolment UI has no student hard-delete handler.
+- Confirmed guardian links already support `active` and `suspended`. Updated `SchoolProParents.tsx` so authorised school managers suspend or restore a guardian link using a school-scoped update; removed the hard-delete action. The global guardian profile and Auth identity are not touched.
+- Added regression assertions in `scripts/test-schoolpro-student-family-records.mjs` for scoped guardian status transitions, suspend/restore behaviour and absence of guardian-link hard deletion.
+- Production schema inspection found student FKs with destructive `ON DELETE CASCADE` relationships (including attendance, results, invoices, fee records, health/discipline and generated outputs), so student hard deletion is prohibited. Class deletion also cascades to class-linked attendance, assignments, class-result submissions, CBT eligibility and timetable rows. Staff membership deletion cascades to operational records such as payroll, leave requests, board memberships, permissions and section leadership; competition judge and House Master references restrict deletion.
+- Therefore class and staff hard-delete controls are not safe. They remain explicitly blocked from lifecycle implementation until a reviewed archive/deactivation schema and dependent-record behaviour are designed. No production schema or data was changed by these inspections.
+- The two active verification workspaces, IHLINK Academy (`eb601205-cffd-420d-97d0-7d5ca081628a`) and HA ACADEMY (`ac7ac8a8-5035-4e39-8868-cad54add84a6`), remain protected from all lifecycle actions without separate explicit approval.
+- Code and test changes are on `feat/schoolpro-stage-c0-workspace-corrections`; no PR merge, Render deployment, or production migration was performed.

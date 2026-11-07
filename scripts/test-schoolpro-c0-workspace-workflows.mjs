@@ -17,6 +17,7 @@ const attendancePage=read('src/pages/schoolpro/SchoolProAttendance.tsx');
 const admissionsPage=read('src/pages/schoolpro/SchoolProAdmissions.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
 const deletionMigration=read('supabase/migrations/20261107235950_schoolpro_workspace_deletion_lifecycle.sql');
+const permissionReaderMigration=read('supabase/migrations/20261107235955_schoolpro_fix_permission_reader_board_role.sql');
 const workspaceDeletionPage=read('src/pages/schoolpro/SchoolProWorkspaceDeletion.tsx');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
@@ -146,6 +147,8 @@ assert.match(migrations,/schoolpro_cached_access_schools/);
 assert.match(migrations,/schoolpro_cached_staff_schools/);
 assert.match(migrations,/schoolpro_can_author_cbt/);
 assert.match(migrations,/schoolpro_can_manage_cbt/);
+assert.match(permissionReaderMigration,/bm\.role = 'administrator'/);
+assert.doesNotMatch(permissionReaderMigration,/b\.role = 'administrator'/);
 
 // Guard the non-negotiable direct class/member deletion boundary.
 for (const table of ['schoolpro_classes','schoolpro_members']) {

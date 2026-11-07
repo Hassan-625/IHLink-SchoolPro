@@ -2544,3 +2544,24 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - **Data protection:** No school/workspace was deleted or suspended during release; no tenant, financial, audit or Storage records were modified or purged. The two retained verification workspaces remain untouched.
 - **Security-advisor note:** The project-wide advisor still reports existing security findings (including RLS-enabled service/internal tables with no policies, public token-based SECURITY DEFINER RPCs, authenticated SECURITY DEFINER RPCs and disabled leaked-password protection). These were not introduced by the C0 release. The four new workspace-removal RPCs specifically have no `anon` EXECUTE grant. Track the broader advisor findings separately; do not weaken the new lifecycle controls to silence generic advisor notices.
 - **Stage status:** Stage A and Stage B/C0 are merged and deployed. Stage C has not started.
+
+
+## 2026-11-07 — Permission reader and workspace module visibility follow-up
+
+- PR #123 merged as `9d417bba9e7bca244e0a545fb663f81aee223893`.
+- Production migration `20261107235955_schoolpro_fix_permission_reader_board_role` applied to Supabase project `lnqsroyiybutkfngbyge`; migration history reconciled to the repository version.
+- Root cause: `schoolpro_user_permissions(uuid)` referenced `schoolpro_board_members.role`, a column that does not exist. The role is stored on the joined `schoolpro_members` row. The corrected function now checks `bm.role = 'administrator'` with active membership and non-ended appointment guards.
+- Authenticated SQL simulation returned 31 permissions for a retained workspace without error.
+- Render SchoolPro deploy for merge commit `9d417bba9e7bca244e0a545fb663f81aee223893` is live (`dep-dbnk6j7b9u1s73coso00`).
+
+## 2026-11-07 — Follow-up PR #124 (pending CI and production approval)
+
+- PR #124: workspace navigation, Principal role-catalogue visibility, admissions routes, school audit-log UI and trigger-based audit capture.
+- Super Admin's live SchoolPro dashboard previously supplied a three-link sidebar (Dashboard, Students, Fees) rather than the full `schoolSections` navigation. PR #124 switches the live dashboard to the complete school workspace navigation.
+- Principal remains compatible with the established authorization model: stored membership role `administrator` plus `position_title = 'Principal'`. The staff role editor already maps the Principal selection to that representation; PR #124 makes it visible in the role catalogue.
+- The Admissions Workspace was already implemented and its database tables/RPCs exist, but its entry was not exposed consistently in navigation. The standalone Admission Operations component was not routed. PR #124 exposes the workspace links and mounts the page.
+- Production schema inspection found `schoolpro_admission_events` and `schoolpro_admission_documents` are application-scoped through `application_id`, not `school_id`. IHLink Admin's generic control-panel query incorrectly applied a `school_id` filter; PR #71 scopes those tables through the selected school's application IDs.
+- Production currently has the admission tables and event workflow objects, but zero application, event, offer or document rows. Empty tables are not missing backend objects.
+- Production `schoolpro_audit_logs` existed but had zero rows and no insert policy or audit-capture triggers. PR #124 adds a security-definer trigger writer for core school operations. It records actor ID/name/role and changed field names only; it does not copy row values or sensitive data. The migration remains pending CI and explicit production rollout.
+- SchoolPro audit page and operations link are added in PR #124. IHLink Admin central audit page actor attribution and SchoolPro Control Panel module links/query scoping are in IHLink-Admin PR #71.
+- Stage C remains deferred until Stage B/C0 live acceptance is completed.

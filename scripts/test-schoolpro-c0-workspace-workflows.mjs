@@ -175,6 +175,6 @@ assert.ok(appSource.includes('path="/schoolpro/audit-logs"'));
 assert.ok(appSource.includes('path="/schoolpro/admission-operations"'));
 assert.match(sharedSource,/Admissions Workspace/);
 assert.match(sharedSource,/Audit Logs/);
-assert.ok(operationsSource.includes('to="/schoolpro/audit-logs"'));
+assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);

@@ -20,6 +20,7 @@ assert.match(app,/path="\/schoolpro\/leave"/);
 assert.match(staff,/schoolpro_create_staff_disciplinary_case/);
 assert.match(staff,/schoolpro_submit_staff_disciplinary_response/);
 assert.match(staff,/schoolpro_review_staff_appeal/);
+assert.match(staff,/schoolpro_close_staff_disciplinary_case/);
 assert.match(staff,/dismissal/);
 assert.match(leave,/schoolpro_report_own_absence/);
 assert.match(leave,/schoolpro_update_own_leave_reason/);

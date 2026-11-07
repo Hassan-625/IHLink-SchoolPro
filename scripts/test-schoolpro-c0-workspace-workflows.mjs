@@ -192,6 +192,7 @@ assert.ok(operationsSource.includes("['Games & Competitions','schoolpro_competit
 const sidebarSource=read('src/components/Sidebar.tsx');
 const permissionMapSource=read('src/lib/schoolPermissions.ts');
 assert.match(sidebarSource,/isPlatformSchoolProSuperAdmin\?canonical/);
+assert.match(sidebarSource,/canonical=isPlatformSchoolProSuperAdmin\?schoolSections/);
 assert.ok(sidebarSource.includes("['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname)"));
 assert.match(permissionMapSource,/'admission-operations':'admissions'/);
 assert.match(permissionMapSource,/'staff-discipline':'dashboard'/);

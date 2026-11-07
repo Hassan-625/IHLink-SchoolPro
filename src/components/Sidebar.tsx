@@ -66,7 +66,9 @@ export function DashboardLayout({
       if(!teacherScopeAllowed)return false;
       if(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile')return true;
       if(item.href==='/schoolpro/workspace-deletion')return role==='proprietor';
-      if(item.href==='/schoolpro/reports')return Boolean(permissions.can('reports')&&planAccess.entitlements?.active===true&&planAccess.entitlements?.advanced_reports===true);
+      if(item.href==='/schoolpro/reports')return permissions.hasRolePermission('reports');
+      if(['/schoolpro/cbt','/schoolpro/question-bank'].includes(item.href))return permissions.hasRolePermission('cbt');
+      if(item.href==='/schoolpro/settings')return permissions.hasRolePermission('branding');
       if(item.href==='/schoolpro/subscription')return ['proprietor','administrator','bursar','super_administrator'].includes(role);
       if(['/schoolpro/leave','/schoolpro/staff-discipline','/schoolpro/discipline'].includes(item.href))return role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href));
       return permissions.can(permissionForSchoolPath(item.href));

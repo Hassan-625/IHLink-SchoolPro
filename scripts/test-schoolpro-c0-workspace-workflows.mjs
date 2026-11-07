@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 const read=(p)=>fs.readFileSync(p,'utf8');
 const app=read('src/App.tsx');
+const styles=read('src/index.css');
 const sidebar=read('src/components/Sidebar.tsx');
 const staff=read('src/pages/schoolpro/SchoolProStaffDiscipline.tsx');
 const leave=read('src/pages/schoolpro/SchoolProLeave.tsx');
@@ -33,6 +34,9 @@ const migrations=[
 ].map(read).join('\n');
 
 assert.match(app,/SchoolProStaffDiscipline/);
+assert.match(styles,/:where\(div,section,article\):has\(> table\)/);
+assert.match(styles,/max-height: min\(70vh, 48rem\)/);
+assert.match(styles,/overflow: auto/);
 assert.match(app,/SchoolProLeave/);
 assert.ok(app.includes('path="/schoolpro/staff-discipline"'));
 assert.ok(app.includes('path="/schoolpro/leave"'));

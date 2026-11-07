@@ -84,6 +84,16 @@ begin
   if position('has_school_access' in def)=0 then raise exception 'Admission event RPC bypasses active membership'; end if;
   select pg_get_functiondef('public.verify_schoolpro_admission_document(uuid,boolean,text)'::regprocedure) into def;
   if position('has_school_access' in def)=0 then raise exception 'Admission document RPC bypasses active membership'; end if;
+  select pg_get_functiondef('private.schoolpro_coordinator_classes(uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Coordinator class reader does not enforce active membership and class state'; end if;
+  select pg_get_functiondef('private.schoolpro_class_staff_directory(uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 then raise exception 'Class staff directory includes inactive memberships'; end if;
+  select pg_get_functiondef('private.schoolpro_teacher_allocation_visible(uuid,uuid,uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Teacher allocation reader does not enforce active membership/class state'; end if;
+  select pg_get_functiondef('private.schoolpro_set_form_master(uuid,uuid)'::regprocedure) into def;
+  if position('status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Form Master assignment does not require active staff and class'; end if;
+  select pg_get_functiondef('private.validate_subject_assignment()'::regprocedure) into def;
+  if position('member_status' in def)=0 or position('archived_at' in def)=0 then raise exception 'Subject assignment validator does not require active staff/class'; end if;
 
   -- Attendance and timetable legacy permissive policies must be removed.
   select count(*) into n from pg_policy p

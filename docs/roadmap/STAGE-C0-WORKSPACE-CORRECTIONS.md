@@ -247,3 +247,12 @@ The user has expanded C0 to include dedicated, auditable staff and student welfa
 - /schoolpro/leave is routed through the generic operational CRUD module. It allows staff to create requests but does not provide an own-request reason-update flow; the existing review card only lists pending requests and provides approve/decline without reviewer notes.
 - Student discipline currently captures only incident, action_taken and status; no severity/category, response, parent contact or follow-up workflow is present.
 - These gaps must be addressed with dedicated UI, narrowly scoped RPC/RLS policies, audit trails and regression tests. Avoid reusing generic delete/edit controls for disciplinary or absence evidence.
+
+
+### Appointment termination and ended-appointment access guards — 2026-11-07
+
+Added two branch-only migrations:
+- 20261107180000_schoolpro_end_appointments_on_suspension.sql (commit c987129d9e1ef9d74fbef37692a591b778bf8494): adds end metadata to board, section-leader and subject assignments (plus actor/reason metadata to existing House Master and competition-judge assignments); replaces the audited membership suspension transition so it ends all current operational appointments, clears current Form Master pointers while recording each former assignment in school audit logs, and retains the appointment rows. Reactivation intentionally does not resurrect appointments.
+- 20261107183000_schoolpro_ended_appointment_access_guards.sql (commit ef44d1106bb491e34595936dc61e07495b768bdb): updates class/section/student/result/lesson/House Master readers and assignment validators to require active membership, active (not ended) appointments and non-archived classes. Board and section-leader appointment changes now end/reactivate rows instead of deleting section history or deleting board history. Existing helper EXECUTE grants are unchanged.
+
+These migrations have not been run against any database. They require SQL syntax/runtime validation in an isolated local test database before any production approval. The Staff UI must also filter ended appointment rows, and all remaining direct membership consumers/operational RPCs still need review. In particular, validate_schoolpro_leave, validate_schoolpro_workflow_record and the attendance/CBT/timetable/result write paths remain in the outstanding dependency list.

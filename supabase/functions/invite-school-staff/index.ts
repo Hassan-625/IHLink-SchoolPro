@@ -74,7 +74,7 @@ Deno.serve(async(req:Request)=>{
   try{
    const {error:profileError}=await admin.from('profiles').update({first_name:firstName,middle_name:middleName,last_name:surname,phone:role==='parent'?(guardianPhone||null):null}).eq('id',uid);if(profileError)throw profileError;
    const {error:credentialError}=await admin.rpc('schoolpro_set_initial_credential',{p_user:uid,p_school:schoolId,p_surname:surname});if(credentialError)throw credentialError;
-   const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(inviteError)throw inviteError;
+   const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role:storedRole,position_title:positionTitle,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(inviteError)throw inviteError;
    const {data:linked,error:linkError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:uid,p_hash:tokenHash});if(linkError||!linked)throw linkError||new Error('link');
   }catch(error){await admin.auth.admin.deleteUser(uid);throw error;}
   return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',expiresInDays:7});

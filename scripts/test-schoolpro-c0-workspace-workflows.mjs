@@ -13,6 +13,7 @@ const parents=read('src/pages/schoolpro/SchoolProParents.tsx');
 const games=read('src/pages/schoolpro/SchoolProGames.tsx');
 const studentsPage=read('src/pages/schoolpro/SchoolProStudents.tsx');
 const attendancePage=read('src/pages/schoolpro/SchoolProAttendance.tsx');
+const admissionsPage=read('src/pages/schoolpro/SchoolProAdmissions.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
@@ -98,6 +99,10 @@ assert.match(attendancePage,/grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:gr
 assert.match(attendancePage,/Daily attendance register, scroll horizontally to view all columns/);
 assert.ok(attendancePage.includes('min-w-[760px]'));
 assert.match(attendancePage,/overflow-x-auto overscroll-x-contain/);
+assert.match(admissionsPage,/grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2/);
+assert.ok(admissionsPage.includes('min-w-[900px]'));
+assert.match(admissionsPage,/max-h-\[60vh\] w-full min-w-0 overflow-auto/);
+assert.match(admissionsPage,/whitespace-nowrap/);
 assert.match(leave,/profile\\?\\.\\[0\\]/);
 assert.match(staff,/profile\\?\\.\\[0\\]/);
 assert.match(sidebar,/\\/schoolpro\\/staff-discipline/);

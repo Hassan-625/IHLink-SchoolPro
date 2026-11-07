@@ -180,3 +180,17 @@ assert.match(sharedSource,/Audit Logs/);
 assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);
+
+const staffRoleSource=read('src/lib/schoolStaffRoles.ts');
+const staffFormSource=read('src/components/SchoolAccountForm.tsx');
+const staffPageSource=read('src/pages/schoolpro/SchoolProStaff.tsx');
+const invitationSource=read('supabase/functions/invite-school-staff/index.ts');
+const principalInvitationMigration=read('supabase/migrations/20261107235957_schoolpro_principal_invitation_designation.sql');
+assert.match(staffRoleSource,/\['principal',\s*'Principal'\]/);
+assert.match(staffFormSource,/schoolStaffRoles\.map/);
+assert.match(staffPageSource,/position_title\s*\|\|/);
+assert.match(invitationSource,/role==='principal'\?'administrator':role/);
+assert.match(invitationSource,/position_title:positionTitle/);
+assert.match(invitationSource,/'principal'/);
+assert.match(principalInvitationMigration,/add column if not exists position_title/i);
+assert.match(principalInvitationMigration,/invitation\.position_title/);

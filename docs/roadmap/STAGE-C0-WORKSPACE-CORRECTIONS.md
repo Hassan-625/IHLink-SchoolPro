@@ -211,3 +211,12 @@ This migration is intentionally partial. It does not yet update every direct mem
 #### EXECUTE-grant compatibility correction — 2026-11-07
 
 A read-only privilege check showed that authenticated users currently have EXECUTE on several private helpers because they are invoked directly by RLS policies. The first draft of the follow-up migration would have revoked those grants and broken policy evaluation. Corrected the branch migration in commit `93fc97222e1d8d3790a791c0a448458c5a3a7db2` to preserve existing helper EXECUTE grants; no privilege revocation is included. Trigger-only validator remains ungranted. This correction is based on live `has_function_privilege` results; production privileges were only inspected, not changed.
+
+
+### Active staff and class-assignment guard migration — 2026-11-07
+
+Committed branch-only migration `20261107160000_schoolpro_active_staff_and_class_assignment_guards.sql` (commit `029acb9ede0fcad73f5c4eaae77f3c57ac7534f3`). It updates the class staff directory and coordinator-class reader to exclude suspended memberships and archived classes; prevents suspended staff from passing teacher-allocation visibility; requires active membership for Form Master and section-leader appointments; and blocks new assignment/subject-assignment writes against archived classes or inactive staff. Existing assignment history is not deleted.
+
+The migration preserves the current helper EXECUTE grants and does not alter production. It is sequenced after the lifecycle foundation and core active-membership helper migration.
+
+**Still not complete:** this does not yet end active appointments when a member is suspended (House Master, board, section leader, competition judge, Form Master, and other operational roles), update every remaining direct membership consumer, remove direct class/member DELETE policies and grants, replace broad Super Admin ALL policies, or provide the full SQL regression suite. Do not apply migrations to production, expose lifecycle controls, or mark C0 accepted yet.

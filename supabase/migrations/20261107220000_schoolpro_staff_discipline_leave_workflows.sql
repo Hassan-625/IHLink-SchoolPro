@@ -51,6 +51,42 @@ for select to authenticated using (
   )
 );
 
+-- Leave and absence evidence is retained; managers review but cannot hard-delete it.
+drop policy if exists "leave management access" on public.schoolpro_leave_requests;
+create policy "C0 leave manager read" on public.schoolpro_leave_requests
+for select to authenticated using (
+  private.schoolpro_module_allowed(school_id,'leave')
+  and private.has_school_access(
+    school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
+  )
+);
+create policy "C0 leave manager insert" on public.schoolpro_leave_requests
+for insert to authenticated with check (
+  private.schoolpro_module_allowed(school_id,'leave')
+  and private.has_school_access(
+    school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
+  )
+  and status='pending'
+  and exists(select 1 from public.schoolpro_members m
+    where m.id=schoolpro_leave_requests.member_id
+      and m.school_id=schoolpro_leave_requests.school_id and m.status='active')
+);
+create policy "C0 leave manager update" on public.schoolpro_leave_requests
+for update to authenticated
+using (
+  private.schoolpro_module_allowed(school_id,'leave')
+  and private.has_school_access(
+    school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
+  )
+)
+with check (
+  private.schoolpro_module_allowed(school_id,'leave')
+  and private.has_school_access(
+    school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
+  )
+);
+revoke delete,truncate on public.schoolpro_leave_requests from anon,authenticated;
+
 alter table public.schoolpro_leave_requests
   add column if not exists request_type text not null default 'planned_leave',
   add column if not exists absence_reported_at timestamptz,

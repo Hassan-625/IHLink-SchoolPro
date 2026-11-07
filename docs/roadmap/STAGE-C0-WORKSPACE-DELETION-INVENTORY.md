@@ -15,7 +15,14 @@
 
 ## Read-only production findings
 
-The connected Supabase project currently contains **two SchoolPro school rows**, both marked active. This inventory does not identify either school as eligible for deletion and does not authorize deletion of either one.
+The connected Supabase project currently contains **two SchoolPro school rows**, both marked active. A direct read-only query on 2026-11-07 returned:
+
+| School | School ID | Created at (UTC) | Status |
+|---|---|---|---|
+| IHLINK Academy | `eb601205-cffd-420d-97d0-7d5ca081628a` | 2026-11-04 13:26:29 | active |
+| HA ACADEMY | `ac7ac8a8-5035-4e39-8868-cad54add84a6` | 2026-11-05 13:37:52 | active |
+
+These are different IDs from the two historical workspaces recorded as deleted on 2026-10-28. Their purpose and ownership are not established by this query. This inventory does not identify either current school as eligible for deletion and does not authorize deletion, archival, or other mutation of either one.
 
 ### Foreign keys referencing `schoolpro_schools`
 

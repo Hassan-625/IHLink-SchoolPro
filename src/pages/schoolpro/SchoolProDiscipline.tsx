@@ -28,7 +28,7 @@ const label=(v:string)=>v.replaceAll('_',' ').replace(/^./,x=>x.toUpperCase());
 
 export function SchoolProDiscipline(){
  const {session}=useSchoolSession();const ctx=useSchoolProContext(),{user}=useAuth();
- const leadership=['proprietor','administrator','super administrator','super_admin','vice principal','head teacher','counsellor','discipline master','discipline_master'].includes(ctx.role.toLowerCase().replaceAll('_',' '))||['super_admin','hr_officer'].includes(ctx.role.toLowerCase());
+ const leadership=['proprietor','administrator','super administrator','super_admin','vice principal','head teacher','counsellor','discipline master','discipline_master'].includes(ctx.role.toLowerCase().replaceAll('_',' '))||['super_admin'].includes(ctx.role.toLowerCase());
  const [students,setStudents]=useState<Student[]>([]),[members,setMembers]=useState<Member[]>([]),[ids,setIds]=useState<string[]>([]),[rows,setRows]=useState<Concern[]>([]);
  const [student,setStudent]=useState(''),[incident,setIncident]=useState(''),[category,setCategory]=useState('general'),[severity,setSeverity]=useState('moderate'),[location,setLocation]=useState(''),[incidentAt,setIncidentAt]=useState('');
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[drafts,setDrafts]=useState<Record<string,Draft>>({});
@@ -39,7 +39,7 @@ export function SchoolProDiscipline(){
    supabase.from('schoolpro_discipline_records').select('id,student_id,incident,action_taken,status,created_at,session,category,severity,location,incident_at,student_response,guardian_contact_status,guardian_contacted_at,guardian_contact_note,follow_up_at,follow_up_outcome,resolved_at,assigned_to').eq('school_id',ctx.schoolId).eq('session',session).order('created_at',{ascending:false}).limit(250),
    supabase.from('schoolpro_members').select('id,role,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name)').eq('school_id',ctx.schoolId).eq('status','active').order('created_at')
   ]);
-  if(a.error||b.error||m.error){setMessage('Student discipline cases could not be loaded.');return;}
+  if(a.error||b.error){setMessage('Student discipline cases could not be loaded.');return;}
   setStudents(await schoolSessionStudents(ctx.schoolId,session,a.data||[]));setMembers((m.data||[]) as Member[]);
   const records=(b.data||[]) as Concern[];setRows(records);
   setDrafts(Object.fromEntries(records.map(r=>[r.id,{action_taken:r.action_taken||'',severity:r.severity||'moderate',student_response:r.student_response||'',guardian_contact_status:r.guardian_contact_status||'not_required',guardian_contact_note:r.guardian_contact_note||'',follow_up_at:r.follow_up_at||'',follow_up_outcome:r.follow_up_outcome||'',assigned_to:r.assigned_to||''}])));

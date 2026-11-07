@@ -11,7 +11,7 @@ const migrations=[
  'supabase/migrations/20261107210000_schoolpro_active_membership_operational_guards.sql',
  'supabase/migrations/20261107220000_schoolpro_staff_discipline_leave_workflows.sql',
  'supabase/migrations/20261107230000_schoolpro_student_discipline_case_management.sql',
- 'supabase/migrations/20261108000000_schoolpro_central_active_membership_readers.sql'
+ 'supabase/migrations/20261107235900_schoolpro_central_active_membership_readers.sql'
 ].map(read).join('\n');
 
 assert.match(app,/SchoolProStaffDiscipline/);

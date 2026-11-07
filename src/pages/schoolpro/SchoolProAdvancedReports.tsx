@@ -54,7 +54,7 @@ export function SchoolProAdvancedReports(){
  },[ctx.schoolId,classId,term,session,busy]);
 
  const assessed=useMemo(()=>report?.rows.filter(r=>Number(r.subjects)>0)||[],[report]);
- const average=useMemo(()=>assessed.length?assessed.reduce((sum,r)=>sum+Number(r.average||0),0)/assessed.length:0,[assessed]);
+ const average=useMemo(()=>{const subjectCount=assessed.reduce((sum,r)=>sum+Number(r.subjects||0),0);return subjectCount?assessed.reduce((sum,r)=>sum+Number(r.total||0),0)/subjectCount:0},[assessed]);
  const highest=useMemo(()=>assessed.length?Math.max(...assessed.map(r=>Number(r.average||0))):0,[assessed]);
  const lowest=useMemo(()=>assessed.length?Math.min(...assessed.map(r=>Number(r.average||0))):0,[assessed]);
  const subjectStats=useMemo(()=> (report?.subjects||[]).map(subject=>{

@@ -22,7 +22,8 @@
     "test:schoolpro-student-family-records": "node scripts/test-schoolpro-student-family-records.mjs",
     "test:schoolpro-stage-ab-corrections": "node scripts/test-schoolpro-stage-ab-corrections.mjs",
     "test:schoolpro-annual-upgrade": "node scripts/test-schoolpro-annual-upgrade-postgres.mjs",
-    "test:schoolpro-lifecycle-appointments": "node scripts/test-schoolpro-lifecycle-appointment-contract.mjs"
+    "test:schoolpro-lifecycle-appointments": "node scripts/test-schoolpro-lifecycle-appointment-contract.mjs",
+    "test:schoolpro-c0-workflows": "node scripts/test-schoolpro-c0-workspace-workflows.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

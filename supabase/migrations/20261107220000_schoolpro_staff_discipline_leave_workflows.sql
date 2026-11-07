@@ -16,6 +16,10 @@ create or replace function private.guard_schoolpro_employment_status()
 returns trigger language plpgsql set search_path=''
 as $guard$
 begin
+  if tg_op='INSERT' then
+    if new.employment_status<>'active' then raise exception 'New staff memberships must start active'; end if;
+    return new;
+  end if;
   if current_user in ('anon','authenticated') and new.employment_status is distinct from old.employment_status then
     raise exception 'Employment status must be changed through the audited HR workflow';
   end if;
@@ -32,7 +36,7 @@ end;
 $guard$;
 drop trigger if exists schoolpro_guard_employment_status on public.schoolpro_members;
 create trigger schoolpro_guard_employment_status
-before update on public.schoolpro_members
+before insert or update on public.schoolpro_members
 for each row execute function private.guard_schoolpro_employment_status();
 revoke all on function private.guard_schoolpro_employment_status() from public,anon,authenticated;
 

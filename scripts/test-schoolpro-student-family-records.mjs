@@ -17,10 +17,15 @@ assert.doesNotMatch(students,/async function remove\(/,'The student page must no
 assert.match(students,/schoolpro_transfer_student_out/,'Student exit must use the audited transfer/withdrawal workflow.');
 assert.doesNotMatch(classes,/\.from\([\"']schoolpro_classes[\"']\)\.delete\(/,'Class rows must not be hard-deleted while historical child rows may cascade.');
 assert.doesNotMatch(classes,/async function remove\(/,'The class page must not expose a destructive delete handler.');
-assert.match(classes,/Archive pending/,'The class page must disclose that safe archive lifecycle is pending.');
+assert.match(classes,/schoolpro_set_class_archive_state/,'Class archive and restore must use the audited lifecycle RPC.');
+assert.match(classes,/archived_at/,'Class records must expose archive status.');
+assert.doesNotMatch(classes,/Archive pending/,'The class page must expose the completed archive controls.');
 assert.doesNotMatch(staff,/\.from\([\"']schoolpro_members[\"']\)\.delete\(/,'Staff memberships must not be hard-deleted while dependent operational history exists.');
 assert.doesNotMatch(staff,/async function remove\(/,'The staff page must not expose a destructive removal handler.');
-assert.match(staff,/Archive pending/,'The staff page must disclose that safe archive lifecycle is pending.');
+assert.match(staff,/schoolpro_set_member_suspension_state/,'Staff suspension and restoration must use the audited lifecycle RPC.');
+assert.match(staff,/Suspend access/,'School leadership must be able to suspend active staff access.');
+assert.match(staff,/Restore access/,'School leadership must be able to restore suspended staff access.');
+assert.doesNotMatch(staff,/Archive pending/,'The staff page must expose the completed suspension controls.');
 
 assert.match(parentForm,/guardianPhone/,'Parent account form must capture a guardian contact phone.');
 assert.match(parentForm,/body:\{schoolId,\.\.\.form/,'Guardian phone must be sent through the existing invitation workflow.');

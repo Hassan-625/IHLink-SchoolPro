@@ -174,7 +174,7 @@ const rolesSource=read('src/pages/schoolpro/SchoolProRoles.tsx');
 const auditPage=read('src/pages/schoolpro/SchoolProAuditLogs.tsx');
 assert.ok(appSource.includes('path="/schoolpro/audit-logs"'));
 assert.ok(appSource.includes('path="/schoolpro/admission-operations"'));
-assert.equal((appSource.match(/path="\\/schoolpro\\/discipline"/g)||[]).length,1);
+assert.equal(appSource.split('path="/schoolpro/discipline"').length-1,1);
 assert.match(sharedSource,/Admissions Workspace/);
 assert.ok(dashboardSource.includes('sections={schoolSections}'));
 assert.match(sharedSource,/Audit Logs/);

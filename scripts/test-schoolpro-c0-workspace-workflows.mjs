@@ -27,8 +27,8 @@ const migrations=[
 
 assert.match(app,/SchoolProStaffDiscipline/);
 assert.match(app,/SchoolProLeave/);
-assert.match(app,/path="\\/schoolpro\\/staff-discipline"/);
-assert.match(app,/path="\\/schoolpro\\/leave"/);
+assert.ok(app.includes('path="/schoolpro/staff-discipline"'));
+assert.ok(app.includes('path="/schoolpro/leave"'));
 assert.match(staff,/schoolpro_create_staff_disciplinary_case/);
 assert.match(staff,/schoolpro_submit_staff_disciplinary_response/);
 assert.match(staff,/schoolpro_review_staff_appeal/);
@@ -105,8 +105,8 @@ assert.match(admissionsPage,/max-h-\[60vh\] w-full min-w-0 overflow-auto/);
 assert.match(admissionsPage,/whitespace-nowrap/);
 assert.match(leave,/profile\\?\\.\\[0\\]/);
 assert.match(staff,/profile\\?\\.\\[0\\]/);
-assert.match(sidebar,/\\/schoolpro\\/staff-discipline/);
-assert.match(sidebar,/\\/schoolpro\\/leave/);
+assert.ok(sidebar.includes('/schoolpro/staff-discipline'));
+assert.ok(sidebar.includes('/schoolpro/leave'));
 assert.match(migrations,/m\\.status='active'/);
 assert.match(migrations,/schoolpro_staff_disciplinary_events/);
 assert.match(migrations,/schoolpro_leave_events/);

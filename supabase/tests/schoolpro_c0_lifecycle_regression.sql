@@ -32,6 +32,12 @@ begin
   if not (select relrowsecurity from pg_class where oid='public.schoolpro_workspace_deletion_requests'::regclass) then
     raise exception 'Workspace removal request RLS is not enabled';
   end if;
+  if not exists(select 1 from pg_policies where schemaname='public'
+    and tablename='schoolpro_workspace_deletion_requests'
+    and policyname='SchoolPro workspace deletion request read'
+    and qual like '%super_admin%') then
+    raise exception 'Workspace removal request reads must be limited to the requester, proprietor and platform Super Admins';
+  end if;
   if has_table_privilege('anon','public.schoolpro_workspace_deletion_requests','INSERT')
      or has_table_privilege('authenticated','public.schoolpro_workspace_deletion_requests','INSERT')
      or has_table_privilege('authenticated','public.schoolpro_workspace_deletion_requests','UPDATE')

@@ -191,7 +191,7 @@ assert.match(staffFormSource,/schoolStaffRoles\.map/);
 assert.match(staffPageSource,/position_title\s*\|\|/);
 assert.match(invitationSource,/role==='principal'\?'administrator':role/);
 assert.match(invitationSource,/position_title:positionTitle/);
-const principalInvitationInserts=invitationSource.split('\\n').filter(line=>line.includes(\"schoolpro_access_invitations').insert\"));
+const principalInvitationInserts=invitationSource.split('\n').filter(line=>line.includes(\"schoolpro_access_invitations').insert\"));
 assert.ok(principalInvitationInserts.length>=3&&principalInvitationInserts.every(line=>line.includes('role:storedRole')&&line.includes('position_title:positionTitle')));
 assert.match(invitationSource,/'principal'/);
 assert.match(principalInvitationMigration,/add column if not exists position_title/i);

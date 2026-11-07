@@ -179,7 +179,33 @@ assert.match(sharedSource,/Admissions Workspace/);
 assert.ok(dashboardSource.includes('sections={schoolSections}'));
 assert.match(sharedSource,/Audit Logs/);
 assert.ok(operationsSource.includes("'schoolpro_audit_logs','audit-logs'"));
-assert.ok(operationsSource.includes("'schoolpro_houses','games'"));
+assert.ok(operationsSource.includes("'schoolpro_houses','house-dashboard'"));
+assert.ok(operationsSource.includes("'schoolpro_competition_events','games'"));
+assert.match(sharedSource,/Houses & House Allocation/);
+assert.match(sharedSource,/Games & Competitions/);
+assert.ok(operationsSource.includes("['Plans & Subscription','schoolpro_subscriptions','subscription']"));
+assert.ok(operationsSource.includes("['Advanced Reports','schoolpro_results','reports']"));
+assert.ok(operationsSource.includes("['Admission Events & Documents','schoolpro_admissions','admission-operations']"));
+assert.ok(operationsSource.includes("['Houses & House Allocation','schoolpro_houses','house-dashboard']"));
+assert.ok(operationsSource.includes("['Games & Competitions','schoolpro_competition_events','games']"));
+
+const sidebarSource=read('src/components/Sidebar.tsx');
+const permissionMapSource=read('src/lib/schoolPermissions.ts');
+assert.match(sidebarSource,/isPlatformSchoolProSuperAdmin\?canonical/);
+assert.match(sidebarSource,/canonical=isPlatformSchoolProSuperAdmin\?schoolSections/);
+assert.ok(sidebarSource.includes("['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname)"));
+assert.match(permissionMapSource,/'admission-operations':'admissions'/);
+assert.match(permissionMapSource,/'staff-discipline':'dashboard'/);
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('reports')"));
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('cbt')"));
+assert.ok(sidebarSource.includes("permissions.hasRolePermission('branding')"));
+const permissionGateSource=read('src/components/SchoolProPermissionGate.tsx');
+assert.match(permissionGateSource,/SchoolProEntitlementGate feature=\{planFeature\}/);
+assert.match(read('src/pages/schoolpro/SchoolProPermissions.tsx'),/promotions','games','notifications/);
+
+assert.match(sharedSource,/Houses & House Allocation/);
+assert.match(sharedSource,/Games & Competitions/);
+
 assert.ok(operationsSource.includes("'schoolpro_staff_disciplinary_cases','staff-discipline'"));
 assert.match(rolesSource,/Principal/);
 assert.match(auditPage,/schoolpro_audit_logs/);

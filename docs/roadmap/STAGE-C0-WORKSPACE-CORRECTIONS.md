@@ -132,3 +132,18 @@ Implementation sequencing is now fixed to avoid a partially secure rollout:
 5. **UI and tests:** active/archived filters and restore actions; suspended-member display; SQL tests for owner/admin authorization, cross-tenant isolation, direct DELETE denial, lifecycle audit, operational write denial, history preservation and reactivation.
 
 No migration file is added until the complete dependent-function definitions and table-specific policy/privilege set have been reconciled. This avoids introducing a partially applied lifecycle model that could disable valid roles or leave an alternate access path.
+
+
+### Extended membership-reader audit — 2026-11-07
+
+A further read-only production function-definition pass confirmed that the lifecycle migration must cover more than the first-line permission helpers:
+
+- `private.schoolpro_is_house_master` joins current House Master assignments to `schoolpro_members` and currently checks school, user, role and unended assignment but no member lifecycle state.
+- `private.schoolpro_validate_house_master` validates only that the selected member is a same-school teacher/class teacher; it must reject archived/suspended members for new or changed assignments.
+- `private.schoolpro_lesson_author_scope` and `private.schoolpro_lesson_leader` derive write/leadership scope directly from memberships and need active-member checks.
+- `private.schoolpro_teacher_allocation_visible` resolves the caller's teaching membership without a lifecycle predicate. Its owner/admin fallback must remain unchanged.
+- `private.schoolpro_cached_access_schools`, `private.schoolpro_cached_staff_schools`, `private.schoolpro_cached_readable_students`, and `private.schoolpro_cached_result_reader_keys` cache access scopes using direct membership joins. These are authorization functions, not merely display helpers, and must be updated consistently.
+- `private.schoolpro_can_read_student` and `private.schoolpro_can_read_class` also contain direct membership-derived access. Student self/guardian and historical-read paths must not be accidentally removed when disabling a staff membership.
+- `private.enforce_schoolpro_tenant_relations` and `private.schoolpro_archive_progression` validate tenant relationships and historical progression; their class references must be reviewed so archiving a class does not erase or invalidate historical enrolment/progression evidence.
+
+This extends the migration dependency checklist: search all deployed function definitions for direct `schoolpro_members` joins and all policies for direct member existence checks; do not assume updating `has_school_access` alone closes the access graph. In particular, cached scope functions must be changed in the same migration as their uncached counterparts to avoid stale authorization paths. No production writes were performed.

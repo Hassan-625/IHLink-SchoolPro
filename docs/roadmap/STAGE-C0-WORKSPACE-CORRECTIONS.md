@@ -162,3 +162,16 @@ A second catalog pass over deployed `pg_proc` definitions found the following ad
 The live RLS inventory is also exact: classes have SELECT policies `Authorized class lists`, `School users read classes` and `Scoped class lists`; INSERT/UPDATE school-leader policies; DELETE policy `School leaders delete classes`; and Super Admin `ALL` policy `Super admin full access schoolpro_classes`. Members have SELECT policies `School staff read own membership` and `School users read members`; INSERT/UPDATE school-leader policies; DELETE policy `School leaders delete members`; and Super Admin `ALL` policy `Super admin full access schoolpro_members`. Because PostgreSQL permissive policies OR together, retaining either DELETE policy or the Super Admin ALL policy would defeat a UI-only or partial policy removal. The migration must explicitly replace ALL with separate SELECT/INSERT/UPDATE policies and remove DELETE table grants for `anon` and `authenticated`.
 
 No production writes were performed. This inventory is a migration design input, not a production migration.
+
+
+### Lifecycle trigger interactions — 2026-11-07
+
+Read-only inspection of triggers on the two lifecycle tables found additional invariants that the archive/suspension RPC must preserve:
+
+- `schoolpro_classes` has `schoolpro_activation_before_write` (`private.guard_schoolpro_operational_write`), which checks school operational activation on INSERT/UPDATE/DELETE, and `validate_schoolpro_classes_tenant` for immutable school ownership. Lifecycle changes must coexist with this activation guard; do not disable or bypass it for client calls.
+- `schoolpro_members` has `protect_schoolpro_proprietor_role` on INSERT/UPDATE/DELETE. It protects proprietor assignment/removal except for the school owner or Super Admin. Suspension must add a stricter final-proprietor safeguard, not weaken this existing control.
+- Role-change triggers clear board membership, end House Master appointments, and prune section leadership. Archive/suspension is not a role change, so lifecycle RPCs must explicitly end active operational assignments (with timestamps/status) without deleting board/governance, payroll, leave or other historic evidence.
+- Both tables have tenant-ownership validation triggers. Lifecycle RPCs must keep `school_id` immutable and lock the exact target row before recording audit state.
+- `guard_schoolpro_operational_write` explicitly permits trusted backend operations when `auth.uid()` is null and the request role is not `anon`. The lifecycle design must preserve legitimate service maintenance while preventing browser clients from editing lifecycle metadata directly.
+
+This trigger review is now a prerequisite in the migration checklist. No trigger or production data was changed.

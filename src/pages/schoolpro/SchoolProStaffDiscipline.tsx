@@ -33,11 +33,11 @@ export function SchoolProStaffDiscipline(){
  useEffect(()=>{setMembers([]);setCases([]);setMessage('');void load();},[load]);
  const ownMemberIds=useMemo(()=>new Set(members.filter(m=>m.user_id===user?.id).map(m=>m.id)),[members,user?.id]);
  const scopedCases=useMemo(()=>canManage?cases:cases.filter(c=>ownMemberIds.has(c.member_id)),[cases,canManage,ownMemberIds]);
+ const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
  const visibleCases=useMemo(()=>{const q=search.trim().toLowerCase();return scopedCases.filter(c=>(statusFilter==='all'||c.status===statusFilter)&&(actionFilter==='all'||c.action_type===actionFilter)&&(!q||[memberNames.get(c.member_id),c.summary,c.details,c.staff_response,c.appeal_review_note,c.closure_note,c.action_type,c.severity].filter(Boolean).join(' ').toLowerCase().includes(q)));},[scopedCases,statusFilter,actionFilter,search,memberNames]);
  const openCount=scopedCases.filter(c=>c.status!=='closed').length;
  const appealCount=scopedCases.filter(c=>c.appeal_status==='pending').length;
  const closedCount=scopedCases.filter(c=>c.status==='closed').length;
- const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
  async function createCase(){
   if(!supabase||!ctx.schoolId||!memberId||!summary.trim()||busy)return;
   setBusy(true);setMessage('');

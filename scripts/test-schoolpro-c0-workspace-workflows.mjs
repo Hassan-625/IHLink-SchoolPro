@@ -186,7 +186,7 @@ assert.match(sharedSource,/Games & Competitions/);
 const sidebarSource=read('src/components/Sidebar.tsx');
 const permissionMapSource=read('src/lib/schoolPermissions.ts');
 assert.match(sidebarSource,/isPlatformSchoolProSuperAdmin\?canonical/);
-assert.match(sidebarSource,/location\.pathname\.includes/);
+assert.ok(sidebarSource.includes("['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname)"));
 assert.match(permissionMapSource,/'admission-operations':'admissions'/);
 assert.match(permissionMapSource,/'staff-discipline':'dashboard'/);
 assert.match(sharedSource,/Houses & House Allocation/);

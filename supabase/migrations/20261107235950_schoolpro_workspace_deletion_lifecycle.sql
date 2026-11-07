@@ -49,7 +49,7 @@ create policy "SchoolPro workspace deletion request read"
 on public.schoolpro_workspace_deletion_requests
 for select to authenticated using (
   requested_by=auth.uid()
-  or private.is_admin()
+  or private.is_admin(array['super_admin']::public.user_role[])
   or private.has_school_access(
     school_id,array['proprietor']::public.school_member_role[]
   )

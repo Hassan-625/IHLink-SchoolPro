@@ -2499,3 +2499,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - 2026-11-07 Staff dashboard responsive toolbar: made the workspace selector/refresh row wrap on narrow screens, constrained the selector to the available width, and labelled it for assistive technology. Preserved the existing keyboard-focusable horizontal table region and 920px minimum table width. Added source-contract assertions. Branch-only UI/test change; no production changes.
+
+
+- 2026-11-07 Parents & Guardians responsive layout: workspace selector and refresh control now wrap on narrow screens; the two-column layout uses a shrink-safe `minmax(0,1fr)` content track; the links card/table container is shrink-safe; and the table has a keyboard-focusable, assistive-technology-labelled horizontal scroll region with a readable minimum width. Added C0 source-contract assertions. Branch-only UI/test change; no production changes.

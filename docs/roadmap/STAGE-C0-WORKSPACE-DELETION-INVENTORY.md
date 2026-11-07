@@ -106,3 +106,16 @@ All 95 observed objects use a UUID as their first path segment. Some paths refer
 ## Current disposition
 
 No deletion lifecycle migration or production data change has been made. The schema inventory identifies the principal retention and dependency hazards, but implementation still requires a complete FK/table classification, exact Storage reference mapping, and a disposable PostgreSQL regression fixture. Do not apply a migration or delete any live workspace as part of this review.
+
+## Additional retention dependencies introduced by C0 case-management work
+
+The C0 branch adds restrictive foreign-key dependencies that must be incorporated into any future workspace deletion/archive preflight and executor allowlist:
+
+| Table | Retention dependency | Required treatment |
+|---|---|---|
+| schoolpro_staff_disciplinary_cases | School + staff membership; case is HR/employment evidence | Preserve/snapshot under applicable HR/legal retention; do not cascade with member deletion |
+| schoolpro_staff_disciplinary_events | School + disciplinary case | Preserve immutable event snapshots with the parent case |
+| schoolpro_leave_events | School + leave request | Preserve absence reason and review history |
+| schoolpro_discipline_events | School + student discipline record | Preserve incident, guardian contact, response and follow-up history |
+
+The staff membership now also has an employment_status lifecycle marker (active, suspended, dismissed). This is not a substitute for retaining the underlying disciplinary case and appointment history. These migrations are branch-only and have not been applied to production.

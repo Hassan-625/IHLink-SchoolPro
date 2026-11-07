@@ -20,6 +20,7 @@ export function SchoolProStaffDiscipline(){
  const [memberId,setMemberId]=useState(''),[action,setAction]=useState('verbal_warning'),[severity,setSeverity]=useState('moderate'),[summary,setSummary]=useState(''),[details,setDetails]=useState('');
  const [responses,setResponses]=useState<Record<string,string>>({}),[appealNotes,setAppealNotes]=useState<Record<string,string>>({}),[reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
  const [busy,setBusy]=useState(false),[message,setMessage]=useState('');
+ const [statusFilter,setStatusFilter]=useState('all'),[actionFilter,setActionFilter]=useState('all'),[search,setSearch]=useState('');
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
   const [m,c]=await Promise.all([
@@ -31,7 +32,11 @@ export function SchoolProStaffDiscipline(){
  },[ctx.schoolId]);
  useEffect(()=>{setMembers([]);setCases([]);setMessage('');void load();},[load]);
  const ownMemberIds=useMemo(()=>new Set(members.filter(m=>m.user_id===user?.id).map(m=>m.id)),[members,user?.id]);
- const visibleCases=useMemo(()=>canManage?cases:cases.filter(c=>ownMemberIds.has(c.member_id)),[cases,canManage,ownMemberIds]);
+ const scopedCases=useMemo(()=>canManage?cases:cases.filter(c=>ownMemberIds.has(c.member_id)),[cases,canManage,ownMemberIds]);
+ const visibleCases=useMemo(()=>{const q=search.trim().toLowerCase();return scopedCases.filter(c=>(statusFilter==='all'||c.status===statusFilter)&&(actionFilter==='all'||c.action_type===actionFilter)&&(!q||[memberNames.get(c.member_id),c.summary,c.details,c.staff_response,c.appeal_review_note,c.closure_note,c.action_type,c.severity].filter(Boolean).join(' ').toLowerCase().includes(q)));},[scopedCases,statusFilter,actionFilter,search,memberNames]);
+ const openCount=scopedCases.filter(c=>c.status!=='closed').length;
+ const appealCount=scopedCases.filter(c=>c.appeal_status==='pending').length;
+ const closedCount=scopedCases.filter(c=>c.status==='closed').length;
  const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
  async function createCase(){
   if(!supabase||!ctx.schoolId||!memberId||!summary.trim()||busy)return;
@@ -65,6 +70,16 @@ export function SchoolProStaffDiscipline(){
    <label className="text-sm font-semibold md:col-span-2">Investigation details and evidence summary<textarea className="mt-1 w-full rounded-xl border p-3" rows={4} maxLength={8000} value={details} onChange={e=>setDetails(e.target.value)} placeholder="Record relevant dates, findings, witnesses and supporting evidence references."/></label>
   </div><p className="mt-2 text-xs text-muted">Suspension and dismissal are restricted to the proprietor or administrator. They revoke operational membership and end active appointments; historical appointment records are retained.</p><Button className="mt-3" disabled={busy||!memberId||summary.trim().length<10} onClick={()=>void createCase()}>{busy?'Saving…':'Record disciplinary action'}</Button></Card>}
   {message&&<p role="status" className="text-sm font-semibold">{message}</p>}
+  <div className="grid gap-3 sm:grid-cols-3">
+   <Card><p className="text-xs text-muted">Open cases</p><p className="mt-1 text-2xl font-bold tabular-nums">{openCount}</p></Card>
+   <Card><p className="text-xs text-muted">Appeals awaiting review</p><p className="mt-1 text-2xl font-bold tabular-nums">{appealCount}</p></Card>
+   <Card><p className="text-xs text-muted">Closed cases</p><p className="mt-1 text-2xl font-bold tabular-nums">{closedCount}</p></Card>
+  </div>
+  <Card><div className="grid gap-3 md:grid-cols-3">
+   <label className="text-sm font-semibold">Search cases<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Staff, summary, response or note"/></label>
+   <label className="text-sm font-semibold">Case status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['open','action_issued','appealed','closed'].map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+   <label className="text-sm font-semibold">Action type<select className="mt-1 w-full rounded-xl border p-3" value={actionFilter} onChange={e=>setActionFilter(e.target.value)}><option value="all">All actions</option>{['verbal_warning','written_warning','final_warning','investigation','performance_plan','suspension','dismissal'].map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+  </div><p className="mt-2 text-xs text-muted">Showing {visibleCases.length} of {scopedCases.length} cases in your authorised view.</p></Card>
   <div className="grid gap-4">{visibleCases.map(c=><Card key={c.id}>
    <div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-bold">{canManage?memberNames.get(c.member_id)||'Staff member':'My disciplinary case'}</h3><p className="text-xs text-muted">{label(c.action_type)} · {label(c.severity)} · {new Date(c.created_at).toLocaleString()}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{label(c.status)}</span></div>
    <p className="mt-3 font-semibold">{c.summary}</p>{c.details&&<p className="mt-2 whitespace-pre-wrap text-sm">{c.details}</p>}
@@ -74,6 +89,6 @@ export function SchoolProStaffDiscipline(){
    {canManage&&c.status!=='closed'&&<div className="mt-3 space-y-2"><label className="block text-sm font-semibold">Case closure note<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={reviewNotes[c.id]||''} onChange={e=>setReviewNotes(x=>({...x,[c.id]:e.target.value}))}/></label><Button variant="secondary" disabled={busy||!reviewNotes[c.id]?.trim()} onClick={()=>void closeCase(c.id)}>Close case</Button></div>}
    {canManage&&c.appeal_status==='pending'&&<div className="mt-3 space-y-2"><label className="block text-sm font-semibold">Appeal review note<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={appealNotes[c.id]||''} onChange={e=>setAppealNotes(x=>({...x,[c.id]:e.target.value}))}/></label><div className="flex flex-wrap gap-2"><Button disabled={busy||!appealNotes[c.id]?.trim()} onClick={()=>void reviewAppeal(c.id,'accepted')}>Accept appeal</Button><Button variant="secondary" disabled={busy||!appealNotes[c.id]?.trim()} onClick={()=>void reviewAppeal(c.id,'rejected')}>Reject appeal</Button></div></div>}
   </Card>)}</div>
-  {!visibleCases.length&&<Card><p className="text-sm text-muted">No disciplinary cases are available for this school or staff account.</p></Card>}
+  {!visibleCases.length&&<Card><p className="text-sm text-muted">{search||statusFilter!=='all'||actionFilter!=='all'?'No cases match these filters.':'No disciplinary cases are available for this school or staff account.'}</p></Card>}
  </ModulePage>;
 }

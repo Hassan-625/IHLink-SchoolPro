@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const suspension=readFileSync('supabase/migrations/20261107180000_schoolpro_end_appointments_on_suspension.sql','utf8');
 const readers=readFileSync('supabase/migrations/20261107183000_schoolpro_ended_appointment_access_guards.sql','utf8');
+const history=readFileSync('supabase/migrations/20261107190000_schoolpro_staff_appointment_history.sql','utf8');
 const staff=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
 const governance=readFileSync('src/components/SchoolGovernanceCard.tsx','utf8');
 
@@ -21,6 +22,13 @@ assert.ok(suspension.includes("'appointments_restored',false"),'Reactivation mus
 for (const table of ['schoolpro_board_members','schoolpro_section_leaders','schoolpro_subject_assignments']) {
   assert.ok(!suspension.includes('delete from public.'+table),'Appointment history must not be hard-deleted: '+table);
 }
+
+assert.ok(history.includes('create table if not exists public.schoolpro_staff_appointment_history'),'Appointment history snapshots must have a dedicated retained table.');
+assert.ok(history.includes('snapshot jsonb not null'),'Appointment history must preserve the prior appointment row.');
+assert.ok(history.includes("event_key:='reappointed'"),'Reappointment must be recorded as a separate history event.');
+assert.ok(history.includes('after insert on public.schoolpro_board_members'),'Initial board appointments must be recorded.');
+assert.ok(history.includes('before update on public.schoolpro_subject_assignments'),'Ending subject appointments must snapshot the previous assignment.');
+assert.ok(history.includes('revoke all on public.schoolpro_staff_appointment_history from public,anon,authenticated'),'Clients must not mutate appointment history directly.');
 
 for (const fn of [
   'schoolpro_member_leads_class',
@@ -46,4 +54,4 @@ assert.ok(staff.includes('member.status==="suspended"?"Suspended":"Active"'),'St
 assert.ok(governance.includes(".is('ended_at',null)"),'Board UI must show only current appointments.');
 assert.ok(governance.includes("m.status!=='suspended'"),'Suspended staff must not be offered for new board appointments.');
 
-console.log('PASS: SchoolPro appointment termination and active-reader contract.');
+console.log('PASS: SchoolPro appointment termination, immutable history and active-reader contract.');

@@ -309,7 +309,7 @@ drop policy if exists "leave own request" on public.schoolpro_leave_requests;
 create policy "leave own request"
 on public.schoolpro_leave_requests for insert to authenticated
 with check (
-  private.schoolpro_module_allowed(school_id,'leave')
+  private.schoolpro_operationally_active(school_id)
   and status='pending'
   and exists (
     select 1 from public.schoolpro_members m

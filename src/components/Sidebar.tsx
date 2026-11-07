@@ -4,6 +4,7 @@ import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
+import {useSchoolProEntitlements} from '@/hooks/useSchoolProEntitlements';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -54,10 +55,21 @@ export function DashboardLayout({
   const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&location.pathname==='/schoolpro/proprietor-dashboard';
   const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
-  const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
+  const permissions=useSchoolProPermissions();const planAccess=useSchoolProEntitlements();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
   const canonical=role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
-  const sections=product==='schoolpro'?(permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>(!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0)&&(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile'||(item.href==='/schoolpro/subscription'?['proprietor','administrator','bursar','super_administrator'].includes(role):(role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href))))))})).filter(section=>section.items.length)):providedSections;
+  const sections=product==='schoolpro'
+    ? (permissions.loading||permissions.error?[]:canonical.map(section=>({...section,items:section.items.filter(item=>{
+      const teacherScopeAllowed=!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0;
+      if(!teacherScopeAllowed)return false;
+      if(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile')return true;
+      if(item.href==='/schoolpro/workspace-deletion')return role==='proprietor';
+      if(item.href==='/schoolpro/reports')return Boolean(permissions.can('reports')&&planAccess.entitlements?.active===true&&planAccess.entitlements?.advanced_reports===true);
+      if(item.href==='/schoolpro/subscription')return ['proprietor','administrator','bursar','super_administrator'].includes(role);
+      if(['/schoolpro/leave','/schoolpro/staff-discipline','/schoolpro/discipline'].includes(item.href))return role==='student'||role==='parent'?permissions.canPortal(permissionForSchoolPath(item.href)):permissions.can(permissionForSchoolPath(item.href));
+      return permissions.can(permissionForSchoolPath(item.href));
+    })})).filter(section=>section.items.length))
+    : providedSections;
   const theme = productThemes[product];
   const [collapsed, setCollapsed] = useState(false);
   const [toolsExpanded,setToolsExpanded]=useState(false);

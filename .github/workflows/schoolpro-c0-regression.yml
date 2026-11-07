@@ -1,0 +1,131 @@
+name: SchoolPro Stage C0 security and workflow regression
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'docs/**'
+      - 'scripts/test-schoolpro-c0-workspace-workflows.mjs'
+      - 'scripts/test-schoolpro-student-family-records.mjs'
+      - 'supabase/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/schoolpro-c0-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  c0-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript validation
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: C0 workflow and class/member deletion source contracts
+        run: npm run test:schoolpro-c0-workflows
+
+      - name: Advanced Reports source contracts
+        run: npm run test:schoolpro-advanced-reports
+
+      - name: Student, guardian, class and staff lifecycle source contracts
+        run: npm run test:schoolpro-student-family-records
+
+      - name: Existing appointment lifecycle source contracts
+        run: npm run test:schoolpro-lifecycle-appointments
+
+      - name: Set up Supabase CLI
+        id: supabase-cli
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start disposable local Supabase without replaying historical migrations
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This repository's legacy migration chain starts from an incomplete
+          # schema. Keep it out of Supabase CLI startup; restore the production
+          # baseline next, then explicitly apply only post-baseline migrations.
+          backup_dir="$(mktemp -d)"
+          restore_migrations() {
+            if [[ -d "$backup_dir/migrations" ]]; then
+              rm -rf supabase/migrations
+              mv "$backup_dir/migrations" supabase/migrations
+            fi
+          }
+          trap restore_migrations EXIT
+          mv supabase/migrations "$backup_dir/migrations"
+          mkdir -p supabase/migrations
+          supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+          restore_migrations
+          trap - EXIT
+          rmdir "$backup_dir"
+
+      # Restore into the disposable Supabase postgres database itself. This
+      # retains Supabase's local auth schema/users and platform roles required by
+      # the schema-only dump's foreign keys and policies. No production DB is used.
+      - name: Restore C0 schema baseline into disposable local Supabase
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          # Supabase already creates public in its local database; the dump's
+          # CREATE SCHEMA public would otherwise stop the restore immediately.
+          sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
+            | psql "$database_url" -v ON_ERROR_STOP=1
+
+      - name: Apply migrations newer than the baseline
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          baseline_cutoff="20261106164431"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          while IFS= read -r migration; do
+            filename="${migration##*/}"
+            migration_stamp="${filename%%_*}"
+            if [[ "$migration_stamp" > "$baseline_cutoff" ]]; then
+              echo "Applying post-baseline migration: $migration"
+              psql "$database_url" -v ON_ERROR_STOP=1 -f "$migration"
+            fi
+          done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | sort)
+
+      - name: Run C0 SQL security and lifecycle regressions
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          for test_file in \
+            supabase/tests/schoolpro_class_member_delete_security.sql \
+            supabase/tests/schoolpro_operational_membership_security.sql \
+            supabase/tests/schoolpro_c0_lifecycle_regression.sql
+          do
+            echo "Running $test_file"
+            psql "$database_url" -v ON_ERROR_STOP=1 -f "$test_file"
+          done
+
+      - name: Stop disposable Supabase
+        if: always() && steps.supabase-cli.outcome == 'success'
+        run: supabase stop --no-backup

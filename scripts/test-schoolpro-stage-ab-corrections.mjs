@@ -26,12 +26,12 @@ assert(access.includes("case 'bursar':case 'accountant':return '/schoolpro/fees'
 assert(schoolPermissions.includes("'judge':'dashboard'"),'Assigned judges must see their judging portal link through the staff navigation permission filter');
 assert(schoolPermissions.includes("const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};")&&!schoolPermissions.includes("reports:'advanced_reports'"),'Standard report permission must not require the Enterprise advanced_reports entitlement');
 assert(shared.includes("href:'/schoolpro/subscription'"),'School billing managers must have a Plans & Subscription navigation entry');
-assert(sidebar.includes("item.href==='/schoolpro/subscription'?['proprietor','administrator','bursar','super_administrator'].includes(role)"),'Plans & Subscription navigation must be limited to authorized billing managers');
+assert.match(sidebar,/if\(item\.href===['"]\/schoolpro\/subscription['"]\)return \['proprietor','administrator','bursar','super_administrator'\]\.includes\(role\)/,'Plans & Subscription navigation must be limited to authorized billing managers.');
 assert(shared.includes("label:'Houses, Games & Competitions',href:'/schoolpro/games'"),'School management navigation must expose Games');
 assert(shared.includes("label:'My Judging Panel',href:'/schoolpro/judge'"),'Teacher navigation must expose assigned judging panel');
 assert(app.includes('<Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>'),'Games route must retain its role/permission guard');
 assert(app.includes('<Route path="/schoolpro/broadsheet" element={<Guard permission="reports"><SchoolProBroadsheet/></Guard>}/>'),'Standard broadsheet must not be wrapped in the Enterprise advanced-reports gate');
-assert(app.includes('<Route path="/schoolpro/reports" element={<Guard><SchoolProEntitlementGate feature="advanced_reports">'),'Advanced reports must remain Enterprise-gated');
+assert(app.includes('<Route path="/schoolpro/reports" element={<Guard permission="reports"><SchoolProEntitlementGate feature="advanced_reports">'),'Advanced reports must require the reports permission and Enterprise entitlement.');
 assert(pricing.includes("from('schoolpro_plan_catalog')")&&pricing.includes('annual_price')&&!pricing.includes('monthly_price')&&!pricing.includes('termly_price'),'Pricing must combine authoritative entitlements with the currently supported annual billing cycle');
 assert(pricing.includes('schoolProPlanFeatures(flags)')&&sharedPlanFeatures.includes('Houses, Games, Sports and Competitions'),'Public plan comparison must use the shared plan-feature definitions, including Games on every tier');
 assert(subscription.includes('schoolProPlanFeatures(p.planFeatures||{})')&&sharedPlanFeatures.includes('Houses, Games, Sports and Competitions'),'Subscription view must use the shared plan-feature definitions, including Games');

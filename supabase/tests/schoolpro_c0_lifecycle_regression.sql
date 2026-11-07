@@ -56,6 +56,10 @@ begin
   if position('m.status' in def)=0 or position('active' in def)=0 then
     raise exception 'CBT manager helper does not enforce active membership';
   end if;
+  select pg_get_functiondef('public.schoolpro_set_result_lock(uuid,text,text,boolean)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then
+    raise exception 'Result lock RPC does not use active-membership authorization';
+  end if;
 
   -- Attendance and timetable legacy permissive policies must be removed.
   select count(*) into n from pg_policy p

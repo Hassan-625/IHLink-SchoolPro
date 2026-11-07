@@ -1,7 +1,7 @@
 -- C0 operational membership regression; run after the complete ordered lifecycle migrations.
 begin;
 do $test$
-declare n integer; permission_reader text; audit_reader text;
+declare n integer; permission_reader text; audit_reader text; audit_table text;
 begin
   -- The central permission RPC must reference the role on schoolpro_members.
   -- schoolpro_board_members has title/previous_role, not a role column.
@@ -19,7 +19,7 @@ begin
   if position('changed_fields' in audit_reader)=0 or position('actor_role' in audit_reader)=0 then
     raise exception 'SchoolPro audit capture must retain actor attribution and changed field names';
   end if;
-  foreach n in array array[
+  foreach audit_table in array array[
     'schoolpro_students','schoolpro_members','schoolpro_admissions',
     'schoolpro_admission_events','schoolpro_competition_events',
     'schoolpro_leave_requests','schoolpro_invoices'
@@ -28,10 +28,10 @@ begin
       select 1 from pg_trigger t
       join pg_class c on c.oid=t.tgrelid
       join pg_namespace s on s.oid=c.relnamespace
-      where s.nspname='public' and c.relname=n
+      where s.nspname='public' and c.relname=audit_table
         and t.tgname='trg_schoolpro_audit_capture' and not t.tgisinternal
     ) then
-      raise exception 'SchoolPro audit capture trigger missing on %', n;
+      raise exception 'SchoolPro audit capture trigger missing on %', audit_table;
     end if;
   end loop;
 

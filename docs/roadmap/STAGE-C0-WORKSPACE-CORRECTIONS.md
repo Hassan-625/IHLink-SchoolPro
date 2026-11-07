@@ -220,3 +220,30 @@ Committed branch-only migration `20261107160000_schoolpro_active_staff_and_class
 The migration preserves the current helper EXECUTE grants and does not alter production. It is sequenced after the lifecycle foundation and core active-membership helper migration.
 
 **Still not complete:** this does not yet end active appointments when a member is suspended (House Master, board, section leader, competition judge, Form Master, and other operational roles), update every remaining direct membership consumer, remove direct class/member DELETE policies and grants, replace broad Super Admin ALL policies, or provide the full SQL regression suite. Do not apply migrations to production, expose lifecycle controls, or mark C0 accepted yet.
+
+
+### Staff and student welfare workflows — scope added 2026-11-07
+
+The user has expanded C0 to include dedicated, auditable staff and student welfare workflows. These are implementation requirements, not yet accepted or implemented.
+
+**Staff disciplinary workspace (dedicated dashboard page):**
+- Record verbal/written/final warnings, misconduct allegations/investigations, performance-improvement actions, suspension, dismissal/termination, commendations and other documented employment actions.
+- Each case must capture staff membership, category, incident/effective dates, factual reason, description, issuing/reviewing authority, status, supporting evidence references, staff response/acknowledgement, appeal/review notes, and immutable event history.
+- Sensitive cases must be restricted to authorised school leadership/HR; the affected staff member may see their own case and submit a response/appeal, but must not edit the official action or reviewer decision.
+- Suspension/dismissal must be linked to the school-scoped membership lifecycle and operational appointment termination. Do not delete global profiles/Auth users, payroll, leave, or historic records. Do not expose a suspension/dismissal action as final until the membership restriction and appointment cleanup are transactionally implemented.
+
+**Staff Leave & Absence improvements:**
+- Separate planned leave requests from retrospective absence reports and unexplained absence records.
+- Staff must be able to report an absence and later add/update the reason or supporting explanation; retain the original report time and reason-update history.
+- HR/leadership review should capture decision, reviewer, timestamp and note; staff can see their own requests and decisions, while only authorised reviewers can decide.
+- Validate date ranges and membership ownership; prevent one staff member editing another's request. Unexplained absence must remain distinct from approved leave and must not silently become approved leave.
+
+**Student discipline improvements:**
+- Extend the existing basic incident/action/status record into a case workflow with incident category, severity, location/date, reporter, involved student, factual narrative, student response, action/intervention, parent/guardian contact status and notes, responsible reviewer, follow-up date/outcome, resolution and immutable case history.
+- Retain session and school scoping; preserve existing records and current reporter/leadership visibility rules. Sensitive case details must be restricted to authorised roles and provide appropriate parent/guardian communication without exposing other students' records.
+
+**Current implementation gaps confirmed by code inspection:**
+- Staff discipline is not a dedicated page; /schoolpro/discipline currently serves only student concerns.
+- /schoolpro/leave is routed through the generic operational CRUD module. It allows staff to create requests but does not provide an own-request reason-update flow; the existing review card only lists pending requests and provides approve/decline without reviewer notes.
+- Student discipline currently captures only incident, action_taken and status; no severity/category, response, parent contact or follow-up workflow is present.
+- These gaps must be addressed with dedicated UI, narrowly scoped RPC/RLS policies, audit trails and regression tests. Avoid reusing generic delete/edit controls for disciplinary or absence evidence.

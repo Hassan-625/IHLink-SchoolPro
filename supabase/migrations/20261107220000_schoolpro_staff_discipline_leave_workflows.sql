@@ -263,7 +263,7 @@ for select to authenticated using (
 
 revoke all on public.schoolpro_leave_events from anon,authenticated;
 grant select on public.schoolpro_leave_events to authenticated;
-revoke insert,update,delete on public.schoolpro_staff_disciplinary_cases from anon,authenticated;
+revoke all on public.schoolpro_staff_disciplinary_cases from anon,authenticated;
 grant select on public.schoolpro_staff_disciplinary_cases to authenticated;
 revoke all on public.schoolpro_staff_disciplinary_events from anon,authenticated;
 grant select on public.schoolpro_staff_disciplinary_events to authenticated;

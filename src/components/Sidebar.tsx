@@ -4,7 +4,6 @@ import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
-import {useSchoolProEntitlements} from '@/hooks/useSchoolProEntitlements';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -55,7 +54,7 @@ export function DashboardLayout({
   const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname);
   const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
-  const permissions=useSchoolProPermissions();const planAccess=useSchoolProEntitlements();const classScope=useSchoolClassScope();
+  const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
   const isPlatformSchoolProSuperAdmin=product==='schoolpro'&&profile?.role==='super_admin';
   const canonical=isPlatformSchoolProSuperAdmin?schoolSections:role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;

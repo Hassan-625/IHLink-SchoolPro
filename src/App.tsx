@@ -31,6 +31,7 @@ import { SchoolProReportCard } from "@/pages/schoolpro/SchoolProReportCard";
 import { SchoolProClassResultsPrint } from "@/pages/schoolpro/SchoolProClassResultsPrint";
 import { SchoolProStaff } from "@/pages/schoolpro/SchoolProStaff";
 import { SchoolProStaffDiscipline } from "@/pages/schoolpro/SchoolProStaffDiscipline";
+import { SchoolProDiscipline } from "@/pages/schoolpro/SchoolProDiscipline";
 import { SchoolProLeave } from "@/pages/schoolpro/SchoolProLeave";
 import { SchoolProGames } from "@/pages/schoolpro/SchoolProGames";
 import { SchoolProHouseDashboard } from "@/pages/schoolpro/SchoolProHouseDashboard";
@@ -142,6 +143,7 @@ export default function App(){
   <Route path="/schoolpro/invoices/:invoiceId" element={<Guard permission="finance"><SchoolProInvoice/></Guard>}/>
   <Route path="/schoolpro/staff" element={<Guard permission="staff"><SchoolProStaff/></Guard>}/>
   <Route path="/schoolpro/staff-discipline" element={<Guard permission="dashboard"><SchoolProStaffDiscipline/></Guard>}/>
+  <Route path="/schoolpro/discipline" element={<Guard permission="discipline"><SchoolProDiscipline/></Guard>}/>
   <Route path="/schoolpro/leave" element={<Guard permission="dashboard"><SchoolProLeave/></Guard>}/>
   <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
   <Route path="/schoolpro/house-dashboard" element={<Guard><SchoolProHouseDashboard/></Guard>}/>
@@ -175,7 +177,7 @@ export default function App(){
   <Route path="/schoolpro/workspace-deletion" element={<Guard permission="dashboard"><SchoolProWorkspaceDeletion/></Guard>} />
 
   {["timetable","assignments","announcements"].map(module=><Route key={module} path={"/schoolpro/"+module} element={<Guard><SchoolProModulePage module={module as "timetable"|"assignments"|"announcements"}/></Guard>}/>)}
-  {["library","transport","hostel","inventory","payroll","discipline","calendar","lesson-notes","promotions","medical"].map(kind=><Route key={kind} path={"/schoolpro/"+kind} element={<Guard><SchoolProOperationalModule kind={kind as any}/></Guard>}/>)}
+  {["library","transport","hostel","inventory","payroll","calendar","lesson-notes","promotions","medical"].map(kind=><Route key={kind} path={"/schoolpro/"+kind} element={<Guard><SchoolProOperationalModule kind={kind as any}/></Guard>}/>)}
   {studentViews.map(kind=><Route key={kind} path={"/schoolpro/student-"+kind} element={<Guard><SchoolProStudentPortalView kind={kind}/></Guard>}/>)}
 
   <Route path="/signin" element={<Navigate to="/schoolpro/login" replace/>}/>

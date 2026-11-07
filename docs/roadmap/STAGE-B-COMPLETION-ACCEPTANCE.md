@@ -29,3 +29,15 @@ Stage B may be declared complete only when every row above is either accepted wi
 - Do not create test school workspaces or synthetic operational records.
 - Preserve shared defaults/templates, global profiles/Auth users, unrelated tenant data and required financial/audit evidence.
 - Stage C assessment/result-entry/calculation/publication work remains deferred until the Stage B completion gate and C0 acceptance gate both pass.
+
+ 
+## 2026-11-07 C0 correction status supplement
+
+The C0 branch now contains implementations for the previously outstanding workspace lifecycle and responsive requirements:
+- Advanced Reports has a dedicated Enterprise-gated dashboard, subject/class analysis and Excel export; CI and runtime acceptance remain pending.
+- Class archive/restore and staff suspension/restore controls use audited RPCs; active selectors exclude archived classes.
+- Workspace removal uses owner request, independent Super Admin review and separate execution. Execution deactivates the workspace and retains all school-owned history and Storage; physical purge is not part of this safe workflow.
+- Global CSS supplies bounded two-axis scrolling for direct table containers, in addition to the targeted page wrappers.
+- The separate IHLink Admin PR adds Control Panel oversight for staff disciplinary cases and workspace removal.
+
+These rows remain **implemented / acceptance pending** until the disposable-baseline C0 regression, application CI, production migration and Render deployment all complete successfully. Stage C is still blocked.

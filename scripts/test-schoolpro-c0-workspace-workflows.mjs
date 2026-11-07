@@ -29,7 +29,7 @@ assert.match(staff,/schoolpro_close_staff_disciplinary_case/);
 assert.match(staff,/dismissal/);
 assert.match(leave,/schoolpro_report_own_absence/);
 assert.match(leave,/schoolpro_update_own_leave_reason/);
-assert.match(leave,/schoolpro_review_leave_request/);
+assert.match(leave,/schoolpro_review_leave_request/);\nassert.match(leave,/statusFilter/);\nassert.match(leave,/Search requests/);\nassert.match(leave,/No records match these filters/);\nassert.match(leave,/Showing \{visible.length\} of/);
 assert.match(student,/guardian_contact_status/);
 assert.match(student,/follow_up_outcome/);
 assert.match(student,/student_response/);

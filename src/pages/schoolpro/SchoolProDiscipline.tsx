@@ -13,7 +13,7 @@ import {Button} from '@/components/ui/Button';
 import {schoolSections} from './schoolShared';
 
 type Student={id:string;first_name:string;last_name:string;class_id:string|null;class_name:string};
-type Member={id:string;role:string;profile?:{first_name:string|null;last_name:string|null}|null};
+type Member={id:string;role:string;profile?:{first_name:string|null;last_name:string|null}[]|null};
 type Concern={
  id:string;student_id:string;incident:string;action_taken:string|null;status:string;created_at:string;assigned_to:string|null;
  category:string;severity:string;location:string|null;incident_at:string;student_response:string|null;
@@ -94,7 +94,7 @@ export function SchoolProDiscipline(){
    return <Card key={r.id}>
     <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{names.get(r.student_id)||'Student concern'}</h3><p className="text-xs text-muted">{new Date(r.incident_at||r.created_at).toLocaleString()} · {label(r.category||'general')} · {label(r.severity||'moderate')}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{label(r.status)}</span></div>
     {r.location&&<p className="mt-2 text-sm">Location: {r.location}</p>}<p className="mt-3 whitespace-pre-wrap text-sm">{r.incident}</p>
-    {r.action_taken&&<p className="mt-2 text-sm"><b>Intervention:</b> {r.action_taken}</p>}{r.assigned_to&&<p className="mt-1 text-sm"><b>Assigned follow-up:</b> {members.find(m=>m.id===r.assigned_to)?.profile?[members.find(m=>m.id===r.assigned_to)?.profile?.first_name,members.find(m=>m.id===r.assigned_to)?.profile?.last_name].filter(Boolean).join(' '):'Assigned staff member'}</p>}
+    {r.action_taken&&<p className="mt-2 text-sm"><b>Intervention:</b> {r.action_taken}</p>}{r.assigned_to&&<p className="mt-1 text-sm"><b>Assigned follow-up:</b> {members.find(m=>m.id===r.assigned_to)?.profile?.[0]?[members.find(m=>m.id===r.assigned_to)?.profile?.[0]?.first_name,members.find(m=>m.id===r.assigned_to)?.profile?.[0]?.last_name].filter(Boolean).join(' '):'Assigned staff member'}</p>}
     {r.student_response&&<p className="mt-2 whitespace-pre-wrap text-sm"><b>Student response:</b> {r.student_response}</p>}
     {r.guardian_contact_note&&<p className="mt-2 text-sm"><b>Parent/guardian contact:</b> {label(r.guardian_contact_status)} · {r.guardian_contact_note}</p>}
     {r.follow_up_at&&<p className="mt-2 text-sm"><b>Follow-up:</b> {r.follow_up_at} {r.follow_up_outcome||''}</p>}
@@ -105,7 +105,7 @@ export function SchoolProDiscipline(){
       <label className="text-sm font-semibold md:col-span-2">Action / intervention<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={d.action_taken} onChange={e=>updateDraft(r.id,'action_taken',e.target.value)}/></label>
       <label className="text-sm font-semibold md:col-span-2">Student response<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={d.student_response} onChange={e=>updateDraft(r.id,'student_response',e.target.value)}/></label>
       <label className="text-sm font-semibold md:col-span-2">Parent/guardian contact note<textarea className="mt-1 w-full rounded-xl border p-3" rows={2} value={d.guardian_contact_note} onChange={e=>updateDraft(r.id,'guardian_contact_note',e.target.value)}/></label>
-      <label className="text-sm font-semibold">Assigned staff member<select className="mt-1 w-full rounded-xl border p-3" value={d.assigned_to} onChange={e=>updateDraft(r.id,'assigned_to',e.target.value)}><option value="">Unassigned</option>{members.map(m=><option key={m.id} value={m.id}>{[m.profile?.first_name,m.profile?.last_name].filter(Boolean).join(' ')||m.role}</option>)}</select></label>
+      <label className="text-sm font-semibold">Assigned staff member<select className="mt-1 w-full rounded-xl border p-3" value={d.assigned_to} onChange={e=>updateDraft(r.id,'assigned_to',e.target.value)}><option value="">Unassigned</option>{members.map(m=><option key={m.id} value={m.id}>{[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.role}</option>)}</select></label>
       <label className="text-sm font-semibold">Follow-up date<input type="date" className="mt-1 w-full rounded-xl border p-3" value={d.follow_up_at} onChange={e=>updateDraft(r.id,'follow_up_at',e.target.value)}/></label>
       <label className="text-sm font-semibold">Follow-up outcome<input className="mt-1 w-full rounded-xl border p-3" value={d.follow_up_outcome} onChange={e=>updateDraft(r.id,'follow_up_outcome',e.target.value)}/></label>
      </div>

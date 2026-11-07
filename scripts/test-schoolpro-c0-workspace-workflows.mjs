@@ -201,6 +201,7 @@ assert.ok(sidebarSource.includes("permissions.hasRolePermission('cbt')"));
 assert.ok(sidebarSource.includes("permissions.hasRolePermission('branding')"));
 const permissionGateSource=read('src/components/SchoolProPermissionGate.tsx');
 assert.match(permissionGateSource,/SchoolProEntitlementGate feature=\{planFeature\}/);
+assert.match(read('src/pages/schoolpro/SchoolProPermissions.tsx'),/promotions','games','notifications/);
 
 assert.match(sharedSource,/Houses & House Allocation/);
 assert.match(sharedSource,/Games & Competitions/);

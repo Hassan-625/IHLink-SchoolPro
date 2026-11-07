@@ -60,6 +60,18 @@ begin
   if position('has_school_access' in def)=0 then
     raise exception 'Result lock RPC does not use active-membership authorization';
   end if;
+  select pg_get_functiondef('public.schoolpro_user_permissions(uuid)'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('active' in def)=0 then
+    raise exception 'Central permission resolver does not suppress suspended memberships';
+  end if;
+  select pg_get_functiondef('public.schoolpro_member_can_manage(uuid)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then
+    raise exception 'Central manage helper does not use active-membership authorization';
+  end if;
+  select pg_get_functiondef('private.schoolpro_validate_competition_tenant_links()'::regprocedure) into def;
+  if position('m.status' in def)=0 or position('active' in def)=0 then
+    raise exception 'Competition judge validator does not require active membership';
+  end if;
 
   -- Attendance and timetable legacy permissive policies must be removed.
   select count(*) into n from pg_policy p

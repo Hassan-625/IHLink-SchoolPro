@@ -26,7 +26,7 @@ assert(access.includes("case 'bursar':case 'accountant':return '/schoolpro/fees'
 assert(schoolPermissions.includes("'judge':'dashboard'"),'Assigned judges must see their judging portal link through the staff navigation permission filter');
 assert(schoolPermissions.includes("const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};")&&!schoolPermissions.includes("reports:'advanced_reports'"),'Standard report permission must not require the Enterprise advanced_reports entitlement');
 assert(shared.includes("href:'/schoolpro/subscription'"),'School billing managers must have a Plans & Subscription navigation entry');
-assert(sidebar.includes("item.href==='/schoolpro/subscription'?['proprietor','administrator','bursar','super_administrator'].includes(role)"),'Plans & Subscription navigation must be limited to authorized billing managers');
+assert.match(sidebar,/if\(item\.href===['"]\/schoolpro\/subscription['"]\)return \['proprietor','administrator','bursar','super_administrator'\]\.includes\(role\)/,'Plans & Subscription navigation must be limited to authorized billing managers.');
 assert(shared.includes("label:'Houses, Games & Competitions',href:'/schoolpro/games'"),'School management navigation must expose Games');
 assert(shared.includes("label:'My Judging Panel',href:'/schoolpro/judge'"),'Teacher navigation must expose assigned judging panel');
 assert(app.includes('<Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>'),'Games route must retain its role/permission guard');

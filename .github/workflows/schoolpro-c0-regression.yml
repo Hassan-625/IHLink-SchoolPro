@@ -1,0 +1,76 @@
+name: SchoolPro Stage C0 security and workflow regression
+
+on:
+  push:
+    branches:
+      - feat/schoolpro-stage-c0-workspace-corrections
+    paths:
+      - 'src/**'
+      - 'scripts/test-schoolpro-c0-workspace-workflows.mjs'
+      - 'supabase/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/schoolpro-c0-regression.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  c0-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript validation
+        run: npm run typecheck
+
+      - name: Production build
+        run: npm run build
+
+      - name: C0 workflow source contracts
+        run: npm run test:schoolpro-c0-workflows
+
+      - name: Existing appointment lifecycle source contracts
+        run: npm run test:schoolpro-lifecycle-appointments
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Start disposable local Supabase
+        run: supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+
+      - name: Apply the complete migration chain to local database
+        run: supabase db reset --local
+
+      - name: Run C0 SQL security and lifecycle regressions
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          for test_file in \
+            supabase/tests/schoolpro_class_member_delete_security.sql \
+            supabase/tests/schoolpro_operational_membership_security.sql \
+            supabase/tests/schoolpro_c0_lifecycle_regression.sql
+          do
+            echo "Running $test_file"
+            psql "postgresql://postgres:postgres@127.0.0.1:54322/postgres" \
+              -v ON_ERROR_STOP=1 -f "$test_file"
+          done
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: supabase stop --no-backup

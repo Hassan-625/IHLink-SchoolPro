@@ -104,6 +104,11 @@ begin
   end if;
 
   -- Leave/absence workflow: self-report, reason updates, HR review and history.
+  if has_table_privilege('anon','public.schoolpro_leave_requests','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_leave_requests','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_leave_requests','TRUNCATE') then
+    raise exception 'Direct leave/absence deletion remains possible';
+  end if;
   if to_regclass('public.schoolpro_leave_events') is null then
     raise exception 'Leave event history table missing';
   end if;
@@ -136,6 +141,11 @@ begin
   end if;
 
   -- Student discipline detail and immutable case history.
+  if has_table_privilege('anon','public.schoolpro_discipline_records','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_discipline_records','DELETE')
+    or has_table_privilege('authenticated','public.schoolpro_discipline_records','TRUNCATE') then
+    raise exception 'Direct student discipline case deletion remains possible';
+  end if;
   if to_regclass('public.schoolpro_discipline_events') is null then
     raise exception 'Student discipline event history table missing';
   end if;
@@ -151,6 +161,10 @@ begin
   where s.nspname='public' and c.relname='schoolpro_discipline_records' and p.polcmd='*'
     and p.polname='discipline authorized access';
   if n<>0 then raise exception 'Legacy discipline ALL policy remains'; end if;
+  select count(*) into n from pg_policy p join pg_class c on c.oid=p.polrelid
+  join pg_namespace s on s.oid=c.relnamespace
+  where s.nspname='public' and c.relname='schoolpro_discipline_records' and p.polcmd='d';
+  if n<>0 then raise exception 'Student discipline DELETE policy remains'; end if;
 end
 $c0$;
 

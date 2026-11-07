@@ -121,7 +121,8 @@ begin
   end if;
   if not has_function_privilege('authenticated','public.schoolpro_create_staff_disciplinary_case(uuid,uuid,text,text,text,text,timestamptz)','EXECUTE')
     or not has_function_privilege('authenticated','public.schoolpro_submit_staff_disciplinary_response(uuid,text,boolean)','EXECUTE')
-    or not has_function_privilege('authenticated','public.schoolpro_review_staff_appeal(uuid,text,text)','EXECUTE') then
+    or not has_function_privilege('authenticated','public.schoolpro_review_staff_appeal(uuid,text,text)','EXECUTE')
+    or not has_function_privilege('authenticated','public.schoolpro_close_staff_disciplinary_case(uuid,text)','EXECUTE') then
     raise exception 'Staff disciplinary RPC grants are incomplete';
   end if;
   if has_table_privilege('authenticated','public.schoolpro_staff_disciplinary_cases','INSERT')

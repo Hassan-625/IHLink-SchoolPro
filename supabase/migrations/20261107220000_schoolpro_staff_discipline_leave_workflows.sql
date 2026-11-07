@@ -458,7 +458,7 @@ begin
       target.school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
     ) then raise exception 'HR or school leadership access is required'; end if;
   if target.appeal_status<>'pending' or p_decision not in ('accepted','rejected')
-    or length(btrim(coalesce(p_note,''))) not between 5 and 2000 then
+    or coalesce(length(btrim(p_note)),0) not between 5 and 2000 then
     raise exception 'Choose a pending appeal and provide a review note';
   end if;
   update public.schoolpro_staff_disciplinary_cases
@@ -486,7 +486,7 @@ begin
     or not private.has_school_access(
       target.school_id,array['proprietor','administrator','hr_officer']::public.school_member_role[]
     ) then raise exception 'HR or school leadership access is required'; end if;
-  if target.status='closed' or length(btrim(coalesce(p_note,''))) not between 5 and 2000 then
+  if target.status='closed' or coalesce(length(btrim(p_note)),0) not between 5 and 2000 then
     raise exception 'Provide a closure note for an open case';
   end if;
   update public.schoolpro_staff_disciplinary_cases

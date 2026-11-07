@@ -63,7 +63,7 @@ Deno.serve(async(req:Request)=>{
      return respond({ok:true,schoolCode:school.code,created:true,email:normalized,role,initialPassword:'surname',surname:existing.last_name,expiresInDays:7});
     }
    }
-   const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
+   const {error}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:normalized,role:storedRole,position_title:positionTitle,student_ids:role==='parent'?studentIds:[],relationship,token_hash:tokenHash,created_by:user.id});if(error)throw error;
    if(role==='parent'&&guardianPhone&&!String(existing.phone||'').trim()){let phoneUpdate=admin.from('profiles').update({phone:guardianPhone}).eq('id',existing.id);phoneUpdate=existing.phone===null?phoneUpdate.is('phone',null):phoneUpdate.eq('phone',existing.phone);const {error:phoneError}=await phoneUpdate;if(phoneError)throw phoneError;}
    return respond({ok:true,schoolCode:school.code,created:false,requiresAcceptance:true,joiningCode:code,email:normalized,role});
   }

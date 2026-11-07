@@ -15,8 +15,8 @@
 | Games, Sports and Competitions | Games module and database workflows exist; route is registered | Confirm role permission, dashboard discoverability and end-to-end event/score/result lifecycle | Verify / C0 |
 | Super Admin school selector | PR #121 merged; selector no longer auto-selects the first school; user previously confirmed selector behaviour | Preserve explicit school selection and verify no cross-school context leakage | Accepted UI baseline; retain regression test |
 | Plan catalogue and subscription | Annual plan catalogue and subscription UI exist; upgrade request/payment/review database workflow migration exists | Verify plan entitlements in navigation and routes; expose actual upgrade request/payment workflow to authorised owners; ensure advanced reports visibility is entitlement-aware | Verify / C0 |
-| Workspace and record lifecycle | No complete owner-initiated deletion lifecycle evidenced in the inspected files | Inventory dependencies/storage, implement request/review/tenant-scoped execution and owner record archive/delete controls | Not complete / C0 |
-| Responsive tables and grids | No workspace-wide standardisation evidence recorded | Establish shared table overflow pattern and apply to high-use tables; test desktop/tablet/mobile | Not complete / C0 |
+| Workspace and record lifecycle | Owner-proprietor request, independent platform review, separate safe-deactivation executor; audited class archive, staff suspension, student transfer/withdrawal, guardian-link suspension | Validate request ownership, self-review/self-execution denial, idempotency, audit trail, retained history and tenant-scoped lifecycle controls in disposable SQL/runtime tests | Implemented / acceptance pending |
+| Responsive tables and grids | Shared bounded two-axis table viewport and targeted mobile layouts for students, admissions, classes, staff, parents, attendance and games | Validate desktop/tablet/mobile behaviour across remaining operational modules and print output | Implemented / acceptance pending |
 
 ## Stage B completion gate
 

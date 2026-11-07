@@ -46,7 +46,7 @@ assert.ok(app.includes('path="/schoolpro/leave"'));
 assert.ok(app.includes('path="/schoolpro/workspace-deletion"'));
 assert.match(workspaceDeletionPage,/schoolpro_request_workspace_deletion/);
 assert.match(workspaceDeletionPage,/schoolpro_cancel_workspace_deletion/);
-assert.match(workspaceDeletionPage,/Only the school's Proprietor/);
+assert.match(workspaceDeletionPage,/Only the school proprietor/);
 assert.match(deletionMigration,/schoolpro_review_workspace_deletion/);
 assert.match(deletionMigration,/schoolpro_execute_workspace_deletion/);
 assert.match(deletionMigration,/target\.requested_by=auth\.uid\(\)/);

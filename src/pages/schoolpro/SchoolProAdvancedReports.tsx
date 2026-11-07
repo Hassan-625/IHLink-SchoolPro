@@ -115,6 +115,5 @@ export function SchoolProAdvancedReports(){
     <div className="max-h-[65vh] w-full min-w-0 overflow-auto" role="region" aria-label="Advanced report student table; scroll horizontally and vertically to view all columns" tabIndex={0}><table className="w-full min-w-[900px] text-left text-sm"><thead className="sticky top-0 z-10 bg-gray-50"><tr>{['Position','Admission number','Student',...report.subjects.map(s=>s.name),'Total','Average','Subjects'].map(label=><th key={label} className="whitespace-nowrap p-3 text-xs uppercase text-muted">{label}</th>)}</tr></thead><tbody>{visibleRows.map(row=><tr key={row.student_id} className="border-t"><td className="p-3">{row.class_position||'—'}</td><td className="p-3 whitespace-nowrap">{row.admission_number}</td><td className="p-3 whitespace-nowrap font-medium">{row.student_name}</td>{report.subjects.map(subject=><td key={subject.id} className="p-3 tabular-nums">{row.scores?.[subject.id]??'—'}</td>)}<td className="p-3 tabular-nums">{Number(row.total||0).toFixed(1)}</td><td className="p-3 tabular-nums">{Number(row.average||0).toFixed(1)}%</td><td className="p-3 tabular-nums">{row.subjects}</td></tr>)}</tbody></table>{!visibleRows.length&&<p className="p-8 text-center text-sm text-muted">No students match this search.</p>}</div>
    </Card>
   </div>}
- </div>}
  </ModulePage>;
 }

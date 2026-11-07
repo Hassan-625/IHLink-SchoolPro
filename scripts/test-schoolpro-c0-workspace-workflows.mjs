@@ -17,6 +17,13 @@ const admissionsPage=read('src/pages/schoolpro/SchoolProAdmissions.tsx');
 const deleteMigration=read('supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql');
 const deleteSqlTest=read('supabase/tests/schoolpro_class_member_delete_security.sql');
 const migrations=[
+ 'supabase/migrations/20261107130000_schoolpro_class_staff_lifecycle_foundation.sql',
+ 'supabase/migrations/20261107143000_schoolpro_active_membership_authorization.sql',
+ 'supabase/migrations/20261107160000_schoolpro_active_staff_and_class_assignment_guards.sql',
+ 'supabase/migrations/20261107180000_schoolpro_end_appointments_on_suspension.sql',
+ 'supabase/migrations/20261107183000_schoolpro_ended_appointment_access_guards.sql',
+ 'supabase/migrations/20261107190000_schoolpro_staff_appointment_history.sql',
+ 'supabase/migrations/20261107200000_schoolpro_revoke_class_member_delete.sql',
  'supabase/migrations/20261107210000_schoolpro_active_membership_operational_guards.sql',
  'supabase/migrations/20261107220000_schoolpro_staff_discipline_leave_workflows.sql',
  'supabase/migrations/20261107230000_schoolpro_student_discipline_case_management.sql',

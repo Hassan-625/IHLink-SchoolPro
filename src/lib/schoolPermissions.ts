@@ -5,11 +5,11 @@ const modules:Record<string,string>={
   'class-results-print':'reports','reports':'reports','fees':'finance','payments':'finance',
   'receipts':'finance','invoices':'finance','invoice-design':'finance','subscription':'finance',
   'classes':'classes','subjects':'subjects','attendance':'attendance','timetable':'timetable',
-  'assignments':'assignments','admissions':'admissions','question-bank':'cbt','cbt':'cbt',
+  'assignments':'assignments','admissions':'admissions','admission-operations':'admissions','question-bank':'cbt','cbt':'cbt',
   'library':'library','staff':'staff','parents':'parents','transport':'transport','hostel':'hostel',
   'inventory':'inventory','discipline':'discipline','medical':'medical','documents':'documents',
   'announcements':'announcements','roles-permissions':'roles','user-permissions':'roles',
-  'settings':'branding','judge':'dashboard','notifications':'notifications','payroll':'payroll','calendar':'calendar',
+  'settings':'branding','judge':'dashboard','staff-discipline':'dashboard','house-dashboard':'dashboard','notifications':'notifications','payroll':'payroll','calendar':'calendar',
   'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations','games':'games',
 };
 export function permissionForSchoolPath(href:string){
@@ -20,7 +20,7 @@ export function permissionForSchoolPath(href:string){
 export const studentReadPermissions=['dashboard','results','finance','attendance','timetable','assignments','announcements','library','cbt','notifications'];
 export const parentReadPermissions=['dashboard','results','finance','attendance','announcements','notifications'];
 
-export function permissionPlanFeature(permission:string){
- const features:Record<string,string>={cbt:'cbt',branding:'custom_branding'};
+export function permissionPlanFeature(permission:string):'cbt'|'custom_branding'|null{
+ const features:Record<string,'cbt'|'custom_branding'>={cbt:'cbt',branding:'custom_branding'};
  return features[permission]||null;
 }

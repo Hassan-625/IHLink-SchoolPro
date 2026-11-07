@@ -4,6 +4,7 @@ import type {ReactNode} from 'react';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
 import {useAuth} from '@/context/AuthContext';
 import {permissionPlanFeature} from '@/lib/schoolPermissions';
+import {SchoolProEntitlementGate} from '@/components/SchoolProEntitlementGate';
 
 export function SchoolProPermissionGate({
  permission,
@@ -17,7 +18,7 @@ export function SchoolProPermissionGate({
  children:ReactNode
 }){
  const {profile}=useAuth();
- const {can,canPortal,loading,planLoading,error,role}=useSchoolProPermissions();
+ const {can,canPortal,hasRolePermission,isPlanAllowed,loading,planLoading,error,role}=useSchoolProPermissions();
  const scope=useSchoolClassScope();
  const path=useLocation().pathname;
 
@@ -30,6 +31,11 @@ export function SchoolProPermissionGate({
 
  if(error)
   return <div role="alert" className="p-8 text-rose-700">School permissions could not be verified. Please reload.</div>;
+
+ const planFeature=permissionPlanFeature(permission);
+ const rolePermission=portal?hasRolePermission(permission,true):hasRolePermission(permission);
+ if(rolePermission&&planFeature&&!isPlanAllowed(permission))
+  return <SchoolProEntitlementGate feature={planFeature}>{children}</SchoolProEntitlementGate>;
 
  if(
   ['teacher','class_teacher'].includes(role.toLowerCase())&&

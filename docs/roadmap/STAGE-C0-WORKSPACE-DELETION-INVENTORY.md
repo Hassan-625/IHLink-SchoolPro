@@ -105,7 +105,9 @@ All 95 observed objects use a UUID as their first path segment. Some paths refer
 
 ## Current disposition
 
-No deletion lifecycle migration or production data change has been made. The schema inventory identifies the principal retention and dependency hazards, but implementation still requires a complete FK/table classification, exact Storage reference mapping, and a disposable PostgreSQL regression fixture. Do not apply a migration or delete any live workspace as part of this review.
+The original inventory above records the pre-implementation audit. C0 now implements a **request/review/safe-deactivation** lifecycle in `20261107235950_schoolpro_workspace_deletion_lifecycle.sql`. A Proprietor requests removal for their own school; an independent active platform Super Admin reviews with a mandatory note; a different Super Admin executes after exact school-name confirmation. Execution changes the workspace status to suspended and preserves every tenant row, financial/legal/audit record and Storage object. The request, review and execution are recorded in the school audit log.
+
+This workflow is deliberately **not a physical purge**. The FK/table classification and Storage mapping below remain relevant to any future permanent purge, but they are not blockers to the safe deactivation workflow because it does not delete tenant rows or Storage objects. The migration and SQL regression must pass against the disposable schema baseline before production application. No production data or Storage object has been changed.
 
 ## Additional retention dependencies introduced by C0 case-management work
 

@@ -72,6 +72,18 @@ begin
   if position('m.status' in def)=0 or position('active' in def)=0 then
     raise exception 'Competition judge validator does not require active membership';
   end if;
+  select pg_get_functiondef('public.mark_schoolpro_theory_answer(uuid,numeric,text)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'CBT theory marking RPC bypasses active membership'; end if;
+  select pg_get_functiondef('public.queue_schoolpro_email(uuid,text,text,text,text,jsonb)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'Email queue RPC bypasses active membership'; end if;
+  select pg_get_functiondef('public.create_schoolpro_portal_invite(uuid,text,text)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'Portal invite RPC bypasses active membership'; end if;
+  select pg_get_functiondef('public.link_schoolpro_student_account(uuid,text)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'Student account linking RPC bypasses active membership'; end if;
+  select pg_get_functiondef('public.schedule_schoolpro_admission_event(uuid,text,timestamp with time zone,text,text)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'Admission event RPC bypasses active membership'; end if;
+  select pg_get_functiondef('public.verify_schoolpro_admission_document(uuid,boolean,text)'::regprocedure) into def;
+  if position('has_school_access' in def)=0 then raise exception 'Admission document RPC bypasses active membership'; end if;
 
   -- Attendance and timetable legacy permissive policies must be removed.
   select count(*) into n from pg_policy p

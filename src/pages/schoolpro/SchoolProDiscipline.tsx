@@ -43,7 +43,7 @@ export function SchoolProDiscipline(){
   setDrafts(Object.fromEntries(records.map(r=>[r.id,{action_taken:r.action_taken||'',severity:r.severity||'moderate',student_response:r.student_response||'',guardian_contact_status:r.guardian_contact_status||'not_required',guardian_contact_note:r.guardian_contact_note||'',follow_up_at:r.follow_up_at||'',follow_up_outcome:r.follow_up_outcome||''}])));
  },[ctx.schoolId,session]);
  useEffect(()=>{setStudents([]);setRows([]);void load();},[load]);
- useEffect(()=>{if(student&&!ids.includes(student))setStudent('')},[ids,student]);
+ useEffect(()=>{if(ids.length>0&&student&&!ids.includes(student))setStudent('')},[ids,student]);
  const names=useMemo(()=>new Map(students.map(s=>[s.id,`${s.first_name} ${s.last_name} · ${s.class_name}`])),[students]);
  async function report(){
   if(!supabase||!user||!student||incident.trim().length<5||busy)return;
@@ -87,7 +87,7 @@ export function SchoolProDiscipline(){
    <Button className="mt-3" disabled={busy||!student||incident.trim().length<5} onClick={()=>void report()}>Report incident</Button>
    {message&&<p role="status" className="mt-3 text-sm">{message}</p>}
   </Card>
-  <div className="grid gap-4">{rows.filter(r=>!r.student_id||ids.includes(r.student_id)).map(r=>{
+  <div className="grid gap-4">{rows.filter(r=>!r.student_id||ids.length===0||ids.includes(r.student_id)).map(r=>{
    const d=drafts[r.id]||{action_taken:'',severity:r.severity||'moderate',student_response:'',guardian_contact_status:'pending',guardian_contact_note:'',follow_up_at:'',follow_up_outcome:''};
    return <Card key={r.id}>
     <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{names.get(r.student_id)||'Student concern'}</h3><p className="text-xs text-muted">{new Date(r.incident_at||r.created_at).toLocaleString()} · {label(r.category||'general')} · {label(r.severity||'moderate')}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{label(r.status)}</span></div>

@@ -18,6 +18,10 @@ assert.match(parentForm,/guardianPhone/,'Parent account form must capture a guar
 assert.match(parentForm,/body:\{schoolId,\.\.\.form/,'Guardian phone must be sent through the existing invitation workflow.');
 assert.match(parentForm,/Relationship<select/,'The existing relationship selector must remain available.');
 assert.match(parents,/profile\?\.phone/,'Parent management must display the linked guardian profile phone.');
+assert.match(parents,/setLinkStatus/,'Parent access lifecycle must use a controlled status transition.');
+assert.match(parents,/\.update\(\{status:nextStatus\}\)\.eq\('id',id\)\.eq\('school_id',schoolId\)/,'Guardian status updates must be scoped to the active school.');
+assert.doesNotMatch(parents,/schoolpro_guardian_links['\"]\)\.delete\(/,'Guardian links must not be hard-deleted from the parent management screen.');
+assert.match(parents,/status==='active'\?'suspended':'active'/,'The parent screen must support both suspension and restoration.');
 assert.match(parentDashboard,/schoolpro_guardian_links/,'Parent dashboard must continue to derive access from guardian links.');
 assert.match(parentDashboard,/middle_name/,'Parent dashboard must preserve full student names.');
 

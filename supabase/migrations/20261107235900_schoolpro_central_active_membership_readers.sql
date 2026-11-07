@@ -7,44 +7,32 @@ returns text[]
 language plpgsql security definer
 set search_path = ''
 as $function$
-declare
-  m public.schoolpro_members;
-  base text[];
-  extra text[];
-  all_permissions text[] := array[
-    'dashboard','students','results','reports','finance','classes','subjects',
-    'attendance','timetable','assignments','admissions','cbt','library','staff',
-    'parents','transport','hostel','inventory','discipline','medical','documents',
-    'announcements','operations','roles','branding','payroll','calendar',
-    'lesson-notes','leave','promotions','notifications'
-  ]::text[];
+declare m public.schoolpro_members; base text[]; extra text[];
 begin
   if auth.uid() is null then return array[]::text[]; end if;
 
-  -- School owner and platform Super Admin access is independent of membership.
-  if exists(select 1 from public.schoolpro_schools s
-    where s.id=p_school and s.owner_id=auth.uid())
-    or private.is_admin(array['super_admin']::public.user_role[]) then
-    return all_permissions;
+  -- Keep platform-owner semantics, but never let a stale board appointment
+  -- grant permissions to an inactive membership.
+  if exists(
+    select 1 from public.schoolpro_board_members b
+    join public.schoolpro_members bm on bm.id=b.member_id and bm.school_id=b.school_id
+    where b.school_id=p_school and bm.user_id=auth.uid()
+      and bm.status='active' and b.ended_at is null and b.role='administrator'
+  ) then
+    return array['dashboard','students','results','reports','finance','classes','subjects','attendance','timetable','assignments','admissions','cbt','library','staff','parents','transport','hostel','inventory','discipline','medical','documents','announcements','operations','roles','branding','payroll','calendar','lesson-notes','leave','promotions','notifications']::text[];
   end if;
 
   select * into m from public.schoolpro_members
-  where school_id=p_school and user_id=auth.uid()
-  limit 1;
+  where school_id=p_school and user_id=auth.uid() limit 1;
 
-  -- No suspended or dismissed membership may retain module permissions.
+  if exists(select 1 from public.schoolpro_schools where id=p_school and owner_id=auth.uid())
+    or private.is_admin(array['super_admin']::public.user_role[]) then
+    return array['dashboard','students','results','reports','finance','classes','subjects','attendance','timetable','assignments','admissions','cbt','library','staff','parents','transport','hostel','inventory','discipline','medical','documents','announcements','operations','roles','branding','payroll','calendar','lesson-notes','leave','promotions','notifications']::text[];
+  end if;
+
   if m.id is null or m.status<>'active' then return array[]::text[]; end if;
-
-  -- A current board appointment can elevate an active membership only while
-  -- the appointment itself remains active.
-  if exists(
-    select 1 from public.schoolpro_board_members b
-    where b.school_id=p_school and b.member_id=m.id
-      and b.role='administrator' and b.ended_at is null
-  ) then return all_permissions; end if;
-
   if m.role='administrator' and m.position_title='Principal' then
-    return all_permissions;
+    return array['dashboard','students','results','reports','finance','classes','subjects','attendance','timetable','assignments','admissions','cbt','library','staff','parents','transport','hostel','inventory','discipline','medical','documents','announcements','operations','roles','branding','payroll','calendar','lesson-notes','leave','promotions','notifications']::text[];
   end if;
 
   base:=case m.role
@@ -75,7 +63,6 @@ begin
   select array_agg(permission) into extra
   from public.schoolpro_member_permissions
   where member_id=m.id and allowed=true;
-
   return (
     select array_agg(distinct x)
     from unnest(base||coalesce(extra,array[]::text[])) x

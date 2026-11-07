@@ -32,6 +32,7 @@ export function SchoolProDiscipline(){
  const [students,setStudents]=useState<Student[]>([]),[members,setMembers]=useState<Member[]>([]),[ids,setIds]=useState<string[]>([]),[rows,setRows]=useState<Concern[]>([]);
  const [student,setStudent]=useState(''),[incident,setIncident]=useState(''),[category,setCategory]=useState('general'),[severity,setSeverity]=useState('moderate'),[location,setLocation]=useState(''),[incidentAt,setIncidentAt]=useState('');
  const [message,setMessage]=useState(''),[busy,setBusy]=useState(false),[drafts,setDrafts]=useState<Record<string,Draft>>({});
+ const [search,setSearch]=useState(''),[statusFilter,setStatusFilter]=useState('all'),[categoryFilter,setCategoryFilter]=useState('all');
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId||!session)return;
   const [a,b,m]=await Promise.all([
@@ -47,6 +48,11 @@ export function SchoolProDiscipline(){
  useEffect(()=>{setStudents([]);setRows([]);void load();},[load]);
  useEffect(()=>{if(ids.length>0&&student&&!ids.includes(student))setStudent('')},[ids,student]);
  const names=useMemo(()=>new Map(students.map(s=>[s.id,`${s.first_name} ${s.last_name} · ${s.class_name}`])),[students]);
+ const scopedRows=useMemo(()=>rows.filter(r=>!r.student_id||ids.length===0||ids.includes(r.student_id)),[rows,ids]);
+ const visibleRows=useMemo(()=>{const q=search.trim().toLowerCase();return scopedRows.filter(r=>(statusFilter==='all'||r.status===statusFilter)&&(categoryFilter==='all'||r.category===categoryFilter)&&(!q||[names.get(r.student_id),r.incident,r.location,r.action_taken,r.student_response,r.guardian_contact_note,r.follow_up_outcome,r.category,r.severity].filter(Boolean).join(' ').toLowerCase().includes(q)));},[scopedRows,statusFilter,categoryFilter,search,names]);
+ const openCount=scopedRows.filter(r=>r.status!=='resolved').length;
+ const followUpCount=scopedRows.filter(r=>r.status!=='resolved'&&r.follow_up_at).length;
+ const resolvedCount=scopedRows.filter(r=>r.status==='resolved').length;
  async function report(){
   if(!supabase||!user||!student||incident.trim().length<5||busy)return;
   setBusy(true);
@@ -89,7 +95,17 @@ export function SchoolProDiscipline(){
    <Button className="mt-3" disabled={busy||!student||incident.trim().length<5} onClick={()=>void report()}>Report incident</Button>
    {message&&<p role="status" className="mt-3 text-sm">{message}</p>}
   </Card>
-  <div className="grid gap-4">{rows.filter(r=>!r.student_id||ids.length===0||ids.includes(r.student_id)).map(r=>{
+  <div className="grid gap-3 sm:grid-cols-3">
+   <Card><p className="text-xs text-muted">Open cases</p><p className="mt-1 text-2xl font-bold tabular-nums">{openCount}</p></Card>
+   <Card><p className="text-xs text-muted">Cases with follow-up scheduled</p><p className="mt-1 text-2xl font-bold tabular-nums">{followUpCount}</p></Card>
+   <Card><p className="text-xs text-muted">Resolved cases</p><p className="mt-1 text-2xl font-bold tabular-nums">{resolvedCount}</p></Card>
+  </div>
+  <Card><div className="grid gap-3 md:grid-cols-3">
+   <label className="text-sm font-semibold">Search cases<input className="mt-1 w-full rounded-xl border p-3" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Student, incident, intervention or outcome"/></label>
+   <label className="text-sm font-semibold">Case status<select className="mt-1 w-full rounded-xl border p-3" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)}><option value="all">All statuses</option>{['open','resolved'].map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+   <label className="text-sm font-semibold">Incident category<select className="mt-1 w-full rounded-xl border p-3" value={categoryFilter} onChange={e=>setCategoryFilter(e.target.value)}><option value="all">All categories</option>{categories.map(x=><option key={x} value={x}>{label(x)}</option>)}</select></label>
+  </div><p className="mt-2 text-xs text-muted">Showing {visibleRows.length} of {scopedRows.length} cases for the selected student filter.</p></Card>
+  <div className="grid gap-4">{visibleRows.map(r=>{
    const d=drafts[r.id]||{action_taken:'',severity:r.severity||'moderate',student_response:'',guardian_contact_status:'pending',guardian_contact_note:'',follow_up_at:'',follow_up_outcome:'',assigned_to:r.assigned_to||''};
    return <Card key={r.id}>
     <div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-bold">{names.get(r.student_id)||'Student concern'}</h3><p className="text-xs text-muted">{new Date(r.incident_at||r.created_at).toLocaleString()} · {label(r.category||'general')} · {label(r.severity||'moderate')}</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{label(r.status)}</span></div>
@@ -114,6 +130,6 @@ export function SchoolProDiscipline(){
     {r.status==='resolved'&&r.resolved_at&&<p className="mt-3 text-xs text-muted">Resolved {new Date(r.resolved_at).toLocaleString()}</p>}
    </Card>;
   })}</div>
-  {!rows.length&&<Card><p className="text-sm text-muted">No student discipline cases are recorded for this session.</p></Card>}
+  {!visibleRows.length&&<Card><p className="text-sm text-muted">{search||statusFilter!=='all'||categoryFilter!=='all'||ids.length?'No cases match the selected filters.':'No student discipline cases are recorded for this session.'}</p></Card>}
  </ModulePage>;
 }

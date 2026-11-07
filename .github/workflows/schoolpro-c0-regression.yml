@@ -30,7 +30,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - name: Install dependencies
@@ -49,6 +49,7 @@ jobs:
         run: npm run test:schoolpro-lifecycle-appointments
 
       - name: Set up Supabase CLI
+        id: supabase-cli
         uses: supabase/setup-cli@v1
         with:
           version: latest
@@ -75,5 +76,5 @@ jobs:
           done
 
       - name: Stop disposable Supabase
-        if: always()
+        if: always() && steps.supabase-cli.outcome == 'success'
         run: supabase stop --no-backup

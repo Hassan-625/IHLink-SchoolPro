@@ -8,7 +8,7 @@ import {Card} from '@/components/ui/Card';
 import {Button} from '@/components/ui/Button';
 import {schoolSections} from './schoolShared';
 
-type Member={id:string;user_id:string;role:string;status:string;profile?:{first_name:string|null;last_name:string|null;email:string}|null};
+type Member={id:string;user_id:string;role:string;status:string;profile?:{first_name:string|null;last_name:string|null;email:string}[]|null};
 type LeaveRow={id:string;member_id:string;leave_type:string;request_type:string;start_date:string;end_date:string;reason:string|null;status:string;absence_reported_at:string|null;reason_updated_at:string|null;review_note:string|null;reviewed_at:string|null;created_at:string};
 
 const managerRoles=['proprietor','administrator','hr_officer','super administrator','super_admin'];
@@ -33,7 +33,7 @@ export function SchoolProLeave(){
  useEffect(()=>{setRows([]);setMembers([]);setMessage('');void load();},[load]);
  const ownMembers=useMemo(()=>members.filter(m=>m.user_id===user?.id),[members,user?.id]);
  const ownIds=useMemo(()=>new Set(ownMembers.map(m=>m.id)),[ownMembers]);
- const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.first_name,m.profile?.last_name].filter(Boolean).join(' ')||m.profile?.email||m.role])),[members]);
+ const memberNames=useMemo(()=>new Map(members.map(m=>[m.id,[m.profile?.[0]?.first_name,m.profile?.[0]?.last_name].filter(Boolean).join(' ')||m.profile?.[0]?.email||m.role])),[members]);
  const visible=canReview?rows:rows.filter(r=>ownIds.has(r.member_id));
  async function submit(){
   if(!supabase||!ctx.schoolId||!start||!end||end<start||busy)return;

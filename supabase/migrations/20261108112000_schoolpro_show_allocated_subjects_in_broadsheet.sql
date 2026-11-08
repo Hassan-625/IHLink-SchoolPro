@@ -46,7 +46,7 @@ begin
   from subject_scope ss
   join public.schoolpro_subjects su on su.id=ss.subject_id and su.school_id=p_school
   left join marks m on m.subject_id=su.id
-  group by su.id,su.name,su.code
+  group by su.id,su.name,su.code,ss.assigned
  )
  select jsonb_build_object(
   'rows',coalesce((select jsonb_agg(to_jsonb(r) order by r.class_position,r.student_name) from ranked r),'[]'),

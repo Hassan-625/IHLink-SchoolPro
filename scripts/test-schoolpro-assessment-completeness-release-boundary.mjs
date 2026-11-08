@@ -18,7 +18,7 @@ assert.ok(helper.includes('exception when others then'),'Malformed schemes must 
 const review=migration.slice(migration.indexOf('function public.review_schoolpro_result'),migration.indexOf('$function$;',migration.indexOf('function public.review_schoolpro_result')));
 assert.ok(review.includes("p_status='approved' and not private.schoolpro_result_assessment_complete(r.id)"),'Approval must reject incomplete scores');
 assert.ok(review.includes('Incomplete assessment:'),'Approval must explain why it was blocked');
-assert.ok(review.includes("p_status='rejected'"),'Rejection remains available for incomplete drafts');
+assert.ok(review.includes("p_status not in('approved','rejected')"),'Rejection remains an allowed review outcome for incomplete drafts');
 
 for (const fn of ['publish_schoolpro_class_results','publish_schoolpro_selected_results','publish_schoolpro_results']) {
  const start=migration.indexOf(`function public.${fn}`);

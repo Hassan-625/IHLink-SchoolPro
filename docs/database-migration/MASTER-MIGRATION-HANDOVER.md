@@ -2942,3 +2942,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The Broadsheet now refreshes the pending class/section correction queue immediately after a new reopening request is submitted and after the Exam Officer approves or rejects a request.
 - When an approved request affects the currently selected class, the class review sheet and workflow summary are refreshed as well, so the newly reopened Draft state is visible without a manual Generate action.
 - Added source-contract assertions for queue refresh and affected-class refresh. These are proposed frontend/test changes; CI has not yet validated the latest head. No production migration, production data write, merge or Render deployment has occurred.
+
+
+### Stage C — section reopening decision refreshes affected class view (2026-11-08)
+
+- Corrected the Exam Officer correction-reopening decision flow in `SchoolProBroadsheet.tsx`: after an approved or rejected section-wide reopening request, the currently selected class broadsheet and workflow summary now refresh when that class belongs to the requested section (same term/session). Previously, the correction queue refreshed but the selected class view refreshed only for class-scoped requests.
+- The correction queue continues to refresh immediately after either decision. No extra database query or schema change was introduced.
+- Added a source-contract regression asserting section-scope matching for the selected class.
+- Changes are confined to PR #133's draft branch. No production data or Supabase schema was changed; no merge or Render deployment occurred. CI validation remains pending.

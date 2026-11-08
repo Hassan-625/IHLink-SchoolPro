@@ -29,4 +29,11 @@ const integration=readFileSync('scripts/test-schoolpro-assessment-completeness-r
 assert.match(integration,/Bulk approval must be all-or-nothing/);
 assert.match(integration,/Bulk approval partially changed a rejected batch/);
 assert.match(integration,/Complete bulk approval did not approve the entire batch/);
-console.log('PASS: SchoolPro bulk approval is atomic and class approval is roster-scoped.');
+console.log('PASS: SchoolPro bulk approval and selected class publication are roster-scoped and atomic.');
+
+const selectedPublish=readFileSync('supabase/migrations/20261108116000_schoolpro_selected_publication_class_scope.sql','utf8');
+assert.match(selectedPublish,/drop function if exists public\.publish_schoolpro_selected_results\(uuid,text,text,uuid\[\],boolean\)/,'The old unscoped publication RPC overload must be removed');
+assert.match(selectedPublish,/p_class uuid default null/,'Selected publication must require a class scope while retaining a whole-school mode');
+assert.match(selectedPublish,/Every selected student must belong to this class roster/,'Selected publication must reject learners outside the chosen class');
+assert.match(selectedPublish,/s\.class_id=p_class/,'Current-roster publication fallback must match the selected class');
+assert.match(selectedPublish,/h\.class_id=p_class/,'Historical enrollment must match the selected class');

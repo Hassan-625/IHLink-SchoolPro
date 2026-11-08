@@ -12,7 +12,7 @@ create table public.schoolpro_schools(id uuid primary key, owner_id uuid);
 create table public.schoolpro_members(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
  user_id uuid not null references auth.users(id), role public.school_member_role not null,
- position_title text
+ position_title text, status text not null default 'active'
 );
 create table public.schoolpro_classes(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
@@ -83,7 +83,7 @@ declare
 begin
  insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(formmaster_id);
  insert into public.schoolpro_schools values(school,owner_id);
- insert into public.schoolpro_members values
+ insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
   (head_member,school,head_id,'head_teacher',null),
   (vice_member,school,vice_id,'vice_principal',null),

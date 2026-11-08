@@ -29,10 +29,13 @@ export function SchoolProBroadsheet(){
    if(scope==='class'){
     if(!classId)throw Error('Select a class first.');
     reviewed=await supabase.rpc('review_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session,p_notes:null});
+   }else if(scope==='selected'){
+    if(!classId)throw Error('Select a class first.');
+    if(!selected.length)throw Error('Generate this class broadsheet and select students first.');
+    reviewed=await supabase.rpc('review_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session,p_notes:null,p_students:selected});
    }else{
-    let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
-    if(scope==='selected'){if(!selected.length)throw Error('Generate this class broadsheet and select students first.');query=query.in('student_id',selected);}
-    const drafts=await fetchSchoolRows(query.order("id"));if(drafts.error)throw Error('Saved scores could not be loaded.');
+    const drafts=await fetchSchoolRows(supabase.from('schoolpro_results').select('id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false).order('id'));
+    if(drafts.error)throw Error('Saved scores could not be loaded.');
     const ids=(drafts.data||[]).map(d=>d.id);
     if(!ids.length){setMsg('No draft scores to approve for this selection. Previously approved or published scores are unchanged.');return;}
     reviewed=await supabase.rpc('review_schoolpro_results',{p_results:ids,p_notes:null});

@@ -29,7 +29,7 @@ using (
       and m.id=schoolpro_member_responsibilities.member_id
       and m.user_id=auth.uid() and m.status='active')
   or private.schoolpro_is_school_admin(school_id)
-  or private.is_admin(array['super_admin'::public.user_role[])
+  or private.is_admin(array['super_admin']::public.user_role[])
 );
 grant select on public.schoolpro_member_responsibilities to authenticated;
 
@@ -478,7 +478,7 @@ begin
     or private.schoolpro_member_leads_class(p_school,p_class)
     or private.schoolpro_is_exam_officer(p_school)
     or private.schoolpro_is_school_admin(p_school)
-    or private.is_admin(array['super_admin'::public.user_role[]]);
+    or private.is_admin(array['super_admin']::public.user_role[]);
   return query
     select a.subject_id,s.name,a.teacher_member_id,
       coalesce(nullif(trim(concat_ws(' ',p.first_name,p.last_name)),''),p.email,'Assigned staff')::text
@@ -1190,7 +1190,7 @@ on public.schoolpro_result_correction_batch_items for select to authenticated
 using (exists(select 1 from public.schoolpro_result_correction_batches b
   where b.id=batch_id and (private.schoolpro_is_exam_officer(b.school_id)
     or private.schoolpro_is_school_admin(b.school_id)
-    or private.is_admin(array['super_admin'::public.user_role[]))));
+    or private.is_admin(array['super_admin']::public.user_role[]))));
 grant select on public.schoolpro_result_correction_batches,public.schoolpro_result_correction_batch_items to authenticated;
 
 create or replace function public.schoolpro_request_result_reopening(

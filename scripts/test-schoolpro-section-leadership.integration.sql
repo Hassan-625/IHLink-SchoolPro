@@ -148,8 +148,8 @@ begin
  end if;
  update public.schoolpro_results set status='approved'
  where false;
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'2025/2026',0,0,'{}','draft');
+ insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,ca_score,exam_score,assessment_scores,status)
+ values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'First Term','2025/2026',0,0,'{}','draft');
  perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
  if public.schoolpro_submit_class_results(school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026')<>1 then
    raise exception 'Form Master must submit Junior Secondary results';

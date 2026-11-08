@@ -520,7 +520,7 @@ begin
       and a.session=trim(p_session) and a.ended_at is null
   );
 end
-$;
+$$;
 revoke all on function private.schoolpro_can_read_result(uuid,uuid,uuid,text) from public,anon;
 grant execute on function private.schoolpro_can_read_result(uuid,uuid,uuid,text) to authenticated;
 drop policy if exists schoolpro_result_subject_scope_guard on public.schoolpro_results;

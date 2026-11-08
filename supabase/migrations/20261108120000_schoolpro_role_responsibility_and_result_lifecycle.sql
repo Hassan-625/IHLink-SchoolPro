@@ -838,17 +838,6 @@ begin
       and w.term=trim(p_term) and w.session=trim(p_session)) then
     raise exception 'No submitted class results exist in this section for the selected period';
   end if;
-  if exists(select 1 from public.schoolpro_results r
-    join public.schoolpro_students s on s.school_id=r.school_id and s.id=r.student_id
-    left join lateral (select eh.class_id from public.schoolpro_enrollment_history eh
-      where eh.school_id=r.school_id and eh.student_id=r.student_id and eh.session=trim(p_session)
-      order by eh.created_at desc limit 1) h on true
-    join public.schoolpro_classes c on c.school_id=r.school_id and c.id=coalesce(h.class_id,s.class_id)
-    where r.school_id=p_school and c.level=p_section and r.term=trim(p_term)
-      and r.session=trim(p_session) and (r.status<>'draft' or r.locked
-        or not private.schoolpro_result_assessment_complete(r.id))) then
-    raise exception 'Every result in the section must be a complete unlocked Draft before approval';
-  end if;
   update public.schoolpro_results r set status='approved',updated_at=now()
   where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
     and r.status='draft' and not r.locked

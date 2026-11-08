@@ -1,5 +1,13 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
+## Stage C continuation — assessment workbook schema and class-level validation (2026-11-08)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Hardened the workbook preview before any import RPC call. It now rejects non-empty unsupported columns rather than silently ignoring misspelled or stale assessment headings, while allowing the configured component keys across the school's assessment schemes. It also checks each student's selected-session class level against the chosen assessment scheme and reports an actionable row-level preview error for incompatible Nursery/Primary/Junior Secondary/Senior Secondary schemes. The database import RPC remains the final enforcement boundary. Added source-contract assertions for both checks. This is branch-only work; no production database migration, merge, or Render deployment was performed.
+
+
 ## Stage C continuation — section leadership eligibility correction (2026-11-08)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  

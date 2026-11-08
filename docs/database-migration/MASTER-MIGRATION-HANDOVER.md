@@ -2788,3 +2788,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the broadsheet's “Approve selected scores” action to call this class-scoped RPC directly. Whole-school approval remains on the atomic bulk RPC.
 - Extended the source regression and disposable PostgreSQL integration fixture to prove selected learners are approved only within the selected class roster and out-of-class selections are rejected.
 - Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C selected-student publication class-roster enforcement
+
+- Found that selected-student publication accepted a learner ID list but did not constrain result rows to the class currently selected in the broadsheet. A learner with additional approved rows associated with another class could have those rows published unintentionally.
+- Added proposed migration `20261108116000_schoolpro_selected_publication_class_scope.sql`. The legacy unscoped five-argument RPC overload is removed; selected publication now requires a valid class and verifies every selected learner against the selected-session historical roster or, when no history exists, the learner's active current class.
+- Applied the same class predicate to result-row locking, completeness validation and publication update. Whole-school publication remains an explicit separate mode and rejects a supplied class/student selection.
+- Updated the broadsheet to pass the selected class for learner publication and null class for the whole-school action.
+- Extended the approval/publication regression and disposable PostgreSQL integration fixture to prove an in-class result publishes, another class's result remains Approved, and an out-of-class learner selection is rejected.
+- Proposed migration only; no production database changes, merge or Render deployment.

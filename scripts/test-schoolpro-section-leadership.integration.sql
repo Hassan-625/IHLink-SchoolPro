@@ -279,6 +279,40 @@ begin
  insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
   (subject_teacher_member,school,subject_teacher_id,'teacher',null),
   (exam_officer_member,school,exam_officer_id,'teacher',null);
+ -- The earlier fixture left a Principal appointed to Senior Secondary.
+ -- Restore the VP role and appoint the VP to that same section: Principal wins.
+ update public.schoolpro_members set role='vice_principal',position_title=null
+ where id='99999999-9999-4999-8999-999999999992';
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(
+   school,'99999999-9999-4999-8999-999999999992','senior_secondary',true
+ );
+ perform set_config('request.jwt.claim.sub','88888888-8888-4888-8888-888888888888',true);
+ if private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
+   raise exception 'Vice Principal must not lead a section with an active Principal appointment';
+ end if;
+ begin
+   perform public.schoolpro_approve_section_results(school,'senior_secondary','First Term','2025/2026');
+   raise exception 'ASSERT: Vice Principal bypassed Principal precedence in section approval RPC';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('principal takes precedence' in lower(sqlerrm))=0 then raise; end if;
+ end;
+ begin
+   perform public.schoolpro_approve_class_results(
+     school,'22222222-2222-4222-8222-222222222224','First Term','2025/2026'
+   );
+   raise exception 'ASSERT: Vice Principal bypassed Principal precedence in class approval RPC';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('principal takes precedence' in lower(sqlerrm))=0 then raise; end if;
+ end;
+ perform set_config('request.jwt.claim.sub','88888888-8888-4888-8888-888888888889',true);
+ if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
+   raise exception 'Principal must retain authority over Senior Secondary when VP is also appointed';
+ end if;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ update public.schoolpro_members set role='teacher' where id=subject_teacher_member;
  update public.schoolpro_classes set form_teacher_id=formmaster_member where id=primary_class;
  insert into public.schoolpro_subjects values(subject_two,school);
  insert into public.schoolpro_subject_assignments(school_id,class_id,teacher_member_id,subject_id,session,ended_at) values

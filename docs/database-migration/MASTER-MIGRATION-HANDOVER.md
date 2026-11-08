@@ -2779,3 +2779,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the class-level broadsheet action to use the class-scoped RPC. Selected-student and whole-school approval retain the existing atomic bulk RPC.
 - Extended the source-contract regression and disposable PostgreSQL fixture to prove a class approval does not approve a Draft result belonging to another current class.
 - Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C selected-student class-roster approval
+
+- Tightened the selected-student approval path so selecting learners from one class cannot approve unrelated result rows for those learners outside that class/session roster.
+- Extended `review_schoolpro_class_results` with an optional, bounded student-ID selection. The RPC validates uniqueness and confirms every selected student belongs to the requested historical/current class roster before selecting any Draft result rows.
+- Updated the broadsheet's “Approve selected scores” action to call this class-scoped RPC directly. Whole-school approval remains on the atomic bulk RPC.
+- Extended the source regression and disposable PostgreSQL integration fixture to prove selected learners are approved only within the selected class roster and out-of-class selections are rejected.
+- Proposed migration only; no production database changes, merge or Render deployment.

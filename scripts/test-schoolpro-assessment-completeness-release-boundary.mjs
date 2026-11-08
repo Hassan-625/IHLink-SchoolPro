@@ -12,7 +12,7 @@ assert.ok(helper.includes("not (r.assessment_scores ? component_key)"),'Every co
 assert.ok(helper.includes("jsonb_typeof(r.assessment_scores->component_key)<>'number'"),'Every component score must be numeric');
 assert.ok(helper.includes('score_value>max_value'),'Component scores must respect the configured maximum');
 assert.ok(helper.includes('jsonb_object_keys(r.assessment_scores)'),'Unknown score keys must be rejected');
-assert.ok(helper.includes('return r.total_score=calculated_total'),'Stored total must equal the sum of component scores');
+assert.ok(helper.includes('return coalesce(r.total_score=calculated_total,false)'),'Stored total must equal the sum of component scores');
 assert.ok(helper.includes('exception when others then'),'Malformed schemes must fail closed');
 
 const review=migration.slice(migration.indexOf('function public.review_schoolpro_result'),migration.indexOf('$function$;',migration.indexOf('function public.review_schoolpro_result')));

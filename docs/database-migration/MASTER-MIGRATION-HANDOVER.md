@@ -2916,7 +2916,4 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - This is a proposed SQL/source change in PR #133. No production migration, production data write, merge or Render deployment has occurred. The source-contract regression and disposable PostgreSQL integration still need to run against the latest PR head.
 
 
-- Expanded the disposable PostgreSQL lifecycle fixture so the same Junior Secondary section has both an active Vice Principal and an active Principal appointment. It now proves that the Vice Principal's section approval is rejected once the Principal is appointed, while the Principal can approve the submitted section. The existing Senior Secondary Principal approval case remains.
-- Updated the section-leadership source-contract regression to require this explicit precedence scenario.
-
-- Fixture sequencing note: the Vice Principal's ordinary Junior Secondary authority is first verified while no Principal appointment exists; only then is the Principal appointed to that same section and the Vice Principal denial/Principal approval assertions executed. This preserves coverage of both states.
+- Validation boundary: the existing disposable PostgreSQL section-leadership fixture applies the 20261108118000 and 20261108119000 migrations; it does not apply 20261108120000. The new approval-RPC guard is therefore covered by the Stage C source-contract regression at this point, not by a claim that the older fixture executed the newer RPC implementation. A dedicated disposable integration harness for migration 20261108120000 remains a validation item.

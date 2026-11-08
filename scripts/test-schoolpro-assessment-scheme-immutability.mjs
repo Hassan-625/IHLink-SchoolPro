@@ -4,8 +4,8 @@ const migration=readFileSync('supabase/migrations/20261108103000_schoolpro_immut
 const page=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const save=page.slice(page.indexOf('async function saveScheme'),page.indexOf('async function makeDefaultScheme'));
 assert.match(migration,/prevent_used_assessment_scheme_change/);
-assert.match(migration,/new\\.components is distinct from old\\.components/);
-assert.match(migration,/assessment_scheme_id=old\\.id/);
+assert.match(migration,/new\.components is distinct from old\.components/);
+assert.match(migration,/assessment_scheme_id=old\.id/);
 assert.match(migration,/Create a new scheme/);
 assert.match(save,/schemeInUse/);
 assert.match(save,/componentsChanged/);

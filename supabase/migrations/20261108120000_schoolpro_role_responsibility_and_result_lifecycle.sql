@@ -638,8 +638,9 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_class uuid;
 begin
-  if auth.uid() is null or not private.is_active_account() then
-    raise exception 'Authentication required to enter or change assessment scores';
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_module_allowed(new.school_id,'results') then
+    raise exception 'Authentication or Results module permission required to enter or change assessment scores';
   end if;
 
   if tg_op='UPDATE'
@@ -1102,6 +1103,9 @@ as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if nullif(trim(p_notes),'') is null or length(trim(p_notes))<10 then
     raise exception 'Provide a correction note of at least 10 characters';
   end if;
@@ -1227,6 +1231,9 @@ as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other')
      or nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Choose a valid section, term and session';
@@ -1279,6 +1286,9 @@ as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if not private.schoolpro_is_exam_officer(p_school) then raise exception 'Only the Exam Officer can give final result approval'; end if;
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null
      or p_scope not in ('class','section','school') then raise exception 'Choose a valid result period and approval scope'; end if;
@@ -1326,6 +1336,9 @@ as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if not private.schoolpro_is_exam_officer(p_school) then raise exception 'Only the Exam Officer can publish school results'; end if;
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Select an academic term and session';
@@ -1414,6 +1427,9 @@ as $$
 declare v_request uuid;v_member uuid;v_count integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null
      or nullif(trim(p_reason),'') is null or length(trim(p_reason))<10 then
     raise exception 'Provide the result period and a correction reason of at least 10 characters';
@@ -1474,6 +1490,9 @@ begin
   if p_approve is null then raise exception 'Choose approve or reject'; end if;
   select * into request_row from public.schoolpro_result_correction_batches where id=p_request for update;
   if request_row.id is null or request_row.status<>'pending' then raise exception 'Pending correction request not found'; end if;
+  if not coalesce(private.schoolpro_module_allowed(request_row.school_id,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
   if not private.schoolpro_is_exam_officer(request_row.school_id) then
     raise exception 'Only the Exam Officer can authorize a class or section result reopening';
   end if;

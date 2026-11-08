@@ -47,7 +47,7 @@ begin
   left join public.schoolpro_results r on r.student_id=s.id and r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
    and r.status='published'::public.schoolpro_result_status and r.locked=true
   where s.school_id=p_school and coalesce(e.class_id,s.class_id)=p_class
-   and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id)))
+   and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session))))
   group by s.id,s.admission_number,s.first_name,s.last_name
  ),y as(select x.*,rank() over(order by x.total desc)::bigint pos from x)
  select y.id,y.admission_number,y.student_name,y.total,y.average,y.subjects,y.pos from y order by y.pos,y.student_name;

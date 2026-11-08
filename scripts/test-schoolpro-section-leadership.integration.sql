@@ -93,8 +93,8 @@ begin
  insert into public.schoolpro_classes values
   (nursery_class,school,'Nursery 2','nursery',formmaster_member),
   (primary_class,school,'Primary 4','primary',null),
-  ('22222222-2222-4222-8222-222222222223',school,'JSS 2','junior_secondary',null),
-  ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',null);
+  ('22222222-2222-4222-8222-222222222223',school,'JSS 2','junior_secondary',formmaster_member),
+  ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',formmaster_member);
  insert into public.schoolpro_students values
   (student_n,school,nursery_class,null,'active'),
   (student_p,school,primary_class,null,'active'),
@@ -151,8 +151,11 @@ begin
  where false;
  insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,ca_score,exam_score,assessment_scores,status)
  values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'2025/2026',0,0,'{}','draft');
- insert into public.schoolpro_result_workflow(result_id,school_id,class_id,term,session,status)
- values('bbbbbbbb-0000-4000-8000-000000000001',school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026','submitted');
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if public.schoolpro_submit_class_results(school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026')<>1 then
+   raise exception 'Form Master must submit Junior Secondary results';
+ end if;
+ perform set_config('request.jwt.claim.sub',head_id::text,true);
  insert into public.schoolpro_result_workflow(result_id,school_id,class_id,term,session,status)
  values('bbbbbbbb-0000-4000-8000-000000000001',school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026','submitted');
  begin
@@ -192,8 +195,11 @@ begin
  end if;
  insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,ca_score,exam_score,assessment_scores,status)
  values('bbbbbbbb-0000-4000-8000-000000000003',school,student_ss,subject_id,'2025/2026','First Term',10,90,'{}','draft');
- insert into public.schoolpro_result_workflow(result_id,school_id,class_id,term,session,status)
- values('bbbbbbbb-0000-4000-8000-000000000003',school,'22222222-2222-4222-8222-222222222224','First Term','2025/2026','submitted');
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if public.schoolpro_submit_class_results(school,'22222222-2222-4222-8222-222222222224','First Term','2025/2026')<>1 then
+   raise exception 'Form Master must submit Senior Secondary results';
+ end if;
+ perform set_config('request.jwt.claim.sub',principal_id::text,true);
  update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000003';
  update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';
  if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000003')<>'published' then

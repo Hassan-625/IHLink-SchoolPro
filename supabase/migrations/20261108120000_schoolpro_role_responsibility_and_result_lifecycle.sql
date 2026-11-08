@@ -508,6 +508,34 @@ $$;
 revoke all on function private.schoolpro_can_review_class(uuid,uuid) from public,anon;
 grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authenticated;
 
+-- The write helper used by legacy RLS policies must match the same exact subject-allocation rule.
+-- Form Masters, Section Heads, Exam Officers and school administrators are reviewers, not score writers.
+create or replace function private.schoolpro_can_write_result(
+  p_school uuid,p_student uuid,p_subject uuid,p_session text
+) returns boolean language sql stable security definer set search_path=''
+as $
+  select auth.uid() is not null and private.is_active_account()
+    and private.schoolpro_operationally_active(p_school)
+    and private.schoolpro_module_allowed(p_school,'results')
+    and exists(select 1 from public.schoolpro_subjects sub
+      where sub.school_id=p_school and sub.id=p_subject)
+    and exists(
+      select 1 from public.schoolpro_students s
+      join public.schoolpro_members m on m.school_id=s.school_id
+        and m.user_id=auth.uid() and m.status='active'
+        and m.role::text in ('teacher','class_teacher')
+      join public.schoolpro_subject_assignments a on a.school_id=m.school_id
+        and a.teacher_member_id=m.id and a.subject_id=p_subject
+        and a.class_id=coalesce((select h.class_id from public.schoolpro_enrollment_history h
+          where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session)
+          order by h.created_at desc limit 1),s.class_id)
+        and a.session=trim(p_session) and a.ended_at is null
+      where s.school_id=p_school and s.id=p_student
+    )
+$;
+revoke all on function private.schoolpro_can_write_result(uuid,uuid,uuid,text) from public,anon;
+grant execute on function private.schoolpro_can_write_result(uuid,uuid,uuid,text) to authenticated;
+
 -- Result reads are narrower than student/class reads: an ordinary subject teacher
 -- may see only the results for their own allocated subject. Form Masters, appointed
 -- Section Heads, Exam Officers and school administrators can review their permitted scope.

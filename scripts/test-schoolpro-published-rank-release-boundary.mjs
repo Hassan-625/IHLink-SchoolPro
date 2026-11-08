@@ -15,7 +15,7 @@ assert.ok(family.includes("r.status='published' and r.locked"),'Family period di
 console.log('PASS: report cards, family visibility, broadsheet and class ranking all use published-and-locked results.');
 
 const rankGuard=readFileSync('supabase/migrations/20261108117000_schoolpro_hide_unreleased_student_rankings.sql','utf8');
-assert.match(rankGuard,/nullif\(trim\(p_term\),' '\) is null/,'Ranking must reject a blank term');
-assert.match(rankGuard,/nullif\(trim\(p_session\),' '\) is null/,'Ranking must reject a blank session');
+assert.match(rankGuard,//nullif\\\(trim\\\(p_term\\\),''\\\) is null/g/,'Ranking must reject a blank term');
+assert.match(rankGuard,//nullif\\\(trim\\\(p_session\\\),''\\\) is null/g/,'Ranking must reject a blank session');
 assert.match(rankGuard,/not exists\(select 1 from public\.schoolpro_results r[\s\S]*r\.status='published'::public\.schoolpro_result_status and r\.locked=true\)/,'Student and guardian rank must require their own published and locked result');
 assert.match(rankGuard,/schoolpro_can_view_result_output\(p_student_id,trim\(p_term\),trim\(p_session\)\)/,'Ranking must preserve attendance and finance release checks');

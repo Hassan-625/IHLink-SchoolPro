@@ -1,13 +1,12 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const migration=readFileSync('supabase/migrations/20261108104000_schoolpro_require_locked_results_for_pin_release.sql','utf8');
-const source=readFileSync('supabase/migrations/20261017120000_schoolpro_result_verification_minimal_snapshot.sql','utf8');
-const family=readFileSync('supabase/migrations/20261017120000_schoolpro_result_verification_minimal_snapshot.sql','utf8');
+const family=readFileSync('supabase/migrations/20261009222727_private_family_result_rpcs.sql','utf8');
 assert.ok(migration.includes("r.status='published' and r.locked=true"),'PIN result payload must require published and locked rows');
 assert.ok(migration.includes("if jsonb_array_length(payload)=0 then"),'No released result must fail closed');
 assert.ok(migration.includes("private.record_schoolpro_result_pin_failure(v_attempt_key)"),'Invalid PIN must continue to accrue cooldown failures');
 assert.ok(migration.includes("pg_catalog.pg_advisory_xact_lock"),'PIN attempts must remain serialized');
 assert.ok(migration.includes("revoke all on function public.check_schoolpro_result_pin(text,text,text,text) from public,anon"),'Public/anon execution must remain revoked');
 assert.ok(migration.includes("grant execute on function public.check_schoolpro_result_pin(text,text,text,text) to service_role"),'Only the Edge Function service role should execute the PIN RPC');
-assert.ok(family.includes("r.status = 'published'")&&family.includes("r.locked = true"),'Family result release already requires published and locked rows');
+assert.ok(family.includes("r.status='published' and r.locked"),'Family result release must require published and locked rows');
 console.log('PASS: public PIN release and family report-card release both require locked, published results.');

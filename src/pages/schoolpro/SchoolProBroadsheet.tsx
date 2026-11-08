@@ -32,7 +32,13 @@ export function SchoolProBroadsheet(){
    if(!ids.length){setMsg('No draft scores to approve for this selection. Previously approved or published scores are unchanged.');return;}
    const reviewed=await supabase.rpc('review_schoolpro_results',{p_results:ids,p_notes:null});
    if(reviewed.error)throw Error(reviewed.error.message||'The selected scores could not be approved.');
-   setMsg(`${Number(reviewed.data)||0} score records approved atomically. You can now publish this selection.`);
+   const approved=Number(reviewed.data)||0;
+    setMsg(`${approved} score records approved atomically. You can now publish this selection.`);
+    if(scope!=='school'&&classId){
+     const sheet=await supabase.rpc('schoolpro_class_review_sheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});
+     if(sheet.error)setMsg(`${approved} score records were approved, but the broadsheet could not refresh. Generate it again to view the updated review state.`);
+     else{setRows(sheet.data?.rows||[]);setSubjects(sheet.data?.subjects||[]);}
+    }
   }catch(e){setMsg(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false)}
  }
  async function publish(){if(!supabase||!canPublish||busy)return;setBusy(true);const r=await supabase.rpc('publish_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});setBusy(false);setMsg(r.error?'Results could not be published. Please try again.':Number(r.data)>0?`${r.data} approved result records published.`:'No approved scores were waiting for publication. Approve saved draft scores first; already published results remain available.');if(!r.error){const sheet=await supabase.rpc('schoolpro_class_review_sheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});setRows(sheet.data?.rows||[]);setSubjects(sheet.data?.subjects||[])}}

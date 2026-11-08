@@ -2950,3 +2950,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The correction queue continues to refresh immediately after either decision. No extra database query or schema change was introduced.
 - Added a source-contract regression asserting section-scope matching for the selected class.
 - Changes are confined to PR #133's draft branch. No production data or Supabase schema was changed; no merge or Render deployment occurred. CI validation remains pending.
+
+
+### Stage C — requester-visible correction request tracking (2026-11-08)
+
+- Added `20261108121000_schoolpro_correction_requester_visibility.sql` with a narrow SELECT RLS policy allowing an authenticated user to read only correction-batch records where `requested_by = auth.uid()`. Existing Exam Officer, school administrator and Super Admin review visibility remains intact; correction-batch item snapshots remain restricted to reviewers.
+- Added a **My result correction requests** panel to the staff broadsheet. It shows the signed-in staff member's latest 20 requests, scope, academic period, reason, pending/approved/rejected status and any Exam Officer review note. It does not grant requesters authority to approve, reject or reopen results.
+- Request history refreshes after a new request and after a review decision. The existing Exam Officer pending queue remains separate.
+- Extended `scripts/test-schoolpro-correction-review-atomicity.mjs` to assert the requester-only RLS predicate, user-scoped query and status/review-note UI. The existing CI job already invokes this regression script.
+- Proposed migration and frontend changes are on PR #133 only. No production Supabase changes, merge or Render deployment occurred. CI has not yet validated this latest increment.

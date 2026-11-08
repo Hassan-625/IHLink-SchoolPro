@@ -1280,6 +1280,54 @@ $$;
 revoke all on function public.schoolpro_approve_section_results(uuid,text,text,text) from public,anon;
 grant execute on function public.schoolpro_approve_section_results(uuid,text,text,text) to authenticated;
 
+-- After a class-scoped correction reopening, the Section Head can re-approve only that class.
+create or replace function public.schoolpro_approve_class_results(
+  p_school uuid,p_class uuid,p_term text,p_session text
+) returns integer language plpgsql security definer set search_path=''
+as $
+declare n integer;
+begin
+  if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then
+    raise exception 'Module permission denied: results';
+  end if;
+  if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
+    raise exception 'Choose an academic term and session';
+  end if;
+  if not exists(select 1 from public.schoolpro_classes c
+    join public.schoolpro_section_leaders sl on sl.school_id=c.school_id
+      and sl.section=c.level and sl.ended_at is null
+    join public.schoolpro_members m on m.id=sl.member_id and m.school_id=sl.school_id
+      and m.user_id=auth.uid() and m.status='active'
+    where c.school_id=p_school and c.id=p_class) then
+    raise exception 'Only the appointed Section Head can approve this class result';
+  end if;
+  if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'class',p_class,null,'section') then
+    raise exception 'Every allocated subject result in this class must be complete and submitted by its Form Master';
+  end if;
+  perform set_config('app.schoolpro_section_approval','on',true);
+  update public.schoolpro_results r set status='approved',updated_at=now()
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and r.status='draft' and not r.locked
+    and exists(select 1 from public.schoolpro_result_workflow w
+      where w.result_id=r.id and w.school_id=p_school and w.class_id=p_class
+        and w.term=trim(p_term) and w.session=trim(p_session) and w.status='submitted');
+  get diagnostics n=row_count;
+  if n=0 then raise exception 'No submitted class results were available for Section Head approval'; end if;
+  update public.schoolpro_result_workflow set status='section_approved',
+    approved_by=auth.uid(),approved_at=now(),section_approved_by=auth.uid(),
+    section_approved_at=now(),updated_at=now()
+  where school_id=p_school and class_id=p_class and term=trim(p_term)
+    and session=trim(p_session) and status in ('submitted','approved');
+  insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
+  values(p_school,auth.uid(),'Class results approved by Section Head','class',p_class,
+    jsonb_build_object('term',trim(p_term),'session',trim(p_session),'result_count',n));
+  return n;
+end
+$;
+revoke all on function public.schoolpro_approve_class_results(uuid,uuid,text,text) from public,anon;
+grant execute on function public.schoolpro_approve_class_results(uuid,uuid,text,text) to authenticated;
+
 -- Exam Officer performs final approval for a class, section or whole school.
 create or replace function public.schoolpro_exam_officer_approve_results(
   p_school uuid,p_term text,p_session text,p_scope text,

@@ -29,8 +29,11 @@ as $$
        and c.level=sl.section
       where m.school_id=p_school and m.user_id=auth.uid()
         and (
-          m.role in ('head_teacher','vice_principal')
-          or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+          (sl.section in ('nursery','primary') and m.role='head_teacher')
+          or (sl.section in ('junior_secondary','senior_secondary') and (
+            m.role='vice_principal'
+            or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+          ))
         )
     )
 $$;
@@ -47,9 +50,12 @@ as $$
     join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid()
       and (
-        m.role in('head_teacher','vice_principal')
-        or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
-      )
+          (sl.section in ('nursery','primary') and m.role='head_teacher')
+          or (sl.section in ('junior_secondary','senior_secondary') and (
+            m.role='vice_principal'
+            or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+          ))
+        )
   )
 $$;
 revoke all on function private.schoolpro_member_leads_class(uuid,uuid) from public,anon;
@@ -164,9 +170,12 @@ with leaders as materialized (
           on c.school_id=e.school_id and c.id=e.class_id and c.level=sl.section
         where m.school_id=e.school_id and m.user_id=auth.uid()
           and (
-            m.role in('head_teacher','vice_principal')
+          (sl.section in ('nursery','primary') and m.role='head_teacher')
+          or (sl.section in ('junior_secondary','senior_secondary') and (
+            m.role='vice_principal'
             or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
           ))
+        ))
     )
     and private.schoolpro_operationally_active(e.school_id)
 )

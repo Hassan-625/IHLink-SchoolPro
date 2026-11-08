@@ -1,5 +1,25 @@
 # SchoolPro Master Migration and Production Cleanup Handover
 
+## Stage C continuation — section leadership eligibility correction (2026-11-08)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+**Status:** Proposed branch changes only. No production migration, production data write, merge, or Render deployment.
+
+The Stage C section-leadership model now follows four independent academic sections:
+- Nursery — Head Teacher appointment scoped to Nursery.
+- Primary — separate Head Teacher appointment scoped to Primary.
+- Junior Secondary — Vice Principal or Principal appointment scoped to Junior Secondary.
+- Senior Secondary — separate Vice Principal or Principal appointment scoped to Senior Secondary.
+
+Principal is the senior authority above Vice Principal. The appointment RPC must not promote an ordinary Subject Teacher or Class Teacher to section-head authority merely because they teach or serve as Form Master. The final section-appointment authorization also recognizes the explicit `school_admin` staff responsibility, alongside Proprietor/Administrator and IHLink Super Admin.
+
+Added regression coverage rejecting an ordinary subject teacher's section-head appointment and source-contract checks for the role eligibility and `school_admin` authorization. These tests have been committed to the PR branch; execution and latest CI status remain pending and must not be represented as passed until verified.
+
+This correction does not change subject-score write scope: a subject teacher remains restricted to their active class/subject/session allocations. Form Master class-wide visibility and submission do not grant permission to edit another teacher's marks.
+
+---
+
 **Last updated:** 2026-11-06  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
 **Production frontend:** Render — https://ihlink-schoolpro.onrender.com  

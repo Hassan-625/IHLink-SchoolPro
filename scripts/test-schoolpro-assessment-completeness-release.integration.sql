@@ -31,6 +31,7 @@ create function public.schoolpro_member_can_manage(uuid) returns boolean languag
 \ir ../supabase/migrations/20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql
 \ir ../supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql
 \ir ../supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql
+\ir ../supabase/migrations/20261108115000_schoolpro_class_scoped_atomic_approval.sql
 
 insert into public.schoolpro_assessment_schemes(id,school_id,components) values
  ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',
@@ -142,6 +143,28 @@ begin
  end if;
  if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000008' and status='approved' and not locked) then
   raise exception 'Class publication incorrectly included an active student from another current class';
+ end if;
+end
+$assert$;
+
+-- Class approval must not include another class's results for the same school/period.
+insert into public.schoolpro_classes(id,school_id) values
+ ('30000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000001');
+insert into public.schoolpro_students(id,school_id,status,class_id) values
+ ('40000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000001','active','30000000-0000-0000-0000-000000000001'),
+ ('40000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000001','active','30000000-0000-0000-0000-000000000003');
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score,status)
+values
+ ('60000000-0000-0000-0000-000000000009','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000006','70000000-0000-0000-0000-000000000009','Second Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft'),
+ ('60000000-0000-0000-0000-000000000010','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000007','70000000-0000-0000-0000-000000000010','Second Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft');
+select public.review_schoolpro_class_results('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','Second Term','2026/2027',null);
+do $assert$
+begin
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000009' and status='approved') then
+  raise exception 'Class-scoped approval did not approve its own current-roster student';
+ end if;
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000010' and status='draft') then
+  raise exception 'Class-scoped approval incorrectly approved another class student';
  end if;
 end
 $assert$;

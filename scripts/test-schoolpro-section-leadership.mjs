@@ -127,6 +127,11 @@ assert.match(staff,/schoolpro_set_member_responsibility/i);
 assert.match(staff,/Section leadership appointments/i);
 assert.match(profile,/My School Responsibilities/i);
 assert.match(profile,/schoolpro_member_responsibilities/i);
+assert.match(authorityMigration,/private\.schoolpro_member_leads_class\(p_school,c\.id\)/i,
+  'Section-wide approval must use the role- and Principal-precedence-aware class authority predicate');
+assert.match(authorityMigration,/if not private\.schoolpro_member_leads_class\(p_school,p_class\) then/i,
+  'Class approval must use the same role- and Principal-precedence-aware authority predicate');
+assert.match(authorityMigration,/an appointed Principal takes precedence over a Vice Principal/i);
 
 assert.match(workflowMigration,/Approved or published results must be reopened through the correction workflow/i);
 assert.match(integration,/Form Master must submit all class Draft results/i);

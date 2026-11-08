@@ -2650,3 +2650,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - A source-to-source comparison against the established broadsheet/report rank migrations found that the new staff review-sheet roster query needed to preserve the existing historical-session fallback for active students who have no enrollment-history row. The proposed review-sheet migration now uses the same `coalesce(enrollment_history.class_id, students.class_id)` and active/no-history fallback as the published broadsheet and report rank readers.
 - The PIN checker attendance aggregation now explicitly scopes attendance rows by both `school_id` and `student_id`, matching the family access policy and preventing cross-workspace attendance rows from entering the calculation.
 - Added source-contract regression assertions for both corrections. These remain proposed branch changes; no production SQL has been run.
+
+
+### Stage C published ranking and release-boundary alignment
+
+- Added proposed migration `20261108105000_schoolpro_published_rank_requires_locked_results.sql`. Published class ranking and the staff broadsheet's published-result aggregate now include only rows that are both `status='published'` and `locked=true`, matching the existing printable report-card and family-period release boundary.
+- Draft and approved records remain available in the staff review sheet for operational review, but cannot influence the published class position calculation or published class totals.
+- Added a source-contract regression and wired it into the standard CI validation job. This migration is not applied to production.

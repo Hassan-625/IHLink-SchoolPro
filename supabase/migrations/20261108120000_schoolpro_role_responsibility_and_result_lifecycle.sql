@@ -561,7 +561,7 @@ begin
   on conflict(result_id) do update set
     school_id=excluded.school_id,class_id=excluded.class_id,term=excluded.term,session=excluded.session,
     status='submitted',submitted_by=excluded.submitted_by,submitted_at=now(),
-    approved_by=null,approved_at=null,published_at=null,updated_at=now()
+    approved_by=null,approved_at=null,published_at=null,correction_notes=null,updated_at=now()
   where public.schoolpro_result_workflow.status in ('draft','correction_requested','submitted');
   get diagnostics v_count=row_count;
   if v_count=0 then raise exception 'No Draft results were available to submit'; end if;
@@ -641,8 +641,7 @@ begin
   ) then
     update public.schoolpro_result_workflow set status='draft',submitted_by=null,
       submitted_at=null,approved_by=null,approved_at=null,section_approved_by=null,
-      section_approved_at=null,exam_approved_by=null,exam_approved_at=null,
-      correction_notes=null,updated_at=now()
+      section_approved_at=null,exam_approved_by=null,exam_approved_at=null,updated_at=now()
     where result_id=old.id and status in ('submitted','correction_requested');
   end if;
 
@@ -788,6 +787,29 @@ select exists(select 1 from expected)
 $;
 revoke all on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) from public,anon;
 grant execute on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) to authenticated;
+
+create or replace function public.schoolpro_class_result_workflow_summary(
+  p_school uuid,p_class uuid,p_term text,p_session text
+) returns table(workflow_status text,correction_notes text,result_count bigint)
+language plpgsql stable security definer set search_path=''
+as $
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_module_allowed(p_school,'results')
+     or not private.schoolpro_can_read_class(p_class) then
+    raise exception 'Not authorized to view this class result workflow';
+  end if;
+  return query
+    select w.status,w.correction_notes,count(*)::bigint
+    from public.schoolpro_result_workflow w
+    where w.school_id=p_school and w.class_id=p_class
+      and w.term=trim(p_term) and w.session=trim(p_session)
+    group by w.status,w.correction_notes
+    order by w.status;
+end
+$;
+revoke all on function public.schoolpro_class_result_workflow_summary(uuid,uuid,text,text) from public,anon;
+grant execute on function public.schoolpro_class_result_workflow_summary(uuid,uuid,text,text) to authenticated;
 
 -- A Section Head can approve the complete submitted section as one atomic hand-off.
 create or replace function public.schoolpro_approve_section_results(

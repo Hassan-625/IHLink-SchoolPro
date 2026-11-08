@@ -151,11 +151,11 @@ begin
  if not private.schoolpro_can_read_class(primary_class) then
    raise exception 'Head teacher must read classes in assigned Primary section';
  end if;
- if not private.schoolpro_can_write_result(school,student_n,subject_id,'2025/2026') then
-   raise exception 'Head teacher must be able to write results in assigned section';
+ if private.schoolpro_can_write_result(school,student_n,subject_id,'2025/2026') then
+   raise exception 'Head Teacher must not write subject scores without an exact teaching allocation';
  end if;
- if not private.schoolpro_can_write_result(school,student_p,subject_id,'2025/2026') then
-   raise exception 'Head teacher must write results in assigned Primary section';
+ if private.schoolpro_can_write_result(school,student_p,subject_id,'2025/2026') then
+   raise exception 'Head Teacher must not write subject scores without an exact teaching allocation';
  end if;
  update public.schoolpro_results set status='approved'
  where false;
@@ -304,6 +304,20 @@ begin
  end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ if not private.schoolpro_can_write_result(school,student_id,subject_two,'2026/2027') then
+   raise exception 'Subject teacher must write their own allocated subject';
+ end if;
+ if private.schoolpro_can_write_result(school,student_id,subject_one,'2026/2027') then
+   raise exception 'Subject teacher must not write another teacher subject';
+ end if;
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if not private.schoolpro_can_write_result(school,student_id,subject_one,'2026/2027') then
+   raise exception 'Form Master must write a subject they personally teach';
+ end if;
+ if private.schoolpro_can_write_result(school,student_id,subject_two,'2026/2027') then
+   raise exception 'Form Master must not write another subject teacher score';
+ end if;
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
 
  -- The Form Master is also a subject teacher, but may edit only their allocated subject.

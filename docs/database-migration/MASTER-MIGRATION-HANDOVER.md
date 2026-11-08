@@ -2614,3 +2614,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The client preview now also flags existing locked/approved/published results and scheme mismatches before submission.
 - Extended the import regression script to cover both client preview and database RPC contracts.
 - This is a proposed migration only; production Supabase has not been modified. No school records were written.
+### Stage C — atomic correction-request review (2026-11-08)
+
+- Read-only production review found the client approved a correction request in two separate operations: reopen the published result, then update the request status. A failure between those operations could leave a reopened result with a still-pending request.
+- Added migration `20261108102000_schoolpro_atomic_result_correction_review.sql` with `public.decide_schoolpro_result_correction_request`. The RPC locks the pending request, verifies the reviewer role and Results entitlement, reopens the published result when approved, and records the decision/reviewer/timestamp in the same transaction.
+- Removed the direct UPDATE RLS policy for correction requests so clients cannot directly change request state or reviewer attribution; decision writes go through the security-definer RPC.
+- Updated the Results UI to use the atomic RPC and added `scripts/test-schoolpro-correction-review-atomicity.mjs` with `npm run test:schoolpro-correction-review`.
+- Proposed migration only; no production database writes. Existing correction requests and result records remain unchanged.

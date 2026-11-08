@@ -2678,6 +2678,15 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Production Supabase was inspected read-only only; the result table currently contains zero rows. The proposed migration has not been applied. No production rows, workspaces, Auth users, financial records or Storage objects were changed. PR #133 remains unmerged and undeployed pending validation.
 
 
+### Stage C atomic bulk approval
+
+- The broadsheet previously approved Draft result rows by calling the single-result review RPC in a client-side loop. If a later row failed completeness validation, earlier rows remained Approved, leaving a partially completed class/school approval operation.
+- Added proposed migration `20261108113000_schoolpro_atomic_bulk_result_approval.sql` with `review_schoolpro_results(uuid[],text)`. It validates the authenticated reviewer, Results entitlement and school role; bounds and de-duplicates the requested IDs; locks the selected rows in deterministic ID order; requires every row to be an unlocked Draft in the same school; and validates every assessment before writing any approval.
+- The RPC writes reviewer attribution, updates all selected result rows and records one audit event in the same database transaction. Any incomplete or out-of-scope row aborts the entire batch; no subset is approved.
+- Updated the broadsheet approval action to use the bulk RPC instead of the sequential client loop. The single-result review RPC remains available for individual review workflows.
+- Added a source-contract regression and extended the disposable PostgreSQL integration fixture to prove both rollback of a mixed complete/incomplete batch and successful approval of a fully complete batch. The test is wired into the standard CI validation job.
+- This is a proposed migration only. It has not been applied to production, and no production result rows were changed. GitHub Actions execution remains pending.
+
 ### Stage C grade-scale and subject-statistics consistency
 
 - Read-only production inspection confirmed that `private.schoolpro_subject_statistics` computes cumulative subject averages from published, locked rows and requires one result per term through the selected term. The unique result key on student/subject/term/session supports that denominator. Missing subject-term marks are not treated as zero.

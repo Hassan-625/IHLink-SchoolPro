@@ -33,7 +33,7 @@ export function SchoolProBroadsheet(){
   if(!confirm(`Approve submitted results for ${scope==='class'?'this class':'the selected students'} in ${term}, ${session}? Review the scores before continuing.`))return;
   setBusy(true);setMsg('');
   try{
-   let reviewed;
+   let reviewed: {data:any;error:any}|null=null;
    if(scope==='class'){
     if(!classId)throw Error('Select a class first.');
     reviewed=await supabase.rpc('review_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session,p_notes:null});
@@ -42,6 +42,7 @@ export function SchoolProBroadsheet(){
     if(!selected.length)throw Error('Generate this class broadsheet and select students first.');
     reviewed=await supabase.rpc('review_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session,p_notes:null,p_students:selected});
    }
+   if(!reviewed)throw Error('Choose a valid approval scope.');
    if(reviewed.error)throw Error(reviewed.error.message||'The selected scores could not be approved.');
    const approved=Number(reviewed.data)||0;
     setMsg(`${approved} result records approved by the section head and forwarded to the Exam Officer for final review.`);

@@ -38,7 +38,7 @@ create table public.schoolpro_audit_logs(
 create table public.schoolpro_results(
  id uuid primary key, school_id uuid not null, student_id uuid not null, subject_id uuid not null,
  session text not null, term text, ca_score numeric, exam_score numeric, assessment_scores jsonb,
- assessment_scheme_id uuid, status text not null, locked boolean not null default false, approved_by uuid, approved_at timestamptz,
+ assessment_scheme_id uuid, total_score numeric not null default 0, status text not null, locked boolean not null default false, approved_by uuid, approved_at timestamptz,
  published_at timestamptz
 );
 alter table public.schoolpro_results enable row level security;

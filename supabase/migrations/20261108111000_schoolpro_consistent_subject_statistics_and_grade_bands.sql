@@ -47,10 +47,10 @@ begin
    max(r.total_score) filter(where r.term=trim(p_term)) current_score
   from public.schoolpro_results r
   join public.schoolpro_students s on s.id=r.student_id and s.school_id=r.school_id
-  left join public.schoolpro_enrollment_history e on e.student_id=s.id and e.school_id=s.school_id and e.session=trim(p_session)
+  left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
   where s.school_id=pupil.school_id and coalesce(e.class_id,s.class_id)=v_class
-   and (e.student_id is not null or (s.status='active' and not exists(
-    select 1 from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id)))
+   and (e.has_history is true or (s.status='active' and not exists(
+    select 1 from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session))))
    and r.session=trim(p_session) and r.status='published' and r.locked and r.term=any(terms[1:idx])
   group by r.subject_id,r.student_id
  )

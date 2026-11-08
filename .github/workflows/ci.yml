@@ -40,6 +40,7 @@ jobs:
           node scripts/test-schoolpro-result-ranking-consistency.mjs
           node scripts/test-schoolpro-published-rank-release-boundary.mjs
           node scripts/test-schoolpro-assessment-completeness-release-boundary.mjs
+          node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs
           node scripts/test-schoolpro-correction-review-atomicity.mjs
           node scripts/test-schoolpro-assessment-scheme-immutability.mjs
           node scripts/test-schoolpro-pin-release-lock.mjs
@@ -86,7 +87,7 @@ jobs:
 
 
   assessment-completeness-release-integration:
-    name: Assessment completeness approval and publication (disposable PostgreSQL)
+    name: Assessment completeness, subject statistics and grade scale (disposable PostgreSQL)
     runs-on: ubuntu-24.04
     services:
       postgres:
@@ -110,7 +111,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
-      - name: Apply release-boundary migration and test approval/publication
+      - name: Apply result release-boundary and grade/statistics migrations; test their PostgreSQL invariants
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-assessment-completeness-release.integration.sql
 
   receipt-storage-isolation:

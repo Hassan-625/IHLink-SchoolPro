@@ -5,10 +5,12 @@ const page=fs.readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8')
 assert.match(migration,/schoolpro_subject_assignments[\s\S]*sa\.school_id=p_school[\s\S]*sa\.class_id=p_class[\s\S]*sa\.session=trim\(p_session\)/);
 assert.match(migration,/union all[\s\S]*select distinct m\.subject_id,false assigned from marks/);
 assert.match(migration,/avg\(m\.total_score\) average,count\(m\.id\) recorded/);
-assert.match(migration,/published_total[\s\S]*published_average[\s\S]*published_subjects[\s\S]*published_scores/);\nassert.match(migration,/rank\\(\\) over\\(order by published_total desc\\) published_position/);
+assert.match(migration,/published_total[\s\S]*published_average[\s\S]*published_subjects[\s\S]*published_scores/);
+assert.match(migration,/rank\(\) over\(order by published_total desc\) published_position/);
 assert.match(migration,/group by su\.id,su\.name,su\.code,ss\.assigned/);
 assert.match(page,/s\.assigned\s*\?\s*'Allocated'\s*:\s*'Recorded only'/);
 assert.match(page,/missing marks are not counted as zero/);
-assert.match(page,/Number\(r\.published_average\)/);\nassert.match(page,/r\.published_position/);
+assert.match(page,/Number\(r\.published_average\)/);
+assert.match(page,/r\.published_position/);
 assert.match(page,/r\.published_scores\?\.\[s\.id\]/);
 console.log('SchoolPro allocated-subject broadsheet regression passed.');

@@ -2927,3 +2927,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the Staff & Access page to show section appointment controls for every eligible staff role, rather than only Head Teacher/VP/Principal. The database RPC, read/review predicates, and role-change pruning now apply the same eligibility rule.
 - Added a disposable PostgreSQL integration assertion that Class Teacher is eligible and ordinary Subject Teacher remains ineligible.
 - No production migration, production data write, merge, or Render deployment has occurred. CI must validate the latest branch head before merge.
+
+
+### Result workflow immediate UI synchronization — 2026-11-08 (PR #133)
+
+- Fixed a broadsheet usability gap: successful Form Master submission, Section Head class/section approval, correction return, Exam Officer final approval, and whole-school publication now reload the selected class review sheet and workflow summary immediately. Users no longer need to click Generate again just to see the committed lifecycle state.
+- Refresh failures do not undo or misrepresent the database transition; the RPC remains authoritative, and the displayed sheet/workflow is updated only when its corresponding read succeeds.
+- Added source-contract assertions for the refresh helper and successful-transition refresh calls.
+- Proposed frontend/test changes only. No production migration, production data write, merge or Render deployment has occurred; CI validation is still required.

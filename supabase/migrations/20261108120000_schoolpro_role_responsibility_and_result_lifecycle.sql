@@ -589,7 +589,9 @@ begin
      and new.exam_score is not distinct from old.exam_score
      and new.total_score is not distinct from old.total_score
      and new.assessment_scores is not distinct from old.assessment_scores
-     and new.assessment_scheme_id is not distinct from old.assessment_scheme_id then
+     and new.assessment_scheme_id is not distinct from old.assessment_scheme_id
+     and new.status is not distinct from old.status
+     and new.locked is not distinct from old.locked then
     return new;
   end if;
   -- Administrative and review roles are read/review authorities, not score-entry bypasses.
@@ -626,7 +628,7 @@ $$;
 revoke all on function private.schoolpro_enforce_subject_teacher_result_write() from public,anon,authenticated;
 drop trigger if exists schoolpro_subject_teacher_result_write on public.schoolpro_results;
 create trigger schoolpro_subject_teacher_result_write
-before insert or update of school_id,student_id,subject_id,term,session,ca_score,exam_score,total_score,assessment_scores,assessment_scheme_id
+before insert or update of school_id,student_id,subject_id,term,session,ca_score,exam_score,total_score,assessment_scores,assessment_scheme_id,status,locked
 on public.schoolpro_results for each row
 execute function private.schoolpro_enforce_subject_teacher_result_write();
 

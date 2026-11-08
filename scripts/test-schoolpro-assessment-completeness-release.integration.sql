@@ -290,3 +290,33 @@ $test$;
 insert into public.schoolpro_grade_scale(id,school_id,label,min_score,max_score,is_active)
 values('81000000-0000-0000-0000-000000000005','82000000-0000-0000-0000-000000000001','Legacy',30,60,false);
 select 'PASS: active grade ranges reject overlap on insert and update; inactive historical bands remain allowed.' as result;
+
+-- Selected-student publication must not widen to another class's result rows.
+\ir ../supabase/migrations/20261108116000_schoolpro_selected_publication_class_scope.sql
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score,status)
+values
+ ('60000000-0000-0000-0000-000000000013','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000006','70000000-0000-0000-0000-000000000013','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'approved'),
+ ('60000000-0000-0000-0000-000000000014','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000007','70000000-0000-0000-0000-000000000014','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'approved');
+select public.publish_schoolpro_selected_results('20000000-0000-0000-0000-000000000001','Third Term','2026/2027',
+ array['40000000-0000-0000-0000-000000000006'::uuid],false,'30000000-0000-0000-0000-000000000001');
+do $assert$
+begin
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000013' and status='published' and locked) then
+  raise exception 'Selected in-class result was not published';
+ end if;
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000014' and status='approved' and not locked) then
+  raise exception 'Selected-student publication incorrectly published another class result';
+ end if;
+end
+$assert$;
+do $test$
+begin
+ begin
+  perform public.publish_schoolpro_selected_results('20000000-0000-0000-0000-000000000001','Third Term','2026/2027',
+   array['40000000-0000-0000-0000-000000000007'::uuid],false,'30000000-0000-0000-0000-000000000001');
+  raise exception 'Expected out-of-class selected publication to fail';
+ exception when others then
+  if sqlerrm not like 'Every selected student must belong to this class roster%' then raise;end if;
+ end;
+end
+$test$;

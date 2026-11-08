@@ -411,7 +411,7 @@ execute function private.schoolpro_enforce_subject_teacher_result_write();
 -- allocation must point to an eligible teacher/class teacher.
 create or replace function private.validate_subject_assignment()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 declare class_school uuid;subject_school uuid;member_school uuid;member_role public.school_member_role;
 begin
   select school_id into class_school from public.schoolpro_classes where id=new.class_id;
@@ -432,7 +432,7 @@ begin
   end if;
   return new;
 end
-$;
+$$;
 revoke all on function private.validate_subject_assignment() from public,anon,authenticated;
 
 -- End active subject allocations when a member loses their teaching role.
@@ -440,7 +440,7 @@ revoke all on function private.validate_subject_assignment() from public,anon,au
 -- a Form Master's completeness check or authorizing score entry.
 create or replace function private.schoolpro_prune_subject_assignments_role()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   if old.role::text in ('teacher','class_teacher')
      and new.role::text not in ('teacher','class_teacher') then
@@ -450,7 +450,7 @@ begin
   end if;
   return new;
 end
-$;
+$$;
 revoke all on function private.schoolpro_prune_subject_assignments_role() from public,anon,authenticated;
 drop trigger if exists schoolpro_prune_subject_assignments_role on public.schoolpro_members;
 create trigger schoolpro_prune_subject_assignments_role

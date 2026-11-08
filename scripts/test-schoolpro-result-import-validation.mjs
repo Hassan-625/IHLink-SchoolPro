@@ -30,5 +30,5 @@ assert.ok(rpc.includes('uses a different assessment scheme'));
 const resultsPage = readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 assert.ok(resultsPage.includes('r.assessment_scores[c.key]??"—"'), 'Saved score breakdown must show missing components as a dash, not zero');
 const reportCard = readFileSync('src/pages/schoolpro/SchoolProReportCard.tsx','utf8');
-assert.match(reportCard,/r\\.assessment_scores\\[c\\.key\\]\\?\\?['\"]—['\"]/, 'Report cards must not render a missing assessment component as zero');
+assert.match(reportCard,/r\.assessment_scores\[c\.key\]\?\?['"]—['"]/, 'Report cards must not render a missing assessment component as zero');
 console.log('PASS: result import requires complete headers, validates every component, rejects duplicates and preserves class/session/teacher scope.');

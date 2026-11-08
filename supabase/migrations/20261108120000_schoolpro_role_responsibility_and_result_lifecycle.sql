@@ -8,13 +8,12 @@
 create table if not exists public.schoolpro_member_responsibilities (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
-  member_id uuid not null,
+  member_id uuid not null references public.schoolpro_members(id) on delete cascade,
   responsibility text not null check (responsibility in ('exam_officer','school_admin')),
   assigned_by uuid not null references auth.users(id),
   assigned_at timestamptz not null default now(),
   ended_at timestamptz,
   unique (school_id,member_id,responsibility),
-  foreign key (school_id,member_id) references public.schoolpro_members(school_id,id) on delete cascade
 );
 create index if not exists schoolpro_member_responsibilities_active_idx
   on public.schoolpro_member_responsibilities(school_id,member_id,responsibility)

@@ -2598,3 +2598,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Existing incremental entry behavior is unchanged: entered components merge with previously saved components; empty submissions and edits to approved/published/locked results remain blocked.
 - No SQL migration is included in this increment. No production database, school records, tenant data, Auth, financial, audit or Storage data were changed.
 - Validation status: source and regression assertions have been added; automated CI/typecheck/build execution is pending the draft PR workflow. This increment is not merged or deployed.
+
+### Stage C — second implementation increment: consistent class ranking (2026-11-08)
+
+- Read-only comparison found `schoolpro_class_review_sheet` ranked staff review rows by average, while the published broadsheet and `schoolpro_result_class_rank` ranked by total score.
+- Added migration `20261108100000_schoolpro_consistent_result_ranking_totals.sql` to change the staff review-sheet ranking basis to total score, retaining the existing roster, selected-session, status counts, subject summaries and authorization checks.
+- Added `scripts/test-schoolpro-result-ranking-consistency.mjs` and `npm run test:schoolpro-result-ranking` to assert staff review, broadsheet and published report-card ranking all use total-score ordering.
+- The migration is committed to the Stage C branch only. It has not been applied to production Supabase. No production data was changed.
+- PR #133 remains draft and not merged/deployed; CI is being rerun against the updated branch.

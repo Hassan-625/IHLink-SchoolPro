@@ -2726,3 +2726,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Frontend-only correction; no production migration or data change.
 
 - Follow-up: subject totals now display their own configured maximum, and subject grades are normalized to a percentage using that subject's own scheme maximum before applying the school's grade bands. This avoids misgrading subjects whose component maxima do not sum to 100.
+
+
+### Stage C broadsheet class-average weighting
+
+- Corrected the interactive broadsheet's published class average to divide total published score points by the total number of published subject-result rows. It no longer takes an unweighted mean of each learner's average when learners have different numbers of published subjects.
+- This matches the denominator used by the SQL broadsheet and the printable class-results page.
+- Extended the allocated-subject broadsheet regression to reject the old unweighted calculation.
+- Frontend and regression-only change; no production database or deployment action.

@@ -23,7 +23,7 @@ create table public.schoolpro_result_approvals(
 create table public.schoolpro_classes(id uuid primary key,school_id uuid not null);
 create table public.schoolpro_students(id uuid primary key,school_id uuid not null,status text not null,class_id uuid);
 create table public.schoolpro_enrollment_history(student_id uuid not null,school_id uuid not null,class_id uuid not null,session text not null);
-create table public.schoolpro_members(school_id uuid,user_id uuid,role text);
+create table public.schoolpro_members(school_id uuid,user_id uuid,role text,status text not null default 'active');
 create table public.audit_logs(actor_id uuid,action text,product text,target_type text,target_id text,metadata jsonb);
 create function private.schoolpro_module_allowed(uuid,text) returns boolean language sql stable as $$select true$$;
 create function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $$select true$$;

@@ -17,6 +17,8 @@ assert.match(parse,/Existing result is approved, published or locked/);
 assert.match(parse,/Existing result uses a different assessment scheme/);
 assert.match(page,/import_schoolpro_results/);
 assert.match(rpc,/Student is not enrolled in the selected session/);
+assert.match(rpc,/Subject is not assigned to this class for the selected session/);
+assert.match(rpc,/a\\.ended_at is null/);
 assert.match(rpc,/Missing assessment component/);
 assert.match(rpc,/must be numeric/);
 assert.match(rpc,/unknown assessment component/);

@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const migration=readFileSync('supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql','utf8');
+const page=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
+assert.match(migration,/cardinality\(p_results\)>5000/,'Bulk approval must have a bounded batch size');
+assert.match(migration,/count\(distinct x\.id\).*cardinality\(p_results\)/s,'Duplicate IDs must be rejected');
+assert.match(migration,/perform r\.id from public\.schoolpro_results r where r\.id=any\(p_results\) order by r\.id for update/,'Rows must be locked in deterministic order');
+assert.match(migration,/v_count<>cardinality\(p_results\)/,'Every requested row must be an unlocked Draft in one school');
+assert.match(migration,/private\.schoolpro_result_assessment_complete\(r\.id\)/,'Every row must pass assessment completeness');
+assert.match(migration,/At least one selected assessment is incomplete; no results were approved/,'Incomplete batches must abort as one transaction');
+assert.match(migration,/insert into public\.schoolpro_result_approvals/,'Review attribution must be persisted');
+assert.match(migration,/insert into public\.audit_logs/,'Bulk approval must be audited');
+assert.match(migration,/grant execute on function public\.review_schoolpro_results\(uuid\[\],text\) to authenticated/,'Only authenticated users receive the RPC grant');
+const approve=page.slice(page.indexOf('async function approve(scope:'),page.indexOf('async function publish()',page.indexOf('async function approve(scope:')));
+assert.match(approve,/rpc\('review_schoolpro_results'/,'Broadsheet must use the atomic bulk RPC');
+assert.doesNotMatch(approve,/for\(const draft of drafts\.data/,'Client must not approve rows in a partial-success loop');
+const integration=readFileSync('scripts/test-schoolpro-assessment-completeness-release.integration.sql','utf8');
+assert.match(integration,/Bulk approval must be all-or-nothing/);
+assert.match(integration,/Bulk approval partially changed a rejected batch/);
+assert.match(integration,/Complete bulk approval did not approve the entire batch/);
+console.log('PASS: SchoolPro broadsheet bulk approval is atomic and fails closed.');

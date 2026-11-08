@@ -73,7 +73,8 @@ begin
  update public.schoolpro_result_access_pins set last_used_at=now() where id=pinrow.id;
  return jsonb_build_object('ok',true,'school',jsonb_build_object('name',s.school_name,'address',s.address),
   'student',jsonb_build_object('name',s.first_name||' '||s.last_name,'admission_number',s.admission_number,'class_name',s.class_name),
-  'term',p_term,'session',p_session,'results',payload);
+  'term',p_term,'session',p_session,'results',payload,
+  'grade_scale',coalesce((select jsonb_agg(jsonb_build_object('label',label,'min_score',min_score,'max_score',max_score) order by position) from public.schoolpro_grade_scale where school_id=s.school_id and is_active),'[]'::jsonb));
 end
 $function$;
 revoke all on function public.check_schoolpro_result_pin(text,text,text,text) from public,anon;

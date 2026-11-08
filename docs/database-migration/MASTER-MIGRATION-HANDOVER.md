@@ -2848,3 +2848,7 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Broadsheet UI now exposes submission only to the class Form Master, approval/publication only to the appointed section leader for the selected class, and whole-school bulk actions only to the IHLink Super Administrator.
 - Regression source and disposable PostgreSQL fixture extended for Principal assignment, role-to-section restrictions, Form Master submission and the approval-to-publication transition. The section-leadership test is already included in normal CI.
 - These are proposed migrations in PR #133 only. They have not been applied to Supabase production, merged, or deployed to Render. Disposable PostgreSQL integration execution and latest CI status remain pending.
+
+
+- Follow-up hardening: role-to-section matching is now applied consistently to student/class read scopes and historical enrollment reads, not only to the assignment form. Legacy active appointments that conflict with the staff member's section role are ended while retaining appointment history. The Staff UI displays only the section options permitted for that role.
+- The disposable PostgreSQL fixture now exercises the Form Master RPC and the complete Nursery result transition from Form Master submission through Head Teacher approval to publication. Junior Secondary Head Teacher approval is explicitly rejected.

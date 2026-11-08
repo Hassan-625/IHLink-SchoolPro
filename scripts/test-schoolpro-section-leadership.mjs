@@ -44,6 +44,9 @@ assert.match(principalMigration,/public\.schoolpro_section_leaders\.member_id/i)
 assert.match(principalMigration,/private\.is_admin\(array\['super_admin'::public\.user_role\]\)/i);
 assert.match(staff,/member\.role==="administrator"&&member\.position_title==="Principal"/i);
 assert.match(staff,/schoolpro_set_section_leader/i);
+assert.match(staff,/member\.role==="head_teacher"&&\["nursery","primary"\]\.includes\(key\)/i);
+assert.match(staff,/member\.role==="vice_principal"\|\|isPrincipal/i);
+assert.doesNotMatch(staff,/filter\(\(\[key\]\)=>\["teacher","class_teacher"\]\.includes\(member\.role\)/i);
 assert.match(principalMigration,/p_section in \('nursery','primary'\)/i);
 assert.match(principalMigration,/p_section in \('junior_secondary','senior_secondary'\)/i);
 assert.match(principalMigration,/Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish/i);

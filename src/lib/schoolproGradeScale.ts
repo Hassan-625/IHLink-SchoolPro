@@ -3,6 +3,8 @@ export type SchoolProGradeBand = {
   min_score: number | string;
   max_score: number | string;
   is_active?: boolean;
+  remark?: string | null;
+  overall_remark?: string | null;
 };
 
 export function findSchoolProGradeBand(score: number, scale: readonly SchoolProGradeBand[] = []) {

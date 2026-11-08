@@ -37,3 +37,6 @@ assert.match(selectedPublish,/p_class uuid default null/,'Selected publication m
 assert.match(selectedPublish,/Every selected student must belong to this class roster/,'Selected publication must reject learners outside the chosen class');
 assert.match(selectedPublish,/s\.class_id=p_class/,'Current-roster publication fallback must match the selected class');
 assert.match(selectedPublish,/h\.class_id=p_class/,'Historical enrollment must match the selected class');
+
+assert.match(selectedPublish,/cardinality\(p_students\)>5000/,'Selected publication must bound request size');
+assert.match(selectedPublish,/count\(distinct x\.id\).*cardinality\(p_students\)/s,'Selected publication must reject duplicate student IDs');

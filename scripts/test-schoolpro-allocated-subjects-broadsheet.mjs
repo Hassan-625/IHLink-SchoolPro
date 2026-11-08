@@ -17,3 +17,17 @@ assert.doesNotMatch(page,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_a
 assert.match(page,/r\.published_position/);
 assert.match(page,/r\.published_scores\?\.\[s\.id\]/);
 console.log('SchoolPro allocated-subject broadsheet regression passed.');
+
+const rosterMigrations=[
+ 'supabase/migrations/20261108100000_schoolpro_consistent_result_ranking_totals.sql',
+ 'supabase/migrations/20261108105000_schoolpro_published_rank_requires_locked_results.sql',
+ 'supabase/migrations/20261108111000_schoolpro_consistent_subject_statistics_and_grade_bands.sql',
+ 'supabase/migrations/20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql'
+];
+for(const file of rosterMigrations){
+ const sql=fs.readFileSync(file,'utf8');
+ assert.match(sql,/left join lateral \(select h\.class_id,true has_history[\s\S]*h\.session=trim\(p_session\) limit 1\) e on true/,file+' must deduplicate the selected-session enrollment join');
+ assert.match(sql,/e\.has_history is true/,file+' must preserve a historical enrollment row even if its class_id is null');
+ assert.match(sql,/h\.session=trim\(p_session\)/,file+' must scope active-student fallback to the selected session');
+}
+console.log('SchoolPro historical roster deduplication regression passed.');

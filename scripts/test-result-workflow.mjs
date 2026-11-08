@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 const broadsheet=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
 const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 
 assert.match(results,/const entrySubjects=teachingTargets\.length\?subjects\.filter/i,
   'Subject teachers must be restricted to their own allocated subjects.');
@@ -32,4 +33,12 @@ assert.match(authority,/Only the Exam Officer can publish school results/i);
 assert.match(authority,/app\.schoolpro_correction_reopen/i);
 assert.match(authority,/status='section_approved'/i);
 assert.match(authority,/status='exam_approved'/i);
+assert.match(authority,/schoolpro_member_responsibilities_self_or_admin_read/i);
+assert.match(authority,/grant select on public\.schoolpro_member_responsibilities to authenticated/i);
+assert.match(authority,/target\.role in \('teacher','class_teacher'\)/i,
+  'Teaching staff must be eligible for an explicitly appointed section-head responsibility.');
+assert.match(authority,/private\.schoolpro_member_leads_student_section\(new\.school_id,new\.student_id,new\.session\)/i);
+assert.match(profile,/My School Responsibilities/);
+assert.match(profile,/eq\('session',session\)/,
+  'The account page must show only current-session subject allocations.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');

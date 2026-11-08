@@ -2685,3 +2685,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added proposed migration `20261108111000_schoolpro_consistent_subject_statistics_and_grade_bands.sql`. It updates the subject-statistics RPC and installs a per-school serialized database trigger preventing inclusive overlap between active grade bands on insert/update. Intentional gaps remain allowed; the UI and public result checker report those scores as Ungraded.
 - Extended the disposable PostgreSQL integration job to exercise overlapping grade-band inserts and updates, while allowing inactive historical bands to overlap. Added `scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs` and wired it into the normal CI workflow.
 - Production Supabase inspection was read-only. Neither proposed Stage C migration was applied. No production result, grade scale, workspace, Auth user, financial record or Storage object was changed.
+
+
+### Stage C allocated-subject visibility and missing-mark coverage
+
+- Added proposed migration `20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql`. The staff class-review RPC now returns subjects allocated to the selected class/session even when no learner has a score recorded yet; previously it returned only subjects with result rows.
+- The subject list also retains legacy recorded subjects that are not present in the allocation table, so historical results are not silently hidden. The RPC marks each subject as `assigned` or `recorded only` and reports its actual recorded count/average.
+- Missing marks remain blank in the broadsheet and Excel exports. They are not coerced to zero and do not enter student totals, student averages, subject averages or the class average. The page explains the allocation/coverage distinction; Excel includes allocation status.
+- Added `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs`, registered it in `package.json` and the standard CI validation workflow.
+- This is a proposed branch migration only. It has not been applied to Supabase production; no production rows were changed.

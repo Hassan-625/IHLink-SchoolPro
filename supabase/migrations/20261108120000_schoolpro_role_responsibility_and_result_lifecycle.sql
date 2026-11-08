@@ -69,7 +69,7 @@ create or replace function public.schoolpro_set_member_responsibility(
 ) returns void
 language plpgsql security definer set search_path=''
 as $$
-declare target public.schoolpro_members;
+declare target public.schoolpro_members;v_assigner uuid;v_permissions text[];
 begin
   if auth.uid() is null or not private.is_active_account()
      or not (private.is_admin(array['super_admin']::public.user_role[])
@@ -83,15 +83,31 @@ begin
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school and status='active' for update;
   if target.id is null then raise exception 'Active school staff member not found'; end if;
+  v_permissions:=case when p_responsibility='exam_officer'
+    then array['results','reports','students','classes','subjects']
+    else array['students','results','reports','finance','classes','subjects','attendance','timetable',
+      'assignments','admissions','cbt','library','parents','transport','hostel','inventory','discipline',
+      'medical','documents','announcements','operations','roles','branding','payroll','calendar',
+      'lesson-notes','leave','promotions','games','notifications'] end;
   if coalesce(p_assigned,false) then
     insert into public.schoolpro_member_responsibilities(school_id,member_id,responsibility,assigned_by,assigned_at,ended_at)
     values(p_school,p_member,p_responsibility,auth.uid(),now(),null)
     on conflict(school_id,member_id,responsibility) do update
       set assigned_by=excluded.assigned_by,assigned_at=now(),ended_at=null;
+    insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed,updated_by,updated_at)
+    select p_school,p_member,permission,true,auth.uid(),now()
+    from unnest(v_permissions) as permission
+    on conflict(member_id,permission) do nothing;
   else
+    select assigned_by into v_assigner from public.schoolpro_member_responsibilities
+     where school_id=p_school and member_id=p_member and responsibility=p_responsibility
+     order by assigned_at desc limit 1;
     update public.schoolpro_member_responsibilities set ended_at=now()
      where school_id=p_school and member_id=p_member
        and responsibility=p_responsibility and ended_at is null;
+    delete from public.schoolpro_member_permissions
+     where member_id=p_member and permission=any(v_permissions)
+       and updated_by=v_assigner;
   end if;
   insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
   values(p_school,auth.uid(),'Additional staff responsibility updated','member',p_member,

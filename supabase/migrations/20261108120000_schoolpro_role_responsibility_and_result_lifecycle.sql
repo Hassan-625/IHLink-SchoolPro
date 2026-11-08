@@ -1303,8 +1303,15 @@ begin
 end
 $$;
 revoke all on function public.decide_schoolpro_result_correction_request(uuid,boolean,text) from public,anon,authenticated;
--- Preserve the legacy request table for audit history, but disable direct client writes/reads.
-revoke all on table public.schoolpro_result_correction_requests from public,anon,authenticated;
+-- Preserve the legacy request table for audit history, but disable direct client writes/reads
+-- wherever that legacy table is present in the upgraded schema.
+do $revoke_legacy_table$
+begin
+  if to_regclass('public.schoolpro_result_correction_requests') is not null then
+    execute 'revoke all on table public.schoolpro_result_correction_requests from public,anon,authenticated';
+  end if;
+end
+$revoke_legacy_table$;
 do $revoke_legacy$
 begin
   if to_regprocedure('public.reopen_schoolpro_result_for_correction(uuid,text)') is not null then

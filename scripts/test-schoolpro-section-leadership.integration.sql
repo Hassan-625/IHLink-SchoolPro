@@ -42,7 +42,8 @@ create table public.schoolpro_results(
  published_at timestamptz
 );
 alter table public.schoolpro_results enable row level security;
-create policy "Result access gate" on public.schoolpro_results as restrictive for select to authenticated using(true);
+grant select on public.schoolpro_results to authenticated;
+create policy "Result access gate" on public.schoolpro_results for select to authenticated using(true);
 create or replace function private.is_active_account() returns boolean language sql stable as $$ select auth.uid() is not null $$;
 create or replace function private.schoolpro_operationally_active(uuid) returns boolean language sql stable as $$ select true $$;
 create or replace function private.schoolpro_module_allowed(uuid,text) returns boolean language sql stable as $$ select true $$;
@@ -287,6 +288,23 @@ begin
  if not private.schoolpro_member_leads_class(school,primary_class) then
    raise exception 'A teacher with an explicit section appointment must be able to act as Section Head';
  end if;
+
+ -- Without the Section Head appointment, the ordinary subject teacher can read only their own subject.
+ update public.schoolpro_section_leaders set ended_at=now()
+ where school_id=school and member_id=subject_teacher_member and ended_at is null;
+ if not private.schoolpro_can_read_result(school,student_id,subject_two,'2026/2027') then
+   raise exception 'Subject teacher must read their own allocated subject result';
+ end if;
+ if private.schoolpro_can_read_result(school,student_id,subject_one,'2026/2027') then
+   raise exception 'Subject teacher must not read another teacher subject result';
+ end if;
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if not private.schoolpro_can_read_result(school,student_id,subject_two,'2026/2027') then
+   raise exception 'Form Master must read every subject result in the assigned class';
+ end if;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
 
  -- The Form Master is also a subject teacher, but may edit only their allocated subject.
  perform set_config('request.jwt.claim.sub',formmaster_id::text,true);

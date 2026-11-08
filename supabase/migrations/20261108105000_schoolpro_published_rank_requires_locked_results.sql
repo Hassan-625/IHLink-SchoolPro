@@ -7,7 +7,7 @@ language plpgsql security definer set search_path='' as $function$
 declare v_school uuid;v_class uuid;
 begin
  if auth.uid() is null then raise exception 'Authentication required';end if;
- select s.school_id,coalesce(e.class_id,s.class_id) into v_school,v_class from public.schoolpro_students s
+ select s.school_id,case when e.has_history is true then e.class_id else s.class_id end into v_school,v_class from public.schoolpro_students s
  left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true where s.id=p_student_id;
  if v_school is null or v_class is null then raise exception 'Student or class not found';end if;
  if not(
@@ -26,7 +26,7 @@ begin
   left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
   left join public.schoolpro_results r on r.student_id=s.id and r.school_id=v_school and r.term=trim(p_term) and r.session=trim(p_session)
    and r.status='published'::public.schoolpro_result_status and r.locked=true
-  where s.school_id=v_school and coalesce(e.class_id,s.class_id)=v_class
+  where s.school_id=v_school and case when e.has_history is true then e.class_id else s.class_id end=v_class
    and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session))))
   group by s.id
  ),ranked as(select id,total,avg_score,rank() over(order by total desc)::bigint pos,count(*) over()::bigint pop from totals)
@@ -46,7 +46,7 @@ begin
   left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
   left join public.schoolpro_results r on r.student_id=s.id and r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
    and r.status='published'::public.schoolpro_result_status and r.locked=true
-  where s.school_id=p_school and coalesce(e.class_id,s.class_id)=p_class
+  where s.school_id=p_school and case when e.has_history is true then e.class_id else s.class_id end=p_class
    and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session))))
   group by s.id,s.admission_number,s.first_name,s.last_name
  ),y as(select x.*,rank() over(order by x.total desc)::bigint pos from x)

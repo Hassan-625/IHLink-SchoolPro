@@ -121,6 +121,10 @@ begin
    raise exception 'Form Master must submit all class Draft results';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
+ begin
+   update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000002';
+   raise exception 'ASSERT: Section Head must use the complete-section approval RPC';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  if public.schoolpro_approve_section_results(school,'nursery','First Term','2025/2026')<>1 then
    raise exception 'Appointed Head Teacher must approve the complete Nursery section through the RPC';
  end if;
@@ -382,6 +386,11 @@ begin
  if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','school',null,null)<>2 then
    raise exception 'Exam Officer must give final approval to every school result';
  end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true
+   where id='bbbbbbbb-0000-4000-8000-000000000011';
+   raise exception 'ASSERT: Exam Officer must use the whole-school publication RPC';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
    raise exception 'Exam Officer must publish the whole school result set';
  end if;
@@ -396,6 +405,11 @@ begin
    'Correct the two class assessment records before the next release.'
  );
  perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
+ begin
+   update public.schoolpro_results set status='draft',locked=false
+   where id='bbbbbbbb-0000-4000-8000-000000000011';
+   raise exception 'ASSERT: Exam Officer must use the authorized correction request RPC';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  if public.schoolpro_decide_result_reopening(class_request,true,'Approved class correction')<>2 then
    raise exception 'Exam Officer class correction approval must reopen exactly the affected class';
  end if;

@@ -2852,3 +2852,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 - Follow-up hardening: role-to-section matching is now applied consistently to student/class read scopes and historical enrollment reads, not only to the assignment form. Legacy active appointments that conflict with the staff member's section role are ended while retaining appointment history. The Staff UI displays only the section options permitted for that role.
 - The disposable PostgreSQL fixture now exercises the Form Master RPC and the complete Nursery result transition from Form Master submission through Head Teacher approval to publication. Junior Secondary Head Teacher approval is explicitly rejected.
+
+- Final workflow hardening: active membership is required for Form Master submission and section-head approval; score totals and result identity/period changes invalidate pending submissions, and approved scores cannot be edited without the correction/reopen path. The PostgreSQL fixture now tests Form Master submission followed by Head Teacher, Vice Principal and Principal approval/publication for the relevant sections.

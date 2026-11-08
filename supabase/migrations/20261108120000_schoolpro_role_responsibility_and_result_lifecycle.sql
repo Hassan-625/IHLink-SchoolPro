@@ -336,6 +336,57 @@ $$;
 revoke all on function private.schoolpro_class_result_matrix_complete(uuid,uuid,text,text) from public,anon;
 grant execute on function private.schoolpro_class_result_matrix_complete(uuid,uuid,text,text) to authenticated;
 
+create or replace function private.schoolpro_result_scope_matrix_state(
+  p_school uuid,p_term text,p_session text,p_scope text,p_class uuid,p_section text,
+  p_workflow_status text,p_result_status text
+) returns boolean language sql stable security definer set search_path=''
+as $
+with target_classes as (
+  select c.id from public.schoolpro_classes c
+  where c.school_id=p_school
+    and (p_scope='school' or (p_scope='class' and c.id=p_class)
+      or (p_scope='section' and c.level=p_section))
+), roster as (
+  select c.id class_id,s.id student_id
+  from target_classes tc
+  join public.schoolpro_classes c on c.id=tc.id and c.school_id=p_school
+  join public.schoolpro_students s on s.school_id=p_school and (
+    exists(select 1 from public.schoolpro_enrollment_history h
+      where h.school_id=p_school and h.student_id=s.id
+        and h.session=trim(p_session) and h.class_id=c.id)
+    or (s.status='active' and s.class_id=c.id and not exists(
+      select 1 from public.schoolpro_enrollment_history h
+      where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session)))
+  )
+), assignments as (
+  select a.class_id,a.subject_id from public.schoolpro_subject_assignments a
+  join target_classes tc on tc.id=a.class_id
+  where a.school_id=p_school and a.session=trim(p_session) and a.ended_at is null
+), expected as (
+  select r.class_id,r.student_id,a.subject_id from roster r
+  join assignments a on a.class_id=r.class_id
+)
+select exists(select 1 from expected)
+  and not exists(
+    select 1 from expected e
+    left join public.schoolpro_results r on r.school_id=p_school
+      and r.student_id=e.student_id and r.subject_id=e.subject_id
+      and r.term=trim(p_term) and r.session=trim(p_session)
+    left join public.schoolpro_result_workflow w on w.result_id=r.id
+    where r.id is null or r.status<>p_result_status or w.status is distinct from p_workflow_status
+  )
+  and not exists(
+    select 1 from public.schoolpro_result_workflow w
+    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+    where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
+      and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
+        or (p_scope='section' and c.level=p_section))
+      and w.status is distinct from p_workflow_status
+  )
+$;
+revoke all on function private.schoolpro_result_scope_matrix_state(uuid,text,text,text,uuid,text,text,text) from public,anon;
+grant execute on function private.schoolpro_result_scope_matrix_state(uuid,text,text,text,uuid,text,text,text) to authenticated;
+
 create or replace function public.schoolpro_submit_class_results(
   p_school uuid,p_class uuid,p_term text,p_session text
 ) returns integer
@@ -568,6 +619,9 @@ begin
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active') then
     raise exception 'Only the appointed section head can approve this section';
   end if;
+  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,'section',null,p_section,'submitted','draft') then
+    raise exception 'Every allocated subject result for every student in the section must be complete and submitted by its Form Master';
+  end if;
   if not exists(select 1 from public.schoolpro_result_workflow w
     join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
     where w.school_id=p_school and c.level=p_section
@@ -628,6 +682,9 @@ begin
   if p_scope='school' and (p_class is not null or p_section is not null) then
     raise exception 'Whole-school approval cannot include a class or section filter';
   end if;
+  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,p_scope,p_class,p_section,'section_approved','approved') then
+    raise exception 'Every allocated class and subject result in the selected scope must be section-approved before final approval';
+  end if;
   if exists(
     select 1 from public.schoolpro_result_workflow w
     join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
@@ -673,6 +730,9 @@ begin
   if not private.schoolpro_is_exam_officer(p_school) then raise exception 'Only the Exam Officer can publish school results'; end if;
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Select an academic term and session';
+  end if;
+  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,'school',null,null,'exam_approved','approved') then
+    raise exception 'Whole-school publication is blocked until every allocated subject result in every class has final Exam Officer approval';
   end if;
   if not exists(select 1 from public.schoolpro_result_workflow w
     where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)) then

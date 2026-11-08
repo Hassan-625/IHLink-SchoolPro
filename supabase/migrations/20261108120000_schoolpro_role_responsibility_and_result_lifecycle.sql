@@ -603,7 +603,9 @@ begin
   end if;
   select id into v_member from public.schoolpro_members
    where school_id=p_school and user_id=auth.uid() and status='active';
-  if v_member is null then raise exception 'Active school membership required'; end if;
+  if v_member is null and not private.is_admin(array['super_admin']::public.user_role[]) then
+    raise exception 'Active school membership required';
+  end if;
   select exists(select 1 from public.schoolpro_classes c
     where c.school_id=p_school and c.id=p_class and c.form_teacher_id=v_member)
     into v_form_master;

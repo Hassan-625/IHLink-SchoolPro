@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const migration=readFileSync('supabase/migrations/20261108102000_schoolpro_atomic_result_correction_review.sql','utf8');
+const page=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
+const handler=page.slice(page.indexOf('async function decideCorrectionRequest'),page.indexOf('async function reopenResult'));
+assert.match(migration,/drop policy if exists .*schoolpro_correction_request_review/);
+assert.match(migration,/for update/);
+assert.match(migration,/request_row\\.status<>'pending'/);
+assert.match(migration,/reopen_schoolpro_result_for_correction/);
+assert.match(migration,/reviewed_by=auth\\.uid\\(\\)/);
+assert.match(migration,/reviewed_at=now\\(\\)/);
+assert.match(migration,/if not found then raise exception/);
+assert.match(handler,/decide_schoolpro_result_correction_request/);
+assert.doesNotMatch(handler,/from\\(\"schoolpro_result_correction_requests\"\\)\\.update/);
+console.log('PASS: correction request decision, result reopening and reviewer attribution are atomic and client-mediated only by RPC.');

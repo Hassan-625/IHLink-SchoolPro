@@ -1,7 +1,7 @@
 -- Approve only the selected class/session roster; do not widen class approval
 -- to every result belonging to the same students in the school.
 create or replace function public.review_schoolpro_class_results(
- p_school uuid,p_class uuid,p_term text,p_session text,p_notes text default null
+ p_school uuid,p_class uuid,p_term text,p_session text,p_notes text default null,p_students uuid[] default null
 ) returns integer
 language plpgsql
 security definer
@@ -22,6 +22,14 @@ begin
  )) then raise exception 'Not authorized';end if;
  if not exists(select 1 from public.schoolpro_classes c where c.id=p_class and c.school_id=p_school) then
   raise exception 'Select a class in this school';
+ end if;
+ if p_students is not null then
+  if coalesce(cardinality(p_students),0)=0 or cardinality(p_students)>5000 then
+   raise exception 'Select between 1 and 5000 students';
+  end if;
+  if (select count(distinct x.id) from unnest(p_students) x(id))<>cardinality(p_students) then
+   raise exception 'Duplicate students were supplied';
+  end if;
  end if;
  -- Lock the roster while determining the result IDs so class assignment cannot
  -- change between the scope check and the atomic approval RPC.
@@ -44,11 +52,11 @@ begin
     or (s.status='active' and s.class_id=p_class and not exists(
      select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
       and h.student_id=s.id and h.session=trim(p_session)))
-   ));
+   ) and (p_students is null or s.id=any(p_students)));
  if cardinality(v_ids)=0 then return 0;end if;
  v_count:=public.review_schoolpro_results(v_ids,p_notes);
  return v_count;
 end
 $function$;
-revoke all on function public.review_schoolpro_class_results(uuid,uuid,text,text,text) from public,anon;
-grant execute on function public.review_schoolpro_class_results(uuid,uuid,text,text,text) to authenticated;
+revoke all on function public.review_schoolpro_class_results(uuid,uuid,text,text,text,uuid[]) from public,anon;
+grant execute on function public.review_schoolpro_class_results(uuid,uuid,text,text,text,uuid[]) to authenticated;

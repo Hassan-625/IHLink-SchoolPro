@@ -127,7 +127,6 @@ $assert$;
 select 'PASS: incomplete results are blocked at approval and every publication boundary; complete results publish and lock.' as result;
 
 -- Exercise the grade-scale trigger on the same disposable PostgreSQL instance.
-create table public.schoolpro_enrollment_history(student_id uuid,school_id uuid,class_id uuid,session text);
 create table public.schoolpro_grade_scale(
  id uuid primary key,school_id uuid not null,label text not null,min_score numeric not null,max_score numeric not null,
  is_active boolean not null default true,

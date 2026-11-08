@@ -38,6 +38,18 @@ $$;
 revoke all on function private.schoolpro_member_has_responsibility(uuid,text) from public,anon;
 grant execute on function private.schoolpro_member_has_responsibility(uuid,text) to authenticated;
 
+create or replace function private.schoolpro_is_school_admin(p_school uuid)
+returns boolean language sql stable security definer set search_path=''
+as $
+  select auth.uid() is not null and private.is_active_account() and (
+    private.is_admin(array['super_admin']::public.user_role[])
+    or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
+    or private.schoolpro_member_has_responsibility(p_school,'school_admin')
+  )
+$;
+revoke all on function private.schoolpro_is_school_admin(uuid) from public,anon;
+grant execute on function private.schoolpro_is_school_admin(uuid) to authenticated;
+
 create or replace function private.schoolpro_is_exam_officer(p_school uuid)
 returns boolean language sql stable security definer set search_path=''
 as $$
@@ -663,6 +675,15 @@ create table public.schoolpro_result_correction_batch_items (
 alter table public.schoolpro_result_correction_batches enable row level security;
 alter table public.schoolpro_result_correction_batch_items enable row level security;
 revoke all on public.schoolpro_result_correction_batches,public.schoolpro_result_correction_batch_items from public,anon,authenticated;
+create policy schoolpro_result_correction_batches_exam_officer_read
+on public.schoolpro_result_correction_batches for select to authenticated
+using (private.schoolpro_is_exam_officer(school_id) or private.schoolpro_is_school_admin(school_id));
+create policy schoolpro_result_correction_batch_items_exam_officer_read
+on public.schoolpro_result_correction_batch_items for select to authenticated
+using (exists(select 1 from public.schoolpro_result_correction_batches b
+  where b.id=batch_id and (private.schoolpro_is_exam_officer(b.school_id)
+    or private.schoolpro_is_school_admin(b.school_id))));
+grant select on public.schoolpro_result_correction_batches,public.schoolpro_result_correction_batch_items to authenticated;
 
 create or replace function public.schoolpro_request_result_reopening(
   p_school uuid,p_scope text,p_class uuid,p_section text,

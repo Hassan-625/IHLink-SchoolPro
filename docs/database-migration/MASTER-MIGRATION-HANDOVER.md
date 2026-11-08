@@ -2657,3 +2657,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added proposed migration `20261108105000_schoolpro_published_rank_requires_locked_results.sql`. Published class ranking and the staff broadsheet's published-result aggregate now include only rows that are both `status='published'` and `locked=true`, matching the existing printable report-card and family-period release boundary.
 - Draft and approved records remain available in the staff review sheet for operational review, but cannot influence the published class position calculation or published class totals.
 - Added a source-contract regression and wired it into the standard CI validation job. This migration is not applied to production.
+
+
+### Stage C missing-component presentation correction
+
+- Incremental assessment entry is intentionally supported: teachers may save one component at a time and previously saved components are merged rather than overwritten. A missing component is therefore not equivalent to a recorded score of zero.
+- Updated the staff saved-score breakdown and printable report card to display an em dash for a missing component; an actual numeric zero continues to display as `0`. This avoids presenting an incomplete draft as if the learner received zero marks for an unentered component.
+- Extended the existing result-import regression to assert both staff and report-card rendering. No score data or production records were changed.

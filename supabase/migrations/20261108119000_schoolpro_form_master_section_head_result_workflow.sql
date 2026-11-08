@@ -42,7 +42,7 @@ begin
   from public.schoolpro_members m
   join public.schoolpro_classes c
     on c.school_id=m.school_id and c.id=p_class and c.form_teacher_id=m.id
-  where m.school_id=p_school and m.user_id=auth.uid()
+  where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
     and m.role in ('teacher','class_teacher');
   if v_member is null then
     raise exception 'Only the assigned Form Master can submit this class result register';
@@ -176,7 +176,7 @@ begin
         select 1 from public.schoolpro_members m
         join public.schoolpro_section_leaders sl
           on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
-        where m.school_id=new.school_id and m.user_id=auth.uid()
+        where m.school_id=new.school_id and m.user_id=auth.uid() and m.status='active'
           and sl.section=v_level
           and (
             (v_level in ('nursery','primary') and m.role='head_teacher')

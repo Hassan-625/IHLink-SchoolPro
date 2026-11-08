@@ -8,7 +8,7 @@
 create table if not exists public.schoolpro_member_responsibilities (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
-  member_id uuid not null references public.schoolpro_members(id) on delete cascade,
+  member_id uuid not null,
   responsibility text not null check (responsibility in ('exam_officer','school_admin')),
   assigned_by uuid not null references auth.users(id),
   assigned_at timestamptz not null default now(),

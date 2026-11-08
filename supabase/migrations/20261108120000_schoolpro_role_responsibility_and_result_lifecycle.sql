@@ -213,8 +213,9 @@ begin
   if auth.uid() is null or not private.is_active_account()
      or not private.schoolpro_operationally_active(p_school)
      or not (private.is_admin(array['super_admin'::public.user_role])
-       or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])) then
-    raise exception 'Only school leadership can manage section assignments';
+       or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
+       or private.schoolpro_member_has_responsibility(p_school,'school_admin')) then
+    raise exception 'Only authorized school administration can manage section assignments';
   end if;
   if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other') then
     raise exception 'Choose a valid school section';
@@ -222,13 +223,12 @@ begin
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school for update;
   if target.id is null or target.status<>'active' or not (
-    target.role in ('teacher','class_teacher')
-    or (target.role='head_teacher' and p_section in ('nursery','primary'))
+    (target.role='head_teacher' and p_section in ('nursery','primary'))
     or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
     or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
         and p_section in ('junior_secondary','senior_secondary'))
   ) then
-    raise exception 'Appoint an active teacher, class teacher, eligible Head Teacher, Vice Principal or Principal as section head';
+    raise exception 'Nursery and Primary require an appointed Head Teacher; Junior and Senior Secondary require an appointed Vice Principal or Principal';
   end if;
   if coalesce(p_assigned,false) then
     insert into public.schoolpro_section_leaders(school_id,member_id,section,assigned_by,assigned_at,ended_at)

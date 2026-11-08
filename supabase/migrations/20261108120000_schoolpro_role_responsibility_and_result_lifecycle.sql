@@ -532,7 +532,7 @@ as $
         and a.session=trim(p_session) and a.ended_at is null
       where s.school_id=p_school and s.id=p_student
     )
-$;
+$$;
 revoke all on function private.schoolpro_can_write_result(uuid,uuid,uuid,text) from public,anon;
 grant execute on function private.schoolpro_can_write_result(uuid,uuid,uuid,text) to authenticated;
 

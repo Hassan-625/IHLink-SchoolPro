@@ -21,7 +21,7 @@ create table public.schoolpro_result_approvals(
  status text not null,reviewed_by uuid,reviewed_at timestamptz,notes text
 );
 create table public.schoolpro_classes(id uuid primary key,school_id uuid not null);
-create table public.schoolpro_students(id uuid primary key,school_id uuid not null,status text not null);
+create table public.schoolpro_students(id uuid primary key,school_id uuid not null,status text not null,class_id uuid);
 create table public.schoolpro_enrollment_history(student_id uuid not null,school_id uuid not null,class_id uuid not null,session text not null);
 create table public.schoolpro_members(school_id uuid,user_id uuid,role text);
 create table public.audit_logs(actor_id uuid,action text,product text,target_type text,target_id text,metadata jsonb);
@@ -127,7 +127,6 @@ $assert$;
 select 'PASS: incomplete results are blocked at approval and every publication boundary; complete results publish and lock.' as result;
 
 -- Exercise the grade-scale trigger on the same disposable PostgreSQL instance.
-create table public.schoolpro_students(id uuid primary key,school_id uuid,class_id uuid,status text);
 create table public.schoolpro_enrollment_history(student_id uuid,school_id uuid,class_id uuid,session text);
 create table public.schoolpro_grade_scale(
  id uuid primary key,school_id uuid not null,label text not null,min_score numeric not null,max_score numeric not null,

@@ -2762,3 +2762,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Applied the same roster predicate to the publication lock, completeness validation, and update so the three phases cannot disagree about which results are in scope.
 - Extended the assessment-completeness source regression to guard the fallback and predicate consistency.
 - Migration remains proposed only; no production database changes have been made.
+
+### Stage C class-publication current-roster isolation
+
+- A follow-up review found the active-roster fallback in class publication was too broad: it included active students with no selected-session history row without checking their current class assignment.
+- Added proposed migration `20261108114000_schoolpro_class_publication_current_roster_scope.sql`. The fallback now requires `schoolpro_students.class_id = p_class`; where selected-session enrollment history exists, its historical class remains authoritative.
+- Applied the identical predicate to the row-lock phase, completeness validation and final publication update so the three phases operate on the same class roster.
+- Extended the source-contract regression and disposable PostgreSQL integration fixture with two active students who have no selected-session history and belong to different current classes. Publishing one class must publish only its own current-roster student and leave the other class's result Approved.
+- Proposed migration only. No production database changes, merge or Render deployment.

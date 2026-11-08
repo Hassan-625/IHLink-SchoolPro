@@ -155,8 +155,6 @@ begin
    raise exception 'Form Master must submit Junior Secondary results';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
- insert into public.schoolpro_result_workflow(result_id,school_id,class_id,term,session,status)
- values('bbbbbbbb-0000-4000-8000-000000000001',school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026','submitted');
  begin
    update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
    raise exception 'ASSERT: section leader approved result outside assigned section';

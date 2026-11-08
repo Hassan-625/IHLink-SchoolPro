@@ -2715,3 +2715,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Individual report-card averages remain the mean of that learner's published printable subject rows. This now reconciles with the class average as the mean across all eligible published score rows, not the mean of individual averages.
 - Added `scripts/test-schoolpro-printable-class-average-consistency.mjs`, registered it in `package.json` and the normal CI workflow.
 - No production migration or data change was required for this frontend/workbook correction.
+
+
+### Stage C report-card assessment-scheme correctness
+
+- Corrected report cards to load every assessment scheme referenced by the student's published subject rows, instead of loading only the first row's scheme and reusing its component layout for every subject.
+- The report table now builds a union of component keys, displays a component mark only when that component belongs to the row's actual scheme, and shows the correct maximum for consistent maxima or “Varies” when subject schemes differ.
+- Overall maximum is now derived from the sum of configured component maxima for each subject result. Overall percentage is calculated as total earned points divided by that maximum, rather than assuming every subject is out of 100.
+- Added `scripts/test-schoolpro-report-card-assessment-schemes.mjs`, registered it in `package.json` and the normal CI validation workflow.
+- Frontend-only correction; no production migration or data change.

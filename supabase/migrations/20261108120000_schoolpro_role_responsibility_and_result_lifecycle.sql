@@ -479,6 +479,55 @@ $$;
 revoke all on function private.schoolpro_can_review_class(uuid,uuid) from public,anon;
 grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authenticated;
 
+-- Result reads are narrower than student/class reads: an ordinary subject teacher
+-- may see only the results for their own allocated subject. Form Masters, appointed
+-- Section Heads, Exam Officers and school administrators can review their permitted scope.
+create or replace function private.schoolpro_can_read_result(
+  p_school uuid,p_student uuid,p_subject uuid,p_session text
+) returns boolean language plpgsql stable security definer set search_path=''
+as $
+declare v_class uuid;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_operationally_active(p_school)
+     or not private.schoolpro_can_read_student(p_student) then
+    return false;
+  end if;
+  if exists(select 1 from public.schoolpro_students s
+    where s.school_id=p_school and s.id=p_student and s.user_id=auth.uid())
+    or exists(select 1 from public.schoolpro_guardian_links g
+      where g.school_id=p_school and g.student_id=p_student
+        and g.guardian_user_id=auth.uid() and g.status='active') then
+    return true;
+  end if;
+  select h.class_id into v_class
+  from public.schoolpro_enrollment_history h
+  where h.school_id=p_school and h.student_id=p_student and h.session=trim(p_session)
+  order by h.created_at desc limit 1;
+  if not found then
+    select s.class_id into v_class from public.schoolpro_students s
+    where s.school_id=p_school and s.id=p_student;
+  end if;
+  if v_class is null then return false; end if;
+  if private.schoolpro_can_review_class(p_school,v_class) then return true; end if;
+  return exists(
+    select 1 from public.schoolpro_members m
+    join public.schoolpro_subject_assignments a
+      on a.school_id=m.school_id and a.teacher_member_id=m.id
+    where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+      and m.role::text in ('teacher','class_teacher')
+      and a.class_id=v_class and a.subject_id=p_subject
+      and a.session=trim(p_session) and a.ended_at is null
+  );
+end
+$;
+revoke all on function private.schoolpro_can_read_result(uuid,uuid,uuid,text) from public,anon;
+grant execute on function private.schoolpro_can_read_result(uuid,uuid,uuid,text) to authenticated;
+drop policy if exists schoolpro_result_subject_scope_guard on public.schoolpro_results;
+create policy schoolpro_result_subject_scope_guard
+on public.schoolpro_results as restrictive for select to authenticated
+using (private.schoolpro_can_read_result(school_id,student_id,subject_id,session));
+
 -- Read the active subject-teacher roster for a class without granting staff
 -- direct membership/profile table access. Ordinary subject teachers see only
 -- their own allocation; Form Masters, section heads, Exam Officers and admins

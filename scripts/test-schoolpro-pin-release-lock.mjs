@@ -8,6 +8,8 @@ assert.ok(migration.includes("r.status='published' and r.locked=true"),'PIN resu
 assert.ok(migration.includes("'grade_scale',coalesce((select jsonb_agg"),'PIN result response must include the school-configured grading scale');
 assert.ok(parent.includes(".eq('status','published').eq('locked',true)"),'Parent result summary must count only locked, published results');
 assert.ok(checker.includes('grade(Number(result.total_score), data.grade_scale)'),'PIN checker must render grades using the returned school scale');
+assert.ok(migration.includes("Your school has paused this result because attendance is below its requirement"),'PIN release must enforce the family attendance hold');
+assert.ok(migration.includes('schoolpro_result_access_overrides'),'PIN release must honor the school leadership result-access exception');
 assert.ok(migration.includes("if jsonb_array_length(payload)=0 then"),'No released result must fail closed');
 assert.ok(migration.includes("private.record_schoolpro_result_pin_failure(v_attempt_key)"),'Invalid PIN must continue to accrue cooldown failures');
 assert.ok(migration.includes("pg_catalog.pg_advisory_xact_lock"),'PIN attempts must remain serialized');

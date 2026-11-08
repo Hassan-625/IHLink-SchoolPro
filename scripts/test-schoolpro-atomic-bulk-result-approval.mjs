@@ -1,42 +1,42 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const migration=readFileSync('supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql','utf8');
+const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
 const page=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
-const classMigration=readFileSync('supabase/migrations/20261108115000_schoolpro_class_scoped_atomic_approval.sql','utf8');
-assert.match(migration,/cardinality\(p_results\)>5000/,'Bulk approval must have a bounded batch size');
-assert.match(migration,/count\(distinct x\.id\).*cardinality\(p_results\)/s,'Duplicate IDs must be rejected');
-assert.match(migration,/perform r\.id from public\.schoolpro_results r where r\.id=any\(p_results\) order by r\.id for update/,'Rows must be locked in deterministic order');
-assert.match(migration,/v_count<>cardinality\(p_results\)/,'Every requested row must be an unlocked Draft in one school');
-assert.match(migration,/private\.schoolpro_result_assessment_complete\(r\.id\)/,'Every row must pass assessment completeness');
-assert.match(migration,/At least one selected assessment is incomplete; no results were approved/,'Incomplete batches must abort as one transaction');
-assert.match(migration,/insert into public\.schoolpro_result_approvals/,'Review attribution must be persisted');
-assert.match(migration,/insert into public\.audit_logs/,'Bulk approval must be audited');
-assert.match(migration,/grant execute on function public\.review_schoolpro_results\(uuid\[\],text\) to authenticated/,'Only authenticated users receive the RPC grant');
-const approve=page.slice(page.indexOf('async function approve(scope:'),page.indexOf('async function publish()',page.indexOf('async function approve(scope:')));
-assert.match(approve,/rpc\('review_schoolpro_results'/,'Selected and school-wide approvals must use the atomic bulk RPC');
-assert.match(approve,/rpc\('review_schoolpro_class_results'/,'Class approval must use a class-scoped atomic RPC');
-assert.match(classMigration,/h\.class_id=p_class/,'Historical class assignment must scope class approval');
-assert.match(classMigration,/s\.class_id=p_class/,'Current-roster fallback must scope class approval');
-assert.match(classMigration,/public\.review_schoolpro_results\(v_ids,p_notes\)/,'Class-scoped approval must delegate to the all-or-nothing bulk approval transaction');
-assert.match(classMigration,/p_students uuid\[\] default null/,'Selected-student approval must accept a bounded class-scoped student selection');
-assert.match(classMigration,/Every selected student must belong to this class roster/,'Selected-student approval must reject students outside the selected class roster');
-assert.match(approve,/p_students:selected/,'Selected-student approval must pass the selected roster to the class-scoped RPC');
-assert.doesNotMatch(approve,/for\(const draft of drafts\.data/,'Client must not approve rows in a partial-success loop');
-assert.match(approve,/schoolpro_class_review_sheet/,'Class broadsheet must refresh after approval');
-assert.match(approve,/were approved, but the broadsheet could not refresh/,'Refresh failure must not misreport the committed approval as failed');
-const integration=readFileSync('scripts/test-schoolpro-assessment-completeness-release.integration.sql','utf8');
-assert.match(integration,/Bulk approval must be all-or-nothing/);
-assert.match(integration,/Bulk approval partially changed a rejected batch/);
-assert.match(integration,/Complete bulk approval did not approve the entire batch/);
-console.log('PASS: SchoolPro bulk approval and selected class publication are roster-scoped and atomic.');
-
+const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const selectedPublish=readFileSync('supabase/migrations/20261108116000_schoolpro_selected_publication_class_scope.sql','utf8');
-assert.match(selectedPublish,/drop function if exists public\.publish_schoolpro_selected_results\(uuid,text,text,uuid\[\],boolean\)/,'The old unscoped publication RPC overload must be removed');
-assert.match(selectedPublish,/p_class uuid default null/,'Selected publication must require a class scope while retaining a whole-school mode');
-assert.match(selectedPublish,/Every selected student must belong to this class roster/,'Selected publication must reject learners outside the chosen class');
-assert.match(selectedPublish,/s\.class_id=p_class/,'Current-roster publication fallback must match the selected class');
-assert.match(selectedPublish,/h\.class_id=p_class/,'Historical enrollment must match the selected class');
 
-assert.match(selectedPublish,/cardinality\(p_students\)>5000/,'Selected publication must bound request size');
-assert.match(selectedPublish,/count\(distinct x\.id\).*cardinality\(p_students\)/s,'Selected publication must reject duplicate student IDs');
+assert.match(authority,/private\.schoolpro_result_scope_mixed_state/i,
+  'Section and Exam Officer approval must validate the complete scoped result matrix.');
+assert.match(authority,/create or replace function public\.schoolpro_approve_section_results/i);
+assert.match(authority,/create or replace function public\.schoolpro_exam_officer_approve_results/i);
+assert.match(authority,/create or replace function public\.schoolpro_publish_school_results/i);
+assert.match(authority,/status='section_approved'/i);
+assert.match(authority,/status='exam_approved'/i);
+assert.match(authority,/Only the Exam Officer can publish school results/i);
+assert.match(page,/schoolpro_approve_section_results/i);
+assert.match(page,/schoolpro_exam_officer_approve_results/i);
+assert.match(page,/schoolpro_publish_school_results/i);
+assert.match(page,/schoolpro_return_class_results_for_correction/i);
+assert.match(page,/schoolpro_class_result_workflow_summary/i);
+assert.doesNotMatch(page,/review_schoolpro_results|review_schoolpro_class_results|review_schoolpro_result/i,
+  'The broadsheet must not expose legacy partial or individual approval.');
+assert.doesNotMatch(page,/Approve selected results|Approve class results for Exam Officer/i);
+assert.doesNotMatch(results,/review_schoolpro_result/i,
+  'The Results page must not approve an individual result.');
+assert.match(results,/Awaiting Form Master submission/i);
+assert.match(authority,/retire_legacy_result_rpcs/i,
+  'Legacy per-result, partial-class and old publication RPCs must be revoked.');
+
+assert.match(selectedPublish,/drop function if exists public\.publish_schoolpro_selected_results\(uuid,text,text,uuid\[\],boolean\)/,
+  'The old unscoped publication overload must be removed.');
+assert.match(selectedPublish,/p_class uuid default null/,
+  'Any retained selected publication helper must carry an explicit class scope.');
+assert.match(selectedPublish,/Every selected student must belong to this class roster/,
+  'Selected publication must reject students outside the chosen class.');
+assert.match(selectedPublish,/s\.class_id=p_class/);
+assert.match(selectedPublish,/h\.class_id=p_class/);
+assert.match(selectedPublish,/cardinality\(p_students\)>5000/);
+assert.match(selectedPublish,/count\(distinct x\.id\).*cardinality\(p_students\)/s);
+
+console.log('PASS: result approval is section-atomic, Exam Officer final approval/publication is school-wide, and legacy partial approval routes are revoked.');

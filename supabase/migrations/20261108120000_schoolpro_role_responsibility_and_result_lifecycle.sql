@@ -1284,7 +1284,7 @@ grant execute on function public.schoolpro_approve_section_results(uuid,text,tex
 create or replace function public.schoolpro_approve_class_results(
   p_school uuid,p_class uuid,p_term text,p_session text
 ) returns integer language plpgsql security definer set search_path=''
-as $
+as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
@@ -1324,7 +1324,7 @@ begin
     jsonb_build_object('term',trim(p_term),'session',trim(p_session),'result_count',n));
   return n;
 end
-$;
+$$;
 revoke all on function public.schoolpro_approve_class_results(uuid,uuid,text,text) from public,anon;
 grant execute on function public.schoolpro_approve_class_results(uuid,uuid,text,text) to authenticated;
 

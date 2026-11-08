@@ -79,6 +79,14 @@ assert.match(authorityMigration,/create or replace function private\.schoolpro_c
 assert.match(authorityMigration,/as restrictive for select to authenticated/i);
 assert.match(authorityMigration,/app\.schoolpro_section_return/i);
 assert.match(authorityMigration,/app\.schoolpro_exam_publication/i);
+assert.match(authorityMigration,/app\.schoolpro_section_approval/i);
+assert.match(authorityMigration,/app\.schoolpro_section_return/i);
+assert.match(authorityMigration,/status in \('submitted','approved'\)/i);
+assert.match(authorityMigration,/status in \('submitted','section_approved','draft'\)/i);
+assert.match(integration,/Subject teacher must not read another teacher subject result/i);
+assert.match(integration,/Form Master must read every subject result in the assigned class/i);
+assert.match(integration,/Section Head must return all class results for correction/i);
+assert.match(integration,/Form Master must resubmit the corrected class register/i);
 assert.match(authorityMigration,/b\.status='pending' and i\.result_id=old\.id/i);
 assert.match(authorityMigration,/status='section_approved'/i);
 assert.match(authorityMigration,/status='exam_approved'/i);

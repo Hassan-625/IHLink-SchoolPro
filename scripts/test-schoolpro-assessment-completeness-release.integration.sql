@@ -29,6 +29,7 @@ create function private.schoolpro_module_allowed(uuid,text) returns boolean lang
 create function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $$select true$$;
 
 \ir ../supabase/migrations/20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql
+\ir ../supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql
 \ir ../supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql
 
 insert into public.schoolpro_assessment_schemes(id,school_id,components) values
@@ -122,6 +123,28 @@ update public.schoolpro_results set assessment_scores='{"ca":20,"exam":60}'::jso
 where id='60000000-0000-0000-0000-000000000001';
 select public.review_schoolpro_result('60000000-0000-0000-0000-000000000001','approved','checked');
 select public.publish_schoolpro_class_results('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','First Term','2026/2027');
+
+-- Students without historical rows are included only in their actual current class.
+insert into public.schoolpro_classes(id,school_id) values
+ ('30000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001');
+insert into public.schoolpro_students(id,school_id,status,class_id) values
+ ('40000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000001','active','30000000-0000-0000-0000-000000000001'),
+ ('40000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000001','active','30000000-0000-0000-0000-000000000002');
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score,status)
+values
+ ('60000000-0000-0000-0000-000000000007','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000004','70000000-0000-0000-0000-000000000007','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'approved'),
+ ('60000000-0000-0000-0000-000000000008','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000005','70000000-0000-0000-0000-000000000008','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'approved');
+select public.publish_schoolpro_class_results('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','First Term','2026/2027');
+do $assert$
+begin
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000007' and status='published' and locked) then
+  raise exception 'Active student with no history was not published for their current class';
+ end if;
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000008' and status='approved' and not locked) then
+  raise exception 'Class publication incorrectly included an active student from another current class';
+ end if;
+end
+$assert$;
 
 -- A directly-created incomplete Approved row must block class publication.
 insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score,status)

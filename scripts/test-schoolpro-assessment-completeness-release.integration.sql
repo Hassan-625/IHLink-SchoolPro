@@ -171,15 +171,15 @@ $assert$;
 -- Selected-student approval must be constrained to the chosen class roster.
 insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score,status)
 values
- ('6000000000-0000-0000-0000-000000000011','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000006','70000000-0000-0000-0000-000000000011','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft'),
- ('6000000000-0000-0000-0000-000000000012','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000007','70000000-0000-0000-0000-000000000012','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft');
+ ('60000000-0000-0000-0000-000000000011','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000006','70000000-0000-0000-0000-000000000011','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft'),
+ ('60000000-0000-0000-0000-000000000012','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000007','70000000-0000-0000-0000-000000000012','Third Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60,'draft');
 select public.review_schoolpro_class_results('20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','Third Term','2026/2027',null,array['40000000-0000-0000-0000-000000000006'::uuid]);
 do $assert$
 begin
- if not exists(select 1 from public.schoolpro_results where id='6000000000-0000-0000-0000-000000000011' and status='approved') then
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000011' and status='approved') then
   raise exception 'Selected class-roster student was not approved';
  end if;
- if not exists(select 1 from public.schoolpro_results where id='6000000000-0000-0000-0000-000000000012' and status='draft') then
+ if not exists(select 1 from public.schoolpro_results where id='60000000-0000-0000-0000-000000000012' and status='draft') then
   raise exception 'Selected-student approval approved another class roster';
  end if;
 end

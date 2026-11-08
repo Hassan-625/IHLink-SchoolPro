@@ -27,7 +27,7 @@ begin
    coalesce(jsonb_object_agg(m.subject_id,m.total_score) filter(where m.id is not null and m.status='published' and m.locked),'{}') published_scores,
    count(m.id) filter(where m.status='draft') draft_scores,
    count(m.id) filter(where m.status='approved') approved_scores,
-   count(m.id) filter(where m.status='published') published_scores
+   count(m.id) filter(where m.status='published') published_status_rows
   from roster s left join marks m on m.student_id=s.id group by s.id,s.admission_number,s.name
  ), ranked as(select t.*,rank() over(order by total desc) class_position from totals t),
  subject_scope_raw as (

@@ -2744,3 +2744,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - This matches the denominator used by the SQL broadsheet and the printable class-results page.
 - Extended the allocated-subject broadsheet regression to reject the old unweighted calculation.
 - Frontend and regression-only change; no production database or deployment action.
+
+
+### Stage C broadsheet approval refresh
+
+- After the atomic bulk approval RPC commits successfully, the class/selected-student broadsheet now reloads its review sheet so approval state and aggregates are refreshed immediately.
+- If the post-commit read fails, the UI explicitly reports that approval succeeded and only the display refresh failed; it does not imply the committed approval was rolled back.
+- Regression coverage added to `scripts/test-schoolpro-atomic-bulk-result-approval.mjs`.
+- This is a frontend read-after-write consistency improvement; no production data or database migration was applied.

@@ -267,6 +267,10 @@ begin
  perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
  insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
  values('bbbbbbbb-0000-4000-8000-000000000011',school,student_id,subject_one,'First Term','2026/2027','{"ca":10,"exam":80}','draft');
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
+ values('bbbbbbbb-0000-4000-8000-000000000012',school,student_id,subject_two,'First Term','2026/2027','{"ca":9,"exam":75}','draft');
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
  begin
    update public.schoolpro_results set assessment_scores='{"ca":12,"exam":80}'
    where id='bbbbbbbb-0000-4000-8000-000000000012';
@@ -275,10 +279,6 @@ begin
    if sqlerrm like 'ASSERT:%' then raise; end if;
    if position('Only the active subject teacher assigned' in sqlerrm)=0 then raise; end if;
  end;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000012',school,student_id,subject_two,'First Term','2026/2027','{"ca":9,"exam":75}','draft');
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
  if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
    raise exception 'Form Master must submit only after the complete class subject matrix exists';
  end if;

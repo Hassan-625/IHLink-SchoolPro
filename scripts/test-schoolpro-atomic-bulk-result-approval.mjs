@@ -19,6 +19,9 @@ assert.match(approve,/rpc\('review_schoolpro_class_results'/,'Class approval mus
 assert.match(classMigration,/h\.class_id=p_class/,'Historical class assignment must scope class approval');
 assert.match(classMigration,/s\.class_id=p_class/,'Current-roster fallback must scope class approval');
 assert.match(classMigration,/public\.review_schoolpro_results\(v_ids,p_notes\)/,'Class-scoped approval must delegate to the all-or-nothing bulk approval transaction');
+assert.match(classMigration,/p_students uuid\[\] default null/,'Selected-student approval must accept a bounded class-scoped student selection');
+assert.match(classMigration,/Every selected student must belong to this class roster/,'Selected-student approval must reject students outside the selected class roster');
+assert.match(approve,/p_students:selected/,'Selected-student approval must pass the selected roster to the class-scoped RPC');
 assert.doesNotMatch(approve,/for\(const draft of drafts\.data/,'Client must not approve rows in a partial-success loop');
 assert.match(approve,/schoolpro_class_review_sheet/,'Class broadsheet must refresh after approval');
 assert.match(approve,/were approved, but the broadsheet could not refresh/,'Refresh failure must not misreport the committed approval as failed');

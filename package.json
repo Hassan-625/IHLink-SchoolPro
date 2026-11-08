@@ -28,7 +28,8 @@
     "test:schoolpro-result-import-validation": "node scripts/test-schoolpro-result-import-validation.mjs",
     "test:schoolpro-result-ranking": "node scripts/test-schoolpro-result-ranking-consistency.mjs",
     "test:schoolpro-correction-review": "node scripts/test-schoolpro-correction-review-atomicity.mjs",
-    "test:schoolpro-assessment-scheme": "node scripts/test-schoolpro-assessment-scheme-immutability.mjs"
+    "test:schoolpro-assessment-scheme": "node scripts/test-schoolpro-assessment-scheme-immutability.mjs",
+    "test:schoolpro-published-rank": "node scripts/test-schoolpro-published-rank-release-boundary.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

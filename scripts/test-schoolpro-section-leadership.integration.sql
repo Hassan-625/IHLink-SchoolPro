@@ -110,7 +110,6 @@ begin
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',true);
  perform public.schoolpro_set_section_leader(school,head_member,'primary',true);
  perform public.schoolpro_set_section_leader(school,vice_member,'junior_secondary',true);
- perform public.schoolpro_set_section_leader(school,principal_member,'junior_secondary',true);
  perform public.schoolpro_set_section_leader(school,principal_member,'senior_secondary',true);
  if (select count(*) from public.schoolpro_section_leaders where school_id=school) <> 4 then
    raise exception 'Section leader assignments were not persisted';
@@ -171,6 +170,12 @@ begin
    raise exception 'Form Master must submit Junior Secondary results';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,principal_member,'junior_secondary',true);
+ perform set_config('request.jwt.claim.sub',vice_id::text,true);
+ if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
+   raise exception 'Vice Principal must lose section-head precedence when a Principal is appointed';
+ end if;
  begin
    perform public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026');
    raise exception 'ASSERT: section leader approved result outside assigned section';

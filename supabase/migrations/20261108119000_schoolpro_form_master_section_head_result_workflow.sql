@@ -22,7 +22,10 @@ create index schoolpro_result_workflow_class_period_idx
 alter table public.schoolpro_result_workflow enable row level security;
 revoke all on public.schoolpro_result_workflow from public,anon,authenticated;
 
-create or replace function public.schoolpro_submit_class_results(
+-- Replace any legacy implementation whose return type differs from this RPC.
+drop function if exists public.schoolpro_submit_class_results(uuid,uuid,text,text);
+
+create function public.schoolpro_submit_class_results(
   p_school uuid,p_class uuid,p_term text,p_session text
 ) returns integer
 language plpgsql security definer set search_path=''

@@ -2834,3 +2834,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The same released-result predicate remains on the score join; the learner/guardian release check and attendance/finance gate are preserved.
 - Added a source regression assertion for the non-empty released-score population.
 - Proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` remains unmerged and unapplied to production.
+
+
+- Extended the ranking correction to the staff broadsheet: learners with no published subject rows remain visible in the roster with a blank class position, and are ordered after learners with released scores. Their blank rows no longer distort published ranking. Broadsheet score totals still include published-and-locked rows only.

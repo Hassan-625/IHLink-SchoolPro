@@ -30,7 +30,7 @@ begin
  if configured_count<>distinct_key_count then return false;end if;
  for component in select value from jsonb_array_elements(configured) loop
   component_key:=component->>'key';
-  if nullif(trim(component_key),'') is null or jsonb_typeof(component->'maxScore')<>'number' then return false;end if;
+  if nullif(trim(component_key),'') is null or jsonb_typeof(component->'maxScore') is distinct from 'number' then return false;end if;
   if not (r.assessment_scores ? component_key) or jsonb_typeof(r.assessment_scores->component_key)<>'number' then return false;end if;
   score_value:=(r.assessment_scores->>component_key)::numeric;
   max_value:=(component->>'maxScore')::numeric;
@@ -39,7 +39,7 @@ begin
  end loop;
  if exists(select 1 from jsonb_object_keys(r.assessment_scores) supplied(key)
    where not exists(select 1 from jsonb_array_elements(configured) c(value) where c.value->>'key'=supplied.key)) then return false;end if;
- return r.total_score=calculated_total;
+ return coalesce(r.total_score=calculated_total,false);
 exception when others then
  return false;
 end

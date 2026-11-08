@@ -27,6 +27,11 @@ for (const fn of ['publish_schoolpro_class_results','publish_schoolpro_selected_
  const body=migration.slice(start,end);
  assert.ok(body.includes('private.schoolpro_result_assessment_complete(r.id)'),`${fn} must revalidate completeness before release`);
  assert.ok(body.includes('for update'),`${fn} must lock the publication scope before checking completeness`);
+ if(fn==='publish_schoolpro_class_results'){
+  assert.ok(body.includes("s.status='active'"),'Class publication must retain the active-roster fallback');
+  assert.ok(body.includes('not exists(select 1 from public.schoolpro_enrollment_history h'), 'Active students without a history row must remain eligible for their current class');
+  assert.equal((body.match(/not exists\(select 1 from public\.schoolpro_enrollment_history h/g)||[]).length,3,'Class publication completeness check and update must use the same historical-roster fallback');
+ }
  assert.ok(body.includes('incomplete approved assessments')||body.includes('incomplete approved assessments')||body.includes('incomplete approved'),`${fn} must fail with a clear incomplete-assessment error`);
 }
 assert.ok(migration.includes('revoke all on function private.schoolpro_result_assessment_complete(uuid) from public,anon,authenticated'),'Internal completeness helper must not be directly executable by clients');

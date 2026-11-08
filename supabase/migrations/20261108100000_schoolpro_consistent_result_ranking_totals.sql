@@ -12,9 +12,9 @@ begin
  with roster as (
   select s.id,s.admission_number,concat_ws(' ',s.first_name,s.last_name) name
   from public.schoolpro_students s
-  left join public.schoolpro_enrollment_history e on e.student_id=s.id and e.school_id=s.school_id and e.session=trim(p_session)
+  left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
   where s.school_id=p_school and coalesce(e.class_id,s.class_id)=p_class
-    and (e.student_id is not null or (s.status='active' and not exists(
+    and (e.has_history is true or (s.status='active' and not exists(
       select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id
     )))
  ), marks as (

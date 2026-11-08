@@ -12,7 +12,7 @@ The Stage C section-leadership model now follows four independent academic secti
 - Junior Secondary — Vice Principal or Principal appointment scoped to Junior Secondary.
 - Senior Secondary — separate Vice Principal or Principal appointment scoped to Senior Secondary.
 
-Principal is the senior authority above Vice Principal. The appointment RPC must not promote an ordinary Subject Teacher or Class Teacher to section-head authority merely because they teach or serve as Form Master. The final section-appointment authorization also recognizes the explicit `school_admin` staff responsibility, alongside Proprietor/Administrator and IHLink Super Admin.
+Principal is the senior authority above Vice Principal. The appointment RPC must not promote an ordinary Subject Teacher or Class Teacher to section-head authority merely because they teach or serve as Form Master. The final section-appointment authorization also recognizes the explicit `school_admin` staff responsibility, alongside Proprietor/Administrator and IHLink Super Admin. Where both a Vice Principal and Principal have active appointments to the same secondary section, Principal takes precedence: the Vice Principal's section-head authority is suppressed while the Principal appointment remains active. This precedence is enforced in the database's section-leadership predicates, not only in the UI.
 
 Added regression coverage rejecting an ordinary subject teacher's section-head appointment and source-contract checks for the role eligibility and `school_admin` authorization. These tests have been committed to the PR branch; execution and latest CI status remain pending and must not be represented as passed until verified.
 

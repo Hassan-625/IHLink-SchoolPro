@@ -2752,3 +2752,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - If the post-commit read fails, the UI explicitly reports that approval succeeded and only the display refresh failed; it does not imply the committed approval was rolled back.
 - Regression coverage added to `scripts/test-schoolpro-atomic-bulk-result-approval.mjs`.
 - This is a frontend read-after-write consistency improvement; no production data or database migration was applied.
+
+
+### Stage C class publication roster consistency
+
+- Corrected the class-results publication scope to match the historical-session roster fallback already used by the review sheet and related report queries.
+- A student with an active current roster and no enrollment-history row for the selected session remains eligible for class publication.
+- Where a selected-session history row exists, that historical class assignment remains authoritative; an active current class does not override a different historical class.
+- Applied the same roster predicate to the publication lock, completeness validation, and update so the three phases cannot disagree about which results are in scope.
+- Extended the assessment-completeness source regression to guard the fallback and predicate consistency.
+- Migration remains proposed only; no production database changes have been made.

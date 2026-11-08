@@ -2770,3 +2770,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Applied the identical predicate to the row-lock phase, completeness validation and final publication update so the three phases operate on the same class roster.
 - Extended the source-contract regression and disposable PostgreSQL integration fixture with two active students who have no selected-session history and belong to different current classes. Publishing one class must publish only its own current-roster student and leave the other class's result Approved.
 - Proposed migration only. No production database changes, merge or Render deployment.
+
+### Stage C class-scoped atomic approval
+
+- Found that the broadsheet's class-approval path selected Draft result IDs by student IDs only. If a student had additional result rows in the same school/session outside the selected class scope, those rows could be approved unintentionally.
+- Added proposed migration `20261108115000_schoolpro_class_scoped_atomic_approval.sql` and RPC `review_schoolpro_class_results`.
+- The RPC locks the selected-session roster, applies historical-enrolment precedence and the same current-class fallback used by class publication, then delegates the exact result-ID batch to the existing atomic approval RPC.
+- Updated the class-level broadsheet action to use the class-scoped RPC. Selected-student and whole-school approval retain the existing atomic bulk RPC.
+- Extended the source-contract regression and disposable PostgreSQL fixture to prove a class approval does not approve a Draft result belonging to another current class.
+- Proposed migration only; no production database changes, merge or Render deployment.

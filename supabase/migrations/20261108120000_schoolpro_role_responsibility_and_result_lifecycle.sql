@@ -247,7 +247,7 @@ grant execute on function public.schoolpro_set_section_leader(uuid,uuid,text,boo
 -- appointment is independently managed and is retired when membership ends.
 create or replace function private.enforce_result_workflow()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 declare v_level text;v_class uuid;v_workflow_class uuid;v_workflow_status text;
 begin
   if old.status in ('approved','published') and (
@@ -307,7 +307,7 @@ begin
     end if;
     if not private.is_admin(array['super_admin']::public.user_role[])
        and not private.schoolpro_member_leads_student_section(new.school_id,new.student_id,new.session) then
-      raise exception 'Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish this section result';
+      raise exception 'Only the appointed Section Head can approve or publish this section result';
     end if;
   end if;
   if new.status='approved' and old.status<>'approved' then
@@ -318,7 +318,7 @@ begin
   end if;
   return new;
 end
-$;
+$$;
 
 create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''

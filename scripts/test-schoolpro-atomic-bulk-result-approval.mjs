@@ -15,6 +15,8 @@ assert.match(migration,/grant execute on function public\.review_schoolpro_resul
 const approve=page.slice(page.indexOf('async function approve(scope:'),page.indexOf('async function publish()',page.indexOf('async function approve(scope:')));
 assert.match(approve,/rpc\('review_schoolpro_results'/,'Broadsheet must use the atomic bulk RPC');
 assert.doesNotMatch(approve,/for\(const draft of drafts\.data/,'Client must not approve rows in a partial-success loop');
+assert.match(approve,/schoolpro_class_review_sheet/,'Class broadsheet must refresh after approval');
+assert.match(approve,/were approved, but the broadsheet could not refresh/,'Refresh failure must not misreport the committed approval as failed');
 const integration=readFileSync('scripts/test-schoolpro-assessment-completeness-release.integration.sql','utf8');
 assert.match(integration,/Bulk approval must be all-or-nothing/);
 assert.match(integration,/Bulk approval partially changed a rejected batch/);

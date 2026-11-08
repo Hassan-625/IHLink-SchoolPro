@@ -2935,3 +2935,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Refresh failures do not undo or misrepresent the database transition; the RPC remains authoritative, and the displayed sheet/workflow is updated only when its corresponding read succeeds.
 - Added source-contract assertions for the refresh helper and successful-transition refresh calls.
 - Proposed frontend/test changes only. No production migration, production data write, merge or Render deployment has occurred; CI validation is still required.
+
+
+### Correction reopening queue live synchronization — 2026-11-08 (PR #133)
+
+- The Broadsheet now refreshes the pending class/section correction queue immediately after a new reopening request is submitted and after the Exam Officer approves or rejects a request.
+- When an approved request affects the currently selected class, the class review sheet and workflow summary are refreshed as well, so the newly reopened Draft state is visible without a manual Generate action.
+- Added source-contract assertions for queue refresh and affected-class refresh. These are proposed frontend/test changes; CI has not yet validated the latest head. No production migration, production data write, merge or Render deployment has occurred.

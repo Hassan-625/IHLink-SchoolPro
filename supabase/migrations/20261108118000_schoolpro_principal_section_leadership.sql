@@ -14,7 +14,8 @@ using (
     or private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[])
     or exists (
       select 1 from public.schoolpro_members m
-      where m.id=member_id and m.school_id=school_id and m.user_id=auth.uid()
+      where m.id=public.schoolpro_section_leaders.member_id
+        and m.school_id=public.schoolpro_section_leaders.school_id and m.user_id=auth.uid()
     )
   )
 );

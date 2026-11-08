@@ -80,7 +80,6 @@ declare
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
  principal_member uuid := '99999999-9999-4999-8999-999999999993';
  formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
- formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
 begin
  insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(formmaster_id);
  insert into public.schoolpro_schools values(school,owner_id);

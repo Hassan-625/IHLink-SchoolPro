@@ -76,7 +76,7 @@ assert.match(authorityMigration,/m\.role not in \('teacher','parent','student'\)
 assert.match(authorityMigration,/ordinary Subject Teacher, parent and student accounts are not eligible/i);
 assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/i);
 assert.match(integration,/Class Teacher must be eligible for a formal Primary section-head appointment/i);
-assert.match(integration,/ordinary Subject Teacher must not be appointed as section head/i);
+assert.match(integration,/An ordinary subject teacher must not be appointed as section head/i);
 assert.match(authorityMigration,/principal_sl\\.section=sl\\.section and principal_sl\\.ended_at is null/i);
 assert.match(authorityMigration,/principal_m\\.role='administrator'/i);
 assert.match(authorityMigration,/lower\\(coalesce\\(principal_m\\.position_title,''\\)\\)='principal'/i);

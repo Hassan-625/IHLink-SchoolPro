@@ -60,8 +60,6 @@ returns boolean language sql stable as $ select true $;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 \ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
-create trigger enforce_result_workflow before update on public.schoolpro_results
-for each row execute function private.enforce_result_workflow();
 
 do $test$
 declare

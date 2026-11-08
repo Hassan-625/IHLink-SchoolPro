@@ -5,7 +5,7 @@ const broadsheet=readFileSync('supabase/migrations/20261012124900_schoolpro_full
 const report=readFileSync('supabase/migrations/20261011231101_schoolpro_rank_and_report_using_historical_session_class.sql','utf8');
 assert.ok(migration.includes('rank() over(order by total desc)'));
 assert.ok(!migration.includes('rank() over(order by average desc)'));
-assert.ok(migration.includes('coalesce(e.class_id,s.class_id)=p_class'));
+assert.ok(migration.includes('case when e.has_history is true then e.class_id else s.class_id end=p_class'));
 assert.ok(migration.includes("s.status='active' and not exists("));
 assert.ok(migration.includes('h.school_id=s.school_id and h.student_id=s.id'));
 assert.ok(broadsheet.includes('rank() over(order by x.total desc)'));

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FileText, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { schoolProGradeLabel } from '@/lib/schoolproGradeScale';
 
 type Result = { subject: string; total_score: number; assessment_scores: Record<string, number> };
 type Payload = {
@@ -23,7 +24,7 @@ type Payload = {
 
 const turnstileSiteKey = String(import.meta.env.VITE_TURNSTILE_SITE_KEY || '');
 const turnstileAction = 'schoolpro_result_pin_check';
-const grade = (n: number, scale: Payload['grade_scale']) => scale?.find((band) => n >= Number(band.min_score) && n <= Number(band.max_score))?.label || (n >= 80 ? 'A' : n >= 70 ? 'B' : n >= 60 ? 'C' : n >= 50 ? 'D' : n >= 40 ? 'E' : 'F');
+const grade = (n: number, scale: Payload['grade_scale']) => schoolProGradeLabel(n, scale || []);
 
 export function SchoolProResultChecker() {
   const [params] = useSearchParams();

@@ -74,13 +74,13 @@ export function SchoolProResults(){
     if(!subject_code)errs.push("Subject code is required");
     if(!assessment_scheme_id)errs.push("Assessment scheme ID is required");
     if(!st)errs.push("Unknown student");
-    if(st&&st.status&&st.status!=="active")errs.push("Student is not active in the selected roster");
     if(!sub)errs.push("Unknown subject");
-    if(st&&sub&&sub.class_name&&st.class_name&&sub.class_name.trim().toLowerCase()!==st.class_name.trim().toLowerCase())errs.push("Subject does not belong to the student's class");
     if(!scheme)errs.push("Invalid assessment scheme");
     const duplicateKey=st&&sub?st.id+":"+sub.id:"";
     if(duplicateKey&&seen.has(duplicateKey))errs.push("Duplicate student and subject row in this workbook");
     if(duplicateKey)seen.add(duplicateKey);
+    const classAssignments=st?.class_id?classSubjectAssignments.filter(a=>a.session===scoreForm.session&&a.class_id===st.class_id):[];
+    if(st&&sub&&classAssignments.length>0&&!classAssignments.some(a=>a.subject_id===sub.id))errs.push("Subject is not assigned to this class for the selected session");
     if(teacherScoped&&st&&sub&&!coordinatorClassIds.includes(st.class_id||"")&&!teachingTargets.some(t=>t.session===scoreForm.session&&t.class_id===st.class_id&&t.subject_id===sub.id))errs.push("Not assigned to teacher");
     const assessment_scores:Record<string,number>={};
     if(scheme){

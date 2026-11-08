@@ -10,7 +10,7 @@ assert.ok(parse.includes('score is required and must be numeric'));
 assert.ok(parse.includes('must be 0–'));
 assert.ok(parse.includes('Duplicate student and subject row'));
 assert.ok(parse.includes('classAssignments=')&&parse.includes('classSubjectAssignments'));
-assert.ok(parse.includes('Not assigned to teacher'));
+assert.ok(parse.includes('Only the subject teacher assigned to this class and subject can enter or update these scores.'));
 assert.ok(parse.includes('Maximum 500 result rows'));
 assert.ok(page.includes('Fix all preview errors before importing'));
 assert.ok(parse.includes('Existing result is approved, published or locked'));

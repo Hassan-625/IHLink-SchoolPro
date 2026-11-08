@@ -2606,3 +2606,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added `scripts/test-schoolpro-result-ranking-consistency.mjs` and `npm run test:schoolpro-result-ranking` to assert staff review, broadsheet and published report-card ranking all use total-score ordering.
 - The migration is committed to the Stage C branch only. It has not been applied to production Supabase. No production data was changed.
 - PR #133 remains draft and not merged/deployed; CI is being rerun against the updated branch.
+### Stage C — database import boundary hardening (2026-11-08)
+
+- Read-only inspection of the production `import_schoolpro_results` function found that its previous implementation treated missing component values as zero, accepted duplicate student-subject rows, and could replace an existing Draft result with a different assessment scheme. It also selected only currently active students without verifying selected-session enrolment history.
+- Added migration `20261108101000_schoolpro_harden_result_import_rpc.sql` to enforce selected-session enrolment, complete numeric component maps, valid component keys/ranges, duplicate-row rejection, original-scheme preservation and Draft/unlocked-only replacement at the database boundary.
+- The import RPC continues to call `private.schoolpro_can_write_result`, so existing school/module/teacher assignment authorization remains enforced. Valid imports remain Draft.
+- The client preview now also flags existing locked/approved/published results and scheme mismatches before submission.
+- Extended the import regression script to cover both client preview and database RPC contracts.
+- This is a proposed migration only; production Supabase has not been modified. No school records were written.

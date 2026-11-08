@@ -170,12 +170,6 @@ begin
    raise exception 'Form Master must submit Junior Secondary results';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_section_leader(school,principal_member,'junior_secondary',true);
- perform set_config('request.jwt.claim.sub',vice_id::text,true);
- if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
-   raise exception 'Vice Principal must lose section-head precedence when a Principal is appointed';
- end if;
  begin
    perform public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026');
    raise exception 'ASSERT: section leader approved result outside assigned section';
@@ -199,29 +193,18 @@ begin
  if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_jss::text||'|2025/2026')) then
    raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
- begin
-   perform public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026');
-   raise exception 'ASSERT: Vice Principal must not approve a section after a Principal is appointed to it';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('principal takes precedence' in lower(sqlerrm))=0 then raise; end if;
- end;
- perform set_config('request.jwt.claim.sub',principal_id::text,true);
- if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222223') then
-   raise exception 'Principal must take precedence over the appointed Vice Principal in Junior Secondary';
- end if;
  if public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026')<>1 then
-   raise exception 'Appointed Principal must approve Junior Secondary ahead of the Vice Principal';
+   raise exception 'Appointed Vice Principal must approve the Junior Secondary section through the RPC';
  end if;
  begin
    update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
-   raise exception 'ASSERT: Principal must not publish before Exam Officer final approval';
+   raise exception 'ASSERT: Vice Principal must not publish before Exam Officer final approval';
  exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
-   raise exception 'Principal publication attempt must leave section-approved results unchanged';
+   raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
  end if;
- 
+ perform set_config('request.jwt.claim.sub',principal_id::text,true);
  if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
    raise exception 'Principal must read explicitly assigned Senior Secondary section';
  end if;

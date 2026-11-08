@@ -69,6 +69,9 @@ assert.match(authorityMigration,/every student must have a complete Draft result
 assert.match(authorityMigration,/schoolpro_member_responsibilities/i);
 assert.match(authorityMigration,/private\\.schoolpro_member_has_responsibility\\(p_school,'school_admin'\\)/i);
 assert.match(authorityMigration,/Nursery and Primary require an appointed Head Teacher; Junior and Senior Secondary require an appointed Vice Principal or Principal/i);
+assert.match(authorityMigration,/principal_sl\\.section=sl\\.section and principal_sl\\.ended_at is null/i);
+assert.match(authorityMigration,/principal_m\\.role='administrator'/i);
+assert.match(authorityMigration,/lower\\(coalesce\\(principal_m\\.position_title,''\\)\\)='principal'/i);
 assert.doesNotMatch(authorityMigration,/target\\.role in \\('teacher','class_teacher'\\)/i);
 assert.match(authorityMigration,/schoolpro_set_member_responsibility/i);
 assert.match(authorityMigration,/schoolpro_member_leads_student_section/i);

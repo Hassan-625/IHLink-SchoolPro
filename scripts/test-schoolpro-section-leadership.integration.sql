@@ -324,8 +324,20 @@ begin
    raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('require an appointed Head Teacher' in sqlerrm)=0 then raise; end if;
+   if position('ordinary Subject Teacher' in sqlerrm)=0 then raise; end if;
  end;
+ -- Class Teacher is not an ordinary Subject Teacher and may receive a
+ -- formal section-head appointment. The appointment is independent of class
+ -- coordination and subject score-entry allocations.
+ update public.schoolpro_members set role='class_teacher' where id=subject_teacher_member;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ if not private.schoolpro_member_leads_class(school,primary_class) then
+   raise exception 'Class Teacher must be eligible for a formal Primary section-head appointment';
+ end if;
+ update public.schoolpro_members set role='teacher' where id=subject_teacher_member;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
 
  -- Without the Section Head appointment, the ordinary subject teacher can read only their own subject.

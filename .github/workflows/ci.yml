@@ -38,6 +38,7 @@ jobs:
         run: |
           node scripts/test-schoolpro-result-import-validation.mjs
           node scripts/test-schoolpro-result-ranking-consistency.mjs
+          node scripts/test-schoolpro-published-rank-release-boundary.mjs
           node scripts/test-schoolpro-correction-review-atomicity.mjs
           node scripts/test-schoolpro-assessment-scheme-immutability.mjs
           node scripts/test-schoolpro-pin-release-lock.mjs

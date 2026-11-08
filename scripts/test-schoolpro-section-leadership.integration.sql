@@ -38,7 +38,7 @@ create table public.schoolpro_audit_logs(
 create table public.schoolpro_results(
  id uuid primary key, school_id uuid not null, student_id uuid not null, subject_id uuid not null,
  session text not null, term text, ca_score numeric, exam_score numeric, assessment_scores jsonb,
- assessment_scheme_id uuid, status text not null, approved_by uuid, approved_at timestamptz,
+ assessment_scheme_id uuid, status text not null, locked boolean not null default false, approved_by uuid, approved_at timestamptz,
  published_at timestamptz
 );
 alter table public.schoolpro_results enable row level security;
@@ -54,9 +54,12 @@ $$;
 create or replace function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $$ select false $$;
 create or replace function private.schoolpro_result_access(uuid,text,text)
-returns table(allowed boolean) language sql stable as $$ select true $$;
+returns table(allowed boolean) language sql stable as $ select true $;
+create or replace function private.schoolpro_result_assessment_complete(uuid)
+returns boolean language sql stable as $ select true $;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
+\ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
 create trigger enforce_result_workflow before update on public.schoolpro_results
 for each row execute function private.enforce_result_workflow();
 
@@ -73,19 +76,22 @@ declare
  head_id uuid := '77777777-7777-4777-8777-777777777777';
  vice_id uuid := '88888888-8888-4888-8888-888888888888';
  principal_id uuid := '88888888-8888-4888-8888-888888888889';
+ formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
  head_member uuid := '99999999-9999-4999-8999-999999999991';
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
  principal_member uuid := '99999999-9999-4999-8999-999999999993';
+ formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
 begin
- insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id);
+ insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(formmaster_id);
  insert into public.schoolpro_schools values(school,owner_id);
  insert into public.schoolpro_members values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
   (head_member,school,head_id,'head_teacher',null),
   (vice_member,school,vice_id,'vice_principal',null),
-  (principal_member,school,principal_id,'administrator','Principal');
+  (principal_member,school,principal_id,'administrator','Principal'),
+  (formmaster_member,school,formmaster_id,'teacher',null);
  insert into public.schoolpro_classes values
-  (nursery_class,school,'Nursery 2','nursery',null),
+  (nursery_class,school,'Nursery 2','nursery',formmaster_member),
   (primary_class,school,'Primary 4','primary',null),
   ('22222222-2222-4222-8222-222222222223',school,'JSS 2','junior_secondary',null),
   ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',null);
@@ -106,7 +112,18 @@ begin
  if (select count(*) from public.schoolpro_section_leaders where school_id=school) <> 4 then
    raise exception 'Section leader assignments were not persisted';
  end if;
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,ca_score,exam_score,assessment_scores,status)
+ values('bbbbbbbb-0000-4000-8000-000000000002',school,student_n,subject_id,'2025/2026','First Term',10,90,'{}','draft');
+ if public.schoolpro_submit_class_results(school,nursery_class,'First Term','2025/2026')<>1 then
+   raise exception 'Form Master must submit all class Draft results';
+ end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
+ update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000002';
+ update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
+ if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'published' then
+   raise exception 'Appointed Head Teacher approval and publication workflow failed';
+ end if;
  if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Head teacher must lead the explicitly assigned Nursery section';
  end if;
@@ -132,6 +149,8 @@ begin
  where false;
  insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,ca_score,exam_score,assessment_scores,status)
  values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'2025/2026',0,0,'{}','draft');
+ insert into public.schoolpro_result_workflow(result_id,school_id,class_id,term,session,status)
+ values('bbbbbbbb-0000-4000-8000-000000000001',school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026','submitted');
  begin
    update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
    raise exception 'ASSERT: section leader approved result outside assigned section';

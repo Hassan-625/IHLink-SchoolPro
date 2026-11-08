@@ -287,11 +287,12 @@ begin
   (school,primary_class,formmaster_member,subject_one,'2026/2027',null),
   (school,primary_class,subject_teacher_member,subject_two,'2026/2027',null);
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ begin
+     raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+ end;
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- if not private.schoolpro_member_leads_class(school,primary_class) then
-   raise exception 'A teacher with an explicit section appointment must be able to act as Section Head';
- end if;
 
  -- Without the Section Head appointment, the ordinary subject teacher can read only their own subject.
  update public.schoolpro_section_leaders set ended_at=now()

@@ -24,7 +24,8 @@
     "test:schoolpro-annual-upgrade": "node scripts/test-schoolpro-annual-upgrade-postgres.mjs",
     "test:schoolpro-lifecycle-appointments": "node scripts/test-schoolpro-lifecycle-appointment-contract.mjs",
     "test:schoolpro-c0-workflows": "node scripts/test-schoolpro-c0-workspace-workflows.mjs",
-    "test:schoolpro-advanced-reports": "node scripts/test-schoolpro-advanced-reports.mjs"
+    "test:schoolpro-advanced-reports": "node scripts/test-schoolpro-advanced-reports.mjs",
+    "test:schoolpro-result-import-validation": "node scripts/test-schoolpro-result-import-validation.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

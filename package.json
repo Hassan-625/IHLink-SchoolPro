@@ -32,7 +32,8 @@
     "test:schoolpro-published-rank": "node scripts/test-schoolpro-published-rank-release-boundary.mjs",
     "test:schoolpro-assessment-completeness": "node scripts/test-schoolpro-assessment-completeness-release-boundary.mjs",
     "test:schoolpro-grade-scale": "node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs",
-    "test:schoolpro-allocated-subjects": "node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs"
+    "test:schoolpro-allocated-subjects": "node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs",
+    "test:schoolpro-printable-class-average": "node scripts/test-schoolpro-printable-class-average-consistency.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

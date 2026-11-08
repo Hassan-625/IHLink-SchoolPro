@@ -39,7 +39,7 @@ as $$
          order by eh.created_at desc limit 1
        ), st.class_id)
        and c.level=sl.section
-      where m.school_id=p_school and m.user_id=auth.uid()
+      where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
         and (
           (sl.section in ('nursery','primary') and m.role='head_teacher')
           or (sl.section in ('junior_secondary','senior_secondary') and (
@@ -60,7 +60,7 @@ as $$
     join public.schoolpro_section_leaders sl
       on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
     join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
-    where m.school_id=p_school and m.user_id=auth.uid()
+    where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
           (sl.section in ('nursery','primary') and m.role='head_teacher')
           or (sl.section in ('junior_secondary','senior_secondary') and (
@@ -90,7 +90,7 @@ begin
   end if;
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school for update;
-  if target.id is null or not (
+  if target.id is null or target.status<>'active' or not (
     (target.role='head_teacher' and p_section in ('nursery','primary'))
     or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
     or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
@@ -182,7 +182,7 @@ with leaders as materialized (
           on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
         join public.schoolpro_classes c
           on c.school_id=e.school_id and c.id=e.class_id and c.level=sl.section
-        where m.school_id=e.school_id and m.user_id=auth.uid()
+        where m.school_id=e.school_id and m.user_id=auth.uid() and m.status='active'
           and (
           (sl.section in ('nursery','primary') and m.role='head_teacher')
           or (sl.section in ('junior_secondary','senior_secondary') and (

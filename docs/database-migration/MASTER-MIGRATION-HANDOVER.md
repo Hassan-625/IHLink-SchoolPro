@@ -2694,3 +2694,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Missing marks remain blank in the broadsheet and Excel exports. They are not coerced to zero and do not enter student totals, student averages, subject averages or the class average. The page explains the allocation/coverage distinction; Excel includes allocation status.
 - Added `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs`, registered it in `package.json` and the standard CI validation workflow.
 - This is a proposed branch migration only. It has not been applied to Supabase production; no production rows were changed.
+
+
+### Stage C allocated-subject, published-average and rank alignment
+
+- Extended the class review RPC in proposed migration `20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql` to include all subjects allocated to the selected class/session, even before any score exists. Legacy result subjects are retained as “recorded only”; duplicate teacher allocations are collapsed so marks are not double-counted.
+- Missing marks remain blank and are excluded from totals/averages. Broadsheets and Excel exports identify allocation state and assessed counts.
+- Added separate published-and-locked totals, averages, subject counts and per-subject score maps alongside the staff review aggregates. The broadsheet now distinguishes review metrics (which may include draft/approved marks) from published metrics; its published class average and per-subject averages use the same published+locked population as family/report-card output.
+- Added a distinct published position based on published total, while retaining the review position based on all saved records. The UI labels both positions separately.
+- Added and wired `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs` in the normal CI validation step. CI has not yet reported a result for the latest branch revision.
+- Proposed migration remains unapplied to production. No production data or workspace was changed.

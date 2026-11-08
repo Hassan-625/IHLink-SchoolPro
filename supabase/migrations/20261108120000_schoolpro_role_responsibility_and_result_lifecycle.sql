@@ -714,6 +714,57 @@ $$;
 revoke all on function public.schoolpro_return_class_results_for_correction(uuid,uuid,text,text,text) from public,anon;
 grant execute on function public.schoolpro_return_class_results_for_correction(uuid,uuid,text,text,text) to authenticated;
 
+create or replace function private.schoolpro_result_scope_mixed_state(
+  p_school uuid,p_term text,p_session text,p_scope text,p_class uuid,p_section text,p_stage text
+) returns boolean language sql stable security definer set search_path=''
+as $
+with target_classes as (
+  select c.id from public.schoolpro_classes c
+  where c.school_id=p_school and (p_scope='school' or (p_scope='class' and c.id=p_class)
+    or (p_scope='section' and c.level=p_section))
+), roster as (
+  select c.id class_id,s.id student_id from target_classes tc
+  join public.schoolpro_classes c on c.id=tc.id and c.school_id=p_school
+  join public.schoolpro_students s on s.school_id=p_school and (
+    exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
+      and h.student_id=s.id and h.session=trim(p_session) and h.class_id=c.id)
+    or (s.status='active' and s.class_id=c.id and not exists(
+      select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
+        and h.student_id=s.id and h.session=trim(p_session)))
+  )
+), assignments as (
+  select a.class_id,a.subject_id from public.schoolpro_subject_assignments a
+  join target_classes tc on tc.id=a.class_id
+  where a.school_id=p_school and a.session=trim(p_session) and a.ended_at is null
+), expected as (
+  select r.class_id,r.student_id,a.subject_id from roster r join assignments a on a.class_id=r.class_id
+)
+select exists(select 1 from expected)
+  and not exists(
+    select 1 from expected e
+    left join public.schoolpro_results r on r.school_id=p_school and r.student_id=e.student_id
+      and r.subject_id=e.subject_id and r.term=trim(p_term) and r.session=trim(p_session)
+    left join public.schoolpro_result_workflow w on w.result_id=r.id
+    where r.id is null or not private.schoolpro_result_assessment_complete(r.id)
+      or (p_stage='section' and not (
+        (r.status='draft' and w.status='submitted')
+        or (r.status='approved' and w.status='section_approved')
+      ))
+      or (p_stage='exam' and (r.status<>'approved' or w.status not in ('section_approved','exam_approved')))
+  )
+  and not exists(
+    select 1 from public.schoolpro_result_workflow w
+    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+    where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
+      and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
+        or (p_scope='section' and c.level=p_section))
+      and (p_stage='section' and w.status not in ('submitted','section_approved')
+        or p_stage='exam' and w.status not in ('section_approved','exam_approved'))
+  )
+$;
+revoke all on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) from public,anon;
+grant execute on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) to authenticated;
+
 -- A Section Head can approve the complete submitted section as one atomic hand-off.
 create or replace function public.schoolpro_approve_section_results(
   p_school uuid,p_section text,p_term text,p_session text
@@ -732,7 +783,7 @@ begin
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active') then
     raise exception 'Only the appointed section head can approve this section';
   end if;
-  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,'section',null,p_section,'submitted','draft') then
+  if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'section',null,p_section,'section') then
     raise exception 'Every allocated subject result for every student in the section must be complete and submitted by its Form Master';
   end if;
   if not exists(select 1 from public.schoolpro_result_workflow w
@@ -740,13 +791,6 @@ begin
     where w.school_id=p_school and c.level=p_section
       and w.term=trim(p_term) and w.session=trim(p_session)) then
     raise exception 'No submitted class results exist in this section for the selected period';
-  end if;
-  if exists(select 1 from public.schoolpro_result_workflow w
-    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
-    where w.school_id=p_school and c.level=p_section
-      and w.term=trim(p_term) and w.session=trim(p_session)
-      and w.status not in ('submitted')) then
-    raise exception 'Every class result in the section must be submitted and not awaiting correction before section approval';
   end if;
   if exists(select 1 from public.schoolpro_results r
     join public.schoolpro_students s on s.school_id=r.school_id and s.id=r.student_id
@@ -795,17 +839,9 @@ begin
   if p_scope='school' and (p_class is not null or p_section is not null) then
     raise exception 'Whole-school approval cannot include a class or section filter';
   end if;
-  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,p_scope,p_class,p_section,'section_approved','approved') then
+  if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,p_scope,p_class,p_section,'exam') then
     raise exception 'Every allocated class and subject result in the selected scope must be section-approved before final approval';
   end if;
-  if exists(
-    select 1 from public.schoolpro_result_workflow w
-    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
-    where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
-      and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
-        or (p_scope='section' and c.level=p_section))
-      and w.status not in ('section_approved')
-  ) then raise exception 'Every result in the selected scope must first be approved by its section head'; end if;
   if exists(select 1 from public.schoolpro_result_workflow w
     join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
     left join public.schoolpro_results r on r.id=w.result_id

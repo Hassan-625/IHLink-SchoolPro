@@ -125,3 +125,39 @@ begin
 end
 $assert$;
 select 'PASS: incomplete results are blocked at approval and every publication boundary; complete results publish and lock.' as result;
+
+-- Exercise the grade-scale trigger on the same disposable PostgreSQL instance.
+create table public.schoolpro_students(id uuid primary key,school_id uuid,class_id uuid,status text);
+create table public.schoolpro_enrollment_history(student_id uuid,school_id uuid,class_id uuid,session text);
+create table public.schoolpro_grade_scale(
+ id uuid primary key,school_id uuid not null,label text not null,min_score numeric not null,max_score numeric not null,
+ is_active boolean not null default true,
+ constraint schoolpro_grade_range check(min_score>=0 and max_score<=100 and min_score<=max_score)
+);
+create function public.schoolpro_printable_result(uuid,text,text) returns setof public.schoolpro_results language sql as $$select * from public.schoolpro_results where false$$;
+create function public.schoolpro_can_view_result_output(uuid,text,text) returns boolean language sql as $$select true$$;
+\ir ../supabase/migrations/20261108111000_schoolpro_consistent_subject_statistics_and_grade_bands.sql
+
+insert into public.schoolpro_grade_scale(id,school_id,label,min_score,max_score,is_active) values
+ ('81000000-0000-0000-0000-000000000001','82000000-0000-0000-0000-000000000001','F',0,39.99,true),
+ ('81000000-0000-0000-0000-000000000002','82000000-0000-0000-0000-000000000001','E',40,49.99,true),
+ ('81000000-0000-0000-0000-000000000003','82000000-0000-0000-0000-000000000001','A',50,100,true);
+do $test$
+begin
+ begin
+  insert into public.schoolpro_grade_scale(id,school_id,label,min_score,max_score,is_active)
+  values('81000000-0000-0000-0000-000000000004','82000000-0000-0000-0000-000000000001','Overlap',49,60,true);
+  raise exception 'Expected overlapping active grade range to fail';
+ exception when exclusion_violation then null;
+ end;
+ begin
+  update public.schoolpro_grade_scale set min_score=39 where id='81000000-0000-0000-0000-000000000002';
+  raise exception 'Expected overlapping grade update to fail';
+ exception when exclusion_violation then null;
+ end;
+end
+$test$;
+-- Inactive historical bands may overlap without participating in grade resolution.
+insert into public.schoolpro_grade_scale(id,school_id,label,min_score,max_score,is_active)
+values('81000000-0000-0000-0000-000000000005','82000000-0000-0000-0000-000000000001','Legacy',30,60,false);
+select 'PASS: active grade ranges reject overlap on insert and update; inactive historical bands remain allowed.' as result;

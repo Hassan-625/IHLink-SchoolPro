@@ -28,6 +28,7 @@ for(const file of rosterMigrations){
  const sql=fs.readFileSync(file,'utf8');
  assert.match(sql,/left join lateral \(select h\.class_id,true has_history[\s\S]*h\.session=trim\(p_session\) limit 1\) e on true/,file+' must deduplicate the selected-session enrollment join');
  assert.match(sql,/e\.has_history is true/,file+' must preserve a historical enrollment row even if its class_id is null');
+ assert.match(sql,/case when e\.has_history is true then e\.class_id else s\.class_id end/,file+' must not substitute the current class when historical class is null');
  assert.match(sql,/h\.session=trim\(p_session\)/,file+' must scope active-student fallback to the selected session');
 }
 console.log('SchoolPro historical roster deduplication regression passed.');

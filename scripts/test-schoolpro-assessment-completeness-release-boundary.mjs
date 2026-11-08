@@ -26,6 +26,7 @@ for (const fn of ['publish_schoolpro_class_results','publish_schoolpro_selected_
  assert.ok(start>=0&&end>start,`${fn} must be redefined`);
  const body=migration.slice(start,end);
  assert.ok(body.includes('private.schoolpro_result_assessment_complete(r.id)'),`${fn} must revalidate completeness before release`);
+ assert.ok(body.includes('for update'),`${fn} must lock the publication scope before checking completeness`);
  assert.ok(body.includes('incomplete approved assessments')||body.includes('incomplete approved assessments')||body.includes('incomplete approved'),`${fn} must fail with a clear incomplete-assessment error`);
 }
 assert.ok(migration.includes('revoke all on function private.schoolpro_result_assessment_complete(uuid) from public,anon,authenticated'),'Internal completeness helper must not be directly executable by clients');

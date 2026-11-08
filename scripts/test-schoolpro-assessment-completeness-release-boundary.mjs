@@ -46,5 +46,5 @@ assert.equal((classPublish.match(/exists\(select 1 from public\.schoolpro_enroll
 console.log('PASS: assessment completeness and selected-class publication roster boundaries are enforced.');
 
 const classPublish=readFileSync('supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql','utf8');
-assert.match(classPublish,/nullif\(trim\(p_term\),' '\) is null/,'Class publication must reject a blank term');
-assert.match(classPublish,/nullif\(trim\(p_session\),' '\) is null/,'Class publication must reject a blank session');
+assert.match(classPublish,/nullif\(trim\(p_term\),''\) is null/,'Class publication must reject a blank term');
+assert.match(classPublish,/nullif\(trim\(p_session\),''\) is null/,'Class publication must reject a blank session');

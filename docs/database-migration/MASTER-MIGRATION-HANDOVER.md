@@ -2921,3 +2921,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added disposable PostgreSQL coverage after migration 20261108120000 is applied: a Vice Principal and Principal are both actively appointed to Senior Secondary; the VP is denied both section-wide and class-scoped approval, while the Principal retains section authority. The source-contract regression requires these assertions.
 
 - Latest CI at head `c25efb5029ab7cef25ff9acf4da94be19189fdef`: SchoolPro CI run `42494277979` (run #3024) is queued, including the `validate` source-contract job and the `Section leadership authorization (disposable PostgreSQL)` job. Stage C0 regression run `42494277970` and payment-page validation run `42494277889` are also queued. No test pass is claimed yet. The combined status still reports a legacy Vercel failure context; it is not a Render deployment result and Vercel is not the SchoolPro host.
+
+
+### Section-head appointment eligibility clarification — 2026-11-08 (PR #133)
+
+- Updated the policy per the user's clarification: an active school staff member may be formally appointed to Nursery, Primary, Junior Secondary, Senior Secondary, or more than one section. The only excluded staff role is ordinary `teacher` (Subject Teacher); parent and student accounts are also ineligible because they are not staff.
+- This means Class Teachers/Form Masters, Head Teachers, Vice Principals, Principals, Exam Officers, administrators, proprietors, and other active school staff roles can be appointed. A Class Teacher appointment does not grant additional subject score-entry rights; those remain constrained by active subject allocation.
+- An active Principal appointment still has precedence in that section. Other staff appointments cannot exercise section-head authority in a section with an appointed Principal.
+- Updated the Staff & Access page to show section appointment controls for every eligible staff role, rather than only Head Teacher/VP/Principal. The database RPC, read/review predicates, and role-change pruning now apply the same eligibility rule.
+- Added a disposable PostgreSQL integration assertion that Class Teacher is eligible and ordinary Subject Teacher remains ineligible.
+- No production migration, production data write, merge, or Render deployment has occurred. CI must validate the latest branch head before merge.

@@ -45,6 +45,27 @@ insert into public.schoolpro_enrollment_history(student_id,school_id,class_id,se
  ('40000000-0000-0000-0000-000000000003','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026/2027');
 select set_config('request.jwt.claim.sub','50000000-0000-0000-0000-000000000001',false);
 
+-- A malformed scheme with a missing maximum must also fail closed (SQL NULL must not pass a PL/pgSQL IF).
+insert into public.schoolpro_assessment_schemes(id,school_id,components) values
+ ('10000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001',
+  '[{"key":"ca","label":"Continuous Assessment"}]'::jsonb);
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score)
+values('60000000-0000-0000-0000-000000000004','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+ '70000000-0000-0000-0000-000000000002','First Term','2026/2027','10000000-0000-0000-0000-000000000002','{"ca":20}'::jsonb,20);
+do $test$
+begin
+ begin
+  perform public.review_schoolpro_result('60000000-0000-0000-0000-000000000004','approved',null);
+  raise exception 'Expected malformed scheme approval to fail';
+ exception when others then
+  if sqlerrm not like 'Incomplete assessment:%' then raise;end if;
+ end;
+ if (select status from public.schoolpro_results where id='60000000-0000-0000-0000-000000000004')<>'draft' then
+  raise exception 'Malformed assessment unexpectedly crossed the approval boundary';
+ end if;
+end
+$test$;
+
 -- Approval must reject a Draft with a missing component.
 insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score)
 values('60000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',

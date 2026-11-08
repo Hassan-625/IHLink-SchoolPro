@@ -35,6 +35,8 @@ assert.match(principalMigration,/m\.role='administrator' and lower\(coalesce\(m\
 assert.match(principalMigration,/target\.role='administrator' and lower\(coalesce\(target\.position_title,''\)\)='principal'/i);
 assert.match(principalMigration,/after update of role,position_title on public\.schoolpro_members/i);
 assert.match(principalMigration,/add column if not exists ended_at timestamptz/i);
+assert.match(principalMigration,/m\.status='active'/i);
+assert.match(principalMigration,/Retire legacy appointments that do not match/i);
 assert.match(staff,/member\.role==="administrator"&&member\.position_title==="Principal"/i);
 assert.match(staff,/schoolpro_set_section_leader/i);
 assert.match(principalMigration,/p_section in \('nursery','primary'\)/i);
@@ -53,5 +55,9 @@ assert.match(workflowMigration,/new\.total_score is distinct from old\.total_sco
 assert.match(workflowMigration,/Approved or published results must be reopened through the correction workflow/i);
 assert.match(integration,/Form Master must submit all class Draft results/i);
 assert.match(integration,/Appointed Head Teacher approval and publication workflow failed/i);
+assert.match(integration,/Appointed Vice Principal approval and publication workflow failed/i);
+assert.match(integration,/Appointed Principal approval and publication workflow failed/i);
+assert.match(integration,/Form Master must submit Junior Secondary results/i);
+assert.match(integration,/Form Master must submit Senior Secondary results/i);
 assert.doesNotMatch(migration,/private\.schoolpro_member_can_manage/i);
 console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

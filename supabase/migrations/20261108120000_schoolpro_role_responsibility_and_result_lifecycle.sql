@@ -846,6 +846,12 @@ begin
       where w.result_id=r.id and w.status='submitted' and c.level=p_section);
   get diagnostics n=row_count;
   if n=0 then raise exception 'No submitted results were available for section approval'; end if;
+  update public.schoolpro_result_workflow w set status='section_approved',
+    approved_by=auth.uid(),approved_at=now(),updated_at=now()
+  from public.schoolpro_classes c
+  where c.school_id=w.school_id and c.id=w.class_id and w.school_id=p_school
+    and c.level=p_section and w.term=trim(p_term) and w.session=trim(p_session)
+    and w.status='submitted';
   insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
   values(p_school,auth.uid(),'Entire section result approved','section',p_school,
     jsonb_build_object('section',p_section,'term',trim(p_term),'session',trim(p_session),'result_count',n));

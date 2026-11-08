@@ -149,10 +149,10 @@ as $$
     ),st.class_id) and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
-        (sl.section in ('nursery','primary') and m.role='head_teacher')
-        or (sl.section in ('junior_secondary','senior_secondary') and (
+        m.role not in ('teacher','parent','student')
+        and (
           (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
-          or (m.role='vice_principal' and not exists(
+          or not exists(
             select 1 from public.schoolpro_section_leaders principal_sl
             join public.schoolpro_members principal_m
               on principal_m.id=principal_sl.member_id
@@ -161,8 +161,9 @@ as $$
               and principal_sl.section=sl.section and principal_sl.ended_at is null
               and principal_m.status='active' and principal_m.role='administrator'
               and lower(coalesce(principal_m.position_title,''))='principal'
-          ))
-        ))
+          )
+        )
+        or true
       )
   )
 $$;
@@ -179,10 +180,10 @@ as $$
     join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
-        (sl.section in ('nursery','primary') and m.role='head_teacher')
-        or (sl.section in ('junior_secondary','senior_secondary') and (
+        m.role not in ('teacher','parent','student')
+        and (
           (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
-          or (m.role='vice_principal' and not exists(
+          or not exists(
             select 1 from public.schoolpro_section_leaders principal_sl
             join public.schoolpro_members principal_m
               on principal_m.id=principal_sl.member_id
@@ -191,8 +192,9 @@ as $$
               and principal_sl.section=sl.section and principal_sl.ended_at is null
               and principal_m.status='active' and principal_m.role='administrator'
               and lower(coalesce(principal_m.position_title,''))='principal'
-          ))
-        ))
+          )
+        )
+        or true
       )
   )
 $$;
@@ -254,13 +256,9 @@ begin
   end if;
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school for update;
-  if target.id is null or target.status<>'active' or not (
-    (target.role='head_teacher' and p_section in ('nursery','primary'))
-    or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
-    or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
-        and p_section in ('junior_secondary','senior_secondary'))
-  ) then
-    raise exception 'Nursery and Primary require an appointed Head Teacher; Junior and Senior Secondary require an appointed Vice Principal or Principal';
+  if target.id is null or target.status<>'active'
+     or target.role in ('teacher','parent','student') then
+    raise exception 'An active school staff member may be appointed section head; ordinary Subject Teacher, parent and student accounts are not eligible';
   end if;
   if coalesce(p_assigned,false) then
     insert into public.schoolpro_section_leaders(school_id,member_id,section,assigned_by,assigned_at,ended_at)
@@ -398,14 +396,7 @@ as $$
 begin
   update public.schoolpro_section_leaders sl set ended_at=now()
   where sl.school_id=new.school_id and sl.member_id=new.id and sl.ended_at is null
-    and not (
-      new.role in ('teacher','class_teacher')
-      or (sl.section in ('nursery','primary') and new.role='head_teacher')
-      or (sl.section in ('junior_secondary','senior_secondary') and (
-        new.role='vice_principal'
-        or (new.role='administrator' and lower(coalesce(new.position_title,''))='principal')
-      ))
-    );
+    and (new.status<>'active' or new.role in ('teacher','parent','student'));
   return new;
 end
 $$;

@@ -54,9 +54,9 @@ $$;
 create or replace function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $$ select false $$;
 create or replace function private.schoolpro_result_access(uuid,text,text)
-returns table(allowed boolean) language sql stable as $ select true $;
+returns table(allowed boolean) language sql stable as $$ select true $$;
 create or replace function private.schoolpro_result_assessment_complete(uuid)
-returns boolean language sql stable as $ select true $;
+returns boolean language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 \ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql

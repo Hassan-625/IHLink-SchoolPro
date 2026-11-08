@@ -39,6 +39,10 @@ assert.match(authority,/target\.role in \('teacher','class_teacher'\)/i,
   'Teaching staff must be eligible for an explicitly appointed section-head responsibility.');
 assert.match(authority,/private\.schoolpro_member_leads_student_section\(new\.school_id,new\.student_id,new\.session\)/i);
 assert.match(profile,/My School Responsibilities/);
+assert.match(authority,/create or replace function private\.schoolpro_can_review_class/i);
+assert.match(authority,/private\.schoolpro_is_exam_officer\(p_school\)/i);
+assert.match(authority,/private\.schoolpro_is_exam_officer\(c\.school_id\)/i);
+assert.match(authority,/private\.schoolpro_is_school_admin\(s\.school_id\)/i);
 assert.match(profile,/eq\('session',session\)/,
   'The account page must show only current-session subject allocations.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');

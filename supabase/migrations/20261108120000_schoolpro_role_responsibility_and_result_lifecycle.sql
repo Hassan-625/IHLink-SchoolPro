@@ -13,7 +13,7 @@ create table if not exists public.schoolpro_member_responsibilities (
   assigned_by uuid not null references auth.users(id),
   assigned_at timestamptz not null default now(),
   ended_at timestamptz,
-  unique (school_id,member_id,responsibility),
+  unique (school_id,member_id,responsibility)
 );
 create index if not exists schoolpro_member_responsibilities_active_idx
   on public.schoolpro_member_responsibilities(school_id,member_id,responsibility)

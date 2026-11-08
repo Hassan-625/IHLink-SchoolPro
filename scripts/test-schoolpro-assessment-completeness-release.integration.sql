@@ -29,8 +29,8 @@ create function private.schoolpro_module_allowed(uuid,text) returns boolean lang
 create function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $$select true$$;
 
 \ir ../supabase/migrations/20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql
-\ir ../supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql
 \ir ../supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql
+\ir ../supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql
 
 insert into public.schoolpro_assessment_schemes(id,school_id,components) values
  ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',

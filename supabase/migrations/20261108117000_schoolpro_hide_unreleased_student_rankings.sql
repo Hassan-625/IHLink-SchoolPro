@@ -39,3 +39,30 @@ begin
 end $function$;
 revoke all on function public.schoolpro_result_class_rank(uuid,text,text) from public,anon;
 grant execute on function public.schoolpro_result_class_rank(uuid,text,text) to authenticated;
+
+
+-- Keep unassessed learners visible in the staff broadsheet, but do not assign
+-- them a class position or let them distort positions among released scores.
+create or replace function public.schoolpro_broadsheet(p_school uuid,p_class uuid,p_term text,p_session text)
+returns table(student_id uuid,admission_number text,student_name text,total numeric,average numeric,subjects bigint,class_position bigint)
+language plpgsql stable security definer set search_path='' as $function$
+begin
+ if auth.uid() is null then raise exception 'Authentication required';end if;
+ if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Select an academic period';end if;
+ if not private.schoolpro_module_allowed(p_school,'reports') or not private.schoolpro_module_allowed(p_school,'results') then raise exception 'Module permission denied';end if;
+ if not private.schoolpro_can_review_class(p_school,p_class) then raise exception 'Not authorized for this class and session';end if;
+ return query with x as(
+  select s.id,s.admission_number,(s.first_name||' '||s.last_name)::text student_name,
+   coalesce(sum(r.total_score),0)::numeric total,coalesce(avg(r.total_score),0)::numeric average,count(r.id)::bigint subjects
+  from public.schoolpro_students s
+  left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
+  left join public.schoolpro_results r on r.student_id=s.id and r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+   and r.status='published'::public.schoolpro_result_status and r.locked=true
+  where s.school_id=p_school and case when e.has_history is true then e.class_id else s.class_id end=p_class
+   and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session))))
+  group by s.id,s.admission_number,s.first_name,s.last_name
+ ),y as(
+  select x.*,case when subjects>0 then rank() over(order by case when subjects>0 then total end desc nulls last)::bigint else null::bigint end pos from x
+ )
+ select y.id,y.admission_number,y.student_name,y.total,y.average,y.subjects,y.pos from y order by y.pos nulls last,y.student_name;
+end $function$;

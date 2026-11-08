@@ -266,8 +266,8 @@ declare
  owner_id uuid := '66666666-6666-4666-8666-666666666666';
  formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
  formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
- section_head_id uuid := '88888888-8888-4888-8888-888888888888';
- section_head_member uuid := '99999999-9999-4999-8999-999999999992';
+ section_head_id uuid := '77777777-7777-4777-8777-777777777777';
+ section_head_member uuid := '99999999-9999-4999-8999-999999999991';
  subject_teacher_id uuid := '88888888-8888-4888-8888-888888888895';
  subject_teacher_member uuid := '99999999-9999-4999-8999-999999999995';
  exam_officer_id uuid := '88888888-8888-4888-8888-888888888896';
@@ -286,9 +286,11 @@ begin
   (school,primary_class,subject_teacher_member,subject_two,'2026/2027',null);
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  begin
-     raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
+   perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+   raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('require an appointed Head Teacher' in sqlerrm)=0 then raise; end if;
  end;
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
 
@@ -305,8 +307,6 @@ begin
  if not private.schoolpro_can_read_result(school,student_id,subject_two,'2026/2027') then
    raise exception 'Form Master must read every subject result in the assigned class';
  end if;
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
  if not private.schoolpro_can_write_result(school,student_id,subject_two,'2026/2027') then
    raise exception 'Subject teacher must write their own allocated subject';
@@ -351,8 +351,9 @@ begin
    raise exception 'Form Master must submit only after the complete class subject matrix exists';
  end if;
 
- -- The appointed section head (who is also a subject teacher) approves the whole section.
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ -- The separately appointed Head Teacher approves the whole section; this does
+ -- not grant that Head Teacher permission to enter another teacher's scores.
+ perform set_config('request.jwt.claim.sub',section_head_id::text,true);
  if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
    raise exception 'Section Head must approve all complete submitted results in the section';
  end if;
@@ -373,7 +374,7 @@ begin
  if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
    raise exception 'Form Master must resubmit the corrected class register';
  end if;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ perform set_config('request.jwt.claim.sub',section_head_id::text,true);
  if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
    raise exception 'Section Head must approve the corrected class again';
  end if;
@@ -422,6 +423,7 @@ begin
    raise exception 'Corrected class results must be resubmitted by the Form Master';
  end if;
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ perform set_config('request.jwt.claim.sub',section_head_id::text,true);
  if public.schoolpro_approve_class_results(school,primary_class,'First Term','2026/2027')<>2 then
    raise exception 'Class-scoped correction must pass Section Head class approval again';
  end if;
@@ -432,7 +434,7 @@ begin
  if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
    raise exception 'Corrected results must be republished by the Exam Officer';
  end if;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ perform set_config('request.jwt.claim.sub',section_head_id::text,true);
  section_request:=public.schoolpro_request_result_reopening(
    school,'section',null,'primary','First Term','2026/2027',
    'Reopen the entire Primary section for a verified section-wide correction.'

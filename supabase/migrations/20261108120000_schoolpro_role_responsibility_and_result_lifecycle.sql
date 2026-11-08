@@ -485,7 +485,7 @@ grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authe
 create or replace function private.schoolpro_can_read_result(
   p_school uuid,p_student uuid,p_subject uuid,p_session text
 ) returns boolean language plpgsql stable security definer set search_path=''
-as $
+as $$
 declare v_class uuid;
 begin
   if auth.uid() is null or not private.is_active_account()

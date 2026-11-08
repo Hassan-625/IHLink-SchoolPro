@@ -2837,3 +2837,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - Extended the ranking correction to the staff broadsheet: learners with no published subject rows remain visible in the roster with a blank class position, and are ordered after learners with released scores. Their blank rows no longer distort published ranking. Broadsheet score totals still include published-and-locked rows only.
+
+
+## Stage C result workflow and section leadership correction — 2026-11-08
+
+- Added migration `20261108118000_schoolpro_principal_section_leadership.sql`: explicit section appointments now support Head Teacher for Nursery/Primary and Vice Principal or Principal (stored as administrator + `position_title='Principal'`) for Junior/Senior Secondary. Database assignment RPC validates the role-to-section mapping, retains appointment history with `ended_at`, and removes active assignments when a staff member loses an eligible leadership role.
+- Updated Staff & Access UI so appointed Principals also see and manage their active section assignments.
+- Added migration `20261108119000_schoolpro_form_master_section_head_result_workflow.sql`: Form Master submission is a server-validated action tied to the class `form_teacher_id`; every submitted Draft result must pass assessment completeness. Per-result workflow state records submission, section-head approval and publication.
+- Database trigger requires a Form Master submission before approval, requires the appointed section leader to approve, and requires approval before publication. Nursery/Primary approval is restricted to an assigned Head Teacher; Junior/Senior Secondary approval is restricted to an assigned Vice Principal or Principal. Score edits after submission invalidate that submission and require re-submission; reopening a result resets its workflow.
+- Broadsheet UI now exposes submission only to the class Form Master, approval/publication only to the appointed section leader for the selected class, and whole-school bulk actions only to the IHLink Super Administrator.
+- Regression source and disposable PostgreSQL fixture extended for Principal assignment, role-to-section restrictions, Form Master submission and the approval-to-publication transition. The section-leadership test is already included in normal CI.
+- These are proposed migrations in PR #133 only. They have not been applied to Supabase production, merged, or deployed to Render. Disposable PostgreSQL integration execution and latest CI status remain pending.

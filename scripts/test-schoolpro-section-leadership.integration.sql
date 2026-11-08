@@ -67,6 +67,7 @@ declare
  primary_class uuid := '22222222-2222-4222-8222-222222222222';
  student_n uuid := '33333333-3333-4333-8333-333333333333';
  student_p uuid := '44444444-4444-4444-8444-444444444444';
+ student_jss uuid := '44444444-4444-4444-8444-444444444445';
  subject_id uuid := '55555555-5555-4555-8555-555555555555';
  owner_id uuid := '66666666-6666-4666-8666-666666666666';
  head_id uuid := '77777777-7777-4777-8777-777777777777';
@@ -79,8 +80,8 @@ begin
  insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id);
  insert into public.schoolpro_schools values(school,owner_id);
  insert into public.schoolpro_members values
-  ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor'),
-  (head_member,school,head_id,'head_teacher'),
+  ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
+  (head_member,school,head_id,'head_teacher',null),
   (vice_member,school,vice_id,'vice_principal',null),
   (principal_member,school,principal_id,'administrator','Principal');
  insert into public.schoolpro_classes values
@@ -90,10 +91,12 @@ begin
   ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',null);
  insert into public.schoolpro_students values
   (student_n,school,nursery_class,null,'active'),
-  (student_p,school,primary_class,null,'active');
+  (student_p,school,primary_class,null,'active'),
+  (student_jss,school,'22222222-2222-4222-8222-222222222223',null,'active');
  insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id) values
   (school,student_n,'2025/2026',nursery_class),
-  (school,student_p,'2025/2026',primary_class);
+  (school,student_p,'2025/2026',primary_class),
+  (school,student_jss,'2025/2026','22222222-2222-4222-8222-222222222223');
  insert into public.schoolpro_subjects values(subject_id,school);
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',true);
@@ -110,43 +113,46 @@ begin
  if not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
    raise exception 'Head teacher must lead the explicitly assigned Primary section';
  end if;
- if private.schoolpro_can_read_student(student_p) then
-   raise exception 'Head teacher must not read students outside assigned section';
+ if not private.schoolpro_can_read_student(student_p) then
+   raise exception 'Head teacher must read students in assigned Primary section';
  end if;
  if not private.schoolpro_can_read_student(student_n) or not private.schoolpro_can_read_class(nursery_class) then
    raise exception 'Head teacher must read students and classes in assigned section';
  end if;
- if private.schoolpro_can_read_class(primary_class) then
-   raise exception 'Head teacher must not read classes outside assigned section';
+ if not private.schoolpro_can_read_class(primary_class) then
+   raise exception 'Head teacher must read classes in assigned Primary section';
  end if;
  if not private.schoolpro_can_write_result(school,student_n,subject_id,'2025/2026') then
    raise exception 'Head teacher must be able to write results in assigned section';
  end if;
- if private.schoolpro_can_write_result(school,student_p,subject_id,'2025/2026') then
-   raise exception 'Head teacher must not write results outside assigned section';
+ if not private.schoolpro_can_write_result(school,student_p,subject_id,'2025/2026') then
+   raise exception 'Head teacher must write results in assigned Primary section';
  end if;
  update public.schoolpro_results set status='approved'
  where false;
  insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000001',school,student_p,subject_id,'2025/2026',0,0,'{}','draft');
+ values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'2025/2026',0,0,'{}','draft');
  begin
    update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
    raise exception 'ASSERT: section leader approved result outside assigned section';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('Only authorized school or section leaders' in sqlerrm)=0 then raise; end if;
+   if position('appointed section Head Teacher' in sqlerrm)=0 then raise; end if;
  end;
  perform set_config('request.jwt.claim.sub',vice_id::text,true);
+ if not private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
+   raise exception 'Vice principal must lead explicitly assigned Junior Secondary section';
+ end if;
  if private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
    raise exception 'Vice principal must not lead a Primary section';
  end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Vice principal must not lead an unassigned Nursery section';
  end if;
- if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_n::text||'|2025/2026') then
+ if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026') then
    raise exception 'Vice principal must not read enrollment history outside assigned section';
  end if;
- if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026')) then
+ if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_jss::text||'|2025/2026')) then
    raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
  perform set_config('request.jwt.claim.sub',principal_id::text,true);

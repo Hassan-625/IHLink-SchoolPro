@@ -11,7 +11,8 @@ create type public.user_role as enum ('super_admin');
 create table public.schoolpro_schools(id uuid primary key, owner_id uuid);
 create table public.schoolpro_members(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
- user_id uuid not null references auth.users(id), role public.school_member_role not null
+ user_id uuid not null references auth.users(id), role public.school_member_role not null,
+ position_title text
 );
 create table public.schoolpro_classes(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
@@ -55,6 +56,7 @@ create or replace function private.schoolpro_can_issue_transcript(uuid) returns 
 create or replace function private.schoolpro_result_access(uuid,text,text)
 returns table(allowed boolean) language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
+\ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 create trigger enforce_result_workflow before update on public.schoolpro_results
 for each row execute function private.enforce_result_workflow();
 
@@ -69,18 +71,23 @@ declare
  owner_id uuid := '66666666-6666-4666-8666-666666666666';
  head_id uuid := '77777777-7777-4777-8777-777777777777';
  vice_id uuid := '88888888-8888-4888-8888-888888888888';
+ principal_id uuid := '88888888-8888-4888-8888-888888888889';
  head_member uuid := '99999999-9999-4999-8999-999999999991';
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
+ principal_member uuid := '99999999-9999-4999-8999-999999999993';
 begin
- insert into auth.users values(owner_id),(head_id),(vice_id);
+ insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id);
  insert into public.schoolpro_schools values(school,owner_id);
  insert into public.schoolpro_members values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor'),
   (head_member,school,head_id,'head_teacher'),
-  (vice_member,school,vice_id,'vice_principal');
+  (vice_member,school,vice_id,'vice_principal',null),
+  (principal_member,school,principal_id,'administrator','Principal');
  insert into public.schoolpro_classes values
   (nursery_class,school,'Nursery 2','nursery',null),
-  (primary_class,school,'Primary 4','primary',null);
+  (primary_class,school,'Primary 4','primary',null),
+  ('22222222-2222-4222-8222-222222222223',school,'JSS 2','junior_secondary',null),
+  ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',null);
  insert into public.schoolpro_students values
   (student_n,school,nursery_class,null,'active'),
   (student_p,school,primary_class,null,'active');
@@ -90,16 +97,18 @@ begin
  insert into public.schoolpro_subjects values(subject_id,school);
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',true);
- perform public.schoolpro_set_section_leader(school,vice_member,'primary',true);
- if (select count(*) from public.schoolpro_section_leaders where school_id=school) <> 2 then
+ perform public.schoolpro_set_section_leader(school,head_member,'primary',true);
+ perform public.schoolpro_set_section_leader(school,vice_member,'junior_secondary',true);
+ perform public.schoolpro_set_section_leader(school,principal_member,'senior_secondary',true);
+ if (select count(*) from public.schoolpro_section_leaders where school_id=school) <> 4 then
    raise exception 'Section leader assignments were not persisted';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
  if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Head teacher must lead the explicitly assigned Nursery section';
  end if;
- if private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
-   raise exception 'Head teacher must not lead an unassigned Primary section';
+ if not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
+   raise exception 'Head teacher must lead the explicitly assigned Primary section';
  end if;
  if private.schoolpro_can_read_student(student_p) then
    raise exception 'Head teacher must not read students outside assigned section';
@@ -128,11 +137,11 @@ begin
    if position('Only authorized school or section leaders' in sqlerrm)=0 then raise; end if;
  end;
  perform set_config('request.jwt.claim.sub',vice_id::text,true);
- if not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
-   raise exception 'Vice principal must lead explicitly assigned Primary section';
+ if private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
+   raise exception 'Vice principal must not lead a Primary section';
  end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
-   raise exception 'Vice principal must not lead unassigned Nursery section';
+   raise exception 'Vice principal must not lead an unassigned Nursery section';
  end if;
  if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_n::text||'|2025/2026') then
    raise exception 'Vice principal must not read enrollment history outside assigned section';
@@ -140,13 +149,24 @@ begin
  if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026')) then
    raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
+ perform set_config('request.jwt.claim.sub',principal_id::text,true);
+ if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
+   raise exception 'Principal must read explicitly assigned Senior Secondary section';
+ end if;
+ if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
+   raise exception 'Principal must not lead an unassigned Nursery section';
+ end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ begin
+   perform public.schoolpro_set_section_leader(school,head_member,'junior_secondary',true);
+   raise exception 'ASSERT: Head Teacher must not be appointed to Junior Secondary';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',false);
- if exists(select 1 from public.schoolpro_section_leaders where member_id=head_member and section='nursery') then
+ if exists(select 1 from public.schoolpro_section_leaders where member_id=head_member and section='nursery' and ended_at is null) then
    raise exception 'Section leader removal failed';
  end if;
  update public.schoolpro_members set role='teacher' where id=vice_member;
- if exists(select 1 from public.schoolpro_section_leaders where member_id=vice_member) then
+ if exists(select 1 from public.schoolpro_section_leaders where member_id=vice_member and ended_at is null) then
    raise exception 'Changing staff role must clear obsolete section assignments';
  end if;
 end

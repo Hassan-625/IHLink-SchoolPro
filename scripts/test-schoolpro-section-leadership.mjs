@@ -49,6 +49,8 @@ assert.match(workflowMigration,/must submit this result to the section head befo
 assert.match(workflowMigration,/must approve this result before publication/i);
 assert.match(workflowMigration,/private\.schoolpro_result_assessment_complete\(r\.id\)/i);
 assert.match(workflowMigration,/schoolpro_result_workflow/i);
+assert.match(workflowMigration,/new\.total_score is distinct from old\.total_score/i);
+assert.match(workflowMigration,/Approved or published results must be reopened through the correction workflow/i);
 assert.match(integration,/Form Master must submit all class Draft results/i);
 assert.match(integration,/Appointed Head Teacher approval and publication workflow failed/i);
 assert.doesNotMatch(migration,/private\.schoolpro_member_can_manage/i);

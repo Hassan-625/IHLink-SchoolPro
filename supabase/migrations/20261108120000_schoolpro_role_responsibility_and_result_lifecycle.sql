@@ -550,6 +550,65 @@ $$;
 revoke all on function public.schoolpro_return_class_results_for_correction(uuid,uuid,text,text,text) from public,anon;
 grant execute on function public.schoolpro_return_class_results_for_correction(uuid,uuid,text,text,text) to authenticated;
 
+-- A Section Head can approve the complete submitted section as one atomic hand-off.
+create or replace function public.schoolpro_approve_section_results(
+  p_school uuid,p_section text,p_term text,p_session text
+) returns integer language plpgsql security definer set search_path=''
+as $
+declare n integer;
+begin
+  if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
+  if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other')
+     or nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
+    raise exception 'Choose a valid section, term and session';
+  end if;
+  if not exists(select 1 from public.schoolpro_members m
+    join public.schoolpro_section_leaders sl on sl.school_id=m.school_id
+      and sl.member_id=m.id and sl.ended_at is null and sl.section=p_section
+    where m.school_id=p_school and m.user_id=auth.uid() and m.status='active') then
+    raise exception 'Only the appointed section head can approve this section';
+  end if;
+  if not exists(select 1 from public.schoolpro_result_workflow w
+    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+    where w.school_id=p_school and c.level=p_section
+      and w.term=trim(p_term) and w.session=trim(p_session)) then
+    raise exception 'No submitted class results exist in this section for the selected period';
+  end if;
+  if exists(select 1 from public.schoolpro_result_workflow w
+    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+    where w.school_id=p_school and c.level=p_section
+      and w.term=trim(p_term) and w.session=trim(p_session)
+      and w.status not in ('submitted')) then
+    raise exception 'Every class result in the section must be submitted and not awaiting correction before section approval';
+  end if;
+  if exists(select 1 from public.schoolpro_results r
+    join public.schoolpro_students s on s.school_id=r.school_id and s.id=r.student_id
+    left join lateral (select eh.class_id from public.schoolpro_enrollment_history eh
+      where eh.school_id=r.school_id and eh.student_id=r.student_id and eh.session=trim(p_session)
+      order by eh.created_at desc limit 1) h on true
+    join public.schoolpro_classes c on c.school_id=r.school_id and c.id=coalesce(h.class_id,s.class_id)
+    where r.school_id=p_school and c.level=p_section and r.term=trim(p_term)
+      and r.session=trim(p_session) and (r.status<>'draft' or r.locked
+        or not private.schoolpro_result_assessment_complete(r.id))) then
+    raise exception 'Every result in the section must be a complete unlocked Draft before approval';
+  end if;
+  update public.schoolpro_results r set status='approved',updated_at=now()
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and r.status='draft' and not r.locked
+    and exists(select 1 from public.schoolpro_result_workflow w
+      join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+      where w.result_id=r.id and w.status='submitted' and c.level=p_section);
+  get diagnostics n=row_count;
+  if n=0 then raise exception 'No submitted results were available for section approval'; end if;
+  insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
+  values(p_school,auth.uid(),'Entire section result approved','section',p_school,
+    jsonb_build_object('section',p_section,'term',trim(p_term),'session',trim(p_session),'result_count',n));
+  return n;
+end
+$;
+revoke all on function public.schoolpro_approve_section_results(uuid,text,text,text) from public,anon;
+grant execute on function public.schoolpro_approve_section_results(uuid,text,text,text) to authenticated;
+
 -- Exam Officer performs final approval for a class, section or whole school.
 create or replace function public.schoolpro_exam_officer_approve_results(
   p_school uuid,p_term text,p_session text,p_scope text,

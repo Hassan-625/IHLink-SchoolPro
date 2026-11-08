@@ -37,6 +37,8 @@ assert.match(principalMigration,/after update of role,position_title on public\.
 assert.match(principalMigration,/add column if not exists ended_at timestamptz/i);
 assert.match(principalMigration,/m\.status='active'/i);
 assert.match(principalMigration,/Retire legacy appointments that do not match/i);
+assert.match(principalMigration,/public\.schoolpro_section_leaders\.member_id/i);
+assert.match(principalMigration,/private\.is_admin\(array\['super_admin'::public\.user_role\]\)/i);
 assert.match(staff,/member\.role==="administrator"&&member\.position_title==="Principal"/i);
 assert.match(staff,/schoolpro_set_section_leader/i);
 assert.match(principalMigration,/p_section in \('nursery','primary'\)/i);

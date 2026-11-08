@@ -92,6 +92,10 @@ begin
   raise exception 'Result publication permission required';
  end if;
  if not exists(select 1 from public.schoolpro_classes where id=p_class and school_id=p_school) then raise exception 'Select a class in this school';end if;
+ perform r.id from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+  and r.status='approved' and not r.locked
+  and exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=r.student_id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+  for update;
  if exists(select 1 from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked
   and exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=r.student_id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
@@ -131,6 +135,12 @@ begin
    raise exception 'Select students enrolled in this school during the selected session';
   end if;
  end if;
+ perform r.id from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+  and r.status='approved' and not r.locked
+  and exists(select 1 from public.schoolpro_students s where s.id=r.student_id and s.school_id=p_school
+   and (s.status='active' or exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session))
+   and (p_all or s.id=any(p_students)))
+  for update;
  if exists(select 1 from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked
   and exists(select 1 from public.schoolpro_students s where s.id=r.student_id and s.school_id=p_school
@@ -165,6 +175,8 @@ begin
  if not coalesce(private.schoolpro_module_allowed(p_school,'results'),false) then raise exception 'Module permission denied: results';end if;
  if not(public.schoolpro_member_can_manage(p_school) or exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role::text in('exam_officer','head_teacher','vice_principal'))) then raise exception 'Not authorized';end if;
  if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Select an academic period';end if;
+ perform r.id from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+  and r.status='approved' and not r.locked for update;
  if exists(select 1 from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked and not private.schoolpro_result_assessment_complete(r.id)) then
   raise exception 'Academic period contains incomplete approved assessments; return them for correction before publication';

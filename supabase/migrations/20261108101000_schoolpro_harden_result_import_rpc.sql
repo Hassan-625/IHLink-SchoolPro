@@ -15,6 +15,8 @@ declare
  comp jsonb;
  component jsonb;
  component_key text;
+ scheme_level text;
+ class_level text;
  maxv numeric;
  v numeric;
  n integer:=0;
@@ -45,9 +47,17 @@ begin
   end if;
   scores:=x->'assessment_scores';
   if scores is null or jsonb_typeof(scores)<>'object' then raise exception 'Assessment scores must be a JSON object';end if;
-  select components into comp from public.schoolpro_assessment_schemes
+  select components,lower(trim(school_level)) into comp,scheme_level from public.schoolpro_assessment_schemes
   where id=(x->>'assessment_scheme_id')::uuid and school_id=p_school;
   if comp is null then raise exception 'Invalid assessment scheme';end if;
+  select lower(trim(c.level)) into class_level from public.schoolpro_classes c where c.id=sc and c.school_id=p_school;
+  if class_level is not null and scheme_level not in ('all','custom',class_level)
+    and not (scheme_level='secondary' and class_level in ('junior_secondary','senior_secondary','jss','sss'))
+    and not (scheme_level='nursery_primary' and class_level in ('nursery','primary','nursery_primary'))
+    and not (scheme_level='junior_secondary' and class_level='jss')
+    and not (scheme_level='senior_secondary' and class_level='sss') then
+   raise exception 'Assessment scheme level % does not match the selected class level %',scheme_level,class_level;
+  end if;
   for component in select value from jsonb_array_elements(comp) loop
    component_key:=component->>'key';
    if not (scores ? component_key) then raise exception 'Missing assessment component: %',component->>'label';end if;

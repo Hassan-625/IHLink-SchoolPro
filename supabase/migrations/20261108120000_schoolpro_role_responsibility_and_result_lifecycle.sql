@@ -1022,7 +1022,7 @@ as $$
 begin
   if auth.uid() is null or not private.is_active_account()
      or not private.schoolpro_module_allowed(p_school,'results')
-     or not private.schoolpro_can_read_class(p_class) then
+     or not private.schoolpro_can_review_class(p_school,p_class) then
     raise exception 'Not authorized to view this class result workflow';
   end if;
   return query

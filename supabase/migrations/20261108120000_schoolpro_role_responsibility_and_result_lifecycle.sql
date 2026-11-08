@@ -1180,7 +1180,8 @@ select exists(select 1 from expected)
     left join public.schoolpro_results r on r.school_id=p_school and r.student_id=e.student_id
       and r.subject_id=e.subject_id and r.term=trim(p_term) and r.session=trim(p_session)
     left join public.schoolpro_result_workflow w on w.result_id=r.id
-    where r.id is null or not private.schoolpro_result_assessment_complete(r.id)
+    where r.id is null or w.class_id is distinct from e.class_id
+      or not private.schoolpro_result_assessment_complete(r.id)
       or (p_stage='section' and not (
         (r.status='draft' and w.status='submitted')
         or (r.status='approved' and w.status='section_approved')

@@ -2854,3 +2854,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The disposable PostgreSQL fixture now exercises the Form Master RPC and the complete Nursery result transition from Form Master submission through Head Teacher approval to publication. Junior Secondary Head Teacher approval is explicitly rejected.
 
 - Final workflow hardening: active membership is required for Form Master submission and section-head approval; score totals and result identity/period changes invalidate pending submissions, and approved scores cannot be edited without the correction/reopen path. The PostgreSQL fixture now tests Form Master submission followed by Head Teacher, Vice Principal and Principal approval/publication for the relevant sections.
+
+- Security/concurrency follow-up: section-assignment RLS now qualifies the outer school/member keys to prevent cross-school reads, and the IHLink Super Administrator is explicitly authorized to view/manage section appointments. Form Master submission locks the scoped Draft result rows before completeness validation and workflow insertion.

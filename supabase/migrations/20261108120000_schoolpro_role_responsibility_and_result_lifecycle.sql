@@ -634,6 +634,15 @@ begin
       return new;
     end if;
 
+    -- A section head may return a section-approved class to Draft through the correction RPC.
+    if old.status='approved' and new.status='draft' and not old.locked and not new.locked
+       and current_setting('app.schoolpro_section_return',true)='on'
+       and private.schoolpro_member_leads_student_section(new.school_id,new.student_id,new.session)
+       and exists(select 1 from public.schoolpro_result_workflow w
+         where w.result_id=old.id and w.status='section_approved') then
+      return new;
+    end if;
+
     -- Final publication is only allowed inside the Exam Officer publication RPC.
     if old.status='approved' and new.status='published' and not old.locked and new.locked
        and current_setting('app.schoolpro_exam_publication',true)='on'
@@ -1063,12 +1072,33 @@ begin
     and c.id=p_class and private.schoolpro_member_leads_class(p_school,c.id)) then
     raise exception 'Only the appointed section head can return this class result';
   end if;
+  if not exists(select 1 from public.schoolpro_result_workflow w
+    where w.school_id=p_school and w.class_id=p_class and w.term=trim(p_term)
+      and w.session=trim(p_session) and w.status in ('submitted','section_approved')) then
+    raise exception 'No submitted or section-approved class results are awaiting review';
+  end if;
+  if exists(select 1 from public.schoolpro_result_workflow w
+    where w.school_id=p_school and w.class_id=p_class and w.term=trim(p_term)
+      and w.session=trim(p_session) and w.status not in ('submitted','section_approved')) then
+    raise exception 'The class result set is not in a returnable review state';
+  end if;
+
+  -- If the section head has already approved the class, return every result to
+  -- unlocked Draft so the assigned subject teachers can make the requested fixes.
+  perform set_config('app.schoolpro_section_return','on',true);
+  update public.schoolpro_results r set status='draft',updated_at=now()
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and r.status='approved' and not r.locked
+    and exists(select 1 from public.schoolpro_result_workflow w
+      where w.result_id=r.id and w.school_id=p_school and w.class_id=p_class
+        and w.term=trim(p_term) and w.session=trim(p_session) and w.status='section_approved');
+
   update public.schoolpro_result_workflow set status='correction_requested',
     correction_notes=trim(p_notes),updated_at=now()
   where school_id=p_school and class_id=p_class and term=trim(p_term)
-    and session=trim(p_session) and status='submitted';
+    and session=trim(p_session) and status in ('submitted','section_approved','draft');
   get diagnostics n=row_count;
-  if n=0 then raise exception 'No submitted class results are awaiting section review'; end if;
+  if n=0 then raise exception 'No class results were returned for correction'; end if;
   insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
   values(p_school,auth.uid(),'Class results returned for correction','class',p_class,
     jsonb_build_object('term',trim(p_term),'session',trim(p_session),'notes',trim(p_notes),'result_count',n));
@@ -1193,7 +1223,7 @@ begin
   from public.schoolpro_classes c
   where c.school_id=w.school_id and c.id=w.class_id and w.school_id=p_school
     and c.level=p_section and w.term=trim(p_term) and w.session=trim(p_session)
-    and w.status='submitted';
+    and w.status in ('submitted','approved');
   insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
   values(p_school,auth.uid(),'Entire section result approved','section',p_school,
     jsonb_build_object('section',p_section,'term',trim(p_term),'session',trim(p_session),'result_count',n));

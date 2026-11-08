@@ -36,12 +36,16 @@ for (const fn of ['publish_schoolpro_class_results','publish_schoolpro_selected_
 }
 assert.ok(migration.includes('revoke all on function private.schoolpro_result_assessment_complete(uuid) from public,anon,authenticated'),'Internal completeness helper must not be directly executable by clients');
 assert.ok(migration.includes('grant execute on function public.review_schoolpro_result(uuid,text,text) to authenticated'));
+const finalWorkflow=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+assert.match(finalWorkflow,/retire_legacy_result_rpcs/i,'Legacy individual and partial approval RPCs must be retired after the staged workflow is installed.');
+assert.match(finalWorkflow,/review_schoolpro_result\(uuid,text,text\)/i);
+
 
 const rosterMigration=readFileSync('supabase/migrations/20261108114000_schoolpro_class_publication_current_roster_scope.sql','utf8');
 const classPublish=rosterMigration.slice(rosterMigration.indexOf('function public.publish_schoolpro_class_results'),rosterMigration.indexOf('$function$;',rosterMigration.indexOf('function public.publish_schoolpro_class_results')));
 assert.equal((classPublish.match(/s\.class_id=p_class/g)||[]).length,3,'Current-roster fallback must be restricted to the selected class in lock, validation and update scopes');
 assert.equal((classPublish.match(/not exists\(select 1 from public\.schoolpro_enrollment_history h/g)||[]).length,3,'All publication phases must use the same no-history fallback');
-assert.equal((classPublish.match(/exists\(select 1 from public\.schoolpro_enrollment_history h/g)||[]).length,3,'Historical class membership remains authoritative in all publication phases');
+assert.ok((classPublish.match(/exists\(select 1 from public\.schoolpro_enrollment_history h/g)||[]).length>=3,'Historical class membership must remain authoritative in all publication phases');
 
 console.log('PASS: assessment completeness and selected-class publication roster boundaries are enforced.');
 

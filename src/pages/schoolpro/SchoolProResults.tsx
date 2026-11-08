@@ -76,6 +76,9 @@ export function SchoolProResults(){
     if(!st)errs.push("Unknown student");
     if(!sub)errs.push("Unknown subject");
     if(!scheme)errs.push("Invalid assessment scheme");
+    const existing=st&&sub?results.find(r=>r.student_id===st.id&&r.subject_id===sub.id&&r.term===scoreForm.term&&r.session===scoreForm.session):undefined;
+    if(existing&&(existing.status!=="draft"||existing.locked))errs.push("Existing result is approved, published or locked");
+    if(existing?.assessment_scheme_id&&scheme&&existing.assessment_scheme_id!==scheme.id)errs.push("Existing result uses a different assessment scheme");
     const duplicateKey=st&&sub?st.id+":"+sub.id:"";
     if(duplicateKey&&seen.has(duplicateKey))errs.push("Duplicate student and subject row in this workbook");
     if(duplicateKey)seen.add(duplicateKey);

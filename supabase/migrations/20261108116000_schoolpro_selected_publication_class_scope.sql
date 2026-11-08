@@ -37,7 +37,7 @@ begin
   and r.status='approved' and not r.locked
   and exists(select 1 from public.schoolpro_students s where s.id=r.student_id and s.school_id=p_school
    and (s.status='active' or exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session))
-   and (p_all or s.id=any(p_students)))
+   and (p_all or (s.id=any(p_students) and (exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session and h.class_id=p_class) or (s.status='active' and s.class_id=p_class and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session)))))
   and not private.schoolpro_result_assessment_complete(r.id)) then
   raise exception 'Selected students contain incomplete approved assessments; return them for correction before publication';
  end if;
@@ -45,7 +45,7 @@ begin
  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session) and r.status='approved' and not r.locked
   and exists(select 1 from public.schoolpro_students s where s.id=r.student_id and s.school_id=p_school
    and (s.status='active' or exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session))
-   and (p_all or s.id=any(p_students)));
+   and (p_all or (s.id=any(p_students) and (exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session and h.class_id=p_class) or (s.status='active' and s.class_id=p_class and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school and h.student_id=s.id and h.session=r.session)))));
  get diagnostics n=row_count;
  insert into public.audit_logs(actor_id,action,product,target_type,target_id,metadata)
  values(auth.uid(),'Selected results published','schoolpro','school',p_school::text,jsonb_build_object('term',p_term,'session',p_session,'all_students',p_all,'students',p_students,'published',n));

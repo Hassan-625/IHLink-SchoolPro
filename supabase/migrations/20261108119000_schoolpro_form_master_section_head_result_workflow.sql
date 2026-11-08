@@ -130,7 +130,7 @@ grant execute on function public.schoolpro_submit_class_results(uuid,uuid,text,t
 create or replace function private.enforce_result_workflow()
 returns trigger language plpgsql security definer set search_path=''
 as $$
-declare v_level text;v_workflow_status text;
+declare v_level text;v_class uuid;v_workflow_class uuid;v_workflow_status text;
 begin
   if old.status in ('approved','published') and (
     new.school_id is distinct from old.school_id
@@ -164,7 +164,7 @@ begin
   end if;
 
   if new.status is distinct from old.status and new.status in ('approved','published') then
-    select c.level into v_level
+    select c.level,c.id into v_level,v_class
     from public.schoolpro_students s
     left join lateral (
       select eh.class_id from public.schoolpro_enrollment_history eh
@@ -176,8 +176,11 @@ begin
       and c.id=coalesce(h.class_id,s.class_id)
     where s.school_id=new.school_id and s.id=new.student_id;
 
-    select w.status into v_workflow_status
+    select w.status,w.class_id into v_workflow_status,v_workflow_class
     from public.schoolpro_result_workflow w where w.result_id=new.id for update;
+    if v_workflow_class is distinct from v_class then
+      raise exception 'The class roster changed after submission; the Form Master must resubmit this result';
+    end if;
     if new.status='approved' and v_workflow_status is distinct from 'submitted' then
       raise exception 'The Form Master must submit this result to the section head before approval';
     end if;

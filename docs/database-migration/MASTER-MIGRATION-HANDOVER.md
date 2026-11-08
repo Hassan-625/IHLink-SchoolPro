@@ -2906,3 +2906,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Exam Officer final approval moves the workflow to `exam_approved`; only the Exam Officer publication RPC can publish and lock the whole school scope. The workflow status is then synchronized to `published`. Approved/published correction reopening requires a pending class/section batch containing the exact result row.
 - Results lifecycle RPCs now enforce the Results module subscription gate. Disposable PostgreSQL coverage was expanded for own-subject read/write boundaries, Form Master review, section return/resubmission, direct status/lock bypass rejection, final Exam Officer publication and correction reopening.
 - Latest validation attempt on the code head before this handover update: Stage C0 regression and SchoolPro CI were queued/in progress; do not mark the PR ready until the disposable migration and lifecycle tests finish on the latest code head. No production Supabase migration, production data change, merge or Render deployment has occurred.
+
+
+### Stage C approval-authority consistency — 2026-11-08 (PR #133; proposed only)
+
+- Corrected a gap in the section-wide and class-scoped Section Head approval RPCs. They previously checked only for an active appointment and could admit a staff member whose current role was not eligible for that section, or a Vice Principal whose authority had been superseded by an active Principal appointment.
+- Both RPCs now call `private.schoolpro_member_leads_class`, the shared authorization predicate that validates the member's active role, section appointment, school/class scope and Principal-over-Vice-Principal precedence. Section-wide approval requires at least one class in the selected section for which the caller passes that same predicate.
+- Added source-contract assertions so the two approval entry points cannot silently drift from the shared authority rule.
+- This is a proposed SQL/source change in PR #133. No production migration, production data write, merge or Render deployment has occurred. The source-contract regression and disposable PostgreSQL integration still need to run against the latest PR head.

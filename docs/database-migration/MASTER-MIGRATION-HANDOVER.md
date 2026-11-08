@@ -6,15 +6,11 @@
 **Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
 **Status:** Proposed branch changes only. No production migration, production data write, merge, or Render deployment.
 
-The Stage C section-leadership model now follows four independent academic sections:
-- Nursery — Head Teacher appointment scoped to Nursery.
-- Primary — separate Head Teacher appointment scoped to Primary.
-- Junior Secondary — Vice Principal or Principal appointment scoped to Junior Secondary.
-- Senior Secondary — separate Vice Principal or Principal appointment scoped to Senior Secondary.
+The Stage C section-leadership model follows four independent academic sections: Nursery, Primary, Junior Secondary and Senior Secondary. An active school staff member may be formally appointed to any one or more of these sections. The only excluded staff role is ordinary `teacher` (Subject Teacher); parent and student accounts are also ineligible because they are not staff. Class Teachers/Form Masters, Head Teachers, Vice Principals, Principals, Exam Officers, administrators, proprietors and other active staff roles may be appointed.
 
-Principal is the senior authority above Vice Principal. The appointment RPC must not promote an ordinary Subject Teacher or Class Teacher to section-head authority merely because they teach or serve as Form Master. The final section-appointment authorization also recognizes the explicit `school_admin` staff responsibility, alongside Proprietor/Administrator and IHLink Super Admin. Where both a Vice Principal and Principal have active appointments to the same secondary section, Principal takes precedence: the Vice Principal's section-head authority is suppressed while the Principal appointment remains active. This precedence is enforced in the database's section-leadership predicates, not only in the UI.
+Principal remains the highest academic authority. If a Principal has an active appointment to a section, other appointees—including a Vice Principal—cannot exercise section-head approval authority in that section. This precedence is enforced in the database. Appointment authority is restricted to Proprietor/Administrator, IHLink Super Admin and members with the explicit `school_admin` responsibility.
 
-Updated Staff & Access so ordinary Subject Teachers and Class Teachers no longer see section-head appointment checkboxes; Head Teacher, Vice Principal and Principal controls are shown only for their eligible sections. The UI explains the separate Nursery/Primary appointments and Principal's higher authority. Added regression coverage rejecting an ordinary subject teacher's section-head appointment and source-contract checks for database eligibility, Principal precedence, `school_admin` authorization and UI role filtering. These tests have been committed to the PR branch; execution and latest CI status remain pending and must not be represented as passed until verified.
+Updated Staff & Access to show section appointment controls for every active eligible staff role, rather than only Head Teacher, Vice Principal and Principal. Ordinary Subject Teachers cannot be appointed. A Class Teacher appointment does not grant additional subject score-entry rights; those remain limited to active class/subject/session allocations. Added regression coverage for Class Teacher eligibility, ordinary Subject Teacher rejection, Principal precedence, school-admin authorization and UI role filtering.
 
 This correction does not change subject-score write scope: a subject teacher remains restricted to their active class/subject/session allocations. Form Master class-wide visibility and submission do not grant permission to edit another teacher's marks.
 

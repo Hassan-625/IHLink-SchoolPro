@@ -211,7 +211,7 @@ begin
  if exists(select 1 from public.schoolpro_section_leaders where member_id=head_member and section='nursery' and ended_at is null) then
    raise exception 'Section leader removal failed';
  end if;
- update public.schoolpro_members set role='teacher' where id=vice_member;
+ update public.schoolpro_members set role='administrator',position_title=null where id=vice_member;
  if exists(select 1 from public.schoolpro_section_leaders where member_id=vice_member and ended_at is null) then
    raise exception 'Changing staff role must clear obsolete section assignments';
  end if;

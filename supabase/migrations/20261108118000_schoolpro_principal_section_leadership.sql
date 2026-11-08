@@ -73,10 +73,12 @@ begin
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school for update;
   if target.id is null or not (
-    target.role in ('head_teacher','vice_principal')
-    or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal')
+    (target.role='head_teacher' and p_section in ('nursery','primary'))
+    or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
+    or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
+        and p_section in ('junior_secondary','senior_secondary'))
   ) then
-    raise exception 'Assign a Head Teacher, Vice Principal or Principal from this school';
+    raise exception 'Nursery and Primary require a Head Teacher; Junior and Senior Secondary require a Vice Principal or Principal';
   end if;
   if coalesce(p_assigned,false) then
     insert into public.schoolpro_section_leaders(school_id,member_id,section,assigned_by,assigned_at,ended_at)
@@ -175,3 +177,62 @@ grant execute on function private.schoolpro_enrollment_reader_keys() to authenti
 
 -- The section assignment table is read-only to clients; the RPC above remains
 -- the only write path and records every appointment/removal in the audit log.
+
+-- Approval/publication is section-specific: Form Masters submit their class
+-- work; only the appointed academic leader for that section can approve or
+-- publish it. Platform Super Admin remains an emergency override.
+create or replace function private.enforce_result_workflow()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+declare v_level text;
+begin
+  if old.status='published' and (
+    new.ca_score is distinct from old.ca_score
+    or new.exam_score is distinct from old.exam_score
+    or new.assessment_scores is distinct from old.assessment_scores
+    or new.assessment_scheme_id is distinct from old.assessment_scheme_id
+  ) then
+    raise exception 'Published results are locked';
+  end if;
+  if new.status is distinct from old.status
+     and new.status in ('approved','published') then
+    select c.level into v_level
+    from public.schoolpro_students s
+    left join lateral (
+      select eh.class_id from public.schoolpro_enrollment_history eh
+      where eh.school_id=new.school_id and eh.student_id=new.student_id
+        and eh.session=trim(coalesce(new.session,''))
+      order by eh.created_at desc limit 1
+    ) h on true
+    join public.schoolpro_classes c
+      on c.school_id=s.school_id and c.id=coalesce(h.class_id,s.class_id)
+    where s.school_id=new.school_id and s.id=new.student_id;
+    if not private.is_admin(array['super_admin']::public.user_role[])
+       and not exists(
+        select 1
+        from public.schoolpro_members m
+        join public.schoolpro_section_leaders sl
+          on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
+        where m.school_id=new.school_id and m.user_id=auth.uid()
+          and sl.section=v_level
+          and (
+            (v_level in ('nursery','primary') and m.role='head_teacher')
+            or (v_level in ('junior_secondary','senior_secondary') and (
+              m.role='vice_principal'
+              or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+            ))
+          )
+       ) then
+      raise exception 'Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish this section result';
+    end if;
+  end if;
+  if new.status='approved' and old.status<>'approved' then
+    new.approved_by:=auth.uid();new.approved_at:=now();
+  end if;
+  if new.status='published' and old.status<>'published' then
+    if old.status<>'approved' then raise exception 'Results must be approved by the section head before publication';end if;
+    new.published_at:=now();
+  end if;
+  return new;
+end
+$$;

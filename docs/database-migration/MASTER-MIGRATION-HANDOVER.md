@@ -2724,3 +2724,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Overall maximum is now derived from the sum of configured component maxima for each subject result. Overall percentage is calculated as total earned points divided by that maximum, rather than assuming every subject is out of 100.
 - Added `scripts/test-schoolpro-report-card-assessment-schemes.mjs`, registered it in `package.json` and the normal CI validation workflow.
 - Frontend-only correction; no production migration or data change.
+
+- Follow-up: subject totals now display their own configured maximum, and subject grades are normalized to a percentage using that subject's own scheme maximum before applying the school's grade bands. This avoids misgrading subjects whose component maxima do not sum to 100.

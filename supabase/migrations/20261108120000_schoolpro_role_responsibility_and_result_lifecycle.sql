@@ -245,6 +245,81 @@ grant execute on function public.schoolpro_set_section_leader(uuid,uuid,text,boo
 
 -- Keep section appointments when a member's primary role changes; the explicit
 -- appointment is independently managed and is retired when membership ends.
+create or replace function private.enforce_result_workflow()
+returns trigger language plpgsql security definer set search_path=''
+as $
+declare v_level text;v_class uuid;v_workflow_class uuid;v_workflow_status text;
+begin
+  if old.status in ('approved','published') and (
+    new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.subject_id is distinct from old.subject_id
+    or new.term is distinct from old.term
+    or new.session is distinct from old.session
+    or new.ca_score is distinct from old.ca_score
+    or new.exam_score is distinct from old.exam_score
+    or new.total_score is distinct from old.total_score
+    or new.assessment_scores is distinct from old.assessment_scores
+    or new.assessment_scheme_id is distinct from old.assessment_scheme_id
+  ) then
+    raise exception 'Approved or published results must be reopened through the correction workflow before editing';
+  end if;
+
+  if new.status=old.status and old.status='draft'
+     and (new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.subject_id is distinct from old.subject_id
+    or new.term is distinct from old.term
+    or new.session is distinct from old.session
+    or new.ca_score is distinct from old.ca_score
+    or new.exam_score is distinct from old.exam_score
+    or new.total_score is distinct from old.total_score
+    or new.assessment_scores is distinct from old.assessment_scores
+    or new.assessment_scheme_id is distinct from old.assessment_scheme_id) then
+    update public.schoolpro_result_workflow set status='draft',submitted_by=null,
+      submitted_at=null,approved_by=null,approved_at=null,published_at=null,updated_at=now()
+    where result_id=old.id and status='submitted';
+  end if;
+
+  if new.status is distinct from old.status and new.status in ('approved','published') then
+    select c.level,c.id into v_level,v_class
+    from public.schoolpro_students s
+    left join lateral (
+      select eh.class_id from public.schoolpro_enrollment_history eh
+      where eh.school_id=new.school_id and eh.student_id=new.student_id
+        and eh.session=trim(coalesce(new.session,''))
+      order by eh.created_at desc limit 1
+    ) h on true
+    join public.schoolpro_classes c on c.school_id=s.school_id
+      and c.id=coalesce(h.class_id,s.class_id)
+    where s.school_id=new.school_id and s.id=new.student_id;
+
+    select w.status,w.class_id into v_workflow_status,v_workflow_class
+    from public.schoolpro_result_workflow w where w.result_id=new.id for update;
+    if v_workflow_class is distinct from v_class then
+      raise exception 'The class roster changed after submission; the Form Master must resubmit this result';
+    end if;
+    if new.status='approved' and v_workflow_status is distinct from 'submitted' then
+      raise exception 'The Form Master must submit this result to the section head before approval';
+    end if;
+    if new.status='published' and (old.status<>'approved' or v_workflow_status is distinct from 'approved') then
+      raise exception 'The section head must approve this result before publication';
+    end if;
+    if not private.is_admin(array['super_admin']::public.user_role[])
+       and not private.schoolpro_member_leads_student_section(new.school_id,new.student_id,new.session) then
+      raise exception 'Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish this section result';
+    end if;
+  end if;
+  if new.status='approved' and old.status<>'approved' then
+    new.approved_by:=auth.uid();new.approved_at:=now();
+  end if;
+  if new.status='published' and old.status<>'published' then
+    new.published_at:=now();
+  end if;
+  return new;
+end
+$;
+
 create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''
 as $$

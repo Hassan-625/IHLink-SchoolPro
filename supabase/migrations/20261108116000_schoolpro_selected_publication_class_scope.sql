@@ -19,6 +19,7 @@ begin
  else
   if p_class is null or not exists(select 1 from public.schoolpro_classes c where c.id=p_class and c.school_id=p_school) then raise exception 'Select a class in this school';end if;
   if coalesce(cardinality(p_students),0)=0 then raise exception 'Select students to publish';end if;
+  if cardinality(p_students)>5000 then raise exception 'Select no more than 5000 students at a time';end if;
   if exists(select 1 from unnest(p_students) x(id) where x.id is null) or (select count(distinct x.id) from unnest(p_students) x(id))<>cardinality(p_students) then raise exception 'Invalid or duplicate student selection';end if;
   perform s.id from public.schoolpro_students s where s.school_id=p_school and s.id=any(p_students) order by s.id for update;
   if (select count(*) from unnest(p_students) x(id) join public.schoolpro_students s on s.id=x.id and s.school_id=p_school

@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const migration=readFileSync('supabase/migrations/20261108100000_schoolpro_consistent_result_ranking_totals.sql','utf8');
+const review=migration.match(/create or replace function public\\.schoolpro_class_review_sheet[\\s\\S]*?revoke all on function/);
+assert.ok(review,'The migration must replace the staff result review-sheet function.');
+assert.match(review[0],/rank\\(\\) over\\(order by total desc\\)/,'Staff review positions must rank by total score.');
+assert.doesNotMatch(review[0],/rank\\(\\) over\\(order by average desc\\)/,'Staff review must not rank by average.');
+const broadsheet=readFileSync('supabase/migrations/20261012124900_schoolpro_full_class_reports_require_coordinator.sql','utf8');
+assert.match(broadsheet,/rank\\(\\) over\\(order by x\\.total desc\\)/,'Published broadsheet positions use total score.');
+const report=readFileSync('supabase/migrations/20261011231101_schoolpro_rank_and_report_using_historical_session_class.sql','utf8');
+assert.match(report,/rank\\(\\) over\\(order by total desc\\)/,'Published report-card positions use total score.');
+console.log('PASS: staff review, broadsheet and published report ranking all use total-score ordering.');

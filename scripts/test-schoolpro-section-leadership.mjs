@@ -20,7 +20,7 @@ assert.match(migration,/private\.schoolpro_can_write_result/i);
 assert.match(migration,/create or replace function private\.enforce_result_workflow/i);
 assert.match(migration,/private\.has_school_access\(p_school,array\['proprietor','administrator','exam_officer'\]/i);
 assert.match(integration,/Head teacher must lead the explicitly assigned Primary section/i);
-assert.match(integration,/Head teacher must write results in assigned Primary section/i);
+assert.match(integration,/Head Teacher must not write subject scores without an exact teaching allocation/i);
 assert.match(integration,/Head teacher must read students in assigned Primary section/i);
 assert.match(integration,/Head teacher must read students and classes in assigned section/i);
 assert.match(integration,/section leader approved result outside assigned section/i);
@@ -76,6 +76,8 @@ assert.match(authorityMigration,/v_workflow_status is distinct from 'exam_approv
 assert.match(authorityMigration,/Only the Exam Officer can publish final-approved school results/i);
 assert.match(authorityMigration,/app\.schoolpro_correction_reopen/i);
 assert.match(authorityMigration,/create or replace function private\.schoolpro_can_read_result/i);
+assert.match(authorityMigration,/create or replace function private\.schoolpro_can_write_result/i);
+assert.match(authorityMigration,/a\.teacher_member_id=m\.id and a\.subject_id=p_subject/i);
 assert.match(authorityMigration,/as restrictive for select to authenticated/i);
 assert.match(authorityMigration,/app\.schoolpro_section_return/i);
 assert.match(authorityMigration,/app\.schoolpro_exam_publication/i);

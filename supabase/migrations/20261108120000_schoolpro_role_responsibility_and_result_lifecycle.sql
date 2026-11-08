@@ -590,6 +590,30 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_level text;v_class uuid;v_workflow_class uuid;v_workflow_status text;
 begin
+  if old.status in ('approved','published') and new.status='draft'
+     and not exists(
+       select 1 from public.schoolpro_result_correction_batches b
+       join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
+       where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
+         and b.status='pending' and i.result_id=old.id
+         and private.schoolpro_is_exam_officer(old.school_id)
+     ) then
+    raise exception 'Only an Exam Officer-approved class or section correction request can reopen an approved or published result';
+  end if;
+  if old.status='published' and new.status is distinct from old.status
+     and new.status<>'draft' then
+    raise exception 'Published results are locked until an authorized correction reopening';
+  end if;
+  if old.status in ('approved','published') and new.locked is distinct from old.locked
+     and not (new.status='draft' and exists(
+       select 1 from public.schoolpro_result_correction_batches b
+       join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
+       where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
+         and b.status='pending' and i.result_id=old.id
+         and private.schoolpro_is_exam_officer(old.school_id)
+     )) then
+    raise exception 'Approved and published result lock state can only change through an authorized correction reopening';
+  end if;
   if old.status in ('approved','published') and (
     new.school_id is distinct from old.school_id
     or new.student_id is distinct from old.student_id
@@ -1024,6 +1048,7 @@ begin
     raise exception 'Only the Exam Officer can authorize a class or section result reopening';
   end if;
   if p_approve then
+    perform set_config('app.schoolpro_correction_reopen',p_request::text,true);
     update public.schoolpro_results r set status='draft',locked=false,updated_at=now()
     where r.id in(select i.result_id from public.schoolpro_result_correction_batch_items i where i.batch_id=p_request)
       and r.status in ('approved','published');
@@ -1048,3 +1073,17 @@ end
 $$;
 revoke all on function public.schoolpro_decide_result_reopening(uuid,boolean,text) from public,anon;
 grant execute on function public.schoolpro_decide_result_reopening(uuid,boolean,text) to authenticated;
+
+-- Retire the legacy per-result reopening path. All post-approval changes must
+-- use a class- or section-scoped correction batch approved by the Exam Officer.
+create or replace function public.decide_schoolpro_result_correction_request(
+ p_request uuid,p_approve boolean,p_notes text default null
+) returns uuid language plpgsql security definer set search_path=''
+as $
+begin
+  raise exception 'Individual result reopening is retired. Submit a class or section correction request for Exam Officer approval.';
+end
+$;
+revoke all on function public.decide_schoolpro_result_correction_request(uuid,boolean,text) from public,anon,authenticated;
+revoke all on function public.reopen_schoolpro_result_for_correction(uuid,text) from public,anon,authenticated;
+

@@ -13,6 +13,7 @@ begin
   raise exception 'Result publication permission required';
  end if;
  if not exists(select 1 from public.schoolpro_classes where id=p_class and school_id=p_school) then raise exception 'Select a class in this school';end if;
+ if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Select an academic period';end if;
  perform r.id from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked
   and exists(

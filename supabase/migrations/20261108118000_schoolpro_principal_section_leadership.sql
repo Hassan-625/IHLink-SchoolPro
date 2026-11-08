@@ -4,6 +4,18 @@
 alter table public.schoolpro_section_leaders
   add column if not exists ended_at timestamptz;
 
+-- Retire legacy appointments that do not match the staff member's academic level.
+update public.schoolpro_section_leaders sl set ended_at=now()
+from public.schoolpro_members m
+where m.id=sl.member_id and m.school_id=sl.school_id and sl.ended_at is null
+  and not (
+    (sl.section in ('nursery','primary') and m.role='head_teacher')
+    or (sl.section in ('junior_secondary','senior_secondary') and (
+      m.role='vice_principal'
+      or (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+    ))
+  );
+
 create or replace function private.schoolpro_member_leads_student_section(
   p_school uuid, p_student uuid, p_session text
 ) returns boolean
@@ -113,13 +125,15 @@ create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''
 as $$
 begin
-  if not (
-    new.role in ('head_teacher','vice_principal')
-    or (new.role='administrator' and lower(coalesce(new.position_title,''))='principal')
-  ) then
-    update public.schoolpro_section_leaders set ended_at=now()
-    where school_id=new.school_id and member_id=new.id and ended_at is null;
-  end if;
+  update public.schoolpro_section_leaders sl set ended_at=now()
+  where sl.school_id=new.school_id and sl.member_id=new.id and sl.ended_at is null
+    and not (
+      (sl.section in ('nursery','primary') and new.role='head_teacher')
+      or (sl.section in ('junior_secondary','senior_secondary') and (
+        new.role='vice_principal'
+        or (new.role='administrator' and lower(coalesce(new.position_title,''))='principal')
+      ))
+    );
   return new;
 end
 $$;

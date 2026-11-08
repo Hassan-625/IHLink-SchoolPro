@@ -15,6 +15,7 @@ assert.match(broadsheet,/schoolpro_class_subject_teacher_roster/i,
 assert.match(broadsheet,/async function refreshCorrectionQueue\(/, 'The Exam Officer correction queue must have an explicit refresh path.');
 assert.match(broadsheet,/if\(!r\.error\)await refreshCorrectionQueue\(\)/, 'New correction requests must appear in the pending queue without reloading the page.');
 assert.match(broadsheet,/await refreshCorrectionQueue\(\);if\(request\.class_id===classId/, 'Approving or rejecting a reopening request must refresh the queue and the affected class view.');
+assert.match(broadsheet,/request\.scope==='section'&&request\.section===className\?\.level/, 'A section reopening decision must refresh the selected class when it belongs to that section.');
 assert.match(broadsheet,/async function refreshWorkflowView\(/, 'Workflow transitions must refresh the current class broadsheet and workflow status.');
 assert.match(broadsheet,/if\(!result\.error\)await refreshWorkflowView\(\)/, 'Form Master submission must refresh workflow status immediately.');
 assert.match(broadsheet,/if\(!r\.error\)await refreshWorkflowView\(\)/, 'Successful section return, section approval, Exam Officer approval and publication must refresh workflow status immediately.');

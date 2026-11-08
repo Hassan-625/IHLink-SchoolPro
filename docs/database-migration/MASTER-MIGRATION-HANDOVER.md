@@ -2825,3 +2825,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Staff ranking access remains governed by the existing class/subject assignment and school-role checks.
 - Added required nonblank term/session validation and a regression asserting both the release requirement and the existing release-policy helper.
 - Implemented as proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` in Stage C PR #133; not applied to production.
+
+
+### Stage C ranking population correction
+
+- Tightened `schoolpro_result_class_rank`: the ranking population now includes only learners with at least one published-and-locked result in the requested term/session.
+- Learners with no released score are no longer counted as zero-score competitors, which could otherwise distort class population and positions.
+- The same released-result predicate remains on the score join; the learner/guardian release check and attendance/finance gate are preserved.
+- Added a source regression assertion for the non-empty released-score population.
+- Proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` remains unmerged and unapplied to production.

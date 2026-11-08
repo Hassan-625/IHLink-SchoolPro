@@ -196,7 +196,7 @@ grant execute on function private.schoolpro_set_section_leader(uuid,uuid,text,bo
 create or replace function private.schoolpro_set_section_leader(
   p_school uuid,p_member uuid,p_section text,p_assigned boolean
 ) returns void language plpgsql security definer set search_path=''
-as $
+as $$
 declare target public.schoolpro_members;
 begin
   if auth.uid() is null or not private.is_active_account()
@@ -232,7 +232,7 @@ begin
   values(p_school,auth.uid(),'Section leadership assignment updated','member',p_member,
     jsonb_build_object('section',p_section,'assigned',coalesce(p_assigned,false)));
 end
-$;
+$$;
 revoke all on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) from public,anon,authenticated;
 grant execute on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) to authenticated;
 
@@ -247,7 +247,7 @@ grant execute on function public.schoolpro_set_section_leader(uuid,uuid,text,boo
 -- appointment is independently managed and is retired when membership ends.
 create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   update public.schoolpro_section_leaders sl set ended_at=now()
   where sl.school_id=new.school_id and sl.member_id=new.id and sl.ended_at is null
@@ -261,7 +261,7 @@ begin
     );
   return new;
 end
-$;
+$$;
 
 -- The historical-session reader follows the same explicit appointment scope.
 create or replace function private.schoolpro_enrollment_reader_keys()

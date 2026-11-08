@@ -23,13 +23,17 @@ export function SchoolProBroadsheet(){
  async function approve(scope:'class'|'selected'|'school'){
   if(!supabase||!ctx.schoolId||!canPublish||busy)return;
   if(!confirm(`Approve saved draft scores for ${scope==='school'?'the whole school':scope==='class'?'this class':'the selected students'} in ${term}, ${session}? Review the scores before continuing.`))return;
-  setBusy(true);setMsg('');let count=0;
-  try{let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
+  setBusy(true);setMsg('');
+  try{
+   let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
    if(scope!=='school'){const ids=scope==='selected'?selected:rows.map(r=>r.student_id);if(!ids.length)throw Error('Generate this class broadsheet and select students first.');query=query.in('student_id',ids);}
    const drafts=await fetchSchoolRows(query.order("id"));if(drafts.error)throw Error('Saved scores could not be loaded.');
-   for(const draft of drafts.data||[]){const reviewed=await supabase.rpc('review_schoolpro_result',{p_result:draft.id,p_status:'approved',p_notes:null});if(reviewed.error)throw Error('Some scores could not be approved. Completed approvals are saved; retry the remaining scores.');count++;}
-   setMsg(count?`${count} score records approved. You can now publish this selection.`:'No draft scores to approve for this selection. Previously approved or published scores are unchanged.');
-  }catch(e){setMsg(`${count} score records approved. ${e instanceof Error?e.message:'Please try again.'}`);}finally{setBusy(false)}
+   const ids=(drafts.data||[]).map(d=>d.id);
+   if(!ids.length){setMsg('No draft scores to approve for this selection. Previously approved or published scores are unchanged.');return;}
+   const reviewed=await supabase.rpc('review_schoolpro_results',{p_results:ids,p_notes:null});
+   if(reviewed.error)throw Error(reviewed.error.message||'The selected scores could not be approved.');
+   setMsg(`${Number(reviewed.data)||0} score records approved atomically. You can now publish this selection.`);
+  }catch(e){setMsg(e instanceof Error?e.message:'Please try again.');}finally{setBusy(false)}
  }
  async function publish(){if(!supabase||!canPublish||busy)return;setBusy(true);const r=await supabase.rpc('publish_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});setBusy(false);setMsg(r.error?'Results could not be published. Please try again.':Number(r.data)>0?`${r.data} approved result records published.`:'No approved scores were waiting for publication. Approve saved draft scores first; already published results remain available.');if(!r.error){const sheet=await supabase.rpc('schoolpro_class_review_sheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});setRows(sheet.data?.rows||[]);setSubjects(sheet.data?.subjects||[])}}
  async function publishSelection(all=false){if(!supabase||!canPublish||busy||(!all&&!selected.length))return;if(!confirm(all?'Publish all approved results in this school for the selected term and session?':`Publish approved results for ${selected.length} selected student(s)?`))return;setBusy(true);try{const r=await supabase.rpc('publish_schoolpro_selected_results',{p_school:ctx.schoolId,p_term:term,p_session:session,p_students:all?null:selected,p_all:all});setMsg(r.error?'Results could not be published. Check your access and selected students.':Number(r.data)>0?`${r.data} approved result records published.`:'No approved scores were waiting for publication. Approve saved draft scores first; already published results remain available.');if(!r.error&&classId){const sheet=await supabase.rpc('schoolpro_class_review_sheet',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session});setRows(sheet.data?.rows||[]);setSubjects(sheet.data?.subjects||[]);}}catch{setMsg('Results could not be published. Please try again.');}finally{setBusy(false)}}

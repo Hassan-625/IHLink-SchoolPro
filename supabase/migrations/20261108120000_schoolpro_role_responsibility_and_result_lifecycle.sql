@@ -215,6 +215,7 @@ with leaders as materialized (
       private.is_admin(array['super_admin'::public.user_role])
       or (private.schoolpro_module_allowed(s.id,'students') and public.schoolpro_member_can_manage(s.id))
       or private.schoolpro_can_issue_transcript(s.id)
+      or private.schoolpro_is_school_admin(s.id)
     )
 ), readable as (
   select e.school_id::text||'|'||e.student_id::text||'|'||e.session key
@@ -250,6 +251,58 @@ select coalesce(jsonb_object_agg(key,true),'{}'::jsonb) from readable
 $$;
 revoke all on function private.schoolpro_enrollment_reader_keys() from public,anon;
 grant execute on function private.schoolpro_enrollment_reader_keys() to authenticated;
+
+-- Supplemental School Administrator appointments must participate in the same
+-- student/class read gates as the primary proprietor/administrator roles.
+create or replace function private.schoolpro_can_read_student(p_student uuid)
+returns boolean language sql stable security definer set search_path=''
+as $
+ select auth.uid() is not null and private.is_active_account() and exists(
+   select 1 from public.schoolpro_students s
+   where s.id=p_student and private.schoolpro_operationally_active(s.school_id)
+   and (
+     private.is_admin(array['super_admin'::public.user_role])
+     or private.schoolpro_is_school_admin(s.school_id)
+     or s.user_id=auth.uid()
+     or exists(select 1 from public.schoolpro_guardian_links g
+       where g.school_id=s.school_id and g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')
+     or exists(select 1 from public.schoolpro_schools sc where sc.id=s.school_id and sc.owner_id=auth.uid())
+     or private.schoolpro_member_leads_class(s.school_id,s.class_id)
+     or exists(select 1 from public.schoolpro_members m where m.school_id=s.school_id and m.user_id=auth.uid() and (
+       m.role::text not in('teacher','class_teacher','parent','student','head_teacher','vice_principal')
+       or (m.role in('teacher','class_teacher') and (
+         exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=s.school_id and a.class_id=s.class_id and a.teacher_member_id=m.id)
+         or exists(select 1 from public.schoolpro_classes c where c.id=s.class_id and c.school_id=s.school_id and c.form_teacher_id=m.id)
+       ))
+     ))
+   )
+ )
+$;
+revoke all on function private.schoolpro_can_read_student(uuid) from public,anon;
+grant execute on function private.schoolpro_can_read_student(uuid) to authenticated;
+
+create or replace function private.schoolpro_can_read_class(p_class uuid)
+returns boolean language sql stable security definer set search_path=''
+as $
+ select auth.uid() is not null and private.is_active_account() and exists(
+   select 1 from public.schoolpro_classes c where c.id=p_class and (
+     private.schoolpro_is_school_admin(c.school_id)
+     or private.has_school_access(c.school_id,array['proprietor','administrator']::public.school_member_role[])
+     or private.schoolpro_member_leads_class(c.school_id,c.id)
+     or exists(select 1 from public.schoolpro_members m where m.school_id=c.school_id and m.user_id=auth.uid() and (
+       m.role::text not in('teacher','class_teacher','parent','student','head_teacher','vice_principal')
+       or c.form_teacher_id=m.id
+       or exists(select 1 from public.schoolpro_subject_assignments a
+         where a.class_id=c.id and a.school_id=c.school_id and a.teacher_member_id=m.id)
+     ))
+     or exists(select 1 from public.schoolpro_students s where s.class_id=c.id and s.school_id=c.school_id
+       and (s.user_id=auth.uid() or exists(select 1 from public.schoolpro_guardian_links g
+         where g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')))
+   )
+ )
+$;
+revoke all on function private.schoolpro_can_read_class(uuid) from public,anon;
+grant execute on function private.schoolpro_can_read_class(uuid) to authenticated;
 
 -- Exact subject assignment is the only normal staff authority to create or
 -- change marks. Form Master/Class Teacher and school leaders are read/review

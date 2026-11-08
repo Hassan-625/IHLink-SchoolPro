@@ -460,7 +460,7 @@ grant execute on function private.schoolpro_can_read_class(uuid) to authenticate
 -- can read/write their own subject through the subject-specific results path only.
 create or replace function private.schoolpro_can_review_class(p_school uuid,p_class uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
   select auth.uid() is not null and private.is_active_account()
     and private.schoolpro_module_allowed(p_school,'results')
     and exists(select 1 from public.schoolpro_classes c
@@ -475,7 +475,7 @@ as $
         join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
         where c.school_id=p_school and c.id=p_class and m.user_id=auth.uid() and m.status='active')
     )
-$;
+$$;
 revoke all on function private.schoolpro_can_review_class(uuid,uuid) from public,anon;
 grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authenticated;
 

@@ -89,6 +89,9 @@ assert.match(integration,/Subject teacher must not read another teacher subject 
 assert.match(integration,/Form Master must read every subject result in the assigned class/i);
 assert.match(integration,/Section Head must return all class results for correction/i);
 assert.match(integration,/Form Master must resubmit the corrected class register/i);
+assert.match(integration,/Section Head must use the complete-section approval RPC/i);
+assert.match(integration,/Exam Officer must use the whole-school publication RPC/i);
+assert.match(integration,/Exam Officer must use the authorized correction request RPC/i);
 assert.match(authorityMigration,/b\.status='pending' and i\.result_id=old\.id/i);
 assert.match(authorityMigration,/status='section_approved'/i);
 assert.match(authorityMigration,/status='exam_approved'/i);

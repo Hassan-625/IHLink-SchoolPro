@@ -2621,3 +2621,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Removed the direct UPDATE RLS policy for correction requests so clients cannot directly change request state or reviewer attribution; decision writes go through the security-definer RPC.
 - Updated the Results UI to use the atomic RPC and added `scripts/test-schoolpro-correction-review-atomicity.mjs` with `npm run test:schoolpro-correction-review`.
 - Proposed migration only; no production database writes. Existing correction requests and result records remain unchanged.
+### Stage C — preserve assessment scheme calculation history (2026-11-08)
+
+- Read-only code review identified that editing a used assessment scheme could change component definitions while existing result rows retained totals calculated under the previous definition.
+- Added migration `20261108103000_schoolpro_immutable_used_assessment_schemes.sql`. Once any result references a scheme, its school level and component definitions cannot be changed; renaming and default selection remain allowed.
+- Updated the Results UI to block component/level edits to a scheme already referenced by saved results and direct the user to create a new scheme for future assessments.
+- Added `scripts/test-schoolpro-assessment-scheme-immutability.mjs` and `npm run test:schoolpro-assessment-scheme`.
+- Proposed migration only; not applied to production. Existing assessment schemes and results were not modified.

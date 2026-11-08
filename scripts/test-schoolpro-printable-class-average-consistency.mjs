@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const print=fs.readFileSync('src/pages/schoolpro/SchoolProClassResultsPrint.tsx','utf8');
+const workbook=fs.readFileSync('src/lib/classResultsWorkbook.ts','utf8');
+assert.match(print,/publishedScoreCount=\s*scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.subjects\),0\)/);
+assert.match(print,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.total\),0\)\/publishedScoreCount/);
+assert.match(workbook,/classScoreTotals\.set/);
+assert.match(workbook,/classScoreCounts\.set/);
+assert.match(workbook,/classScoreTotals\.get\(s\.class_name\)[\s\S]*\/classScoreCount/);
+assert.doesNotMatch(workbook,/classAverages|classmates/);
+console.log('SchoolPro printable class-average consistency regression passed.');

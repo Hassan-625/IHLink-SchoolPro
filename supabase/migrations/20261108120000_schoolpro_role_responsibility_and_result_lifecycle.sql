@@ -397,7 +397,11 @@ begin
     and (new.status<>'active' or new.role in ('teacher','parent','student'));
   return new;
 end
-$$;
+$;
+drop trigger if exists schoolpro_prune_section_leadership_role on public.schoolpro_members;
+create trigger schoolpro_prune_section_leadership_role
+after update of role,position_title,status on public.schoolpro_members
+for each row execute function private.schoolpro_prune_section_leadership_role();
 
 -- The historical-session reader follows the same explicit appointment scope.
 create or replace function private.schoolpro_enrollment_reader_keys()

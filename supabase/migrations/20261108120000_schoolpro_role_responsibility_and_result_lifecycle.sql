@@ -369,7 +369,7 @@ begin
      and new.assessment_scheme_id is not distinct from old.assessment_scheme_id then
     return new;
   end if;
-  if private.is_admin(array['super_admin']::public.user_role[]) then return new; end if;
+  -- Administrative and review roles are read/review authorities, not score-entry bypasses.
   if auth.uid() is null or not private.is_active_account() then
     raise exception 'Authentication required to enter or change assessment scores';
   end if;

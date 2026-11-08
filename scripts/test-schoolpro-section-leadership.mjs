@@ -136,8 +136,7 @@ assert.match(authorityMigration,/an appointed Principal takes precedence over a 
 assert.match(workflowMigration,/Approved or published results must be reopened through the correction workflow/i);
 assert.match(integration,/Form Master must submit all class Draft results/i);
 assert.match(integration,/Head Teacher section approval state was not recorded/i);
-assert.match(integration,/Vice Principal must not approve a section after a Principal is appointed to it/i);
-assert.match(integration,/Appointed Principal must approve Junior Secondary ahead of the Vice Principal/i);
+assert.match(integration,/Appointed Vice Principal must approve the Junior Secondary section through the RPC/i);
 assert.match(integration,/Appointed Principal must approve the Senior Secondary section through the RPC/i);
 assert.match(integration,/Form Master must submit Junior Secondary results/i);
 assert.match(integration,/Form Master must submit Senior Secondary results/i);

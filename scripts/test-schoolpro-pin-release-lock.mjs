@@ -1,8 +1,11 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const migration=readFileSync('supabase/migrations/20261108104000_schoolpro_require_locked_results_for_pin_release.sql','utf8');
+const checker=readFileSync('src/pages/schoolpro/SchoolProResultChecker.tsx','utf8');
 const family=readFileSync('supabase/migrations/20261009222727_private_family_result_rpcs.sql','utf8');
 assert.ok(migration.includes("r.status='published' and r.locked=true"),'PIN result payload must require published and locked rows');
+assert.ok(migration.includes("'grade_scale',coalesce((select jsonb_agg"),'PIN result response must include the school-configured grading scale');
+assert.ok(checker.includes('grade(Number(result.total_score), data.grade_scale)'),'PIN checker must render grades using the returned school scale');
 assert.ok(migration.includes("if jsonb_array_length(payload)=0 then"),'No released result must fail closed');
 assert.ok(migration.includes("private.record_schoolpro_result_pin_failure(v_attempt_key)"),'Invalid PIN must continue to accrue cooldown failures');
 assert.ok(migration.includes("pg_catalog.pg_advisory_xact_lock"),'PIN attempts must remain serialized');

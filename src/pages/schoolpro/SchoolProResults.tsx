@@ -62,6 +62,9 @@ export function SchoolProResults(){
    const missing=required.filter(h=>!normalized.includes(h));
    if(missing.length)return setError("Missing required columns: "+missing.join(", ")+". Download the latest template and keep its heading names.");
    if(new Set(normalized.filter(Boolean)).size!==normalized.filter(Boolean).length)return setError("The workbook contains duplicate column headings. Each assessment component must have its own column.");
+   const allowedHeaders=new Set([...required,...schemes.flatMap(s=>s.components.map(c=>c.key.toLowerCase()))]);
+   const unexpected=normalized.filter(h=>h&&!allowedHeaders.has(h));
+   if(unexpected.length)return setError("The workbook contains unsupported columns: "+[...new Set(unexpected)].join(", ")+". Remove columns that are not assessment component keys for a configured scheme.");
    const admissionCol=normalized.indexOf("admission number"),subjectCol=normalized.indexOf("subject code"),schemeCol=normalized.indexOf("assessment scheme id");
    const rows:any[]=[],seen=new Set<string>();
    ws.eachRow((row:any,n:number)=>{
@@ -77,6 +80,15 @@ export function SchoolProResults(){
     if(!st)errs.push("Unknown student");
     if(!sub)errs.push("Unknown subject");
     if(!scheme)errs.push("Invalid assessment scheme");
+    if(st&&scheme&&st.class_level){
+     const level=st.class_level.toLowerCase(),schemeLevel=scheme.school_level.toLowerCase();
+     const compatible=!schemeLevel||schemeLevel==="all"||schemeLevel==="custom"||schemeLevel===level||
+      (schemeLevel==="secondary"&&["junior_secondary","senior_secondary","jss","sss"].includes(level))||
+      (schemeLevel==="nursery_primary"&&["nursery","primary","nursery_primary"].includes(level))||
+      (schemeLevel==="junior_secondary"&&level==="jss")||
+      (schemeLevel==="senior_secondary"&&level==="sss");
+     if(!compatible)errs.push("Assessment scheme level "+scheme.school_level+" does not match the student's class level "+st.class_level);
+    }
     const existing=st&&sub?results.find(r=>r.student_id===st.id&&r.subject_id===sub.id&&r.term===scoreForm.term&&r.session===scoreForm.session):undefined;
     if(existing&&(existing.status!=="draft"||existing.locked))errs.push("Existing result is approved, published or locked");
     if(existing?.assessment_scheme_id&&scheme&&existing.assessment_scheme_id!==scheme.id)errs.push("Existing result uses a different assessment scheme");

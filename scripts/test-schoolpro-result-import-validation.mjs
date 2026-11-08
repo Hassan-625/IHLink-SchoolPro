@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const page=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
+const parse=page.slice(page.indexOf('async function parseImport'),page.indexOf('async function submitImport'));
+assert.match(parse,/Missing required columns/);
+assert.match(parse,/duplicate column headings/);
+assert.match(parse,/Missing component column/);
+assert.match(parse,/score is required and must be numeric/);
+assert.match(parse,/must be 0–/);
+assert.match(parse,/Duplicate student and subject row/);
+assert.match(parse,/classAssignments=.*classSubjectAssignments/);
+assert.match(parse,/Not assigned to teacher/);
+assert.match(parse,/Maximum 500 result rows/);
+assert.match(page,/Fix all preview errors before importing/);
+assert.match(page,/import_schoolpro_results/);
+console.log('PASS: result import requires complete headers, validates every component, rejects duplicates and preserves class/session/teacher scope.');

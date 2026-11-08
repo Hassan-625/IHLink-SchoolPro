@@ -40,6 +40,7 @@ jobs:
           node scripts/test-schoolpro-result-ranking-consistency.mjs
           node scripts/test-schoolpro-published-rank-release-boundary.mjs
           node scripts/test-schoolpro-assessment-completeness-release-boundary.mjs
+          node scripts/test-schoolpro-atomic-bulk-result-approval.mjs
           node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs
           node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs
           node scripts/test-schoolpro-printable-class-average-consistency.mjs

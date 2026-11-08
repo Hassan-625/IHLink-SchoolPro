@@ -119,18 +119,32 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_level text;v_workflow_status text;
 begin
-  if old.status='published' and (
-    new.ca_score is distinct from old.ca_score
+  if old.status in ('approved','published') and (
+    new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.subject_id is distinct from old.subject_id
+    or new.term is distinct from old.term
+    or new.session is distinct from old.session
+    or new.ca_score is distinct from old.ca_score
     or new.exam_score is distinct from old.exam_score
+    or new.total_score is distinct from old.total_score
     or new.assessment_scores is distinct from old.assessment_scores
     or new.assessment_scheme_id is distinct from old.assessment_scheme_id
-  ) then raise exception 'Published results are locked'; end if;
+  ) then
+    raise exception 'Approved or published results must be reopened through the correction workflow before editing';
+  end if;
 
   if new.status=old.status and old.status='draft'
-     and (new.ca_score is distinct from old.ca_score
-       or new.exam_score is distinct from old.exam_score
-       or new.assessment_scores is distinct from old.assessment_scores
-       or new.assessment_scheme_id is distinct from old.assessment_scheme_id) then
+     and (new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.subject_id is distinct from old.subject_id
+    or new.term is distinct from old.term
+    or new.session is distinct from old.session
+    or new.ca_score is distinct from old.ca_score
+    or new.exam_score is distinct from old.exam_score
+    or new.total_score is distinct from old.total_score
+    or new.assessment_scores is distinct from old.assessment_scores
+    or new.assessment_scheme_id is distinct from old.assessment_scheme_id) then
     update public.schoolpro_result_workflow set status='draft',submitted_by=null,
       submitted_at=null,approved_by=null,approved_at=null,published_at=null,updated_at=now()
     where result_id=old.id and status='submitted';

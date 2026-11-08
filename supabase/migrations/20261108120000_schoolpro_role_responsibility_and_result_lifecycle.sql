@@ -313,12 +313,18 @@ begin
     if new.status='approved' and v_workflow_status is distinct from 'submitted' then
       raise exception 'The Form Master must submit this result to the section head before approval';
     end if;
-    if new.status='published' and (old.status<>'approved' or v_workflow_status is distinct from 'approved') then
-      raise exception 'The section head must approve this result before publication';
+    if new.status='published' and (old.status<>'approved' or v_workflow_status is distinct from 'exam_approved') then
+      raise exception 'The Exam Officer must give final approval before publication';
     end if;
     if not private.is_admin(array['super_admin']::public.user_role[])
+       and new.status='approved'
        and not private.schoolpro_member_leads_student_section(new.school_id,new.student_id,new.session) then
-      raise exception 'Only the appointed Section Head can approve or publish this section result';
+      raise exception 'Only the appointed Section Head can approve this section result';
+    end if;
+    if not private.is_admin(array['super_admin']::public.user_role[])
+       and new.status='published'
+       and not private.schoolpro_is_exam_officer(new.school_id) then
+      raise exception 'Only the Exam Officer can publish final-approved school results';
     end if;
   end if;
   if new.status='approved' and old.status<>'approved' then
@@ -330,6 +336,29 @@ begin
   return new;
 end
 $$;
+
+-- Keep the workflow state aligned with the four-step approval chain.
+create or replace function private.sync_schoolpro_result_workflow()
+returns trigger language plpgsql security definer set search_path=''
+as $
+begin
+  if new.status='approved' and old.status is distinct from 'approved' then
+    update public.schoolpro_result_workflow set status='approved',
+      approved_by=auth.uid(),approved_at=now(),updated_at=now()
+    where result_id=new.id and status='submitted';
+  elsif new.status='published' and old.status is distinct from 'published' then
+    update public.schoolpro_result_workflow set status='published',
+      published_at=coalesce(new.published_at,now()),updated_at=now()
+    where result_id=new.id and status='exam_approved';
+  elsif new.status='draft' and old.status in ('approved','published') then
+    update public.schoolpro_result_workflow set status='draft',submitted_by=null,
+      submitted_at=null,approved_by=null,approved_at=null,published_at=null,updated_at=now()
+    where result_id=new.id;
+  end if;
+  return new;
+end
+$;
+revoke all on function private.sync_schoolpro_result_workflow() from public,anon,authenticated;
 
 create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''
@@ -579,6 +608,20 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_class uuid;
 begin
+  -- Only the Exam Officer correction RPC can move a published/approved result back to Draft.
+  -- The request ID is set transaction-locally by that RPC and must contain this exact result.
+  if tg_op='UPDATE' and old.status in ('approved','published')
+     and new.status='draft' and new.locked=false
+     and private.schoolpro_is_exam_officer(new.school_id)
+     and nullif(current_setting('app.schoolpro_correction_reopen',true),'') is not null
+     and exists(
+       select 1 from public.schoolpro_result_correction_batches b
+       join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
+       where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
+         and b.school_id=new.school_id and b.status='pending' and i.result_id=old.id
+     ) then
+    return new;
+  end if;
   if tg_op='UPDATE'
      and new.school_id is not distinct from old.school_id
      and new.student_id is not distinct from old.student_id

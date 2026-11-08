@@ -2916,4 +2916,6 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - This is a proposed SQL/source change in PR #133. No production migration, production data write, merge or Render deployment has occurred. The source-contract regression and disposable PostgreSQL integration still need to run against the latest PR head.
 
 
-- Validation boundary: the existing disposable PostgreSQL section-leadership fixture applies the 20261108118000 and 20261108119000 migrations; it does not apply 20261108120000. The new approval-RPC guard is therefore covered by the Stage C source-contract regression at this point, not by a claim that the older fixture executed the newer RPC implementation. A dedicated disposable integration harness for migration 20261108120000 remains a validation item.
+- Validation clarification: the section-leadership PostgreSQL fixture has a second Stage C authority phase that does apply migration 20261108120000. That phase is extended to verify Principal precedence in both the section-wide and class-scoped approval RPCs. The separate earlier section-workflow phase continues to exercise the 20261108118000/20261108119000 migrations.
+
+- Added disposable PostgreSQL coverage after migration 20261108120000 is applied: a Vice Principal and Principal are both actively appointed to Senior Secondary; the VP is denied both section-wide and class-scoped approval, while the Principal retains section authority. The source-contract regression requires these assertions.

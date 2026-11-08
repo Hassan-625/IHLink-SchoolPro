@@ -24,23 +24,25 @@ begin
  if auth.uid() is null then raise exception 'Authentication required';end if;
  if not private.schoolpro_module_allowed(p_school,'results') then raise exception 'Module permission denied: results';end if;
  if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Term and session are required';end if;
- if jsonb_typeof(p_rows)<>'array' or jsonb_array_length(p_rows)=0 or jsonb_array_length(p_rows)>500 then raise exception 'Import must contain 1 to 500 rows';end if;
+ if p_rows is null or jsonb_typeof(p_rows) is distinct from 'array' or jsonb_array_length(p_rows)=0 or jsonb_array_length(p_rows)>500 then raise exception 'Import must contain 1 to 500 rows';end if;
  for x in select value from jsonb_array_elements(p_rows) loop
   if jsonb_typeof(x)<>'object' then raise exception 'Every import row must be an object';end if;
   if nullif(trim(x->>'admission_number'),'') is null or nullif(trim(x->>'subject_code'),'') is null or nullif(trim(x->>'assessment_scheme_id'),'') is null then
    raise exception 'Admission number, subject code and assessment scheme are required';
   end if;
-  select s.id,s.class_id into st,sc
+  select s.id,coalesce(e.class_id,s.class_id) into st,sc
   from public.schoolpro_students s
+  left join public.schoolpro_enrollment_history e on e.school_id=s.school_id and e.student_id=s.id and e.session=trim(p_session)
   where s.school_id=p_school and s.admission_number=trim(x->>'admission_number')
-    and (
-      exists(select 1 from public.schoolpro_enrollment_history e where e.school_id=s.school_id and e.student_id=s.id and e.session=trim(p_session))
-      or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history e where e.school_id=s.school_id and e.student_id=s.id))
-    );
+    and (e.student_id is not null or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id)));
   if st is null then raise exception 'Student is not enrolled in the selected session: %',x->>'admission_number';end if;
   select id into su from public.schoolpro_subjects where school_id=p_school and upper(code)=upper(trim(x->>'subject_code'));
   if su is null then raise exception 'Unknown subject code: %',x->>'subject_code';end if;
   if not private.schoolpro_can_write_result(p_school,st,su,trim(p_session)) then raise exception 'Not authorized for student %, subject %, session %',x->>'admission_number',x->>'subject_code',p_session;end if;
+  if exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=p_school and a.class_id=sc and a.session=trim(p_session) and a.ended_at is null)
+    and not exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=p_school and a.class_id=sc and a.subject_id=su and a.session=trim(p_session) and a.ended_at is null) then
+   raise exception 'Subject is not assigned to this class for the selected session';
+  end if;
   scores:=x->'assessment_scores';
   if scores is null or jsonb_typeof(scores)<>'object' then raise exception 'Assessment scores must be a JSON object';end if;
   select components into comp from public.schoolpro_assessment_schemes

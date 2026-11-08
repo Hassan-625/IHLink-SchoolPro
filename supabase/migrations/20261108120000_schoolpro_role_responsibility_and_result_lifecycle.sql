@@ -187,10 +187,6 @@ with leaders as materialized (
       private.is_admin(array['super_admin'::public.user_role])
       or (private.schoolpro_module_allowed(s.id,'students') and public.schoolpro_member_can_manage(s.id))
       or private.schoolpro_can_issue_transcript(s.id)
-      or exists(select 1 from public.schoolpro_members m
-        join public.schoolpro_section_leaders sl on sl.school_id=m.school_id
-          and sl.member_id=m.id and sl.ended_at is null
-        where m.school_id=s.id and m.user_id=auth.uid() and m.status='active')
     )
 ), readable as (
   select e.school_id::text||'|'||e.student_id::text||'|'||e.session key
@@ -431,6 +427,25 @@ begin
     or new.assessment_scheme_id is distinct from old.assessment_scheme_id
   ) then raise exception 'Approved or published results must be reopened through the correction workflow before editing'; end if;
 
+  if new.status=old.status and old.status='draft' and (
+    new.school_id is distinct from old.school_id
+    or new.student_id is distinct from old.student_id
+    or new.subject_id is distinct from old.subject_id
+    or new.term is distinct from old.term
+    or new.session is distinct from old.session
+    or new.ca_score is distinct from old.ca_score
+    or new.exam_score is distinct from old.exam_score
+    or new.total_score is distinct from old.total_score
+    or new.assessment_scores is distinct from old.assessment_scores
+    or new.assessment_scheme_id is distinct from old.assessment_scheme_id
+  ) then
+    update public.schoolpro_result_workflow set status='draft',submitted_by=null,
+      submitted_at=null,approved_by=null,approved_at=null,section_approved_by=null,
+      section_approved_at=null,exam_approved_by=null,exam_approved_at=null,
+      correction_notes=null,updated_at=now()
+    where result_id=old.id and status in ('submitted','correction_requested');
+  end if;
+
   if new.status is distinct from old.status and new.status='approved' then
     select c.level,c.id into v_level,v_class
     from public.schoolpro_students s
@@ -550,6 +565,15 @@ begin
         or (p_scope='section' and c.level=p_section))
       and w.status not in ('section_approved')
   ) then raise exception 'Every result in the selected scope must first be approved by its section head'; end if;
+  if exists(select 1 from public.schoolpro_result_workflow w
+    join public.schoolpro_classes c on c.school_id=w.school_id and c.id=w.class_id
+    left join public.schoolpro_results r on r.id=w.result_id
+    where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
+      and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
+        or (p_scope='section' and c.level=p_section))
+      and (r.id is null or r.status<>'approved')) then
+    raise exception 'Every result in the selected scope must be section-approved before Exam Officer approval';
+  end if;
   update public.schoolpro_result_workflow w set status='exam_approved',
     exam_approved_by=auth.uid(),exam_approved_at=now(),updated_at=now()
   from public.schoolpro_classes c

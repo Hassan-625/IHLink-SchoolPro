@@ -1185,7 +1185,10 @@ select exists(select 1 from expected)
         (r.status='draft' and w.status='submitted')
         or (r.status='approved' and w.status='section_approved')
       ))
-      or (p_stage='exam' and (r.status<>'approved' or w.status not in ('section_approved','exam_approved')))
+      or (p_stage='exam' and not (
+        (r.status='approved' and w.status in ('section_approved','exam_approved'))
+        or (r.status='published' and w.status='published' and r.locked)
+      ))
   )
   and not exists(
     select 1 from public.schoolpro_result_workflow w
@@ -1308,7 +1311,7 @@ begin
     where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
       and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
         or (p_scope='section' and c.level=p_section))
-      and (r.id is null or r.status<>'approved')) then
+      and (r.id is null or r.status not in ('approved','published'))) then
     raise exception 'Every result in the selected scope must be section-approved before Exam Officer approval';
   end if;
   update public.schoolpro_result_workflow w set status='exam_approved',
@@ -1343,7 +1346,7 @@ begin
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Select an academic term and session';
   end if;
-  if not private.schoolpro_result_scope_matrix_state(p_school,p_term,p_session,'school',null,null,'exam_approved','approved') then
+  if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'school',null,null,'exam') then
     raise exception 'Whole-school publication is blocked until every allocated subject result in every class has final Exam Officer approval';
   end if;
   if not exists(select 1 from public.schoolpro_result_workflow w
@@ -1352,13 +1355,13 @@ begin
   end if;
   if exists(select 1 from public.schoolpro_result_workflow w
     where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
-      and w.status<>'exam_approved') then
+      and w.status not in ('exam_approved','published')) then
     raise exception 'Whole-school publication is blocked until every submitted result has final Exam Officer approval';
   end if;
   if exists(select 1 from public.schoolpro_results r
     join public.schoolpro_students s on s.school_id=r.school_id and s.id=r.student_id
     where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
-      and r.status<>'approved') then
+      and r.status not in ('approved','published')) then
     raise exception 'Whole-school publication is blocked because one or more results are not section-approved';
   end if;
   perform set_config('app.schoolpro_exam_publication','on',true);
@@ -1366,8 +1369,9 @@ begin
   where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
     and r.status='approved' and exists(select 1 from public.schoolpro_result_workflow w
       where w.result_id=r.id and w.status='exam_approved');
-  get diagnostics n=row_count;
-  if n=0 then raise exception 'No final-approved results are available to publish'; end if;
+  select count(*)::integer into n from public.schoolpro_results r
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and r.status='published' and r.locked;
   insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
   values(p_school,auth.uid(),'Whole-school results published','school',p_school,
     jsonb_build_object('term',trim(p_term),'session',trim(p_session),'result_count',n));

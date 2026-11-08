@@ -120,10 +120,16 @@ begin
    raise exception 'Form Master must submit all class Draft results';
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
- update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000002';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'approved' then
-   raise exception 'Appointed Head Teacher section approval workflow failed';
+ if public.schoolpro_approve_section_results(school,'nursery','First Term','2025/2026')<>1 then
+   raise exception 'Appointed Head Teacher must approve the complete Nursery section through the RPC';
  end if;
+ if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'section_approved' then
+   raise exception 'Head Teacher section approval state was not recorded';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
+   raise exception 'ASSERT: Head Teacher must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
  begin
    update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
    raise exception 'ASSERT: Head Teacher must not publish before Exam Officer final approval';
@@ -163,11 +169,11 @@ begin
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
  begin
-   update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
+   perform public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026');
    raise exception 'ASSERT: section leader approved result outside assigned section';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('appointed section Head Teacher' in sqlerrm)=0 then raise; end if;
+   if position('appointed section head' in lower(sqlerrm))=0 then raise; end if;
  end;
  perform set_config('request.jwt.claim.sub',vice_id::text,true);
  if not private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
@@ -185,9 +191,16 @@ begin
  if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_jss::text||'|2025/2026')) then
    raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
- update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved' then
-   raise exception 'Appointed Vice Principal section approval workflow failed';
+ if public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026')<>1 then
+   raise exception 'Appointed Vice Principal must approve the Junior Secondary section through the RPC';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
+   raise exception 'ASSERT: Vice Principal must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
+    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
+   raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
  end if;
  begin
    update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
@@ -211,9 +224,16 @@ begin
    raise exception 'Form Master must submit Senior Secondary results';
  end if;
  perform set_config('request.jwt.claim.sub',principal_id::text,true);
- update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000003';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved' then
-   raise exception 'Appointed Principal section approval workflow failed';
+ if public.schoolpro_approve_section_results(school,'senior_secondary','First Term','2025/2026')<>1 then
+   raise exception 'Appointed Principal must approve the Senior Secondary section through the RPC';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';
+   raise exception 'ASSERT: Principal must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved'
+    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
+   raise exception 'Principal publication attempt must leave section-approved results unchanged';
  end if;
  begin
    update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';

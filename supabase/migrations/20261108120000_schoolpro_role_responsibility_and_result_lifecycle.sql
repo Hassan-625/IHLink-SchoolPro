@@ -608,20 +608,10 @@ returns trigger language plpgsql security definer set search_path=''
 as $$
 declare v_class uuid;
 begin
-  -- Only the Exam Officer correction RPC can move a published/approved result back to Draft.
-  -- The request ID is set transaction-locally by that RPC and must contain this exact result.
-  if tg_op='UPDATE' and old.status in ('approved','published')
-     and new.status='draft' and new.locked=false
-     and private.schoolpro_is_exam_officer(new.school_id)
-     and nullif(current_setting('app.schoolpro_correction_reopen',true),'') is not null
-     and exists(
-       select 1 from public.schoolpro_result_correction_batches b
-       join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
-       where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
-         and b.school_id=new.school_id and b.status='pending' and i.result_id=old.id
-     ) then
-    return new;
+  if auth.uid() is null or not private.is_active_account() then
+    raise exception 'Authentication required to enter or change assessment scores';
   end if;
+
   if tg_op='UPDATE'
      and new.school_id is not distinct from old.school_id
      and new.student_id is not distinct from old.student_id
@@ -632,15 +622,47 @@ begin
      and new.exam_score is not distinct from old.exam_score
      and new.total_score is not distinct from old.total_score
      and new.assessment_scores is not distinct from old.assessment_scores
-     and new.assessment_scheme_id is not distinct from old.assessment_scheme_id
-     and new.status is not distinct from old.status
-     and new.locked is not distinct from old.locked then
-    return new;
+     and new.assessment_scheme_id is not distinct from old.assessment_scheme_id then
+
+    -- Section approval is only allowed inside the complete-section approval RPC.
+    if old.status='draft' and new.status='approved' and not old.locked and not new.locked
+       and current_setting('app.schoolpro_section_approval',true)='on'
+       and (private.is_admin(array['super_admin']::public.user_role[])
+         or private.schoolpro_member_leads_student_section(new.school_id,new.student_id,new.session))
+       and exists(select 1 from public.schoolpro_result_workflow w
+         where w.result_id=old.id and w.status='submitted') then
+      return new;
+    end if;
+
+    -- Final publication is only allowed inside the Exam Officer publication RPC.
+    if old.status='approved' and new.status='published' and not old.locked and new.locked
+       and current_setting('app.schoolpro_exam_publication',true)='on'
+       and private.schoolpro_is_exam_officer(new.school_id)
+       and exists(select 1 from public.schoolpro_result_workflow w
+         where w.result_id=old.id and w.status='exam_approved') then
+      return new;
+    end if;
+
+    -- Only the Exam Officer correction RPC can reopen an approved/published result.
+    if old.status in ('approved','published') and new.status='draft' and not new.locked
+       and private.schoolpro_is_exam_officer(new.school_id)
+       and nullif(current_setting('app.schoolpro_correction_reopen',true),'') is not null
+       and exists(
+         select 1 from public.schoolpro_result_correction_batches b
+         join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
+         where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
+           and b.school_id=new.school_id and b.status='pending' and i.result_id=old.id
+       ) then
+      return new;
+    end if;
+
+    if new.status is not distinct from old.status
+       and new.locked is not distinct from old.locked then
+      return new;
+    end if;
   end if;
-  -- Administrative and review roles are read/review authorities, not score-entry bypasses.
-  if auth.uid() is null or not private.is_active_account() then
-    raise exception 'Authentication required to enter or change assessment scores';
-  end if;
+
+  -- Score writes require the exact active subject allocation.
   select coalesce((
     select eh.class_id from public.schoolpro_enrollment_history eh
     where eh.school_id=new.school_id and eh.student_id=new.student_id
@@ -660,7 +682,7 @@ begin
     raise exception 'Only the active subject teacher assigned to this class and subject can enter or update these scores';
   end if;
   if tg_op='UPDATE' and (old.status<>'draft' or old.locked or new.status<>'draft' or new.locked) then
-    raise exception 'Only unlocked Draft scores can be edited; request an authorized correction reopening';
+    raise exception 'Only unlocked Draft scores can be edited; use the authorized class or section workflow';
   end if;
   if tg_op='INSERT' and (new.status<>'draft' or new.locked) then
     raise exception 'Subject teachers can create only unlocked Draft scores';
@@ -1157,6 +1179,7 @@ begin
       and w.term=trim(p_term) and w.session=trim(p_session)) then
     raise exception 'No submitted class results exist in this section for the selected period';
   end if;
+  perform set_config('app.schoolpro_section_approval','on',true);
   update public.schoolpro_results r set status='approved',updated_at=now()
   where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
     and r.status='draft' and not r.locked
@@ -1258,6 +1281,7 @@ begin
       and r.status<>'approved') then
     raise exception 'Whole-school publication is blocked because one or more results are not section-approved';
   end if;
+  perform set_config('app.schoolpro_exam_publication','on',true);
   update public.schoolpro_results r set status='published',locked=true,updated_at=now()
   where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
     and r.status='approved' and exists(select 1 from public.schoolpro_result_workflow w

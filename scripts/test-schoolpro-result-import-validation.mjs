@@ -26,4 +26,7 @@ assert.ok(rpc.includes('unknown assessment component'));
 assert.ok(rpc.includes('Duplicate student and subject row in import'));
 assert.ok(rpc.includes('result_row.locked or result_row.status'));
 assert.ok(rpc.includes('uses a different assessment scheme'));
+
+const resultsPage = readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
+assert.ok(resultsPage.includes('r.assessment_scores[c.key]??"—"'), 'Saved score breakdown must show missing components as a dash, not zero');
 console.log('PASS: result import requires complete headers, validates every component, rejects duplicates and preserves class/session/teacher scope.');

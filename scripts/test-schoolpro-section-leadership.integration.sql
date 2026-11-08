@@ -221,3 +221,134 @@ begin
 end
 $test$;
 select 'PASS: section assignments, historical class-level resolution, result-write scope, review scope, and assignment revocation' as result;
+
+
+-- Stage C authority and final publication lifecycle.
+alter table public.schoolpro_members add constraint schoolpro_members_school_id_id_unique unique(school_id,id);
+alter table public.schoolpro_subject_assignments add column ended_at timestamptz;
+alter table public.schoolpro_results add column updated_at timestamptz not null default now();
+\ir ../supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql
+
+do $authority$
+declare
+ school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ primary_class uuid := '22222222-2222-4222-8222-222222222222';
+ student_id uuid := '44444444-4444-4444-8444-444444444444';
+ subject_one uuid := '55555555-5555-4555-8555-555555555555';
+ subject_two uuid := '55555555-5555-4555-8555-555555555556';
+ owner_id uuid := '66666666-6666-4666-8666-666666666666';
+ formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
+ formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
+ section_head_id uuid := '88888888-8888-4888-8888-888888888888';
+ section_head_member uuid := '99999999-9999-4999-8999-999999999992';
+ subject_teacher_id uuid := '88888888-8888-4888-8888-888888888895';
+ subject_teacher_member uuid := '99999999-9999-4999-8999-999999999995';
+ exam_officer_id uuid := '88888888-8888-4888-8888-888888888896';
+ exam_officer_member uuid := '99999999-9999-4999-8999-999999999996';
+ class_request uuid;
+ section_request uuid;
+begin
+ insert into auth.users values(subject_teacher_id),(exam_officer_id);
+ insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
+  (subject_teacher_member,school,subject_teacher_id,'teacher',null),
+  (exam_officer_member,school,exam_officer_id,'teacher',null);
+ update public.schoolpro_classes set form_teacher_id=formmaster_member where id=primary_class;
+ insert into public.schoolpro_subjects values(subject_two,school);
+ insert into public.schoolpro_subject_assignments(school_id,class_id,teacher_member_id,subject_id,session,ended_at) values
+  (school,primary_class,formmaster_member,subject_one,'2026/2027',null),
+  (school,primary_class,subject_teacher_member,subject_two,'2026/2027',null);
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ if not private.schoolpro_member_leads_class(school,primary_class) then
+   raise exception 'A teacher with an explicit section appointment must be able to act as Section Head';
+ end if;
+
+ -- The Form Master is also a subject teacher, but may edit only their allocated subject.
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
+ values('bbbbbbbb-0000-4000-8000-000000000011',school,student_id,subject_one,'First Term','2026/2027','{"ca":10,"exam":80}','draft');
+ begin
+   update public.schoolpro_results set assessment_scores='{"ca":12,"exam":80}'
+   where id='bbbbbbbb-0000-4000-8000-000000000012';
+   raise exception 'ASSERT: Form Master changed another subject teacher result';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('Only the active subject teacher assigned' in sqlerrm)=0 then raise; end if;
+ end;
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
+ values('bbbbbbbb-0000-4000-8000-000000000012',school,student_id,subject_two,'First Term','2026/2027','{"ca":9,"exam":75}','draft');
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
+   raise exception 'Form Master must submit only after the complete class subject matrix exists';
+ end if;
+
+ -- The appointed section head (who is also a subject teacher) approves the whole section.
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
+   raise exception 'Section Head must approve all complete submitted results in the section';
+ end if;
+ if (select count(*) from public.schoolpro_result_workflow
+   where school_id=school and session='2026/2027' and status='section_approved')<>2 then
+   raise exception 'Section approval must advance both subject result rows';
+ end if;
+
+ -- A staff member can hold Exam Officer authority in addition to a teaching role.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_member_responsibility(school,exam_officer_member,'exam_officer',true);
+ perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
+ if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','school',null,null)<>2 then
+   raise exception 'Exam Officer must give final approval to every school result';
+ end if;
+ if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
+   raise exception 'Exam Officer must publish the whole school result set';
+ end if;
+ if exists(select 1 from public.schoolpro_results where session='2026/2027' and status<>'published' or session='2026/2027' and not locked) then
+   raise exception 'Whole-school publication must lock every result';
+ end if;
+
+ -- Class-based correction request: no result changes until the Exam Officer authorizes reopening.
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ class_request:=public.schoolpro_request_result_reopening(
+   school,'class',primary_class,null,'First Term','2026/2027',
+   'Correct the two class assessment records before the next release.'
+ );
+ perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
+ if public.schoolpro_decide_result_reopening(class_request,true,'Approved class correction')<>2 then
+   raise exception 'Exam Officer class correction approval must reopen exactly the affected class';
+ end if;
+ if exists(select 1 from public.schoolpro_results where session='2026/2027' and (status<>'draft' or locked)) then
+   raise exception 'Authorized class correction must return the affected results to unlocked Draft';
+ end if;
+
+ -- Re-submit and republish, then exercise section-based reopening independently.
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
+   raise exception 'Corrected class results must be resubmitted by the Form Master';
+ end if;
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
+   raise exception 'Corrected results must pass section approval again';
+ end if;
+ perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
+ if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','school',null,null)<>2 then
+   raise exception 'Corrected results must pass final Exam Officer approval again';
+ end if;
+ if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
+   raise exception 'Corrected results must be republished by the Exam Officer';
+ end if;
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ section_request:=public.schoolpro_request_result_reopening(
+   school,'section',null,'primary','First Term','2026/2027',
+   'Reopen the entire Primary section for a verified section-wide correction.'
+ );
+ perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
+ if public.schoolpro_decide_result_reopening(section_request,true,'Approved section correction')<>2 then
+   raise exception 'Exam Officer section correction approval must reopen the entire affected section';
+ end if;
+ if exists(select 1 from public.schoolpro_results where session='2026/2027' and (status<>'draft' or locked)) then
+   raise exception 'Section reopening must unlock all affected section results';
+ end if;
+end
+$authority$;
+select 'PASS: subject-teacher-only marks, complete Form Master submission, concurrent roles, section approval, Exam Officer final approval/publication, and class/section correction reopening' as result;

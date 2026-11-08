@@ -306,6 +306,48 @@ $;
 revoke all on function private.schoolpro_can_read_class(uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_class(uuid) to authenticated;
 
+-- Read the active subject-teacher roster for a class without granting staff
+-- direct membership/profile table access. Ordinary subject teachers see only
+-- their own allocation; Form Masters, section heads, Exam Officers and admins
+-- can see every active allocation in their permitted class scope.
+create or replace function public.schoolpro_class_subject_teacher_roster(
+  p_school uuid,p_class uuid,p_session text
+) returns table(subject_id uuid,subject_name text,teacher_member_id uuid,teacher_name text)
+language plpgsql stable security definer set search_path=''
+as $
+declare v_member uuid;v_form_master boolean;v_wide_view boolean;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_module_allowed(p_school,'results')
+     or not private.schoolpro_can_read_class(p_class) then
+    raise exception 'Not authorized to view subject-teacher allocations for this class';
+  end if;
+  select id into v_member from public.schoolpro_members
+   where school_id=p_school and user_id=auth.uid() and status='active';
+  if v_member is null then raise exception 'Active school membership required'; end if;
+  select exists(select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.id=p_class and c.form_teacher_id=v_member)
+    into v_form_master;
+  v_wide_view:=v_form_master
+    or private.schoolpro_member_leads_class(p_school,p_class)
+    or private.schoolpro_is_exam_officer(p_school)
+    or private.schoolpro_is_school_admin(p_school);
+  return query
+    select a.subject_id,s.name,a.teacher_member_id,
+      coalesce(nullif(trim(concat_ws(' ',p.first_name,p.last_name)),''),p.email,'Assigned staff')::text
+    from public.schoolpro_subject_assignments a
+    join public.schoolpro_subjects s on s.id=a.subject_id and s.school_id=a.school_id
+    join public.schoolpro_members m on m.id=a.teacher_member_id and m.school_id=a.school_id and m.status='active'
+    left join public.profiles p on p.id=m.user_id
+    where a.school_id=p_school and a.class_id=p_class
+      and a.session=trim(p_session) and a.ended_at is null
+      and (v_wide_view or a.teacher_member_id=v_member)
+    order by s.name,teacher_name;
+end
+$;
+revoke all on function public.schoolpro_class_subject_teacher_roster(uuid,uuid,text) from public,anon;
+grant execute on function public.schoolpro_class_subject_teacher_roster(uuid,uuid,text) to authenticated;
+
 -- Exact subject assignment is the only normal staff authority to create or
 -- change marks. Form Master/Class Teacher and school leaders are read/review
 -- roles; they cannot overwrite a subject teacher's mark merely by coordinating.

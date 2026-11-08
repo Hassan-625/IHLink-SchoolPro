@@ -16,8 +16,6 @@ type Row={subject_id:string;id:string;assessment_scores:Record<string,number>;as
 type RawRow=Omit<Row,"total_score"> & {total_score:number|string};
 type Student={id:string;first_name:string;last_name:string;admission_number:string;class_name:string;school_id:string};
 type School={name:string;address:string|null};
-const grade=(score:number)=>score>=80?"A":score>=70?"B":score>=60?"C":score>=50?"D":score>=40?"E":"F";
-
 export function SchoolProReportCard({selection,embedded=false,onReady}:{selection?:{student:string;term:string;session:string};embedded?:boolean;onReady?:(id:string,success:boolean)=>void}={}){
  const Wrapper=embedded?InlineReport:PageShell;
  const [ready,setReady]=useState(false);

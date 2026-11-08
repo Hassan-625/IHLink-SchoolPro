@@ -225,6 +225,7 @@ select 'PASS: section assignments, historical class-level resolution, result-wri
 
 -- Stage C authority and final publication lifecycle.
 alter table public.schoolpro_members add constraint schoolpro_members_school_id_id_unique unique(school_id,id);
+create table public.schoolpro_member_permissions(school_id uuid not null,member_id uuid not null,permission text not null,allowed boolean not null,updated_by uuid,updated_at timestamptz,primary key(member_id,permission));
 alter table public.schoolpro_subject_assignments add column ended_at timestamptz;
 alter table public.schoolpro_results add column updated_at timestamptz not null default now();
 \ir ../supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql
@@ -259,6 +260,7 @@ begin
   (school,primary_class,subject_teacher_member,subject_two,'2026/2027',null);
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
  if not private.schoolpro_member_leads_class(school,primary_class) then
    raise exception 'A teacher with an explicit section appointment must be able to act as Section Head';
  end if;

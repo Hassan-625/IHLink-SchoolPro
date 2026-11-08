@@ -513,7 +513,7 @@ grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authe
 create or replace function private.schoolpro_can_write_result(
   p_school uuid,p_student uuid,p_subject uuid,p_session text
 ) returns boolean language sql stable security definer set search_path=''
-as $
+as $$
   select auth.uid() is not null and private.is_active_account()
     and private.schoolpro_operationally_active(p_school)
     and private.schoolpro_module_allowed(p_school,'results')

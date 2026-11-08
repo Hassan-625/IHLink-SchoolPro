@@ -2704,3 +2704,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a distinct published position based on published total, while retaining the review position based on all saved records. The UI labels both positions separately.
 - Added and wired `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs` in the normal CI validation step. CI has not yet reported a result for the latest branch revision.
 - Proposed migration remains unapplied to production. No production data or workspace was changed.
+
+- CI follow-up: the earlier validate job reached the Stage C completeness source-contract test and failed only because the test expected a literal `p_status='rejected'` expression, while the implementation validates allowed values with `p_status not in('approved','rejected')`. Updated the assertion to match the actual guard; this is a test-contract correction, not a runtime SQL failure. The corrected head has not yet been rerun by GitHub Actions.

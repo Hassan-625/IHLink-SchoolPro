@@ -190,6 +190,52 @@ end
 $$;
 revoke all on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) from public,anon,authenticated;
 grant execute on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) to authenticated;
+-- Section leadership is an explicit appointment, not a mutually exclusive
+-- primary account role. Teaching staff may hold a section-head appointment
+-- alongside their subject-teacher/Form-Master and Exam Officer responsibilities.
+create or replace function private.schoolpro_set_section_leader(
+  p_school uuid,p_member uuid,p_section text,p_assigned boolean
+) returns void language plpgsql security definer set search_path=''
+as $
+declare target public.schoolpro_members;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_operationally_active(p_school)
+     or not (private.is_admin(array['super_admin'::public.user_role])
+       or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])) then
+    raise exception 'Only school leadership can manage section assignments';
+  end if;
+  if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other') then
+    raise exception 'Choose a valid school section';
+  end if;
+  select * into target from public.schoolpro_members
+   where id=p_member and school_id=p_school for update;
+  if target.id is null or target.status<>'active' or not (
+    target.role in ('teacher','class_teacher')
+    or (target.role='head_teacher' and p_section in ('nursery','primary'))
+    or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
+    or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
+        and p_section in ('junior_secondary','senior_secondary'))
+  ) then
+    raise exception 'Appoint an active teacher, class teacher, eligible Head Teacher, Vice Principal or Principal as section head';
+  end if;
+  if coalesce(p_assigned,false) then
+    insert into public.schoolpro_section_leaders(school_id,member_id,section,assigned_by,assigned_at,ended_at)
+    values(p_school,p_member,p_section,auth.uid(),now(),null)
+    on conflict(school_id,member_id,section) do update
+      set assigned_by=excluded.assigned_by,assigned_at=now(),ended_at=null;
+  else
+    update public.schoolpro_section_leaders set ended_at=now()
+     where school_id=p_school and member_id=p_member and section=p_section and ended_at is null;
+  end if;
+  insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
+  values(p_school,auth.uid(),'Section leadership assignment updated','member',p_member,
+    jsonb_build_object('section',p_section,'assigned',coalesce(p_assigned,false)));
+end
+$;
+revoke all on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) from public,anon,authenticated;
+grant execute on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean) to authenticated;
+
 create or replace function public.schoolpro_set_section_leader(
   p_school uuid,p_member uuid,p_section text,p_assigned boolean
 ) returns void language sql security invoker set search_path=''
@@ -201,7 +247,21 @@ grant execute on function public.schoolpro_set_section_leader(uuid,uuid,text,boo
 -- appointment is independently managed and is retired when membership ends.
 create or replace function private.schoolpro_prune_section_leadership_role()
 returns trigger language plpgsql security definer set search_path=''
-as $$ begin return new; end $$;
+as $
+begin
+  update public.schoolpro_section_leaders sl set ended_at=now()
+  where sl.school_id=new.school_id and sl.member_id=new.id and sl.ended_at is null
+    and not (
+      new.role in ('teacher','class_teacher')
+      or (sl.section in ('nursery','primary') and new.role='head_teacher')
+      or (sl.section in ('junior_secondary','senior_secondary') and (
+        new.role='vice_principal'
+        or (new.role='administrator' and lower(coalesce(new.position_title,''))='principal')
+      ))
+    );
+  return new;
+end
+$;
 
 -- The historical-session reader follows the same explicit appointment scope.
 create or replace function private.schoolpro_enrollment_reader_keys()

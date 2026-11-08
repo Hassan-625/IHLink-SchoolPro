@@ -1,0 +1,11 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const migration=fs.readFileSync('supabase/migrations/20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql','utf8');
+const page=fs.readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
+assert.match(migration,/schoolpro_subject_assignments[\s\S]*sa\.school_id=p_school[\s\S]*sa\.class_id=p_class[\s\S]*sa\.session=trim\(p_session\)/);
+assert.match(migration,/union all[\s\S]*select distinct m\.subject_id,false assigned from marks/);
+assert.match(migration,/avg\(m\.total_score\) average,count\(m\.id\) recorded/);
+assert.match(migration,/coalesce\(avg\(m\.total_score\),0\) average,count\(m\.id\) subjects/);
+assert.match(page,/s\.assigned\s*\?\s*'Allocated'\s*:\s*'Recorded'/);
+assert.match(page,/Missing marks remain blank/);
+console.log('SchoolPro allocated-subject broadsheet regression passed.');

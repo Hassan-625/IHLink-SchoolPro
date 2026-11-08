@@ -61,6 +61,9 @@ assert.match(workflowMigration,/new\.total_score is distinct from old\.total_sco
 assert.match(authorityMigration,/schoolpro_enforce_subject_teacher_result_write/i);
 assert.match(authorityMigration,/a\.teacher_member_id=m\.id/i);
 assert.match(authorityMigration,/Only the active subject teacher assigned to this class and subject can enter or update these scores/i);
+assert.match(authorityMigration,/new\.status is not distinct from old\.status/i);
+assert.match(authorityMigration,/new\.locked is not distinct from old\.locked/i);
+assert.match(authorityMigration,/assessment_scheme_id,status,locked/i);
 assert.match(authorityMigration,/schoolpro_class_result_matrix_complete/i);
 assert.match(authorityMigration,/every student must have a complete Draft result for every subject allocated/i);
 assert.match(authorityMigration,/schoolpro_member_responsibilities/i);

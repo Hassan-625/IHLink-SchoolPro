@@ -33,6 +33,7 @@ begin
   where s.school_id=v_school and case when e.has_history is true then e.class_id else s.class_id end=v_class
    and (e.has_history is true or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session))))
   group by s.id
+  having count(r.id)>0
  ),ranked as(select id,total,avg_score,rank() over(order by total desc)::bigint pos,count(*) over()::bigint pop from totals)
  select pop,pos,total,avg_score from ranked where id=p_student_id;
 end $function$;

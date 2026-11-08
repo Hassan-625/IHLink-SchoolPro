@@ -971,14 +971,21 @@ as $$
 declare v_level text;v_class uuid;v_workflow_class uuid;v_workflow_status text;
 begin
   if old.status in ('approved','published') and new.status='draft'
-     and not exists(
-       select 1 from public.schoolpro_result_correction_batches b
-       join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
-       where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
-         and b.status='pending' and i.result_id=old.id
-         and private.schoolpro_is_exam_officer(old.school_id)
+     and not (
+       (old.status='approved'
+         and current_setting('app.schoolpro_section_return',true)='on'
+         and private.schoolpro_member_leads_student_section(old.school_id,old.student_id,old.session)
+         and exists(select 1 from public.schoolpro_result_workflow w
+           where w.result_id=old.id and w.status='section_approved'))
+       or exists(
+         select 1 from public.schoolpro_result_correction_batches b
+         join public.schoolpro_result_correction_batch_items i on i.batch_id=b.id
+         where b.id=nullif(current_setting('app.schoolpro_correction_reopen',true),'')::uuid
+           and b.status='pending' and i.result_id=old.id
+           and private.schoolpro_is_exam_officer(old.school_id)
+       )
      ) then
-    raise exception 'Only an Exam Officer-approved class or section correction request can reopen an approved or published result';
+    raise exception 'Only the Section Head can return a section-approved class or the Exam Officer can authorize a published correction reopening';
   end if;
   if old.status='published' and new.status is distinct from old.status
      and new.status<>'draft' then

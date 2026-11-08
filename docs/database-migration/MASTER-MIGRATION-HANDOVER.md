@@ -2628,3 +2628,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the Results UI to block component/level edits to a scheme already referenced by saved results and direct the user to create a new scheme for future assessments.
 - Added `scripts/test-schoolpro-assessment-scheme-immutability.mjs` and `npm run test:schoolpro-assessment-scheme`.
 - Proposed migration only; not applied to production. Existing assessment schemes and results were not modified.
+
+### Stage C — released-result visibility and calculation workflow audit (2026-11-08)
+
+- Read-only production inspection confirmed the family result-period manifest already exposes only rows with `status='published'` and `locked=true`; printable report-card RPC also requires published+locked rows, and subject statistics aggregate only published+locked results.
+- The public PIN-check RPC had a release-boundary mismatch: its payload selected published rows without requiring `locked=true`. Added proposed migration `20261108104000_schoolpro_require_locked_results_for_pin_release.sql` to align the PIN checker with the family/report-card release boundary while retaining admission-key cooldown serialization, PIN failure accounting, finance/attendance holds, and service-role-only execution.
+- Added `scripts/test-schoolpro-pin-release-lock.mjs` and registered it in CI.
+- Updated the parent dashboard's result summary metric to count only locked, published rows, matching the child report-card manifest.
+- Read-only production audit confirmed result totals are recalculated by the database trigger from the saved assessment scheme components; missing component keys are treated as zero for incremental draft entry, while the Stage C full-import RPC now requires every component. Published result edits remain blocked by the result workflow trigger and RLS update policy (which only permits unlocked Draft rows).
+- Read-only production audit confirmed approval uses `review_schoolpro_result`, publication RPCs select only approved and unlocked rows, and the controlled correction RPC reopens only published results while recording the previous snapshot. The class publication RPC is class/session scoped; selected/school publication validates school membership and historical enrolment.
+- Added the four Stage C source-contract regression scripts to the main `.github/workflows/ci.yml` validate job. The initial CI run was still queued at the time of the first review; the updated branch will trigger a fresh run including the newly wired checks.
+- All four Stage C migrations remain proposed only. No production SQL/DDL or tenant data writes have been executed. No test workspaces or accounts created. No merge or Render deployment has occurred.

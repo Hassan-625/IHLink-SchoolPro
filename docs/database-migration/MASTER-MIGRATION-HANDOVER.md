@@ -2798,3 +2798,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the broadsheet to pass the selected class for learner publication and null class for the whole-school action.
 - Extended the approval/publication regression and disposable PostgreSQL integration fixture to prove an in-class result publishes, another class's result remains Approved, and an out-of-class learner selection is rejected.
 - Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C publication request bounds and academic-period guardrails
+
+- Bounded selected-student publication to 5,000 learner IDs per request and explicitly rejects duplicate IDs before processing.
+- Added a required nonblank term and session check to class-scoped publication, matching the guards already applied to class approval and selected/whole-period publication.
+- Extended the selected-publication source regression for the size and duplicate-ID limits and the class-publication regression for required term/session values.
+- These are proposed changes in the unmerged Stage C PR; no production migration, merge or Render deployment.

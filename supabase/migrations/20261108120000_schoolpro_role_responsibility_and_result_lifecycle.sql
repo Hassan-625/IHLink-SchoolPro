@@ -1289,5 +1289,11 @@ begin
 end
 $$;
 revoke all on function public.decide_schoolpro_result_correction_request(uuid,boolean,text) from public,anon,authenticated;
-revoke all on function public.reopen_schoolpro_result_for_correction(uuid,text) from public,anon,authenticated;
+do $revoke_legacy$
+begin
+  if to_regprocedure('public.reopen_schoolpro_result_for_correction(uuid,text)') is not null then
+    execute 'revoke all on function public.reopen_schoolpro_result_for_correction(uuid,text) from public,anon,authenticated';
+  end if;
+end
+$revoke_legacy$;
 

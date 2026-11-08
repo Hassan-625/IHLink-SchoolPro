@@ -25,12 +25,18 @@ export function SchoolProBroadsheet(){
   if(!confirm(`Approve saved draft scores for ${scope==='school'?'the whole school':scope==='class'?'this class':'the selected students'} in ${term}, ${session}? Review the scores before continuing.`))return;
   setBusy(true);setMsg('');
   try{
-   let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
-   if(scope!=='school'){const ids=scope==='selected'?selected:rows.map(r=>r.student_id);if(!ids.length)throw Error('Generate this class broadsheet and select students first.');query=query.in('student_id',ids);}
-   const drafts=await fetchSchoolRows(query.order("id"));if(drafts.error)throw Error('Saved scores could not be loaded.');
-   const ids=(drafts.data||[]).map(d=>d.id);
-   if(!ids.length){setMsg('No draft scores to approve for this selection. Previously approved or published scores are unchanged.');return;}
-   const reviewed=await supabase.rpc('review_schoolpro_results',{p_results:ids,p_notes:null});
+   let reviewed;
+   if(scope==='class'){
+    if(!classId)throw Error('Select a class first.');
+    reviewed=await supabase.rpc('review_schoolpro_class_results',{p_school:ctx.schoolId,p_class:classId,p_term:term,p_session:session,p_notes:null});
+   }else{
+    let query=supabase.from('schoolpro_results').select('id,student_id').eq('school_id',ctx.schoolId).eq('term',term).eq('session',session).eq('status','draft').eq('locked',false);
+    if(scope==='selected'){if(!selected.length)throw Error('Generate this class broadsheet and select students first.');query=query.in('student_id',selected);}
+    const drafts=await fetchSchoolRows(query.order("id"));if(drafts.error)throw Error('Saved scores could not be loaded.');
+    const ids=(drafts.data||[]).map(d=>d.id);
+    if(!ids.length){setMsg('No draft scores to approve for this selection. Previously approved or published scores are unchanged.');return;}
+    reviewed=await supabase.rpc('review_schoolpro_results',{p_results:ids,p_notes:null});
+   }
    if(reviewed.error)throw Error(reviewed.error.message||'The selected scores could not be approved.');
    const approved=Number(reviewed.data)||0;
     setMsg(`${approved} score records approved atomically. You can now publish this selection.`);

@@ -5,6 +5,9 @@ const broadsheet=readFileSync('supabase/migrations/20261012124900_schoolpro_full
 const report=readFileSync('supabase/migrations/20261011231101_schoolpro_rank_and_report_using_historical_session_class.sql','utf8');
 assert.ok(migration.includes('rank() over(order by total desc)'));
 assert.ok(!migration.includes('rank() over(order by average desc)'));
+assert.ok(migration.includes('coalesce(e.class_id,s.class_id)=p_class'));
+assert.ok(migration.includes("s.status='active' and not exists("));
+assert.ok(migration.includes('h.school_id=s.school_id and h.student_id=s.id'));
 assert.ok(broadsheet.includes('rank() over(order by x.total desc)'));
 assert.ok(report.includes('rank() over(order by total desc)'));
-console.log('PASS: staff review, broadsheet and published report ranking all use total-score ordering.');
+console.log('PASS: review, broadsheet and report ranking use total-score ordering and consistent historical-session roster fallback.');

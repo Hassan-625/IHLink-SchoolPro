@@ -2664,3 +2664,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Incremental assessment entry is intentionally supported: teachers may save one component at a time and previously saved components are merged rather than overwritten. A missing component is therefore not equivalent to a recorded score of zero.
 - Updated the staff saved-score breakdown and printable report card to display an em dash for a missing component; an actual numeric zero continues to display as `0`. This avoids presenting an incomplete draft as if the learner received zero marks for an unentered component.
 - Extended the existing result-import regression to assert both staff and report-card rendering. No score data or production records were changed.
+
+
+### Stage C assessment completeness approval and publication boundary
+
+- Read-only production inspection found that the result total trigger intentionally treats an unentered component as zero so teachers can save assessment components incrementally. That behavior is retained for Draft entry.
+- The existing `review_schoolpro_result` RPC did not verify that every configured component had a valid score before changing a Draft to Approved. The three publication RPCs trusted the Approved status without rechecking component completeness.
+- Added proposed migration `20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql`. Its private validation helper requires a valid same-school assessment scheme, a non-empty component list with unique keys, a numeric in-range score for every component, no unknown score keys, and a stored total equal to the component sum. Malformed data fails closed.
+- Approval now rejects incomplete assessments with a clear error while rejection remains available. Class, selected-student and whole-period publication each revalidate all in-scope Approved rows and abort the transaction if any assessment is incomplete; they do not silently publish only a subset.
+- Existing module entitlement, reviewer role, school/class/student scope, audit writes, publication timestamps and locked-result transitions are retained. The helper is private and direct client execution is revoked.
+- Added `scripts/test-schoolpro-assessment-completeness-release-boundary.mjs`, registered it in `package.json` and the standard CI workflow.
+- Production Supabase was inspected read-only only; the result table currently contains zero rows. The proposed migration has not been applied. No production rows, workspaces, Auth users, financial records or Storage objects were changed. PR #133 remains unmerged and undeployed pending validation.

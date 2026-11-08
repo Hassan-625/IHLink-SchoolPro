@@ -423,12 +423,12 @@ begin
    raise exception 'Corrected class results must be resubmitted by the Form Master';
  end if;
  perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
-   raise exception 'Corrected results must pass section approval again';
+ if public.schoolpro_approve_class_results(school,primary_class,'First Term','2026/2027')<>2 then
+   raise exception 'Class-scoped correction must pass Section Head class approval again';
  end if;
  perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
- if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','school',null,null)<>2 then
-   raise exception 'Corrected results must pass final Exam Officer approval again';
+ if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','class',primary_class,null)<>2 then
+   raise exception 'Corrected class must pass final Exam Officer approval again';
  end if;
  if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
    raise exception 'Corrected results must be republished by the Exam Officer';

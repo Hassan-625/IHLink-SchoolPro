@@ -407,6 +407,34 @@ before insert or update of school_id,student_id,subject_id,term,session,ca_score
 on public.schoolpro_results for each row
 execute function private.schoolpro_enforce_subject_teacher_result_write();
 
+-- Preserve assignment history during role downgrade: only a still-active
+-- allocation must point to an eligible teacher/class teacher.
+create or replace function private.validate_subject_assignment()
+returns trigger language plpgsql security definer set search_path=''
+as $
+declare class_school uuid;subject_school uuid;member_school uuid;member_role public.school_member_role;
+begin
+  select school_id into class_school from public.schoolpro_classes where id=new.class_id;
+  select school_id into subject_school from public.schoolpro_subjects where id=new.subject_id;
+  if class_school is null or subject_school is null
+     or class_school<>new.school_id or subject_school<>new.school_id then
+    raise exception 'Class and subject must belong to the selected school';
+  end if;
+  if new.teacher_member_id is not null then
+    select school_id,role into member_school,member_role
+    from public.schoolpro_members where id=new.teacher_member_id;
+    if member_school is null or member_school<>new.school_id then
+      raise exception 'Assigned teacher must belong to the selected school';
+    end if;
+    if new.ended_at is null and member_role not in ('teacher','class_teacher') then
+      raise exception 'An active subject allocation requires an eligible teaching member';
+    end if;
+  end if;
+  return new;
+end
+$;
+revoke all on function private.validate_subject_assignment() from public,anon,authenticated;
+
 -- End active subject allocations when a member loses their teaching role.
 -- This retains allocation history while preventing stale assignments from blocking
 -- a Form Master's completeness check or authorizing score entry.

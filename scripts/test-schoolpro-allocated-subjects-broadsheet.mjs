@@ -10,7 +10,10 @@ assert.match(migration,/rank\(\) over\(order by published_total desc\) published
 assert.match(migration,/group by su\.id,su\.name,su\.code,ss\.assigned/);
 assert.match(page,/s\.assigned\s*\?\s*'Allocated'\s*:\s*'Recorded only'/);
 assert.match(page,/missing marks are not counted as zero/);
-assert.match(page,/Number\(r\.published_average\)/);\nassert.match(page,/publishedScoreCount=scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_subjects\),0\)/);\nassert.match(page,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_total\),0\)\/publishedScoreCount/);\nassert.doesNotMatch(page,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_average\),0\)\/scored\.length/);
+assert.match(page,/Number\(r\.published_average\)/);
+assert.match(page,/publishedScoreCount=scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_subjects\),0\)/);
+assert.match(page,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_total\),0\)\/publishedScoreCount/);
+assert.doesNotMatch(page,/scored\.reduce\(\(sum,r\)=>sum\+Number\(r\.published_average\),0\)\/scored\.length/);
 assert.match(page,/r\.published_position/);
 assert.match(page,/r\.published_scores\?\.\[s\.id\]/);
 console.log('SchoolPro allocated-subject broadsheet regression passed.');

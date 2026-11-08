@@ -2587,3 +2587,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Existing role and workflow code includes teacher class/subject allocation scoping, a controlled `review_schoolpro_result` RPC, class/selected/school publication RPCs, and result correction audit/history UI. These capabilities must be tested against the current production schema and authorization contracts before adding duplicate workflow logic.
 - Stage C work order: (1) reconcile all score-entry/calculation and import paths against database constraints and assigned teaching scope; (2) verify review/approval and class/session/term publication transitions, immutable locking and correction/republication audit; (3) verify class-subject averages and student totals/positions are calculated consistently and displayed once; (4) verify student/guardian result visibility and public verification only expose released results; (5) close gaps with targeted disposable PostgreSQL/source-contract regressions and update this handover.
 - Safety boundary remains unchanged: Supabase only; Render hosting; preserve the two retained verification workspaces and all existing tenant, financial, audit, Auth and Storage records. Do not make production writes or apply migrations without explicit approval. Do not create synthetic workspaces or test accounts. Do not merge or deploy without explicit approval.
+
+### Stage C — first implementation increment: assessment Excel import validation (2026-11-08)
+
+- Hardened the SchoolPro Results Excel import preview in `src/pages/schoolpro/SchoolProResults.tsx`.
+- Import now requires the identity/scheme columns, rejects duplicate headings, requires a column for every configured assessment component, and rejects blank/non-numeric/out-of-range component marks instead of silently converting blanks to zero.
+- Import preview rejects duplicate student-subject rows and checks the selected session's class-subject allocation where allocations exist. Existing teacher subject/class assignment checks remain in force.
+- Kept the existing controlled `import_schoolpro_results` RPC and Draft-only import workflow; no direct client insert path was introduced.
+- Added `scripts/test-schoolpro-result-import-validation.mjs` and registered `npm run test:schoolpro-result-import-validation`.
+- Existing incremental entry behavior is unchanged: entered components merge with previously saved components; empty submissions and edits to approved/published/locked results remain blocked.
+- No SQL migration is included in this increment. No production database, school records, tenant data, Auth, financial, audit or Storage data were changed.
+- Validation status: source and regression assertions have been added; automated CI/typecheck/build execution is pending the draft PR workflow. This increment is not merged or deployed.

@@ -15,7 +15,7 @@ begin
   left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
   where s.school_id=p_school and coalesce(e.class_id,s.class_id)=p_class
     and (e.has_history is true or (s.status='active' and not exists(
-      select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id
+      select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session)
     )))
  ), marks as (
   select r.* from public.schoolpro_results r join roster s on s.id=r.student_id

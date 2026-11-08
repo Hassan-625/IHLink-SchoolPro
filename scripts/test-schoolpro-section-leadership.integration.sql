@@ -130,10 +130,7 @@ begin
    update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
    raise exception 'ASSERT: Head Teacher must not publish before Exam Officer final approval';
  exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
- begin
-   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
-   raise exception 'ASSERT: Head Teacher must not publish before Exam Officer final approval';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ 
  if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002')<>'approved'
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002') then
    raise exception 'Head Teacher publication attempt must leave section-approved results unchanged';
@@ -202,10 +199,7 @@ begin
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
    raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
  end if;
- begin
-   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
-   raise exception 'ASSERT: Vice Principal must not publish before Exam Officer final approval';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ 
  if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
    raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
@@ -235,10 +229,7 @@ begin
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
    raise exception 'Principal publication attempt must leave section-approved results unchanged';
  end if;
- begin
-   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';
-   raise exception 'ASSERT: Principal must not publish before Exam Officer final approval';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ 
  if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved'
     or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
    raise exception 'Principal publication attempt must leave section-approved results unchanged';
@@ -319,6 +310,14 @@ begin
    if sqlerrm like 'ASSERT:%' then raise; end if;
    if position('Only the active subject teacher assigned' in sqlerrm)=0 then raise; end if;
  end;
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ begin
+   update public.schoolpro_results set locked=true where id='bbbbbbbb-0000-4000-8000-000000000012';
+   raise exception 'ASSERT: Subject teacher changed the result lock directly';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('Only unlocked Draft scores' in sqlerrm)=0 then raise; end if;
+ end;
  if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
    raise exception 'Form Master must submit only after the complete class subject matrix exists';
  end if;
@@ -331,6 +330,23 @@ begin
  if (select count(*) from public.schoolpro_result_workflow
    where school_id=school and session='2026/2027' and status='section_approved')<>2 then
    raise exception 'Section approval must advance both subject result rows';
+ end if;
+
+ -- A Section Head can return an approved class to the Form Master and subject teachers.
+ if public.schoolpro_return_class_results_for_correction(school,primary_class,'First Term','2026/2027',
+   'Correct the assessment values before final Exam Officer approval.')<>2 then
+   raise exception 'Section Head must return all class results for correction';
+ end if;
+ if exists(select 1 from public.schoolpro_results where school_id=school and session='2026/2027' and status<>'draft') then
+   raise exception 'Section return must restore the affected class scores to Draft';
+ end if;
+ perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
+ if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
+   raise exception 'Form Master must resubmit the corrected class register';
+ end if;
+ perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
+ if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
+   raise exception 'Section Head must approve the corrected class again';
  end if;
 
  -- A staff member can hold Exam Officer authority in addition to a teaching role.

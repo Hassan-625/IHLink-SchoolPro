@@ -2816,3 +2816,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Active-student fallback now checks for missing history in the selected session, rather than incorrectly excluding learners merely because they have history from a different academic session.
 - Extended the allocated-subject broadsheet regression to assert deduplication, session-scoped fallback and historical-class precedence.
 - Proposed in Stage C PR #133 only; no production database migration, merge or Render deployment.
+
+
+### Stage C family ranking release guard
+
+- Updated `schoolpro_result_class_rank` so a student or active guardian can receive a class position only when that learner has at least one result for the requested term/session that is both published and locked.
+- The existing result-output authorization helper remains mandatory, preserving attendance and finance release restrictions and configured overrides.
+- Staff ranking access remains governed by the existing class/subject assignment and school-role checks.
+- Added required nonblank term/session validation and a regression asserting both the release requirement and the existing release-policy helper.
+- Implemented as proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` in Stage C PR #133; not applied to production.

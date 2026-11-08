@@ -29,6 +29,7 @@ create function private.schoolpro_module_allowed(uuid,text) returns boolean lang
 create function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $$select true$$;
 
 \ir ../supabase/migrations/20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql
+\ir ../supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql
 
 insert into public.schoolpro_assessment_schemes(id,school_id,components) values
  ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001',
@@ -80,6 +81,43 @@ begin
  end;
 end
 $test$;
+-- Bulk approval must be all-or-nothing when one selected Draft is incomplete.
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score)
+values
+ ('60000000-0000-0000-0000-000000000005','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000005','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,60),
+ ('60000000-0000-0000-0000-000000000006','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000006','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10}'::jsonb,10);
+do $test$
+begin
+ begin
+  perform public.review_schoolpro_results(array[
+   '60000000-0000-0000-0000-000000000005'::uuid,'60000000-0000-0000-0000-000000000006'::uuid
+  ],'batch test');
+  raise exception 'Expected atomic bulk approval to reject incomplete batch';
+ exception when others then
+  if sqlerrm not like 'At least one selected assessment is incomplete%' then raise;end if;
+ end;
+ if exists(select 1 from public.schoolpro_results where id in(
+  '60000000-0000-0000-0000-000000000005','60000000-0000-0000-0000-000000000006') and status<>'draft') then
+  raise exception 'Bulk approval partially changed a rejected batch';
+ end if;
+end
+$test$;
+update public.schoolpro_results set assessment_scores='{"ca":10,"exam":50}'::jsonb,total_score=60
+where id='60000000-0000-0000-0000-000000000006';
+select public.review_schoolpro_results(array[
+ '60000000-0000-0000-0000-000000000005'::uuid,'60000000-0000-0000-0000-000000000006'::uuid
+],'batch test');
+do $assert$
+begin
+ if (select count(*) from public.schoolpro_results where id in(
+  '60000000-0000-0000-0000-000000000005','60000000-0000-0000-0000-000000000006') and status='approved')<>2 then
+  raise exception 'Complete bulk approval did not approve the entire batch';
+ end if;
+end
+$assert$;
+
 update public.schoolpro_results set assessment_scores='{"ca":20,"exam":60}'::jsonb,total_score=80
 where id='60000000-0000-0000-0000-000000000001';
 select public.review_schoolpro_result('60000000-0000-0000-0000-000000000001','approved','checked');

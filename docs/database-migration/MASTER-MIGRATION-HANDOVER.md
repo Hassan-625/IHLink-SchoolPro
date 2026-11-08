@@ -2806,3 +2806,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a required nonblank term and session check to class-scoped publication, matching the guards already applied to class approval and selected/whole-period publication.
 - Extended the selected-publication source regression for the size and duplicate-ID limits and the class-publication regression for required term/session values.
 - These are proposed changes in the unmerged Stage C PR; no production migration, merge or Render deployment.
+
+
+### Stage C historical-session roster consistency
+
+- Fixed the class roster joins used by staff review sheets, published class ranks/broadsheets, and subject statistics.
+- Historical enrollment is now joined through a single-row lateral lookup to prevent duplicate enrollment-history records from multiplying learner rows, marks, averages or ranks.
+- When a selected-session enrollment exists, its class remains authoritative (including a null class value); current class is only a fallback when no enrollment-history row exists for that selected session.
+- Active-student fallback now checks for missing history in the selected session, rather than incorrectly excluding learners merely because they have history from a different academic session.
+- Extended the allocated-subject broadsheet regression to assert deduplication, session-scoped fallback and historical-class precedence.
+- Proposed in Stage C PR #133 only; no production database migration, merge or Render deployment.

@@ -340,7 +340,7 @@ $$;
 -- Keep the workflow state aligned with the four-step approval chain.
 create or replace function private.sync_schoolpro_result_workflow()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   if new.status='approved' and old.status is distinct from 'approved' then
     update public.schoolpro_result_workflow set status='approved',
@@ -357,7 +357,7 @@ begin
   end if;
   return new;
 end
-$;
+$$;
 revoke all on function private.sync_schoolpro_result_workflow() from public,anon,authenticated;
 
 create or replace function private.schoolpro_prune_section_leadership_role()

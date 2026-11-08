@@ -216,6 +216,7 @@ with leaders as materialized (
       or (private.schoolpro_module_allowed(s.id,'students') and public.schoolpro_member_can_manage(s.id))
       or private.schoolpro_can_issue_transcript(s.id)
       or private.schoolpro_is_school_admin(s.id)
+      or private.schoolpro_is_exam_officer(s.id)
     )
 ), readable as (
   select e.school_id::text||'|'||e.student_id::text||'|'||e.session key
@@ -263,6 +264,7 @@ as $
    and (
      private.is_admin(array['super_admin'::public.user_role])
      or private.schoolpro_is_school_admin(s.school_id)
+     or private.schoolpro_is_exam_officer(s.school_id)
      or s.user_id=auth.uid()
      or exists(select 1 from public.schoolpro_guardian_links g
        where g.school_id=s.school_id and g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')

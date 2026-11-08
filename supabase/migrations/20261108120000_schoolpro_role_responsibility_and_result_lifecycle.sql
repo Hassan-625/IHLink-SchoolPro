@@ -1184,7 +1184,8 @@ alter table public.schoolpro_result_correction_batch_items enable row level secu
 revoke all on public.schoolpro_result_correction_batches,public.schoolpro_result_correction_batch_items from public,anon,authenticated;
 create policy schoolpro_result_correction_batches_exam_officer_read
 on public.schoolpro_result_correction_batches for select to authenticated
-using (private.schoolpro_is_exam_officer(school_id) or private.schoolpro_is_school_admin(school_id));
+using (private.schoolpro_is_exam_officer(school_id) or private.schoolpro_is_school_admin(school_id)
+  or private.is_admin(array['super_admin']::public.user_role[]));
 create policy schoolpro_result_correction_batch_items_exam_officer_read
 on public.schoolpro_result_correction_batch_items for select to authenticated
 using (exists(select 1 from public.schoolpro_result_correction_batches b

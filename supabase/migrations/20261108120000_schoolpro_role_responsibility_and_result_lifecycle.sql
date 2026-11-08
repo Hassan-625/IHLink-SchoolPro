@@ -1197,7 +1197,7 @@ select exists(select 1 from expected)
       and (p_scope='school' or (p_scope='class' and w.class_id=p_class)
         or (p_scope='section' and c.level=p_section))
       and (p_stage='section' and w.status not in ('submitted','section_approved')
-        or p_stage='exam' and w.status not in ('section_approved','exam_approved'))
+        or p_stage='exam' and w.status not in ('section_approved','exam_approved','published'))
   )
 $$;
 revoke all on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) from public,anon;

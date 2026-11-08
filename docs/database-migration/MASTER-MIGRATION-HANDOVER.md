@@ -2706,3 +2706,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration remains unapplied to production. No production data or workspace was changed.
 
 - CI follow-up: the earlier validate job reached the Stage C completeness source-contract test and failed only because the test expected a literal `p_status='rejected'` expression, while the implementation validates allowed values with `p_status not in('approved','rejected')`. Updated the assertion to match the actual guard; this is a test-contract correction, not a runtime SQL failure. The corrected head has not yet been rerun by GitHub Actions.
+
+
+### Stage C printable class-average denominator alignment
+
+- Fixed the full-class printable workflow to calculate the class average as total published-and-locked score points divided by the number of published-and-locked subject result rows. It no longer averages each learner's average with equal weight when learners have different numbers of published subjects.
+- Applied the same weighted denominator to the Excel workbook fallback calculation. Normal workbook output continues to use the class average returned by the published broadsheet; the fallback now uses the same score-row population.
+- Individual report-card averages remain the mean of that learner's published printable subject rows. This now reconciles with the class average as the mean across all eligible published score rows, not the mean of individual averages.
+- Added `scripts/test-schoolpro-printable-class-average-consistency.mjs`, registered it in `package.json` and the normal CI workflow.
+- No production migration or data change was required for this frontend/workbook correction.

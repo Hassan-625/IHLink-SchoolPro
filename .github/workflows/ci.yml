@@ -43,6 +43,7 @@ jobs:
           node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs
           node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs
           node scripts/test-schoolpro-printable-class-average-consistency.mjs
+          node scripts/test-schoolpro-report-card-assessment-schemes.mjs
           node scripts/test-schoolpro-correction-review-atomicity.mjs
           node scripts/test-schoolpro-assessment-scheme-immutability.mjs
           node scripts/test-schoolpro-pin-release-lock.mjs

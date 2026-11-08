@@ -51,6 +51,7 @@ assert.match(broadsheet,/Submit class results to section head/i);
 assert.match(workflowMigration,/Only the assigned Form Master can submit this class result register/i);
 assert.match(workflowMigration,/must submit this result to the section head before approval/i);
 assert.match(workflowMigration,/must approve this result before publication/i);
+assert.match(workflowMigration,/class roster changed after submission; the Form Master must resubmit/i);
 assert.match(workflowMigration,/private\.schoolpro_result_assessment_complete\(r\.id\)/i);
 assert.match(workflowMigration,/schoolpro_result_workflow/i);
 assert.match(workflowMigration,/new\.total_score is distinct from old\.total_score/i);

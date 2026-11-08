@@ -1274,11 +1274,13 @@ begin
      or nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Choose a valid section, term and session';
   end if;
-  if not exists(select 1 from public.schoolpro_members m
-    join public.schoolpro_section_leaders sl on sl.school_id=m.school_id
-      and sl.member_id=m.id and sl.ended_at is null and sl.section=p_section
-    where m.school_id=p_school and m.user_id=auth.uid() and m.status='active') then
-    raise exception 'Only the appointed section head can approve this section';
+  -- Use the same role- and precedence-aware authority predicate as
+  -- class/student review. A Principal appointment suppresses VP authority
+  -- for that section even when the VP appointment remains active.
+  if not exists(select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.level=p_section
+      and private.schoolpro_member_leads_class(p_school,c.id)) then
+    raise exception 'Only the eligible appointed section head can approve this section; an appointed Principal takes precedence over a Vice Principal';
   end if;
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'section',null,p_section,'section') then
     raise exception 'Every allocated subject result for every student in the section must be complete and submitted by its Form Master';
@@ -1327,13 +1329,10 @@ begin
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Choose an academic term and session';
   end if;
-  if not exists(select 1 from public.schoolpro_classes c
-    join public.schoolpro_section_leaders sl on sl.school_id=c.school_id
-      and sl.section=c.level and sl.ended_at is null
-    join public.schoolpro_members m on m.id=sl.member_id and m.school_id=sl.school_id
-      and m.user_id=auth.uid() and m.status='active'
-    where c.school_id=p_school and c.id=p_class) then
-    raise exception 'Only the appointed Section Head can approve this class result';
+  -- Keep the class approval RPC aligned with the same role and
+  -- Principal-precedence predicate enforced by the result trigger.
+  if not private.schoolpro_member_leads_class(p_school,p_class) then
+    raise exception 'Only the eligible appointed Section Head can approve this class result; an appointed Principal takes precedence over a Vice Principal';
   end if;
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'class',p_class,null,'section') then
     raise exception 'Every allocated subject result in this class must be complete and submitted by its Form Master';

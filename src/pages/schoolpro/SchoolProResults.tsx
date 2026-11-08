@@ -49,7 +49,57 @@ export function SchoolProResults(){
  async function saveScheme(e:FormEvent){e.preventDefault();if(!supabase||!schoolId)return;if(componentTotal!==100){setError(`Assessment weights currently total ${componentTotal}%. They must total 100%.`);return;}const components=schemeComponents.map((c,i)=>({...c,key:c.key||safeKey(c.label,i),maxScore:Number(c.maxScore)}));const payload={school_id:schoolId,name:schemeName,school_level:schemeLevel,components,is_default:editingSchemeId?Boolean(schemes.find(s=>s.id===editingSchemeId)?.is_default):schemes.length===0};const query=editingSchemeId?supabase.from("schoolpro_assessment_schemes").update(payload).eq("id",editingSchemeId):supabase.from("schoolpro_assessment_schemes").insert(payload);const {error}=await query;if(error)setError(customerMessage(error.message));else{setMessage(editingSchemeId?"Assessment scheme updated.":"Custom assessment scheme created.");setEditingSchemeId("");setSchemeName("Custom Assessment");setSchemeComponents(starter.map(c=>({...c})));await load(true);}}
  async function makeDefaultScheme(id:string){if(!supabase||!schoolId)return;const off=await supabase.from("schoolpro_assessment_schemes").update({is_default:false,updated_at:new Date().toISOString()}).eq("school_id",schoolId);if(off.error)return setError(customerMessage(off.error.message));const on=await supabase.from("schoolpro_assessment_schemes").update({is_default:true,updated_at:new Date().toISOString()}).eq("id",id).eq("school_id",schoolId);if(on.error)setError(customerMessage(on.error.message));else{setMessage("Default assessment scheme updated.");await load(true);}}
  async function downloadImportTemplate(){const wb=new ExcelJS.Workbook(),ws=wb.addWorksheet("Scores");const comps=(activeScheme||schemes[0])?.components||starter;ws.addRow(["Admission Number","Subject Code","Assessment Scheme ID",...comps.map(x=>x.key)]);ws.addRow(["e.g. STD001","e.g. MATH",(activeScheme||schemes[0])?.id||"",...comps.map(()=>"")]);ws.columns.forEach((x:any)=>x.width=22);const buf=await wb.xlsx.writeBuffer();try{await saveSchoolFile(new Blob([buf],{type:XLSX_MIME}),schoolFileName([ctx.schoolName,'Score Import'],'xlsx'));}catch{setError('The workbook could not be saved. Please try again.');}}
- async function parseImport(file:File){setError(null);setImportRows([]);setImportFile(file.name);if(!file.name.toLowerCase().endsWith(".xlsx"))return setError("Choose an .xlsx Excel file.");try{const wb=new ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());const ws=wb.worksheets[0];if(!ws)return setError("Workbook has no worksheet.");const headers=(ws.getRow(1).values as any[]).slice(1).map(v=>String(v||"").trim());const rows:any[]=[];ws.eachRow((row:any,n:number)=>{if(n===1)return;const vals=(row.values as any[]).slice(1);const admission_number=String(vals[0]||"").trim(),subject_code=String(vals[1]||"").trim(),assessment_scheme_id=String(vals[2]||"").trim();if(!admission_number&&!subject_code)return;const scheme=schemes.find(s=>s.id===assessment_scheme_id);const assessment_scores:Record<string,number>={};headers.slice(3).forEach((h,i)=>{if(h)assessment_scores[h]=Number(vals[i+3]||0)});const errs:string[]=[];const st=students.find(s=>s.admission_number===admission_number),sub=subjects.find(s=>s.code.toUpperCase()===subject_code.toUpperCase());if(!st)errs.push("Unknown student");if(!sub)errs.push("Unknown subject");if(!scheme)errs.push("Invalid scheme");if(teacherScoped&&st&&sub&&!coordinatorClassIds.includes(st.class_id||"")&&!teachingTargets.some(t=>t.session===scoreForm.session&&t.class_id===st.class_id&&t.subject_id===sub.id))errs.push("Not assigned to teacher");scheme?.components.forEach(x=>{const v=assessment_scores[x.key]??0;if(!Number.isFinite(v)||v<0||v>x.maxScore)errs.push(x.label+" must be 0–"+x.maxScore)});rows.push({row:n,admission_number,subject_code,assessment_scheme_id,assessment_scores,errors:errs});});if(rows.length>500)return setError("Maximum 500 result rows per import.");setImportRows(rows);}catch(e){setError(customerMessage(e instanceof Error?e.message:"Unable to read workbook."));}}
+ async function parseImport(file:File){
+  setError(null);setImportRows([]);setImportFile(file.name);
+  if(!file.name.toLowerCase().endsWith(".xlsx"))return setError("Choose an .xlsx Excel file.");
+  try{
+   const wb=new ExcelJS.Workbook();await wb.xlsx.load(await file.arrayBuffer());const ws=wb.worksheets[0];
+   if(!ws)return setError("Workbook has no worksheet.");
+   const headers=(ws.getRow(1).values as any[]).slice(1).map(v=>String(v??"").trim());
+   const normalized=headers.map(h=>h.toLowerCase());
+   const required=["admission number","subject code","assessment scheme id"];
+   const missing=required.filter(h=>!normalized.includes(h));
+   if(missing.length)return setError("Missing required columns: "+missing.join(", ")+". Download the latest template and keep its heading names.");
+   if(new Set(normalized.filter(Boolean)).size!==normalized.filter(Boolean).length)return setError("The workbook contains duplicate column headings. Each assessment component must have its own column.");
+   const admissionCol=normalized.indexOf("admission number"),subjectCol=normalized.indexOf("subject code"),schemeCol=normalized.indexOf("assessment scheme id");
+   const rows:any[]=[],seen=new Set<string>();
+   ws.eachRow((row:any,n:number)=>{
+    if(n===1)return;
+    const vals=(row.values as any[]).slice(1);
+    const admission_number=String(vals[admissionCol]??"").trim(),subject_code=String(vals[subjectCol]??"").trim(),assessment_scheme_id=String(vals[schemeCol]??"").trim();
+    if(!admission_number&&!subject_code&&!assessment_scheme_id&&vals.every(v=>v===null||v===undefined||String(v).trim()===""))return;
+    const errs:string[]=[];
+    const st=students.find(s=>s.admission_number===admission_number),sub=subjects.find(s=>s.code.toUpperCase()===subject_code.toUpperCase()),scheme=schemes.find(s=>s.id===assessment_scheme_id);
+    if(!admission_number)errs.push("Admission number is required");
+    if(!subject_code)errs.push("Subject code is required");
+    if(!assessment_scheme_id)errs.push("Assessment scheme ID is required");
+    if(!st)errs.push("Unknown student");
+    if(st&&st.status&&st.status!=="active")errs.push("Student is not active in the selected roster");
+    if(!sub)errs.push("Unknown subject");
+    if(st&&sub&&sub.class_name&&st.class_name&&sub.class_name.trim().toLowerCase()!==st.class_name.trim().toLowerCase())errs.push("Subject does not belong to the student's class");
+    if(!scheme)errs.push("Invalid assessment scheme");
+    const duplicateKey=st&&sub?st.id+":"+sub.id:"";
+    if(duplicateKey&&seen.has(duplicateKey))errs.push("Duplicate student and subject row in this workbook");
+    if(duplicateKey)seen.add(duplicateKey);
+    if(teacherScoped&&st&&sub&&!coordinatorClassIds.includes(st.class_id||"")&&!teachingTargets.some(t=>t.session===scoreForm.session&&t.class_id===st.class_id&&t.subject_id===sub.id))errs.push("Not assigned to teacher");
+    const assessment_scores:Record<string,number>={};
+    if(scheme){
+     for(const component of scheme.components){
+      const col=normalized.indexOf(component.key.toLowerCase());
+      if(col<0){errs.push("Missing component column: "+component.key);continue;}
+      const raw=vals[col],value=raw===null||raw===undefined||String(raw).trim()===""?NaN:Number(raw);
+      if(!Number.isFinite(value))errs.push(component.label+" score is required and must be numeric");
+      else if(value<0||value>component.maxScore)errs.push(component.label+" must be 0–"+component.maxScore);
+      else assessment_scores[component.key]=value;
+     }
+    }
+    rows.push({row:n,admission_number,subject_code,assessment_scheme_id,assessment_scores,errors:errs});
+   });
+   if(rows.length>500)return setError("Maximum 500 result rows per import.");
+   if(!rows.length)return setError("The workbook contains no result rows.");
+   setImportRows(rows);
+  }catch(e){setError(customerMessage(e instanceof Error?e.message:"Unable to read workbook."));}
+ }
  async function submitImport(){if(!supabase||!schoolId||!importRows.length)return;const bad=importRows.filter(x=>x.errors.length);if(bad.length)return setError("Fix all preview errors before importing.");const r=await supabase.rpc("import_schoolpro_results",{p_school:schoolId,p_term:scoreForm.term,p_session:scoreForm.session,p_rows:importRows.map(({errors,row,...x})=>x)});if(r.error)setError(customerMessage(r.error.message));else{setMessage(String((r.data as any)?.imported||importRows.length)+" result rows imported as Draft.");setImportRows([]);setImportFile("");await load(true);}}
  async function saveScore(e:FormEvent){e.preventDefault();if(!supabase||!schoolId||!activeScheme)return;setError(null);const existing=results.find(r=>r.student_id===scoreForm.studentId&&r.subject_id===scoreForm.subjectId&&r.term===scoreForm.term&&r.session===scoreForm.session);if(existing&&(existing.status!=="draft"||existing.locked)){setError("This result is approved, published or locked. An authorized examination officer must reopen it for correction before scores can be changed.");return;}if(existing?.assessment_scheme_id&&existing.assessment_scheme_id!==activeScheme.id){setError("This result uses a different assessment scheme. Keep the original scheme when entering additional assessment parts.");return;}const entered=Object.fromEntries(activeScheme.components.filter(c=>scoreForm.scores[c.key]!==undefined&&scoreForm.scores[c.key].trim()!=="").map(c=>[c.key,Number(scoreForm.scores[c.key])]));if(!Object.keys(entered).length){setError("Enter at least one assessment component before saving.");return;}for(const component of activeScheme.components){if(entered[component.key]!==undefined&&(!Number.isFinite(entered[component.key])||entered[component.key]<0||entered[component.key]>component.maxScore)){setError(component.label+" must be between 0 and "+component.maxScore+".");return;}}const assessment_scores={...(existing?.assessment_scores||{}),...entered};const payload={school_id:schoolId,student_id:scoreForm.studentId,subject_id:scoreForm.subjectId,term:scoreForm.term,session:scoreForm.session,assessment_scheme_id:activeScheme.id,assessment_scores,updated_at:new Date().toISOString()};const {error}=await supabase.from("schoolpro_results").upsert(payload,{onConflict:"student_id,subject_id,term,session"});if(error)setError(customerMessage(error.message));else{setMessage(Object.keys(entered).length===1?"Assessment component saved. Other saved components were retained; continue with the next part when ready.":"Assessment components saved. Previously saved components were retained.");setEditingRegisterStudent("");setScoreForm(current=>({...current,scores:{}}));await load(true);}}
  useEffect(()=>{let current=true;setDomainRatings({});if(supabase&&ratingStudent&&schoolId)void supabase.from("schoolpro_result_domain_ratings").select("definition_id,rating,rating_label").eq("school_id",schoolId).eq("student_id",ratingStudent).eq("term",scoreForm.term).eq("session",scoreForm.session).then(r=>{if(!current)return;if(r.error)setError(customerMessage(r.error.message));else setDomainRatings(Object.fromEntries((r.data||[]).map((x:any)=>[x.definition_id,x.rating_label||String(x.rating)])))});return()=>{current=false}},[ratingStudent,schoolId,scoreForm.term,scoreForm.session]);

@@ -2914,3 +2914,7 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Both RPCs now call `private.schoolpro_member_leads_class`, the shared authorization predicate that validates the member's active role, section appointment, school/class scope and Principal-over-Vice-Principal precedence. Section-wide approval requires at least one class in the selected section for which the caller passes that same predicate.
 - Added source-contract assertions so the two approval entry points cannot silently drift from the shared authority rule.
 - This is a proposed SQL/source change in PR #133. No production migration, production data write, merge or Render deployment has occurred. The source-contract regression and disposable PostgreSQL integration still need to run against the latest PR head.
+
+
+- Expanded the disposable PostgreSQL lifecycle fixture so the same Junior Secondary section has both an active Vice Principal and an active Principal appointment. It now proves that the Vice Principal's section approval is rejected once the Principal is appointed, while the Principal can approve the submitted section. The existing Senior Secondary Principal approval case remains.
+- Updated the section-leadership source-contract regression to require this explicit precedence scenario.

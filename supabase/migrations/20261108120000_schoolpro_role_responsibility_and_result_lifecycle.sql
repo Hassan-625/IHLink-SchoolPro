@@ -148,6 +148,22 @@ as $$
       order by eh.created_at desc limit 1
     ),st.class_id) and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+      and (
+        (sl.section in ('nursery','primary') and m.role='head_teacher')
+        or (sl.section in ('junior_secondary','senior_secondary') and (
+          (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+          or (m.role='vice_principal' and not exists(
+            select 1 from public.schoolpro_section_leaders principal_sl
+            join public.schoolpro_members principal_m
+              on principal_m.id=principal_sl.member_id
+             and principal_m.school_id=principal_sl.school_id
+            where principal_sl.school_id=p_school
+              and principal_sl.section=sl.section and principal_sl.ended_at is null
+              and principal_m.status='active' and principal_m.role='administrator'
+              and lower(coalesce(principal_m.position_title,''))='principal'
+          ))
+        ))
+      )
   )
 $$;
 revoke all on function private.schoolpro_member_leads_student_section(uuid,uuid,text) from public,anon;
@@ -162,6 +178,22 @@ as $$
       on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
     join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+      and (
+        (sl.section in ('nursery','primary') and m.role='head_teacher')
+        or (sl.section in ('junior_secondary','senior_secondary') and (
+          (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
+          or (m.role='vice_principal' and not exists(
+            select 1 from public.schoolpro_section_leaders principal_sl
+            join public.schoolpro_members principal_m
+              on principal_m.id=principal_sl.member_id
+             and principal_m.school_id=principal_sl.school_id
+            where principal_sl.school_id=p_school
+              and principal_sl.section=sl.section and principal_sl.ended_at is null
+              and principal_m.status='active' and principal_m.role='administrator'
+              and lower(coalesce(principal_m.position_title,''))='principal'
+          ))
+        ))
+      )
   )
 $$;
 revoke all on function private.schoolpro_member_leads_class(uuid,uuid) from public,anon;

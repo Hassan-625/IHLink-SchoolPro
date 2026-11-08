@@ -121,9 +121,16 @@ begin
  end if;
  perform set_config('request.jwt.claim.sub',head_id::text,true);
  update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000002';
- update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'published' then
-   raise exception 'Appointed Head Teacher approval and publication workflow failed';
+ if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'approved' then
+   raise exception 'Appointed Head Teacher section approval workflow failed';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
+   raise exception 'ASSERT: Head Teacher must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002')<>'approved'
+    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002') then
+   raise exception 'Head Teacher publication attempt must leave section-approved results unchanged';
  end if;
  if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Head teacher must lead the explicitly assigned Nursery section';
@@ -179,9 +186,16 @@ begin
    raise exception 'Section leader must read enrollment history inside assigned section';
  end if;
  update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000001';
- update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000001')<>'published' then
-   raise exception 'Appointed Vice Principal approval and publication workflow failed';
+ if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved' then
+   raise exception 'Appointed Vice Principal section approval workflow failed';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000001';
+   raise exception 'ASSERT: Vice Principal must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
+    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
+   raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
  end if;
  perform set_config('request.jwt.claim.sub',principal_id::text,true);
  if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
@@ -198,9 +212,16 @@ begin
  end if;
  perform set_config('request.jwt.claim.sub',principal_id::text,true);
  update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000003';
- update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000003')<>'published' then
-   raise exception 'Appointed Principal approval and publication workflow failed';
+ if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved' then
+   raise exception 'Appointed Principal section approval workflow failed';
+ end if;
+ begin
+   update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000003';
+   raise exception 'ASSERT: Principal must not publish before Exam Officer final approval';
+ exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+ if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved'
+    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
+   raise exception 'Principal publication attempt must leave section-approved results unchanged';
  end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  begin

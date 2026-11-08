@@ -417,6 +417,8 @@ as $$
        where g.school_id=s.school_id and g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')
      or exists(select 1 from public.schoolpro_schools sc where sc.id=s.school_id and sc.owner_id=auth.uid())
      or private.schoolpro_member_leads_class(s.school_id,s.class_id)
+     or private.schoolpro_is_school_admin(s.school_id)
+     or private.schoolpro_is_exam_officer(s.school_id)
      or exists(select 1 from public.schoolpro_members m where m.school_id=s.school_id and m.user_id=auth.uid() and (
        m.role::text not in('teacher','class_teacher','parent','student','head_teacher','vice_principal')
        or (m.role in('teacher','class_teacher') and (
@@ -436,6 +438,7 @@ as $$
  select auth.uid() is not null and private.is_active_account() and exists(
    select 1 from public.schoolpro_classes c where c.id=p_class and (
      private.schoolpro_is_school_admin(c.school_id)
+     or private.schoolpro_is_exam_officer(c.school_id)
      or private.has_school_access(c.school_id,array['proprietor','administrator']::public.school_member_role[])
      or private.schoolpro_member_leads_class(c.school_id,c.id)
      or exists(select 1 from public.schoolpro_members m where m.school_id=c.school_id and m.user_id=auth.uid() and (
@@ -452,6 +455,30 @@ as $$
 $$;
 revoke all on function private.schoolpro_can_read_class(uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_class(uuid) to authenticated;
+
+-- Full broadsheet review is reserved for Form Masters, appointed Section Heads,
+-- Exam Officers, school administrators and Super Admins. Ordinary subject teachers
+-- can read/write their own subject through the subject-specific results path only.
+create or replace function private.schoolpro_can_review_class(p_school uuid,p_class uuid)
+returns boolean language sql stable security definer set search_path=''
+as $
+  select auth.uid() is not null and private.is_active_account()
+    and private.schoolpro_module_allowed(p_school,'results')
+    and exists(select 1 from public.schoolpro_classes c
+      where c.school_id=p_school and c.id=p_class)
+    and (
+      private.schoolpro_is_school_admin(p_school)
+      or private.schoolpro_is_exam_officer(p_school)
+      or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
+      or private.is_admin(array['super_admin']::public.user_role[])
+      or private.schoolpro_member_leads_class(p_school,p_class)
+      or exists(select 1 from public.schoolpro_classes c
+        join public.schoolpro_members m on m.id=c.form_teacher_id and m.school_id=c.school_id
+        where c.school_id=p_school and c.id=p_class and m.user_id=auth.uid() and m.status='active')
+    )
+$;
+revoke all on function private.schoolpro_can_review_class(uuid,uuid) from public,anon;
+grant execute on function private.schoolpro_can_review_class(uuid,uuid) to authenticated;
 
 -- Read the active subject-teacher roster for a class without granting staff
 -- direct membership/profile table access. Ordinary subject teachers see only

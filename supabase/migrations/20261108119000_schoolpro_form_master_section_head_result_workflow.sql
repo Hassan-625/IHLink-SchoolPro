@@ -56,6 +56,19 @@ begin
       select 1 from public.schoolpro_enrollment_history h
       where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session)))
   ) order by s.id for update;
+  perform r.id from public.schoolpro_results r
+  join public.schoolpro_students s on s.id=r.student_id and s.school_id=r.school_id
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and r.status='draft' and not r.locked
+    and (
+      exists(select 1 from public.schoolpro_enrollment_history h
+        where h.school_id=p_school and h.student_id=s.id
+          and h.session=trim(p_session) and h.class_id=p_class)
+      or (s.status='active' and s.class_id=p_class and not exists(
+        select 1 from public.schoolpro_enrollment_history h
+        where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session)))
+    )
+  order by r.id for update of r;
   if not exists(
     select 1 from public.schoolpro_results r
     join public.schoolpro_students s on s.id=r.student_id and s.school_id=r.school_id

@@ -34,6 +34,12 @@ jobs:
       - run: node scripts/test-school-lesson-paging.mjs
       - run: node scripts/test-result-section-data.mjs
       - run: node scripts/test-result-workflow.mjs
+      - name: Validate Stage C result import, ranking, correction review and scheme history
+        run: |
+          node scripts/test-schoolpro-result-import-validation.mjs
+          node scripts/test-schoolpro-result-ranking-consistency.mjs
+          node scripts/test-schoolpro-correction-review-atomicity.mjs
+          node scripts/test-schoolpro-assessment-scheme-immutability.mjs
       - run: node scripts/test-class-results-export.mjs
       - run: node scripts/test-school-student-selection.mjs
       - run: node scripts/test-operational-roles.mjs

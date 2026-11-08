@@ -21,16 +21,6 @@ create index if not exists schoolpro_member_responsibilities_active_idx
   where ended_at is null;
 alter table public.schoolpro_member_responsibilities enable row level security;
 revoke all on public.schoolpro_member_responsibilities from public,anon,authenticated;
-create policy schoolpro_member_responsibilities_self_or_admin_read
-on public.schoolpro_member_responsibilities for select to authenticated
-using (
-  exists(select 1 from public.schoolpro_members m
-    where m.school_id=schoolpro_member_responsibilities.school_id
-      and m.id=schoolpro_member_responsibilities.member_id
-      and m.user_id=auth.uid() and m.status='active')
-  or private.schoolpro_is_school_admin(school_id)
-  or private.is_admin(array['super_admin']::public.user_role[])
-);
 grant select on public.schoolpro_member_responsibilities to authenticated;
 
 create or replace function private.schoolpro_member_has_responsibility(
@@ -60,6 +50,17 @@ as $$
 $$;
 revoke all on function private.schoolpro_is_school_admin(uuid) from public,anon;
 grant execute on function private.schoolpro_is_school_admin(uuid) to authenticated;
+
+create policy schoolpro_member_responsibilities_self_or_admin_read
+on public.schoolpro_member_responsibilities for select to authenticated
+using (
+  exists(select 1 from public.schoolpro_members m
+    where m.school_id=schoolpro_member_responsibilities.school_id
+      and m.id=schoolpro_member_responsibilities.member_id
+      and m.user_id=auth.uid() and m.status='active')
+  or private.schoolpro_is_school_admin(school_id)
+  or private.is_admin(array['super_admin']::public.user_role[])
+);
 
 create or replace function private.schoolpro_is_exam_officer(p_school uuid)
 returns boolean language sql stable security definer set search_path=''

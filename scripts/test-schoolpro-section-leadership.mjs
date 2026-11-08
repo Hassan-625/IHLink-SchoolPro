@@ -74,6 +74,7 @@ assert.match(authorityMigration,/private\\.schoolpro_member_has_responsibility\\
 assert.match(authorityMigration,/target\.role in \('teacher','parent','student'\)/i);
 assert.match(authorityMigration,/m\.role not in \('teacher','parent','student'\)/i);
 assert.match(authorityMigration,/ordinary Subject Teacher, parent and student accounts are not eligible/i);
+assert.match(authorityMigration,/after update of role,position_title,status on public\.schoolpro_members/i);
 assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/i);
 assert.match(integration,/Class Teacher must be eligible for a formal Primary section-head appointment/i);
 assert.match(integration,/An ordinary subject teacher must not be appointed as section head/i);

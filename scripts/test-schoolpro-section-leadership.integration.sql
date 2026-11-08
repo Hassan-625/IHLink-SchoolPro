@@ -60,7 +60,6 @@ returns boolean language sql stable as $ select true $;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 \ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
-\ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
 create trigger enforce_result_workflow before update on public.schoolpro_results
 for each row execute function private.enforce_result_workflow();
 
@@ -77,7 +76,6 @@ declare
  head_id uuid := '77777777-7777-4777-8777-777777777777';
  vice_id uuid := '88888888-8888-4888-8888-888888888888';
  principal_id uuid := '88888888-8888-4888-8888-888888888889';
- formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
  formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
  head_member uuid := '99999999-9999-4999-8999-999999999991';
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
@@ -107,18 +105,6 @@ begin
   (school,student_p,'2025/2026',primary_class),
   (school,student_jss,'2025/2026','22222222-2222-4222-8222-222222222223');
  insert into public.schoolpro_subjects values(subject_id,school);
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000002',school,student_n,subject_id,'2025/2026','First Term',10,90,'{}','draft');
- if public.schoolpro_submit_class_results(school,nursery_class,'First Term','2025/2026')<>1 then
-   raise exception 'Form Master must submit all class Draft results';
- end if;
- perform set_config('request.jwt.claim.sub',head_id::text,true);
- update public.schoolpro_results set status='approved' where id='bbbbbbbb-0000-4000-8000-000000000002';
- update public.schoolpro_results set status='published',locked=true where id='bbbbbbbb-0000-4000-8000-000000000002';
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'published' then
-   raise exception 'Appointed Head Teacher approval and publication workflow failed';
- end if;
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',true);
  perform public.schoolpro_set_section_leader(school,head_member,'primary',true);

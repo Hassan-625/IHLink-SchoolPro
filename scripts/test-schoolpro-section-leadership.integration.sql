@@ -200,10 +200,7 @@ begin
    raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
  end if;
  
- if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
-    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
-   raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
- end if;
+ 
  perform set_config('request.jwt.claim.sub',principal_id::text,true);
  if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
    raise exception 'Principal must read explicitly assigned Senior Secondary section';
@@ -230,10 +227,7 @@ begin
    raise exception 'Principal publication attempt must leave section-approved results unchanged';
  end if;
  
- if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved'
-    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
-   raise exception 'Principal publication attempt must leave section-approved results unchanged';
- end if;
+ 
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  begin
    perform public.schoolpro_set_section_leader(school,head_member,'junior_secondary',true);

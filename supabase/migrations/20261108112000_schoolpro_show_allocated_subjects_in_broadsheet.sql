@@ -29,7 +29,7 @@ begin
    count(m.id) filter(where m.status='approved') approved_scores,
    count(m.id) filter(where m.status='published') published_status_rows
   from roster s left join marks m on m.student_id=s.id group by s.id,s.admission_number,s.name
- ), ranked as(select t.*,rank() over(order by total desc) class_position from totals t),
+ ), ranked as(select t.*,rank() over(order by total desc) class_position,rank() over(order by published_total desc) published_position from totals t),
  subject_scope_raw as (
   select sa.subject_id,true assigned
   from public.schoolpro_subject_assignments sa

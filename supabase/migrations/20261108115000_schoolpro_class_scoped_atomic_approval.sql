@@ -41,6 +41,15 @@ begin
    select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
     and h.student_id=s.id and h.session=trim(p_session)))
  ) order by s.id for update;
+ if p_students is not null and (select count(*) from unnest(p_students) x(id)
+  join public.schoolpro_students s on s.id=x.id and s.school_id=p_school
+  where exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
+    and h.student_id=s.id and h.session=trim(p_session) and h.class_id=p_class)
+   or (s.status='active' and s.class_id=p_class and not exists(
+    select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
+     and h.student_id=s.id and h.session=trim(p_session))))<>cardinality(p_students) then
+  raise exception 'Every selected student must belong to this class roster for the selected session';
+ end if;
  select coalesce(array_agg(r.id order by r.id),'{}'::uuid[]) into v_ids
  from public.schoolpro_results r
  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)

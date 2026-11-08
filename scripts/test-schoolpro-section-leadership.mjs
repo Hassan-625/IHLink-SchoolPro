@@ -5,6 +5,7 @@ const migration=readFileSync('supabase/migrations/20261103120000_schoolpro_secti
 const integration=readFileSync('scripts/test-schoolpro-section-leadership.integration.sql','utf8');
 const principalMigration=readFileSync('supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql','utf8');
 const staff=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
+const broadsheet=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
 assert.match(migration,/create table public\.schoolpro_section_leaders/i);
 assert.match(migration,/unique \(school_id, member_id, section\)/i);
 assert.match(migration,/force row level security/i);
@@ -16,7 +17,7 @@ assert.match(migration,/create or replace function private\.enforce_result_workf
 assert.match(migration,/private\.has_school_access\(p_school,array\['proprietor','administrator','exam_officer'\]/i);
 assert.match(integration,/Head teacher must lead the explicitly assigned Primary section/i);
 assert.match(integration,/Head teacher must write results in assigned Primary section/i);
-assert.match(integration,/Head teacher must not read students outside assigned section/i);
+assert.match(integration,/Head teacher must read students in assigned Primary section/i);
 assert.match(integration,/Head teacher must read students and classes in assigned section/i);
 assert.match(integration,/section leader approved result outside assigned section/i);
 assert.match(integration,/Vice principal must not lead an unassigned Nursery section/i);
@@ -35,5 +36,12 @@ assert.match(principalMigration,/after update of role,position_title on public\.
 assert.match(principalMigration,/add column if not exists ended_at timestamptz/i);
 assert.match(staff,/member\.role==="administrator"&&member\.position_title==="Principal"/i);
 assert.match(staff,/schoolpro_set_section_leader/i);
+assert.match(principalMigration,/p_section in \('nursery','primary'\)/i);
+assert.match(principalMigration,/p_section in \('junior_secondary','senior_secondary'\)/i);
+assert.match(principalMigration,/Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish/i);
+assert.match(principalMigration,/Results must be approved by the section head before publication/i);
+assert.match(broadsheet,/className\?\.form_teacher_id===memberId/i);
+assert.match(broadsheet,/assignedSections\.includes\(className\.level\)/i);
+assert.match(broadsheet,/Submit class results to section head/i);
 assert.doesNotMatch(migration,/private\.schoolpro_member_can_manage/i);
 console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

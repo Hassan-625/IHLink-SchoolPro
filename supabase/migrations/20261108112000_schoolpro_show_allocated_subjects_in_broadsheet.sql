@@ -26,14 +26,16 @@ begin
    count(m.id) filter(where m.status='published') published_scores
   from roster s left join marks m on m.student_id=s.id group by s.id,s.admission_number,s.name
  ), ranked as(select t.*,rank() over(order by total desc) class_position from totals t),
- subject_scope as (
+ subject_scope_raw as (
   select sa.subject_id,true assigned
   from public.schoolpro_subject_assignments sa
   where sa.school_id=p_school and sa.class_id=p_class and sa.session=trim(p_session)
   union all
   select distinct m.subject_id,false assigned from marks m where m.subject_id is not null
+ ), subject_scope as (
+  select subject_id,bool_or(assigned) assigned from subject_scope_raw group by subject_id
  ), subject_summary as (
-  select su.id,su.name,su.code,bool_or(ss.assigned) assigned,
+  select su.id,su.name,su.code,ss.assigned,
    avg(m.total_score) average,count(m.id) recorded
   from subject_scope ss
   join public.schoolpro_subjects su on su.id=ss.subject_id and su.school_id=p_school

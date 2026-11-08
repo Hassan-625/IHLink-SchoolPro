@@ -4,6 +4,8 @@ const page=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const rpc=readFileSync('supabase/migrations/20261108101000_schoolpro_harden_result_import_rpc.sql','utf8');
 const parse=page.slice(page.indexOf('async function parseImport'),page.indexOf('async function submitImport'));
 assert.ok(parse.includes('Missing required columns'));
+assert.ok(parse.includes('unsupported columns')&&parse.includes('allowedHeaders'), 'Import must reject unexpected workbook columns instead of silently ignoring them');
+assert.ok(parse.includes('Assessment scheme level')&&parse.includes('student\'s class level'), 'Import preview must reject assessment schemes incompatible with the selected-session class level');
 assert.ok(parse.includes('duplicate column headings'));
 assert.ok(parse.includes('Missing component column'));
 assert.ok(parse.includes('score is required and must be numeric'));

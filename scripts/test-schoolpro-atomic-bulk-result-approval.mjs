@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 
 const migration=readFileSync('supabase/migrations/20261108113000_schoolpro_atomic_bulk_result_approval.sql','utf8');
 const page=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
+const classMigration=readFileSync('supabase/migrations/20261108115000_schoolpro_class_scoped_atomic_approval.sql','utf8');
 assert.match(migration,/cardinality\(p_results\)>5000/,'Bulk approval must have a bounded batch size');
 assert.match(migration,/count\(distinct x\.id\).*cardinality\(p_results\)/s,'Duplicate IDs must be rejected');
 assert.match(migration,/perform r\.id from public\.schoolpro_results r where r\.id=any\(p_results\) order by r\.id for update/,'Rows must be locked in deterministic order');
@@ -13,7 +14,11 @@ assert.match(migration,/insert into public\.schoolpro_result_approvals/,'Review 
 assert.match(migration,/insert into public\.audit_logs/,'Bulk approval must be audited');
 assert.match(migration,/grant execute on function public\.review_schoolpro_results\(uuid\[\],text\) to authenticated/,'Only authenticated users receive the RPC grant');
 const approve=page.slice(page.indexOf('async function approve(scope:'),page.indexOf('async function publish()',page.indexOf('async function approve(scope:')));
-assert.match(approve,/rpc\('review_schoolpro_results'/,'Broadsheet must use the atomic bulk RPC');
+assert.match(approve,/rpc\('review_schoolpro_results'/,'Selected and school-wide approvals must use the atomic bulk RPC');
+assert.match(approve,/rpc\('review_schoolpro_class_results'/,'Class approval must use a class-scoped atomic RPC');
+assert.match(classMigration,/h\.class_id=p_class/,'Historical class assignment must scope class approval');
+assert.match(classMigration,/s\.class_id=p_class/,'Current-roster fallback must scope class approval');
+assert.match(classMigration,/public\.review_schoolpro_results\(v_ids,p_notes\)/,'Class-scoped approval must delegate to the all-or-nothing bulk approval transaction');
 assert.doesNotMatch(approve,/for\(const draft of drafts\.data/,'Client must not approve rows in a partial-success loop');
 assert.match(approve,/schoolpro_class_review_sheet/,'Class broadsheet must refresh after approval');
 assert.match(approve,/were approved, but the broadsheet could not refresh/,'Refresh failure must not misreport the committed approval as failed');
@@ -21,4 +26,4 @@ const integration=readFileSync('scripts/test-schoolpro-assessment-completeness-r
 assert.match(integration,/Bulk approval must be all-or-nothing/);
 assert.match(integration,/Bulk approval partially changed a rejected batch/);
 assert.match(integration,/Complete bulk approval did not approve the entire batch/);
-console.log('PASS: SchoolPro broadsheet bulk approval is atomic and fails closed.');
+console.log('PASS: SchoolPro bulk approval is atomic and class approval is roster-scoped.');

@@ -163,7 +163,6 @@ as $$
               and lower(coalesce(principal_m.position_title,''))='principal'
           )
         )
-        or true
       )
   )
 $$;
@@ -194,7 +193,6 @@ as $$
               and lower(coalesce(principal_m.position_title,''))='principal'
           )
         )
-        or true
       )
   )
 $$;

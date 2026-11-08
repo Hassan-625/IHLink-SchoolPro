@@ -20,7 +20,11 @@ begin
  ), totals as (
   select s.id student_id,s.admission_number,s.name student_name,
    coalesce(sum(m.total_score),0) total,coalesce(avg(m.total_score),0) average,count(m.id) subjects,
+   coalesce(sum(m.total_score) filter(where m.status='published' and m.locked),0) published_total,
+   coalesce(avg(m.total_score) filter(where m.status='published' and m.locked),0) published_average,
+   count(m.id) filter(where m.status='published' and m.locked) published_subjects,
    coalesce(jsonb_object_agg(m.subject_id,m.total_score) filter(where m.id is not null),'{}') scores,
+   coalesce(jsonb_object_agg(m.subject_id,m.total_score) filter(where m.id is not null and m.status='published' and m.locked),'{}') published_scores,
    count(m.id) filter(where m.status='draft') draft_scores,
    count(m.id) filter(where m.status='approved') approved_scores,
    count(m.id) filter(where m.status='published') published_scores
@@ -36,7 +40,9 @@ begin
   select subject_id,bool_or(assigned) assigned from subject_scope_raw group by subject_id
  ), subject_summary as (
   select su.id,su.name,su.code,ss.assigned,
-   avg(m.total_score) average,count(m.id) recorded
+   avg(m.total_score) average,count(m.id) recorded,
+   avg(m.total_score) filter(where m.status='published' and m.locked) published_average,
+   count(m.id) filter(where m.status='published' and m.locked) published_recorded
   from subject_scope ss
   join public.schoolpro_subjects su on su.id=ss.subject_id and su.school_id=p_school
   left join marks m on m.subject_id=su.id

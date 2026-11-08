@@ -1,6 +1,7 @@
 -- Keep staff review-sheet positions consistent with the published broadsheet and report-card rank.
 -- Staff review continues to include draft, approved and published scores; the ranking key is the
 -- same total-score basis used by schoolpro_broadsheet and schoolpro_result_class_rank.
+-- Retain the established historical-session roster fallback for active students without history.
 
 create or replace function public.schoolpro_class_review_sheet(p_school uuid,p_class uuid,p_term text,p_session text) returns jsonb
 language plpgsql stable security invoker set search_path='' as $$
@@ -10,8 +11,12 @@ begin
  if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Select a term and session';end if;
  with roster as (
   select s.id,s.admission_number,concat_ws(' ',s.first_name,s.last_name) name
-  from public.schoolpro_students s join public.schoolpro_enrollment_history e on e.student_id=s.id and e.school_id=s.school_id
-  where e.school_id=p_school and e.class_id=p_class and e.session=trim(p_session)
+  from public.schoolpro_students s
+  left join public.schoolpro_enrollment_history e on e.student_id=s.id and e.school_id=s.school_id and e.session=trim(p_session)
+  where s.school_id=p_school and coalesce(e.class_id,s.class_id)=p_class
+    and (e.student_id is not null or (s.status='active' and not exists(
+      select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id
+    )))
  ), marks as (
   select r.* from public.schoolpro_results r join roster s on s.id=r.student_id
   where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)

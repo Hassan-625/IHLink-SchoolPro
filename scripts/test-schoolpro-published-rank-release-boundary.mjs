@@ -21,3 +21,9 @@ assert.match(rankGuard,/not exists\(select 1 from public\.schoolpro_results r[\s
 assert.match(rankGuard,/schoolpro_can_view_result_output\(p_student_id,trim\(p_term\),trim\(p_session\)\)/,'Ranking must preserve attendance and finance release checks');
 
 assert.match(rankGuard,/group by s\.id\s+having count\(r\.id\)>0/,'Class rank population must exclude learners without any published and locked score');
+
+const broadsheetGuard=rankGuard.slice(rankGuard.indexOf('function public.schoolpro_broadsheet'));
+assert.ok(broadsheetGuard.length>0,'Published broadsheet must be redefined with the ranking guard');
+assert.match(broadsheetGuard,/r\.status='published'::public\.schoolpro_result_status and r\.locked=true/,'Broadsheet totals must use published and locked results only');
+assert.match(broadsheetGuard,/case when subjects>0 then rank\(\) over/,'Only learners with published subject rows receive a class position');
+assert.match(broadsheetGuard,/order by y\.pos nulls last/,'Learners without released scores remain visible after ranked learners');

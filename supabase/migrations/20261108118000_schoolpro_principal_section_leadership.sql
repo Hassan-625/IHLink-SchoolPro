@@ -3,6 +3,22 @@
 -- compatibility with the existing school role catalogue and permission model.
 alter table public.schoolpro_section_leaders
   add column if not exists ended_at timestamptz;
+drop policy if exists "School leaders and assigned staff read section leadership" on public.schoolpro_section_leaders;
+create policy "School leaders and assigned staff read section leadership"
+on public.schoolpro_section_leaders for select to authenticated
+using (
+  private.is_active_account()
+  and private.schoolpro_operationally_active(school_id)
+  and (
+    private.is_admin(array['super_admin'::public.user_role])
+    or private.has_school_access(school_id,array['proprietor','administrator']::public.school_member_role[])
+    or exists (
+      select 1 from public.schoolpro_members m
+      where m.id=member_id and m.school_id=school_id and m.user_id=auth.uid()
+    )
+  )
+);
+
 
 -- Retire legacy appointments that do not match the staff member's academic level.
 update public.schoolpro_section_leaders sl set ended_at=now()
@@ -82,7 +98,7 @@ declare target public.schoolpro_members;
 begin
   if auth.uid() is null or not private.is_active_account()
      or not private.schoolpro_operationally_active(p_school)
-     or not private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[]) then
+     or not (private.is_admin(array['super_admin'::public.user_role]) or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only school leadership can manage section assignments';
   end if;
   if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other') then

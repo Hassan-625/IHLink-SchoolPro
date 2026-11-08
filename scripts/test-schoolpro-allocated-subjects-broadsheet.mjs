@@ -6,6 +6,6 @@ assert.match(migration,/schoolpro_subject_assignments[\s\S]*sa\.school_id=p_scho
 assert.match(migration,/union all[\s\S]*select distinct m\.subject_id,false assigned from marks/);
 assert.match(migration,/avg\(m\.total_score\) average,count\(m\.id\) recorded/);
 assert.match(migration,/coalesce\(avg\(m\.total_score\),0\) average,count\(m\.id\) subjects/);
-assert.match(page,/s\.assigned\s*\?\s*'Allocated'\s*:\s*'Recorded'/);
+assert.match(page,/s\.assigned\s*\?\s*'Allocated'\s*:\s*'Recorded only'/);
 assert.match(page,/missing marks are not counted as zero/);
 console.log('SchoolPro allocated-subject broadsheet regression passed.');

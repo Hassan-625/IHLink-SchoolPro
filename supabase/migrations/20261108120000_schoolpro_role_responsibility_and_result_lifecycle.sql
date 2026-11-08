@@ -385,6 +385,7 @@ begin
     join public.schoolpro_subject_assignments a
       on a.school_id=m.school_id and a.teacher_member_id=m.id
     where m.school_id=new.school_id and m.user_id=auth.uid() and m.status='active'
+      and m.role::text in ('teacher','class_teacher')
       and a.class_id=v_class and a.subject_id=new.subject_id
       and a.session=trim(coalesce(new.session,'')) and a.ended_at is null
   ) then
@@ -405,6 +406,28 @@ create trigger schoolpro_subject_teacher_result_write
 before insert or update of school_id,student_id,subject_id,term,session,ca_score,exam_score,total_score,assessment_scores,assessment_scheme_id
 on public.schoolpro_results for each row
 execute function private.schoolpro_enforce_subject_teacher_result_write();
+
+-- End active subject allocations when a member loses their teaching role.
+-- This retains allocation history while preventing stale assignments from blocking
+-- a Form Master's completeness check or authorizing score entry.
+create or replace function private.schoolpro_prune_subject_assignments_role()
+returns trigger language plpgsql security definer set search_path=''
+as $
+begin
+  if old.role::text in ('teacher','class_teacher')
+     and new.role::text not in ('teacher','class_teacher') then
+    update public.schoolpro_subject_assignments
+      set ended_at=coalesce(ended_at,now())
+    where school_id=old.school_id and teacher_member_id=old.id and ended_at is null;
+  end if;
+  return new;
+end
+$;
+revoke all on function private.schoolpro_prune_subject_assignments_role() from public,anon,authenticated;
+drop trigger if exists schoolpro_prune_subject_assignments_role on public.schoolpro_members;
+create trigger schoolpro_prune_subject_assignments_role
+after update of role on public.schoolpro_members
+for each row execute function private.schoolpro_prune_subject_assignments_role();
 
 -- A class is ready for Form Master submission only when every active subject
 -- allocation has a complete Draft result for every learner in that session.
@@ -1018,7 +1041,8 @@ begin
     private.schoolpro_member_has_responsibility(p_school,'school_admin')
     or exists(select 1 from public.schoolpro_classes c where c.school_id=p_school and c.id=p_class and c.form_teacher_id=v_member)
     or exists(select 1 from public.schoolpro_subject_assignments a where a.school_id=p_school
-      and a.teacher_member_id=v_member and a.class_id=p_class and a.session=trim(p_session) and a.ended_at is null)
+      and a.teacher_member_id=v_member and a.class_id=p_class and a.session=trim(p_session) and a.ended_at is null
+      and exists(select 1 from public.schoolpro_members m where m.id=v_member and m.school_id=p_school and m.role::text in ('teacher','class_teacher')))
     or private.schoolpro_member_leads_class(p_school,p_class)
   ) then raise exception 'Only an assigned class teacher, subject teacher, section head or school administrator can request this class reopening'; end if;
   if p_scope='section' and not (

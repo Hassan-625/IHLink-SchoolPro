@@ -1319,6 +1319,27 @@ $$;
 revoke all on function public.schoolpro_decide_result_reopening(uuid,boolean,text) from public,anon;
 grant execute on function public.schoolpro_decide_result_reopening(uuid,boolean,text) to authenticated;
 
+-- Retire legacy per-result, partial-class and pre-section approval/publication RPCs.
+-- The only live hand-off is Form Master submit -> Section Head approval ->
+-- Exam Officer final approval -> whole-school publication.
+do $retire_legacy_result_rpcs$
+declare signature text;
+begin
+  foreach signature in array array[
+    'public.review_schoolpro_result(uuid,text,text)',
+    'public.review_schoolpro_results(uuid[],text)',
+    'public.review_schoolpro_class_results(uuid,uuid,text,text,text,uuid[])',
+    'public.publish_schoolpro_class_results(uuid,uuid,text,text)',
+    'public.publish_schoolpro_selected_results(uuid,text,text,uuid[],boolean,uuid)',
+    'public.publish_schoolpro_results(uuid,text,text)'
+  ] loop
+    if to_regprocedure(signature) is not null then
+      execute format('revoke all on function %s from public,anon,authenticated',signature);
+    end if;
+  end loop;
+end
+$retire_legacy_result_rpcs$;
+
 -- Retire the legacy per-result reopening path. All post-approval changes must
 -- use a class- or section-scoped correction batch approved by the Exam Officer.
 create or replace function public.decide_schoolpro_result_correction_request(

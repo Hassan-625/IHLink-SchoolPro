@@ -94,17 +94,44 @@ begin
  if not exists(select 1 from public.schoolpro_classes where id=p_class and school_id=p_school) then raise exception 'Select a class in this school';end if;
  perform r.id from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked
-  and exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=r.student_id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+  and exists(
+   select 1 from public.schoolpro_students s
+   where s.id=r.student_id and s.school_id=p_school
+    and (
+     exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+     or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.session=r.session and h.school_id=p_school))
+    )
+  )
   for update;
  if exists(select 1 from public.schoolpro_results r where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
   and r.status='approved' and not r.locked
-  and exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=r.student_id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+  and exists(
+   select 1 from public.schoolpro_students s
+   where s.id=r.student_id and s.school_id=p_school
+    and (
+     exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+     or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.session=r.session and h.school_id=p_school))
+    )
+  )
   and not private.schoolpro_result_assessment_complete(r.id)) then
   raise exception 'Class contains incomplete approved assessments; return them for correction before publication';
  end if;
  update public.schoolpro_results r set status='published',published_at=now(),locked=true
  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session) and r.status='approved' and not r.locked
-  and exists(select 1 from public.schoolpro_enrollment_history h where h.student_id=r.student_id and h.class_id=p_class and h.session=r.session and h.school_id=p_school);
+  and exists(
+   select 1 from public.schoolpro_students s
+   where s.id=r.student_id and s.school_id=p_school
+    and (
+     exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.class_id=p_class and h.session=r.session and h.school_id=p_school)
+     or (s.status='active' and not exists(select 1 from public.schoolpro_enrollment_history h
+      where h.student_id=s.id and h.session=r.session and h.school_id=p_school))
+    )
+  );
  get diagnostics n=row_count;
  insert into public.audit_logs(actor_id,action,product,target_type,target_id,metadata)
  values(auth.uid(),'Class results published','schoolpro','class',p_class::text,jsonb_build_object('school_id',p_school,'term',p_term,'session',p_session,'published',n));

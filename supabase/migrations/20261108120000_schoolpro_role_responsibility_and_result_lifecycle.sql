@@ -40,13 +40,13 @@ grant execute on function private.schoolpro_member_has_responsibility(uuid,text)
 
 create or replace function private.schoolpro_is_school_admin(p_school uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
   select auth.uid() is not null and private.is_active_account() and (
     private.is_admin(array['super_admin']::public.user_role[])
     or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
     or private.schoolpro_member_has_responsibility(p_school,'school_admin')
   )
-$;
+$$;
 revoke all on function private.schoolpro_is_school_admin(uuid) from public,anon;
 grant execute on function private.schoolpro_is_school_admin(uuid) to authenticated;
 
@@ -257,7 +257,7 @@ grant execute on function private.schoolpro_enrollment_reader_keys() to authenti
 -- student/class read gates as the primary proprietor/administrator roles.
 create or replace function private.schoolpro_can_read_student(p_student uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
  select auth.uid() is not null and private.is_active_account() and exists(
    select 1 from public.schoolpro_students s
    where s.id=p_student and private.schoolpro_operationally_active(s.school_id)
@@ -279,13 +279,13 @@ as $
      ))
    )
  )
-$;
+$$;
 revoke all on function private.schoolpro_can_read_student(uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_student(uuid) to authenticated;
 
 create or replace function private.schoolpro_can_read_class(p_class uuid)
 returns boolean language sql stable security definer set search_path=''
-as $
+as $$
  select auth.uid() is not null and private.is_active_account() and exists(
    select 1 from public.schoolpro_classes c where c.id=p_class and (
      private.schoolpro_is_school_admin(c.school_id)
@@ -302,7 +302,7 @@ as $
          where g.student_id=s.id and g.guardian_user_id=auth.uid() and g.status='active')))
    )
  )
-$;
+$$;
 revoke all on function private.schoolpro_can_read_class(uuid) from public,anon;
 grant execute on function private.schoolpro_can_read_class(uuid) to authenticated;
 
@@ -314,7 +314,7 @@ create or replace function public.schoolpro_class_subject_teacher_roster(
   p_school uuid,p_class uuid,p_session text
 ) returns table(subject_id uuid,subject_name text,teacher_member_id uuid,teacher_name text)
 language plpgsql stable security definer set search_path=''
-as $
+as $$
 declare v_member uuid;v_form_master boolean;v_wide_view boolean;
 begin
   if auth.uid() is null or not private.is_active_account()
@@ -344,7 +344,7 @@ begin
       and (v_wide_view or a.teacher_member_id=v_member)
     order by s.name,teacher_name;
 end
-$;
+$$;
 revoke all on function public.schoolpro_class_subject_teacher_roster(uuid,uuid,text) from public,anon;
 grant execute on function public.schoolpro_class_subject_teacher_roster(uuid,uuid,text) to authenticated;
 
@@ -453,7 +453,7 @@ create or replace function private.schoolpro_result_scope_matrix_state(
   p_school uuid,p_term text,p_session text,p_scope text,p_class uuid,p_section text,
   p_workflow_status text,p_result_status text
 ) returns boolean language sql stable security definer set search_path=''
-as $
+as $$
 with target_classes as (
   select c.id from public.schoolpro_classes c
   where c.school_id=p_school
@@ -496,7 +496,7 @@ select exists(select 1 from expected)
         or (p_scope='section' and c.level=p_section))
       and w.status is distinct from p_workflow_status
   )
-$;
+$$;
 revoke all on function private.schoolpro_result_scope_matrix_state(uuid,text,text,text,uuid,text,text,text) from public,anon;
 grant execute on function private.schoolpro_result_scope_matrix_state(uuid,text,text,text,uuid,text,text,text) to authenticated;
 
@@ -740,7 +740,7 @@ grant execute on function public.schoolpro_return_class_results_for_correction(u
 create or replace function private.schoolpro_result_scope_mixed_state(
   p_school uuid,p_term text,p_session text,p_scope text,p_class uuid,p_section text,p_stage text
 ) returns boolean language sql stable security definer set search_path=''
-as $
+as $$
 with target_classes as (
   select c.id from public.schoolpro_classes c
   where c.school_id=p_school and (p_scope='school' or (p_scope='class' and c.id=p_class)
@@ -784,7 +784,7 @@ select exists(select 1 from expected)
       and (p_stage='section' and w.status not in ('submitted','section_approved')
         or p_stage='exam' and w.status not in ('section_approved','exam_approved'))
   )
-$;
+$$;
 revoke all on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) from public,anon;
 grant execute on function private.schoolpro_result_scope_mixed_state(uuid,text,text,text,uuid,text,text) to authenticated;
 
@@ -792,7 +792,7 @@ create or replace function public.schoolpro_class_result_workflow_summary(
   p_school uuid,p_class uuid,p_term text,p_session text
 ) returns table(workflow_status text,correction_notes text,result_count bigint)
 language plpgsql stable security definer set search_path=''
-as $
+as $$
 begin
   if auth.uid() is null or not private.is_active_account()
      or not private.schoolpro_module_allowed(p_school,'results')
@@ -807,7 +807,7 @@ begin
     group by w.status,w.correction_notes
     order by w.status;
 end
-$;
+$$;
 revoke all on function public.schoolpro_class_result_workflow_summary(uuid,uuid,text,text) from public,anon;
 grant execute on function public.schoolpro_class_result_workflow_summary(uuid,uuid,text,text) to authenticated;
 
@@ -815,7 +815,7 @@ grant execute on function public.schoolpro_class_result_workflow_summary(uuid,uu
 create or replace function public.schoolpro_approve_section_results(
   p_school uuid,p_section text,p_term text,p_session text
 ) returns integer language plpgsql security definer set search_path=''
-as $
+as $$
 declare n integer;
 begin
   if auth.uid() is null or not private.is_active_account() then raise exception 'Authentication required'; end if;
@@ -857,7 +857,7 @@ begin
     jsonb_build_object('section',p_section,'term',trim(p_term),'session',trim(p_session),'result_count',n));
   return n;
 end
-$;
+$$;
 revoke all on function public.schoolpro_approve_section_results(uuid,text,text,text) from public,anon;
 grant execute on function public.schoolpro_approve_section_results(uuid,text,text,text) to authenticated;
 
@@ -1096,11 +1096,11 @@ grant execute on function public.schoolpro_decide_result_reopening(uuid,boolean,
 create or replace function public.decide_schoolpro_result_correction_request(
  p_request uuid,p_approve boolean,p_notes text default null
 ) returns uuid language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   raise exception 'Individual result reopening is retired. Submit a class or section correction request for Exam Officer approval.';
 end
-$;
+$$;
 revoke all on function public.decide_schoolpro_result_correction_request(uuid,boolean,text) from public,anon,authenticated;
 revoke all on function public.reopen_schoolpro_result_for_correction(uuid,text) from public,anon,authenticated;
 

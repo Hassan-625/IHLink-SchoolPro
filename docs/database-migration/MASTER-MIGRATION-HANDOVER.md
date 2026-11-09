@@ -3115,3 +3115,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ## 2026-11-09 — Follow-up: result-scope lock delimiter replay
 - The Stage C0 full migration replay confirmed the result-scope lock helper still had a single-dollar opening delimiter. Corrected that exact helper declaration to `as $$` and committed the migration correction.
 - SchoolPro CI and payment validation passed on the preceding source-test correction commit; Stage C0 replay remained blocked by this SQL delimiter and is rerunning on the new migration commit. No production migration, merge, or Render deployment was performed.
+
+
+### Result-scope lock helper delimiter correction — 2026-11-09
+- The latest disposable-Supabase Stage C0 regression exposed a second SQL dollar-quote terminator typo in `private.schoolpro_lock_result_scope`: its PL/pgSQL body opened with `as $$` but closed with `$;`.
+- Corrected the function terminator to `$$;` so the following SQL helper definition is parsed as a separate function rather than as stray SQL.
+- Proposed migration only; no production database changes. CI rerun is required against the new branch head.

@@ -3121,3 +3121,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The latest disposable-Supabase Stage C0 regression exposed a second SQL dollar-quote terminator typo in `private.schoolpro_lock_result_scope`: its PL/pgSQL body opened with `as $$` but closed with `$;`.
 - Corrected the function terminator to `$$;` so the following SQL helper definition is parsed as a separate function rather than as stray SQL.
 - Proposed migration only; no production database changes. CI rerun is required against the new branch head.
+
+
+### Result-scope lock helper terminator replay correction — 2026-11-09
+- The next full disposable-Supabase migration replay showed that the earlier delimiter correction had not reached the committed migration: `private.schoolpro_lock_result_scope` still ended with `$;`. Replaced that exact terminator with `$$;` in the branch migration file and verified the surrounding function boundary. This is the specific parser error reported at the subsequent `WITH roster` statement.
+- Re-run the complete Stage C0 migration replay and main CI against the new branch head before marking PR #133 ready. No production migration, production data write, merge or Render deployment.

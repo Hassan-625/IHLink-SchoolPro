@@ -34,6 +34,20 @@ jobs:
       - run: node scripts/test-school-lesson-paging.mjs
       - run: node scripts/test-result-section-data.mjs
       - run: node scripts/test-result-workflow.mjs
+      - name: Validate Stage C result import, ranking, correction review and scheme history
+        run: |
+          node scripts/test-schoolpro-result-import-validation.mjs
+          node scripts/test-schoolpro-result-ranking-consistency.mjs
+          node scripts/test-schoolpro-published-rank-release-boundary.mjs
+          node scripts/test-schoolpro-assessment-completeness-release-boundary.mjs
+          node scripts/test-schoolpro-atomic-bulk-result-approval.mjs
+          node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs
+          node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs
+          node scripts/test-schoolpro-printable-class-average-consistency.mjs
+          node scripts/test-schoolpro-report-card-assessment-schemes.mjs
+          node scripts/test-schoolpro-correction-review-atomicity.mjs
+          node scripts/test-schoolpro-assessment-scheme-immutability.mjs
+          node scripts/test-schoolpro-pin-release-lock.mjs
       - run: node scripts/test-class-results-export.mjs
       - run: node scripts/test-school-student-selection.mjs
       - run: node scripts/test-operational-roles.mjs
@@ -74,6 +88,63 @@ jobs:
           name: mobile-layout-checks
           path: mobile-ui-evidence/
       - run: npm run build
+
+
+  assessment-completeness-release-integration:
+    name: Assessment completeness, subject statistics and grade scale (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_assessment_completeness_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_assessment_completeness_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_assessment_completeness_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply result release-boundary and grade/statistics migrations; test their PostgreSQL invariants
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-assessment-completeness-release.integration.sql
+
+  result-import-rpc-integration:
+    name: Result import RPC validation (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_import_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_import_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_import_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise the authoritative result import RPC against canonical and short secondary levels
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-import-rpc.integration.sql
 
   receipt-storage-isolation:
     name: Receipt Storage isolation (local Supabase)

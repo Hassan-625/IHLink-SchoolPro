@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { FileText, Lock } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { schoolProGradeLabel } from '@/lib/schoolproGradeScale';
 
 type Result = { subject: string; total_score: number; assessment_scores: Record<string, number> };
 type Payload = {
@@ -18,11 +19,12 @@ type Payload = {
   term?: string;
   session?: string;
   results?: Result[];
+  grade_scale?: { label: string; min_score: number; max_score: number }[];
 };
 
 const turnstileSiteKey = String(import.meta.env.VITE_TURNSTILE_SITE_KEY || '');
 const turnstileAction = 'schoolpro_result_pin_check';
-const grade = (n: number) => n >= 80 ? 'A' : n >= 70 ? 'B' : n >= 60 ? 'C' : n >= 50 ? 'D' : n >= 40 ? 'E' : 'F';
+const grade = (n: number, scale: Payload['grade_scale']) => schoolProGradeLabel(n, scale || []);
 
 export function SchoolProResultChecker() {
   const [params] = useSearchParams();
@@ -201,7 +203,7 @@ export function SchoolProResultChecker() {
                         <tr key={index} className="border-b">
                           <td className="p-3 font-semibold">{result.subject}</td>
                           <td className="p-3">{Number(result.total_score).toFixed(1)}%</td>
-                          <td className="p-3 font-bold">{grade(Number(result.total_score))}</td>
+                          <td className="p-3 font-bold">{grade(Number(result.total_score), data.grade_scale)}</td>
                         </tr>
                       ))}</tbody>
                     </table>

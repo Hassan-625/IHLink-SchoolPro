@@ -8,8 +8,8 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  const summary=book.addWorksheet('Class Results');
  summary.addRow([schoolName,term,session]);
  const subjectLabels=[...new Set(reports.flatMap(report=>report.results.map(r=>subjectNames.get(r.subject_id)||'Subject')))];
- const classAverages=new Map<string,number[]>();const classTotals=new Map<string,number[]>();
- for(const report of reports){const average=report.results.reduce((sum,r)=>sum+Number(r.total_score),0)/report.results.length;classTotals.set(report.student.class_name,[...(classTotals.get(report.student.class_name)||[]),report.results.reduce((sum,r)=>sum+Number(r.total_score),0)]);classAverages.set(report.student.class_name,[...(classAverages.get(report.student.class_name)||[]),average]);}
+ const classScoreTotals=new Map<string,number>();const classScoreCounts=new Map<string,number>();const classTotals=new Map<string,number[]>();
+ for(const report of reports){const reportTotal=report.results.reduce((sum,r)=>sum+Number(r.total_score),0);classTotals.set(report.student.class_name,[...(classTotals.get(report.student.class_name)||[]),reportTotal]);classScoreTotals.set(report.student.class_name,(classScoreTotals.get(report.student.class_name)||0)+reportTotal);classScoreCounts.set(report.student.class_name,(classScoreCounts.get(report.student.class_name)||0)+report.results.length);}
  summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects',...subjectLabels,'Class position','Class average (%)']);
  for(const [index,report] of reports.entries()){
   const s=report.student;
@@ -17,9 +17,9 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
   if(!totals.length||totals.some(n=>!Number.isFinite(n)||n<0||n>100))throw new Error('Invalid result scores');
   const total=totals.reduce((sum,n)=>sum+n,0),average=total/totals.length;
   const marks=new Map(report.results.map(r=>[subjectNames.get(r.subject_id)||'Subject',Number(r.total_score)]));
-  const classmates=classAverages.get(s.class_name)||[];
+  const classScoreCount=classScoreCounts.get(s.class_name)||0;
   const position=report.ranking?Number(report.ranking.class_position):1+(classTotals.get(s.class_name)||[]).filter(value=>value>total).length;
-  const classAverage=report.ranking?Number(report.ranking.class_average):classmates.reduce((sum,value)=>sum+value,0)/classmates.length;
+  const classAverage=report.ranking?Number(report.ranking.class_average):(classScoreCount?(classScoreTotals.get(s.class_name)||0)/classScoreCount:0);
   summary.addRow([s.admission_number,[s.first_name,s.last_name].join(' '),s.class_name,total,average,totals.length,...subjectLabels.map(label=>marks.get(label)??''),position,classAverage]);
   const title=`${index+1} ${s.admission_number||s.first_name}`.replace(/[\\/?*\[\]:]/g,'-').slice(0,31);
   const sheet=book.addWorksheet(title);

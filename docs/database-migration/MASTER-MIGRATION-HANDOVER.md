@@ -1,4 +1,60 @@
+## Stage C continuation — staff review-sheet unassessed ranking boundary (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`
+
+Corrected a remaining consistency gap in `schoolpro_class_review_sheet`: the staff review sheet previously assigned a class position to every roster row, including learners with no recorded subject scores. The new follow-up migration preserves the complete class roster, ranks only learners with at least one recorded result, leaves `class_position` null for unassessed learners, and sorts those learners after ranked entries. Added a source-contract regression assertion to the existing ranking test, which is already part of SchoolPro CI. No production migration or data write has been applied.
+
+
+## Stage C continuation — result import RPC PostgreSQL integration coverage (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Added a disposable PostgreSQL integration fixture for the authoritative `import_schoolpro_results` RPC. It exercises all four combinations of canonical and short Junior/Senior Secondary class-level values, verifies valid imports persist, and verifies a genuinely mismatched scheme is rejected without leaving partial rows. Added a dedicated PostgreSQL 16 CI job; this does not connect to the configured production Supabase project. No production migration, data write, merge, or Render deployment.
+
+
+## Stage C continuation — database import scheme-level alias enforcement (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Extended the previous secondary-level alias correction to the authoritative database import RPC. The RPC now accepts both canonical and short Junior Secondary (`junior_secondary` / `jss`) and Senior Secondary (`senior_secondary` / `sss`) class-level values, matching the frontend preview. Added source-contract assertions so backend enforcement cannot regress independently. Proposed migration only; no production database changes, merge, or Render deployment.
+
+
+## Stage C continuation — assessment scheme level alias correction (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Corrected the score-import preview's class-level compatibility check so Junior Secondary and Senior Secondary schemes accept both canonical level values (`junior_secondary` / `senior_secondary`) and their short aliases (`jss` / `sss`). This aligns row-level import validation with the scheme selector's existing compatibility rules and prevents valid same-section imports from being incorrectly rejected. Added a source-contract regression assertion. Branch-only change; no production migration, data write, merge, or Render deployment.
+
+
 # SchoolPro Master Migration and Production Cleanup Handover
+
+## Stage C continuation — assessment workbook schema and class-level validation (2026-11-08)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Hardened the workbook preview before any import RPC call. It now rejects non-empty unsupported columns rather than silently ignoring misspelled or stale assessment headings, while allowing the configured component keys across the school's assessment schemes. It also checks each student's selected-session class level against the chosen assessment scheme and reports an actionable row-level preview error for incompatible Nursery/Primary/Junior Secondary/Senior Secondary schemes. The database import RPC remains the final enforcement boundary. Added source-contract assertions for both checks. This is branch-only work; no production database migration, merge, or Render deployment was performed.
+
+
+## Stage C continuation — section leadership eligibility correction (2026-11-08)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+**Status:** Proposed branch changes only. No production migration, production data write, merge, or Render deployment.
+
+The Stage C section-leadership model follows four independent academic sections: Nursery, Primary, Junior Secondary and Senior Secondary. An active school staff member may be formally appointed to any one or more of these sections. The only excluded staff role is ordinary `teacher` (Subject Teacher); parent and student accounts are also ineligible because they are not staff. Class Teachers/Form Masters, Head Teachers, Vice Principals, Principals, Exam Officers, administrators, proprietors and other active staff roles may be appointed.
+
+Principal remains the highest academic authority. If a Principal has an active appointment to a section, other appointees—including a Vice Principal—cannot exercise section-head approval authority in that section. This precedence is enforced in the database. Appointment authority is restricted to Proprietor/Administrator, IHLink Super Admin and members with the explicit `school_admin` responsibility.
+
+Updated Staff & Access to show section appointment controls for every active eligible staff role, rather than only Head Teacher, Vice Principal and Principal. Ordinary Subject Teachers cannot be appointed. A Class Teacher appointment does not grant additional subject score-entry rights; those remain limited to active class/subject/session allocations. Added regression coverage for Class Teacher eligibility, ordinary Subject Teacher rejection, Principal precedence, school-admin authorization and UI role filtering.
+
+This correction does not change subject-score write scope: a subject teacher remains restricted to their active class/subject/session allocations. Form Master class-wide visibility and submission do not grant permission to edit another teacher's marks.
+
+---
 
 **Last updated:** 2026-11-06  
 **Repository:** `Hassan-625/IHLink-SchoolPro`  
@@ -2578,3 +2634,505 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The updated `invite-school-staff` Supabase Edge Function is deployed and ACTIVE at version 20 with JWT verification enabled. It maps Principal consistently across new-account, existing-account and pending-invitation paths.
 - Validation: PR #132 and PR #131 both passed TypeScript, production build, source-contract checks, the disposable-Supabase C0 SQL regression and all required SchoolPro CI integration jobs. The tenant-acceptance job remains intentionally skipped; no test workspaces or production test rows were created.
 - No tenant data, membership rows, financial evidence, Auth users, or Storage objects were modified as part of these navigation/Principal releases. The two retained verification workspaces remain untouched.
+
+## 2026-11-08 — Stage C commencement (assessment, results, review and publication)
+
+- Stage B/C0 live acceptance was explicitly confirmed by the user on 2026-11-08. Stage C is now authorized to begin. Stage D remains separate and out of scope: Result Design Studio, custom Excel workbooks, template authoring, logos, signatories and A4 print design.
+- Created working branch `feat/schoolpro-stage-c-assessment-results-workflow` from `main`. No merge, deployment, production migration, production data write or test-workspace creation has occurred.
+- Initial read-only source inventory confirms the existing implementation already includes configurable assessment schemes (100-point validation), component-by-component score entry with retained prior components, draft-only Excel score import, school/session/term-scoped result loading, class broadsheet review and publication controls, correction requests/reopening, and public verification restricted to published+locked aggregate snapshots.
+- Existing role and workflow code includes teacher class/subject allocation scoping, a controlled `review_schoolpro_result` RPC, class/selected/school publication RPCs, and result correction audit/history UI. These capabilities must be tested against the current production schema and authorization contracts before adding duplicate workflow logic.
+- Stage C work order: (1) reconcile all score-entry/calculation and import paths against database constraints and assigned teaching scope; (2) verify review/approval and class/session/term publication transitions, immutable locking and correction/republication audit; (3) verify class-subject averages and student totals/positions are calculated consistently and displayed once; (4) verify student/guardian result visibility and public verification only expose released results; (5) close gaps with targeted disposable PostgreSQL/source-contract regressions and update this handover.
+- Safety boundary remains unchanged: Supabase only; Render hosting; preserve the two retained verification workspaces and all existing tenant, financial, audit, Auth and Storage records. Do not make production writes or apply migrations without explicit approval. Do not create synthetic workspaces or test accounts. Do not merge or deploy without explicit approval.
+
+### Stage C — first implementation increment: assessment Excel import validation (2026-11-08)
+
+- Hardened the SchoolPro Results Excel import preview in `src/pages/schoolpro/SchoolProResults.tsx`.
+- Import now requires the identity/scheme columns, rejects duplicate headings, requires a column for every configured assessment component, and rejects blank/non-numeric/out-of-range component marks instead of silently converting blanks to zero.
+- Import preview rejects duplicate student-subject rows and checks the selected session's class-subject allocation where allocations exist. Existing teacher subject/class assignment checks remain in force.
+- Kept the existing controlled `import_schoolpro_results` RPC and Draft-only import workflow; no direct client insert path was introduced.
+- Added `scripts/test-schoolpro-result-import-validation.mjs` and registered `npm run test:schoolpro-result-import-validation`.
+- Existing incremental entry behavior is unchanged: entered components merge with previously saved components; empty submissions and edits to approved/published/locked results remain blocked.
+- No SQL migration is included in this increment. No production database, school records, tenant data, Auth, financial, audit or Storage data were changed.
+- Validation status: source and regression assertions have been added; automated CI/typecheck/build execution is pending the draft PR workflow. This increment is not merged or deployed.
+
+### Stage C — second implementation increment: consistent class ranking (2026-11-08)
+
+- Read-only comparison found `schoolpro_class_review_sheet` ranked staff review rows by average, while the published broadsheet and `schoolpro_result_class_rank` ranked by total score.
+- Added migration `20261108100000_schoolpro_consistent_result_ranking_totals.sql` to change the staff review-sheet ranking basis to total score, retaining the existing roster, selected-session, status counts, subject summaries and authorization checks.
+- Added `scripts/test-schoolpro-result-ranking-consistency.mjs` and `npm run test:schoolpro-result-ranking` to assert staff review, broadsheet and published report-card ranking all use total-score ordering.
+- The migration is committed to the Stage C branch only. It has not been applied to production Supabase. No production data was changed.
+- PR #133 remains draft and not merged/deployed; CI is being rerun against the updated branch.
+### Stage C — database import boundary hardening (2026-11-08)
+
+- Read-only inspection of the production `import_schoolpro_results` function found that its previous implementation treated missing component values as zero, accepted duplicate student-subject rows, and could replace an existing Draft result with a different assessment scheme. It also selected only currently active students without verifying selected-session enrolment history.
+- Added migration `20261108101000_schoolpro_harden_result_import_rpc.sql` to enforce selected-session enrolment, complete numeric component maps, valid component keys/ranges, duplicate-row rejection, original-scheme preservation and Draft/unlocked-only replacement at the database boundary.
+- The import RPC continues to call `private.schoolpro_can_write_result`, so existing school/module/teacher assignment authorization remains enforced. Valid imports remain Draft.
+- The client preview now also flags existing locked/approved/published results and scheme mismatches before submission.
+- Extended the import regression script to cover both client preview and database RPC contracts.
+- This is a proposed migration only; production Supabase has not been modified. No school records were written.
+### Stage C — atomic correction-request review (2026-11-08)
+
+- Read-only production review found the client approved a correction request in two separate operations: reopen the published result, then update the request status. A failure between those operations could leave a reopened result with a still-pending request.
+- Added migration `20261108102000_schoolpro_atomic_result_correction_review.sql` with `public.decide_schoolpro_result_correction_request`. The RPC locks the pending request, verifies the reviewer role and Results entitlement, reopens the published result when approved, and records the decision/reviewer/timestamp in the same transaction.
+- Removed the direct UPDATE RLS policy for correction requests so clients cannot directly change request state or reviewer attribution; decision writes go through the security-definer RPC.
+- Updated the Results UI to use the atomic RPC and added `scripts/test-schoolpro-correction-review-atomicity.mjs` with `npm run test:schoolpro-correction-review`.
+- Proposed migration only; no production database writes. Existing correction requests and result records remain unchanged.
+### Stage C — preserve assessment scheme calculation history (2026-11-08)
+
+- Read-only code review identified that editing a used assessment scheme could change component definitions while existing result rows retained totals calculated under the previous definition.
+- Added migration `20261108103000_schoolpro_immutable_used_assessment_schemes.sql`. Once any result references a scheme, its school level and component definitions cannot be changed; renaming and default selection remain allowed.
+- Updated the Results UI to block component/level edits to a scheme already referenced by saved results and direct the user to create a new scheme for future assessments.
+- Added `scripts/test-schoolpro-assessment-scheme-immutability.mjs` and `npm run test:schoolpro-assessment-scheme`.
+- Proposed migration only; not applied to production. Existing assessment schemes and results were not modified.
+
+### Stage C — released-result visibility and calculation workflow audit (2026-11-08)
+
+- Read-only production inspection confirmed the family result-period manifest already exposes only rows with `status='published'` and `locked=true`; printable report-card RPC also requires published+locked rows, and subject statistics aggregate only published+locked results.
+- The public PIN-check RPC had a release-boundary mismatch: its payload selected published rows without requiring `locked=true`. Added proposed migration `20261108104000_schoolpro_require_locked_results_for_pin_release.sql` to align the PIN checker with the family/report-card release boundary while retaining admission-key cooldown serialization, PIN failure accounting, finance/attendance holds, and service-role-only execution.
+- Added `scripts/test-schoolpro-pin-release-lock.mjs` and registered it in CI.
+- Updated the parent dashboard's result summary metric to count only locked, published rows, matching the child report-card manifest.
+- Read-only production audit confirmed result totals are recalculated by the database trigger from the saved assessment scheme components; missing component keys are treated as zero for incremental draft entry, while the Stage C full-import RPC now requires every component. Published result edits remain blocked by the result workflow trigger and RLS update policy (which only permits unlocked Draft rows).
+- Read-only production audit confirmed approval uses `review_schoolpro_result`, publication RPCs select only approved and unlocked rows, and the controlled correction RPC reopens only published results while recording the previous snapshot. The class publication RPC is class/session scoped; selected/school publication validates school membership and historical enrolment.
+- Added the four Stage C source-contract regression scripts to the main `.github/workflows/ci.yml` validate job. The initial CI run was still queued at the time of the first review; the updated branch will trigger a fresh run including the newly wired checks.
+- All four Stage C migrations remain proposed only. No production SQL/DDL or tenant data writes have been executed. No test workspaces or accounts created. No merge or Render deployment has occurred.
+
+- Follow-up calculation review found the public PIN result checker used hard-coded A–F grade cutoffs while report cards use the school's configured grade scale. The PIN RPC now includes the active school grade bands in its response, and the checker uses those configured bands (with the legacy scale only as a fallback when no band matches). The focused release regression asserts this contract.
+- Added a database-side assessment scheme/class-level compatibility check to the import RPC. The guard uses the selected-session historical class level (rather than trusting the workbook or client), allows the existing `all`/`custom` schemes and supported combined-level aliases, and rejects mismatched school-level schemes. The import regression now asserts this boundary.
+- Further comparison with the family access policy found the public PIN checker also needed to enforce the same attendance and finance holds and respect the school leadership's per-student result-access exception. The PIN RPC now applies the configured attendance threshold and term date window, then the finance hold, unless an explicit allowed exception exists. Added regression assertions. This closes the mismatch rather than merely aligning the locked/published status filter.
+
+
+### Stage C review follow-up — roster and attendance scope
+
+- A source-to-source comparison against the established broadsheet/report rank migrations found that the new staff review-sheet roster query needed to preserve the existing historical-session fallback for active students who have no enrollment-history row. The proposed review-sheet migration now uses the same `coalesce(enrollment_history.class_id, students.class_id)` and active/no-history fallback as the published broadsheet and report rank readers.
+- The PIN checker attendance aggregation now explicitly scopes attendance rows by both `school_id` and `student_id`, matching the family access policy and preventing cross-workspace attendance rows from entering the calculation.
+- Added source-contract regression assertions for both corrections. These remain proposed branch changes; no production SQL has been run.
+
+
+### Stage C published ranking and release-boundary alignment
+
+- Added proposed migration `20261108105000_schoolpro_published_rank_requires_locked_results.sql`. Published class ranking and the staff broadsheet's published-result aggregate now include only rows that are both `status='published'` and `locked=true`, matching the existing printable report-card and family-period release boundary.
+- Draft and approved records remain available in the staff review sheet for operational review, but cannot influence the published class position calculation or published class totals.
+- Added a source-contract regression and wired it into the standard CI validation job. This migration is not applied to production.
+
+
+### Stage C missing-component presentation correction
+
+- Incremental assessment entry is intentionally supported: teachers may save one component at a time and previously saved components are merged rather than overwritten. A missing component is therefore not equivalent to a recorded score of zero.
+- Updated the staff saved-score breakdown and printable report card to display an em dash for a missing component; an actual numeric zero continues to display as `0`. This avoids presenting an incomplete draft as if the learner received zero marks for an unentered component.
+- Extended the existing result-import regression to assert both staff and report-card rendering. No score data or production records were changed.
+
+
+### Stage C assessment completeness approval and publication boundary
+
+- Read-only production inspection found that the result total trigger intentionally treats an unentered component as zero so teachers can save assessment components incrementally. That behavior is retained for Draft entry.
+- The existing `review_schoolpro_result` RPC did not verify that every configured component had a valid score before changing a Draft to Approved. The three publication RPCs trusted the Approved status without rechecking component completeness.
+- Added proposed migration `20261108110000_schoolpro_require_complete_assessments_for_approval_and_publication.sql`. Its private validation helper requires a valid same-school assessment scheme, a non-empty component list with unique keys, a numeric in-range score for every component, no unknown score keys, and a stored total equal to the component sum. Malformed data fails closed.
+- Approval now rejects incomplete assessments with a clear error while rejection remains available. Class, selected-student and whole-period publication each revalidate all in-scope Approved rows and abort the transaction if any assessment is incomplete; they do not silently publish only a subset.
+- Existing module entitlement, reviewer role, school/class/student scope, audit writes, publication timestamps and locked-result transitions are retained. The helper is private and direct client execution is revoked.
+- Added `scripts/test-schoolpro-assessment-completeness-release-boundary.mjs`, registered it in `package.json` and the standard CI workflow. Added a disposable PostgreSQL integration test that applies the migration to a minimal isolated schema and exercises incomplete/complete approval, class publication, selected-student publication and whole-period publication. The publication RPCs lock their in-scope Approved rows before revalidating completeness to prevent a concurrent score edit from racing the release check.
+- Follow-up hardening: the component `maxScore` type check now uses `IS DISTINCT FROM 'number'`, so a missing JSON property (SQL NULL) cannot slip through PL/pgSQL three-valued logic. The helper also coalesces the final total comparison to `false`, ensuring a NULL comparison can never be interpreted as complete. Added a disposable PostgreSQL case proving that a scheme missing `maxScore` cannot be approved and remains Draft. This fixture is committed but still awaits execution in CI.
+- Production Supabase was inspected read-only only; the result table currently contains zero rows. The proposed migration has not been applied. No production rows, workspaces, Auth users, financial records or Storage objects were changed. PR #133 remains unmerged and undeployed pending validation.
+
+
+### Stage C atomic bulk approval
+
+- The broadsheet previously approved Draft result rows by calling the single-result review RPC in a client-side loop. If a later row failed completeness validation, earlier rows remained Approved, leaving a partially completed class/school approval operation.
+- Added proposed migration `20261108113000_schoolpro_atomic_bulk_result_approval.sql` with `review_schoolpro_results(uuid[],text)`. It validates the authenticated reviewer, Results entitlement and school role; bounds and de-duplicates the requested IDs; locks the selected rows in deterministic ID order; requires every row to be an unlocked Draft in the same school; and validates every assessment before writing any approval.
+- The RPC writes reviewer attribution, updates all selected result rows and records one audit event in the same database transaction. Any incomplete or out-of-scope row aborts the entire batch; no subset is approved.
+- Updated the broadsheet approval action to use the bulk RPC instead of the sequential client loop. The single-result review RPC remains available for individual review workflows.
+- Added a source-contract regression and extended the disposable PostgreSQL integration fixture to prove both rollback of a mixed complete/incomplete batch and successful approval of a fully complete batch. The test is wired into the standard CI validation job.
+- This is a proposed migration only. It has not been applied to production, and no production result rows were changed. GitHub Actions execution remains pending.
+
+### Stage C grade-scale and subject-statistics consistency
+
+- Read-only production inspection confirmed that `private.schoolpro_subject_statistics` computes cumulative subject averages from published, locked rows and requires one result per term through the selected term. The unique result key on student/subject/term/session supports that denominator. Missing subject-term marks are not treated as zero.
+- Corrected the current-subject rank edge case: when the pupil has no published score for the selected term in a subject, `current_position` is now NULL instead of incorrectly returning rank 1. Current subject class averages still use only pupils with an actual published score in that subject/term; cumulative class averages/ranks use pupils with all terms through the selected term.
+- Added `src/lib/schoolproGradeScale.ts` as the shared grade-band resolver for staff Results, report cards and public PIN result checks. Active configured bands are inclusive at both endpoints; inactive bands are ignored. When a custom scale exists but a score falls in a configured gap, the result is shown as `Ungraded` rather than silently substituting the generic A-F scale. The generic scale remains the fallback only when no active custom bands exist.
+- Added proposed migration `20261108111000_schoolpro_consistent_subject_statistics_and_grade_bands.sql`. It updates the subject-statistics RPC and installs a per-school serialized database trigger preventing inclusive overlap between active grade bands on insert/update. Intentional gaps remain allowed; the UI and public result checker report those scores as Ungraded.
+- Extended the disposable PostgreSQL integration job to exercise overlapping grade-band inserts and updates, while allowing inactive historical bands to overlap. Added `scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs` and wired it into the normal CI workflow.
+- Production Supabase inspection was read-only. Neither proposed Stage C migration was applied. No production result, grade scale, workspace, Auth user, financial record or Storage object was changed.
+
+
+### Stage C allocated-subject visibility and missing-mark coverage
+
+- Added proposed migration `20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql`. The staff class-review RPC now returns subjects allocated to the selected class/session even when no learner has a score recorded yet; previously it returned only subjects with result rows.
+- The subject list also retains legacy recorded subjects that are not present in the allocation table, so historical results are not silently hidden. The RPC marks each subject as `assigned` or `recorded only` and reports its actual recorded count/average.
+- Missing marks remain blank in the broadsheet and Excel exports. They are not coerced to zero and do not enter student totals, student averages, subject averages or the class average. The page explains the allocation/coverage distinction; Excel includes allocation status.
+- Added `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs`, registered it in `package.json` and the standard CI validation workflow.
+- This is a proposed branch migration only. It has not been applied to Supabase production; no production rows were changed.
+
+
+### Stage C allocated-subject, published-average and rank alignment
+
+- Extended the class review RPC in proposed migration `20261108112000_schoolpro_show_allocated_subjects_in_broadsheet.sql` to include all subjects allocated to the selected class/session, even before any score exists. Legacy result subjects are retained as “recorded only”; duplicate teacher allocations are collapsed so marks are not double-counted.
+- Missing marks remain blank and are excluded from totals/averages. Broadsheets and Excel exports identify allocation state and assessed counts.
+- Added separate published-and-locked totals, averages, subject counts and per-subject score maps alongside the staff review aggregates. The broadsheet now distinguishes review metrics (which may include draft/approved marks) from published metrics; its published class average and per-subject averages use the same published+locked population as family/report-card output.
+- Added a distinct published position based on published total, while retaining the review position based on all saved records. The UI labels both positions separately.
+- Added and wired `scripts/test-schoolpro-allocated-subjects-broadsheet.mjs` in the normal CI validation step. CI has not yet reported a result for the latest branch revision.
+- Proposed migration remains unapplied to production. No production data or workspace was changed.
+
+- CI follow-up: the earlier validate job reached the Stage C completeness source-contract test and failed only because the test expected a literal `p_status='rejected'` expression, while the implementation validates allowed values with `p_status not in('approved','rejected')`. Updated the assertion to match the actual guard; this is a test-contract correction, not a runtime SQL failure. The corrected head has not yet been rerun by GitHub Actions.
+
+
+### Stage C printable class-average denominator alignment
+
+- Fixed the full-class printable workflow to calculate the class average as total published-and-locked score points divided by the number of published-and-locked subject result rows. It no longer averages each learner's average with equal weight when learners have different numbers of published subjects.
+- Applied the same weighted denominator to the Excel workbook fallback calculation. Normal workbook output continues to use the class average returned by the published broadsheet; the fallback now uses the same score-row population.
+- Individual report-card averages remain the mean of that learner's published printable subject rows. This now reconciles with the class average as the mean across all eligible published score rows, not the mean of individual averages.
+- Added `scripts/test-schoolpro-printable-class-average-consistency.mjs`, registered it in `package.json` and the normal CI workflow.
+- No production migration or data change was required for this frontend/workbook correction.
+
+
+### Stage C report-card assessment-scheme correctness
+
+- Corrected report cards to load every assessment scheme referenced by the student's published subject rows, instead of loading only the first row's scheme and reusing its component layout for every subject.
+- The report table now builds a union of component keys, displays a component mark only when that component belongs to the row's actual scheme, and shows the correct maximum for consistent maxima or “Varies” when subject schemes differ.
+- Overall maximum is now derived from the sum of configured component maxima for each subject result. Overall percentage is calculated as total earned points divided by that maximum, rather than assuming every subject is out of 100.
+- Added `scripts/test-schoolpro-report-card-assessment-schemes.mjs`, registered it in `package.json` and the normal CI validation workflow.
+- Frontend-only correction; no production migration or data change.
+
+- Follow-up: subject totals now display their own configured maximum, and subject grades are normalized to a percentage using that subject's own scheme maximum before applying the school's grade bands. This avoids misgrading subjects whose component maxima do not sum to 100.
+
+
+### Stage C broadsheet class-average weighting
+
+- Corrected the interactive broadsheet's published class average to divide total published score points by the total number of published subject-result rows. It no longer takes an unweighted mean of each learner's average when learners have different numbers of published subjects.
+- This matches the denominator used by the SQL broadsheet and the printable class-results page.
+- Extended the allocated-subject broadsheet regression to reject the old unweighted calculation.
+- Frontend and regression-only change; no production database or deployment action.
+
+
+### Stage C broadsheet approval refresh
+
+- After the atomic bulk approval RPC commits successfully, the class/selected-student broadsheet now reloads its review sheet so approval state and aggregates are refreshed immediately.
+- If the post-commit read fails, the UI explicitly reports that approval succeeded and only the display refresh failed; it does not imply the committed approval was rolled back.
+- Regression coverage added to `scripts/test-schoolpro-atomic-bulk-result-approval.mjs`.
+- This is a frontend read-after-write consistency improvement; no production data or database migration was applied.
+
+
+### Stage C class publication roster consistency
+
+- Corrected the class-results publication scope to match the historical-session roster fallback already used by the review sheet and related report queries.
+- A student with an active current roster and no enrollment-history row for the selected session remains eligible for class publication.
+- Where a selected-session history row exists, that historical class assignment remains authoritative; an active current class does not override a different historical class.
+- Applied the same roster predicate to the publication lock, completeness validation, and update so the three phases cannot disagree about which results are in scope.
+- Extended the assessment-completeness source regression to guard the fallback and predicate consistency.
+- Migration remains proposed only; no production database changes have been made.
+
+### Stage C class-publication current-roster isolation
+
+- A follow-up review found the active-roster fallback in class publication was too broad: it included active students with no selected-session history row without checking their current class assignment.
+- Added proposed migration `20261108114000_schoolpro_class_publication_current_roster_scope.sql`. The fallback now requires `schoolpro_students.class_id = p_class`; where selected-session enrollment history exists, its historical class remains authoritative.
+- Applied the identical predicate to the row-lock phase, completeness validation and final publication update so the three phases operate on the same class roster.
+- Extended the source-contract regression and disposable PostgreSQL integration fixture with two active students who have no selected-session history and belong to different current classes. Publishing one class must publish only its own current-roster student and leave the other class's result Approved.
+- Proposed migration only. No production database changes, merge or Render deployment.
+
+### Stage C class-scoped atomic approval
+
+- Found that the broadsheet's class-approval path selected Draft result IDs by student IDs only. If a student had additional result rows in the same school/session outside the selected class scope, those rows could be approved unintentionally.
+- Added proposed migration `20261108115000_schoolpro_class_scoped_atomic_approval.sql` and RPC `review_schoolpro_class_results`.
+- The RPC locks the selected-session roster, applies historical-enrolment precedence and the same current-class fallback used by class publication, then delegates the exact result-ID batch to the existing atomic approval RPC.
+- Updated the class-level broadsheet action to use the class-scoped RPC. Selected-student and whole-school approval retain the existing atomic bulk RPC.
+- Extended the source-contract regression and disposable PostgreSQL fixture to prove a class approval does not approve a Draft result belonging to another current class.
+- Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C selected-student class-roster approval
+
+- Tightened the selected-student approval path so selecting learners from one class cannot approve unrelated result rows for those learners outside that class/session roster.
+- Extended `review_schoolpro_class_results` with an optional, bounded student-ID selection. The RPC validates uniqueness and confirms every selected student belongs to the requested historical/current class roster before selecting any Draft result rows.
+- Updated the broadsheet's “Approve selected scores” action to call this class-scoped RPC directly. Whole-school approval remains on the atomic bulk RPC.
+- Extended the source regression and disposable PostgreSQL integration fixture to prove selected learners are approved only within the selected class roster and out-of-class selections are rejected.
+- Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C selected-student publication class-roster enforcement
+
+- Found that selected-student publication accepted a learner ID list but did not constrain result rows to the class currently selected in the broadsheet. A learner with additional approved rows associated with another class could have those rows published unintentionally.
+- Added proposed migration `20261108116000_schoolpro_selected_publication_class_scope.sql`. The legacy unscoped five-argument RPC overload is removed; selected publication now requires a valid class and verifies every selected learner against the selected-session historical roster or, when no history exists, the learner's active current class.
+- Applied the same class predicate to result-row locking, completeness validation and publication update. Whole-school publication remains an explicit separate mode and rejects a supplied class/student selection.
+- Updated the broadsheet to pass the selected class for learner publication and null class for the whole-school action.
+- Extended the approval/publication regression and disposable PostgreSQL integration fixture to prove an in-class result publishes, another class's result remains Approved, and an out-of-class learner selection is rejected.
+- Proposed migration only; no production database changes, merge or Render deployment.
+
+
+### Stage C publication request bounds and academic-period guardrails
+
+- Bounded selected-student publication to 5,000 learner IDs per request and explicitly rejects duplicate IDs before processing.
+- Added a required nonblank term and session check to class-scoped publication, matching the guards already applied to class approval and selected/whole-period publication.
+- Extended the selected-publication source regression for the size and duplicate-ID limits and the class-publication regression for required term/session values.
+- These are proposed changes in the unmerged Stage C PR; no production migration, merge or Render deployment.
+
+
+### Stage C historical-session roster consistency
+
+- Fixed the class roster joins used by staff review sheets, published class ranks/broadsheets, and subject statistics.
+- Historical enrollment is now joined through a single-row lateral lookup to prevent duplicate enrollment-history records from multiplying learner rows, marks, averages or ranks.
+- When a selected-session enrollment exists, its class remains authoritative (including a null class value); current class is only a fallback when no enrollment-history row exists for that selected session.
+- Active-student fallback now checks for missing history in the selected session, rather than incorrectly excluding learners merely because they have history from a different academic session.
+- Extended the allocated-subject broadsheet regression to assert deduplication, session-scoped fallback and historical-class precedence.
+- Proposed in Stage C PR #133 only; no production database migration, merge or Render deployment.
+
+
+### Stage C family ranking release guard
+
+- Updated `schoolpro_result_class_rank` so a student or active guardian can receive a class position only when that learner has at least one result for the requested term/session that is both published and locked.
+- The existing result-output authorization helper remains mandatory, preserving attendance and finance release restrictions and configured overrides.
+- Staff ranking access remains governed by the existing class/subject assignment and school-role checks.
+- Added required nonblank term/session validation and a regression asserting both the release requirement and the existing release-policy helper.
+- Implemented as proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` in Stage C PR #133; not applied to production.
+
+
+### Stage C ranking population correction
+
+- Tightened `schoolpro_result_class_rank`: the ranking population now includes only learners with at least one published-and-locked result in the requested term/session.
+- Learners with no released score are no longer counted as zero-score competitors, which could otherwise distort class population and positions.
+- The same released-result predicate remains on the score join; the learner/guardian release check and attendance/finance gate are preserved.
+- Added a source regression assertion for the non-empty released-score population.
+- Proposed migration `20261108117000_schoolpro_hide_unreleased_student_rankings.sql` remains unmerged and unapplied to production.
+
+
+- Extended the ranking correction to the staff broadsheet: learners with no published subject rows remain visible in the roster with a blank class position, and are ordered after learners with released scores. Their blank rows no longer distort published ranking. Broadsheet score totals still include published-and-locked rows only.
+
+
+## Stage C result workflow and section leadership correction — 2026-11-08
+
+- Added migration `20261108118000_schoolpro_principal_section_leadership.sql`: explicit section appointments now support Head Teacher for Nursery/Primary and Vice Principal or Principal (stored as administrator + `position_title='Principal'`) for Junior/Senior Secondary. Database assignment RPC validates the role-to-section mapping, retains appointment history with `ended_at`, and removes active assignments when a staff member loses an eligible leadership role.
+- Updated Staff & Access UI so appointed Principals also see and manage their active section assignments.
+- Added migration `20261108119000_schoolpro_form_master_section_head_result_workflow.sql`: Form Master submission is a server-validated action tied to the class `form_teacher_id`; every submitted Draft result must pass assessment completeness. Per-result workflow state records submission, section-head approval and publication.
+- Database trigger requires a Form Master submission before approval, requires the appointed section leader to approve, and requires approval before publication. Nursery/Primary approval is restricted to an assigned Head Teacher; Junior/Senior Secondary approval is restricted to an assigned Vice Principal or Principal. Score edits after submission invalidate that submission and require re-submission; reopening a result resets its workflow.
+- Broadsheet UI now exposes submission only to the class Form Master, approval/publication only to the appointed section leader for the selected class, and whole-school bulk actions only to the IHLink Super Administrator.
+- Regression source and disposable PostgreSQL fixture extended for Principal assignment, role-to-section restrictions, Form Master submission and the approval-to-publication transition. The section-leadership test is already included in normal CI.
+- These are proposed migrations in PR #133 only. They have not been applied to Supabase production, merged, or deployed to Render. Disposable PostgreSQL integration execution and latest CI status remain pending.
+
+
+- Follow-up hardening: role-to-section matching is now applied consistently to student/class read scopes and historical enrollment reads, not only to the assignment form. Legacy active appointments that conflict with the staff member's section role are ended while retaining appointment history. The Staff UI displays only the section options permitted for that role.
+- The disposable PostgreSQL fixture now exercises the Form Master RPC and the complete Nursery result transition from Form Master submission through Head Teacher approval to publication. Junior Secondary Head Teacher approval is explicitly rejected.
+
+- Final workflow hardening: active membership is required for Form Master submission and section-head approval; score totals and result identity/period changes invalidate pending submissions, and approved scores cannot be edited without the correction/reopen path. The PostgreSQL fixture now tests Form Master submission followed by Head Teacher, Vice Principal and Principal approval/publication for the relevant sections.
+
+- Security/concurrency follow-up: section-assignment RLS now qualifies the outer school/member keys to prevent cross-school reads, and the IHLink Super Administrator is explicitly authorized to view/manage section appointments. Form Master submission locks the scoped Draft result rows before completeness validation and workflow insertion.
+
+- Final roster consistency guard: approval now verifies that the learner's selected-session class still matches the class captured at Form Master submission. A class transfer after submission forces a fresh Form Master handoff instead of allowing approval under a stale class assignment.
+
+## Stage C role-based result lifecycle hardening — 2026-11-08 (PR #133; proposed only)
+
+- Extended the proposed Stage C result workflow in migration `20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql`: score writes are limited to the active teacher allocation for the exact class, subject and session; additional review/admin responsibilities do not grant a score-entry bypass.
+- Added a scoped class subject-teacher roster RPC for Form Masters and authorized class/section/school reviewers. Ordinary subject teachers see only their own allocation.
+- Broadsheet now loads active subject allocations through the RPC and shows class workflow status/correction instructions. Removed partial class/selected-result approval actions that bypassed the complete section handoff.
+- Section approval now advances the class workflow state for the section. Final approval checks complete section-approved results. Approved/published result reopening is guarded by an Exam Officer-authorized class/section correction batch; the individual-result correction route is retired.
+- Replaced the individual correction UI with a class-wide reopening request, explicitly warning that no score changes until the Exam Officer authorizes reopening.
+- Added My School Responsibilities navigation to account settings so a staff account holding multiple teaching, Form Master, section leadership, Exam Officer or school administration responsibilities can move between its authorized workspace views. Navigation does not grant permissions.
+- CI follow-up from run `42485443355` found three issues: the selected-student publication SQL had unbalanced parentheses; the disposable section-leadership fixture used invalid dollar quoting; and the staff responsibility source regression expected active teaching roles only. Corrected the publication migration, fixture quoting and staff role filter in subsequent commits. Payment-page validation passed; SchoolPro CI and Stage C0 regression failed on those identified issues in the earlier head and must be rerun against the corrected latest head.
+- Latest fixes include commits `4224e5c`, `792c60b`, `c29c1c1`, and `45ee633`. These changes remain in PR #133 only. No production Supabase migration, production data change, merge or Render deployment has occurred.
+- Required next validation: rerun SchoolPro CI, Stage C0 regression and the disposable PostgreSQL section-leadership lifecycle test against the current PR head; inspect any newly exposed migration or workflow failures before marking Stage C ready for review.
+
+
+- Latest role/result authority follow-up: introduced a restrictive SELECT policy backed by `private.schoolpro_can_read_result`, so ordinary subject teachers can read only result rows for their own active class/subject/session assignment; Form Masters, appointed section leaders, Exam Officers and school administrators retain their permitted class review scope. Student and guardian result reads remain supported through the existing student/family gates.
+- Added a subject-teacher score-write trigger for exact active allocations. Expanded its watched columns to include result status and lock state, and made the unchanged-score fast path require status and lock values to remain unchanged; teachers cannot bypass the lifecycle by changing only workflow metadata.
+- Added a regression assertion for status/lock protection and aligned the report-card grade-scale source contract with normalized subject percentage grading.
+- The current disposable CI attempt exposed a single-dollar SQL delimiter in the new result-read helper; corrected the opening and closing dollar quotes. The previous report-card assertion mismatch was updated to match the report card's normalized subject-grade calculation. These fixes are proposed only and must be validated on the new head before any readiness claim.
+- No production Supabase migration, production data change, merge or Render deployment has occurred.
+
+
+- Follow-up lifecycle hardening: the effective result-write helper now permits score writes only for the active teacher/class-teacher member with the exact active class, subject and session allocation. Form Masters, Section Heads, Exam Officers and school administrators retain review authority but do not gain score-write permission from those responsibilities alone.
+- Added a restrictive result-row read gate: ordinary subject teachers see only their allocated subject rows; the Form Master for the class, appointed Section Head, Exam Officer, school administrator and Super Admin receive only their permitted review scope. The Broadsheet loads the active subject-teacher roster and workflow summary through scoped RPCs.
+- Section Head approval, Exam Officer publication and Exam Officer correction reopening are controlled lifecycle transitions. The subject-write trigger requires transaction-local RPC markers for these status/lock changes, preventing direct client updates from bypassing the workflow.
+- A Section Head can return submitted or section-approved class results for correction. If already approved, the RPC restores the class rows to unlocked Draft, records the correction note, and requires the Form Master to resubmit before section approval can happen again.
+- Exam Officer final approval moves the workflow to `exam_approved`; only the Exam Officer publication RPC can publish and lock the whole school scope. The workflow status is then synchronized to `published`. Approved/published correction reopening requires a pending class/section batch containing the exact result row.
+- Results lifecycle RPCs now enforce the Results module subscription gate. Disposable PostgreSQL coverage was expanded for own-subject read/write boundaries, Form Master review, section return/resubmission, direct status/lock bypass rejection, final Exam Officer publication and correction reopening.
+- Latest validation attempt on the code head before this handover update: Stage C0 regression and SchoolPro CI were queued/in progress; do not mark the PR ready until the disposable migration and lifecycle tests finish on the latest code head. No production Supabase migration, production data change, merge or Render deployment has occurred.
+
+
+### Stage C approval-authority consistency — 2026-11-08 (PR #133; proposed only)
+
+- Corrected a gap in the section-wide and class-scoped Section Head approval RPCs. They previously checked only for an active appointment and could admit a staff member whose current role was not eligible for that section, or a Vice Principal whose authority had been superseded by an active Principal appointment.
+- Both RPCs now call `private.schoolpro_member_leads_class`, the shared authorization predicate that validates the member's active role, section appointment, school/class scope and Principal-over-Vice-Principal precedence. Section-wide approval requires at least one class in the selected section for which the caller passes that same predicate.
+- Added source-contract assertions so the two approval entry points cannot silently drift from the shared authority rule.
+- This is a proposed SQL/source change in PR #133. No production migration, production data write, merge or Render deployment has occurred. The source-contract regression and the section-leadership disposable PostgreSQL job are included in the existing SchoolPro CI workflow; both are awaiting the current queued run.
+
+
+- Validation clarification: the section-leadership PostgreSQL fixture has a second Stage C authority phase that does apply migration 20261108120000. That phase is extended to verify Principal precedence in both the section-wide and class-scoped approval RPCs. The separate earlier section-workflow phase continues to exercise the 20261108118000/20261108119000 migrations.
+
+- Added disposable PostgreSQL coverage after migration 20261108120000 is applied: a Vice Principal and Principal are both actively appointed to Senior Secondary; the VP is denied both section-wide and class-scoped approval, while the Principal retains section authority. The source-contract regression requires these assertions.
+
+- Latest CI at head `c25efb5029ab7cef25ff9acf4da94be19189fdef`: SchoolPro CI run `42494277979` (run #3024) is queued, including the `validate` source-contract job and the `Section leadership authorization (disposable PostgreSQL)` job. Stage C0 regression run `42494277970` and payment-page validation run `42494277889` are also queued. No test pass is claimed yet. The combined status still reports a legacy Vercel failure context; it is not a Render deployment result and Vercel is not the SchoolPro host.
+
+
+### Section-head appointment eligibility clarification — 2026-11-08 (PR #133)
+
+- Updated the policy per the user's clarification: an active school staff member may be formally appointed to Nursery, Primary, Junior Secondary, Senior Secondary, or more than one section. The only excluded staff role is ordinary `teacher` (Subject Teacher); parent and student accounts are also ineligible because they are not staff.
+- This means Class Teachers/Form Masters, Head Teachers, Vice Principals, Principals, Exam Officers, administrators, proprietors, and other active school staff roles can be appointed. A Class Teacher appointment does not grant additional subject score-entry rights; those remain constrained by active subject allocation.
+- An active Principal appointment still has precedence in that section. Other staff appointments cannot exercise section-head authority in a section with an appointed Principal.
+- Updated the Staff & Access page to show section appointment controls for every eligible staff role, rather than only Head Teacher/VP/Principal. The database RPC, read/review predicates, and role-change pruning now apply the same eligibility rule.
+- Added a disposable PostgreSQL integration assertion that Class Teacher is eligible and ordinary Subject Teacher remains ineligible.
+- No production migration, production data write, merge, or Render deployment has occurred. CI must validate the latest branch head before merge.
+
+
+### Result workflow immediate UI synchronization — 2026-11-08 (PR #133)
+
+- Fixed a broadsheet usability gap: successful Form Master submission, Section Head class/section approval, correction return, Exam Officer final approval, and whole-school publication now reload the selected class review sheet and workflow summary immediately. Users no longer need to click Generate again just to see the committed lifecycle state.
+- Refresh failures do not undo or misrepresent the database transition; the RPC remains authoritative, and the displayed sheet/workflow is updated only when its corresponding read succeeds.
+- Added source-contract assertions for the refresh helper and successful-transition refresh calls.
+- Proposed frontend/test changes only. No production migration, production data write, merge or Render deployment has occurred; CI validation is still required.
+
+
+### Correction reopening queue live synchronization — 2026-11-08 (PR #133)
+
+- The Broadsheet now refreshes the pending class/section correction queue immediately after a new reopening request is submitted and after the Exam Officer approves or rejects a request.
+- When an approved request affects the currently selected class, the class review sheet and workflow summary are refreshed as well, so the newly reopened Draft state is visible without a manual Generate action.
+- Added source-contract assertions for queue refresh and affected-class refresh. These are proposed frontend/test changes; CI has not yet validated the latest head. No production migration, production data write, merge or Render deployment has occurred.
+
+
+### Stage C — section reopening decision refreshes affected class view (2026-11-08)
+
+- Corrected the Exam Officer correction-reopening decision flow in `SchoolProBroadsheet.tsx`: after an approved or rejected section-wide reopening request, the currently selected class broadsheet and workflow summary now refresh when that class belongs to the requested section (same term/session). Previously, the correction queue refreshed but the selected class view refreshed only for class-scoped requests.
+- The correction queue continues to refresh immediately after either decision. No extra database query or schema change was introduced.
+- Added a source-contract regression asserting section-scope matching for the selected class.
+- Changes are confined to PR #133's draft branch. No production data or Supabase schema was changed; no merge or Render deployment occurred. CI validation remains pending.
+
+
+### Stage C — requester-visible correction request tracking (2026-11-08)
+
+- Added `20261108121000_schoolpro_correction_requester_visibility.sql` with a narrow SELECT RLS policy allowing an authenticated user to read only correction-batch records where `requested_by = auth.uid()`. Existing Exam Officer, school administrator and Super Admin review visibility remains intact; correction-batch item snapshots remain restricted to reviewers.
+- Added a **My result correction requests** panel to the staff broadsheet. It shows the signed-in staff member's latest 20 requests, scope, academic period, reason, pending/approved/rejected status and any Exam Officer review note. It does not grant requesters authority to approve, reject or reopen results.
+- Request history refreshes after a new request and after a review decision. The existing Exam Officer pending queue remains separate.
+- Extended `scripts/test-schoolpro-correction-review-atomicity.mjs` to assert the requester-only RLS predicate, user-scoped query and status/review-note UI. The existing CI job already invokes this regression script.
+- Proposed migration and frontend changes are on PR #133 only. No production Supabase changes, merge or Render deployment occurred. CI has not yet validated this latest increment.
+
+
+### Stage C CI correction — section leadership UI contract (2026-11-09; PR #133)
+
+- Corrected `scripts/test-schoolpro-section-leadership.mjs` after the latest CI run exposed stale source assertions that still expected the former Head Teacher / Vice Principal / Principal-only UI rules.
+- The regression now verifies that appointment controls are rendered only for active staff, that all staff roles other than ordinary Subject Teacher, parent and student are eligible, and that the old role-specific UI restrictions do not return. Existing database, integration, Principal-precedence, and score-entry boundary assertions remain in place.
+- This is a test-only correction to match the already-implemented and user-confirmed appointment policy. Commit: `ac20ec30ab939db286cd903a24dd36304ae5b54b`. CI must rerun against this head; no production Supabase change, merge, or Render deployment has occurred.
+
+
+### Stage C result lifecycle CI correction — 2026-11-09 (PR #133; proposed only)
+
+- The 2026-11-09 CI run exposed that the result-row trigger did not enforce RPC-only transitions: a direct authenticated status update could attempt Section Head approval, and the trigger's old role list did not use the new all-active-staff appointment policy. It also left the workflow synchronization expecting the pre-Exam-Officer state during publication.
+- Replaced the trigger logic in proposed migration 20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql. Section approval now requires the transaction-local marker set by the complete-section approval RPC, a submitted Form Master workflow row, and the shared role-/section-/Principal-aware schoolpro_member_leads_class predicate. Publication requires the Exam Officer publication marker, an exam_approved workflow row and Exam Officer authorization. Direct client status changes are rejected.
+- Updated workflow synchronization so publication advances exam_approved to published. The source-contract test now asserts both RPC markers, the shared authority predicate and the corrected workflow state; fixed the escaped school_admin responsibility assertion.
+- This is proposed migration/test code in PR #133 only. It has not been applied to Supabase production, merged or deployed to Render. CI must validate the latest head.
+
+
+### Stage C CI follow-up — enum-safe staff eligibility and focused fixture scope — 2026-11-09
+
+- CI confirmed the `school_member_role` enum contains school staff roles only; it has no `parent` or `student` values. The proposed authority migration now excludes the ordinary `teacher` enum role. Parent/student accounts remain ineligible because they are not school staff/member roles; the staff UI continues to exclude those account types. This removes invalid enum literals from the appointment predicates and role-change pruning trigger.
+- Corrected the Principal-precedence source assertion to match the migration's actual dotted identifier syntax.
+- The isolated section-leadership SQL fixture applies the section-appointment and Form Master workflow migrations, not the later final-authority migration. Removed direct status-update assertions from that older fixture rather than weakening production enforcement. The RPC-only approval/publication markers and trigger guards remain in the final authority migration and are asserted by the Stage C source-contract test; they must be exercised by the full migration/result-workflow integration path.
+- CI had exposed a fixture/migration boundary mismatch: the isolated test was asserting behavior introduced only by a later migration. No production database changes, merge, or Render deployment.
+
+
+### Stage C migration parser correction — 2026-11-09
+
+- CI isolated a malformed dollar-quote terminator on the new `private.schoolpro_prune_section_leadership_role()` trigger function. It ended with `$;` instead of `$$;`, causing the following enrollment-reader SQL function's `WITH` clause to be parsed in the wrong context. Corrected the terminator; the eligibility predicate remains unchanged. This is a proposed migration correction only, not applied to production.
+
+
+### Stage C repeat CI parser and assertion correction — 2026-11-09
+
+- CI showed the active `private.schoolpro_prune_section_leadership_role()` terminator still contained `end\n$;` immediately before the trigger declaration. Corrected it to `end\n$$;`. This was the direct cause of PostgreSQL parsing the following enrollment-reader `WITH leaders AS MATERIALIZED` query as part of the preceding function body.
+- Corrected the section-leadership source test's Principal-role regex to match the actual `principal_m.role='administrator'` identifier rather than requiring a literal backslash before the dot.
+- Both changes are proposed on PR #133 only. Awaiting fresh CI; no production Supabase change, merge, or Render deployment.
+
+
+### Section-leadership disposable integration fixture alignment — 2026-11-09
+
+- The section-leadership integration fixture intentionally applies the appointment, Principal-role, and Form Master workflow migrations (through `20261108119000`), not the later full result-authority migration (`20261108120000`). Its SQL test incorrectly invoked section approval, Exam Officer, and reopening RPCs introduced only by that later migration; the disposable fixture consequently failed with a missing `schoolpro_approve_section_results` function even though the production migration itself parsed.
+- Narrowed this fixture to the behavior its migration set actually installs: explicit Nursery/Primary/Junior Secondary/Senior Secondary appointments, per-section student/class read scope, rejection of ordinary Subject Teacher appointments, appointment removal, and automatic pruning after a staff-role change. Result lifecycle RPC and Principal-precedence source contracts remain asserted against the full authority migration by the companion source-contract test.
+- This changes CI test scope only; no production schema/data, merge, or Render deployment.
+
+
+- Follow-up fixture contract cleanup: removed stale source-test assertions for result-approval, Exam Officer, reopening, and enrollment-reader scenarios from the section-leadership disposable fixture. Those scenarios are not loaded by its migration set; the remaining assertions now match only the section appointment/read-scope cases actually executed by that fixture. The separate result-workflow source contract still asserts the full Stage C lifecycle RPC surface.
+
+
+### Stage C enum comparison and Principal source-contract CI corrections — 2026-11-09
+
+- C0 disposable Supabase migration execution found a comparison between the `schoolpro_result_status` enum column and a text parameter in `private.schoolpro_result_scope_matrix_state`. Added an explicit cast of `p_result_status` to `public.schoolpro_result_status`, preserving the RPC's text argument signature while making the comparison type-safe.
+- Full CI source-contract failure was an over-escaped regular expression for `principal_m.position_title`; corrected the assertion to match the literal SQL identifier and Principal check.
+- These are branch-only corrections on PR #133. No production Supabase migration, merge, or Render deployment.
+
+
+### Stage C CI corrections — 2026-11-09 (latest)
+- The latest Stage C CI exposed a real gap in `private.validate_subject_assignment()`: active allocations checked school ownership and teaching role but did not require an active staff membership or a non-archived class. The validator now enforces active membership and non-archived class state for active allocations, while preserving ended allocation history.
+- The result-workflow source test expected an obsolete inline refresh expression. Updated it to assert the current explicit selected-class impact check and conditional refresh after the correction queue reload.
+- Scope: branch-only migration and source-contract test updates. No production Supabase migration/data changes, PR merge, or Render deployment.
+- Commit sequence: validator fix `e79fa8b9fbbe2dd0db3ef57456bd4ab080a7eef8`; workflow assertion fix `d199376b1f9befd048f98d0efcf41b27d060aa5b`.
+- Fresh CI validation is pending; do not treat these fixes as passed until the new runs complete.
+
+
+### Stage C follow-up — section reader active-class scope and appointment contract (2026-11-09)
+- The C0 disposable Supabase regression found that the section-head class/student reader helpers checked active membership and active appointment but did not exclude archived classes. Both helpers now require the resolved class to be non-archived.
+- Corrected the Stage C source-contract test to match the agreed eligibility policy: ordinary Subject Teacher role is excluded; Class Teachers/Form Masters and every other active staff role remain eligible for formal section appointment.
+- No production migration, data write, merge or Render deployment. Fresh CI validation pending.
+
+
+### Stage C final-authority schema regression — 2026-11-09
+- Extended the C0 disposable-Supabase SQL regression to inspect the final Stage C section-authority functions installed by the complete migration chain.
+- The regression now fails if the final appointment RPC does not require active membership, exclude only ordinary Subject Teachers, and require authorized school administration; it also checks that both current-class and historical-student section authority enforce Principal precedence.
+- This closes a test-coverage gap: the older isolated section-leadership fixture stops before the final authority migration, so its role-specific appointment checks alone could not prove the final all-active-staff eligibility contract against the complete schema.
+- Branch-only CI test change, commit `8c061f94e6d1cbb0485dace0ae6e01847a3ba04c`. No production Supabase migration/data changes, merge, or Render deployment.
+
+
+### Stage C Principal-first section review UI correction — 2026-11-09
+- The database already enforced Principal precedence, but the Class Broadsheet UI treated every active section appointee as an approver. This could expose approval/return/reopening controls to a Vice Principal or another appointee even when an active Principal was appointed to that same section; the RPC would reject the action, but the UI was misleading.
+- The broadsheet now loads active section appointments and active administrator members, identifies sections with an appointed Principal, and exposes section-head controls only to that Principal for those sections. Other sections continue to honor their own explicit appointee. Principal identity is matched using the active administrator membership and normalized position_title.
+- Added source-contract assertions for active Principal lookup and suppression of non-Principal section controls under Principal precedence.
+- Branch-only frontend and test changes, UI commit c7283e2651fbc2c1b222e18b62e294dc65200b76; no production Supabase changes, merge, or Render deployment. CI validation is pending.
+
+
+### Stage C Principal-first review UI typecheck correction — 2026-11-09
+- The first CI run after the Principal-precedence UI change found a TypeScript narrowing issue: `member.data` was referenced after an awaited Principal lookup, where the compiler correctly no longer guaranteed it was non-null.
+- Captured the validated active member ID before subsequent asynchronous queries and reused that stable ID for responsibility, teaching-allocation, and section-appointment filtering.
+- Fix committed as `5ae50b7c3ca2921e5e3f70cd9127cbb7476ec4c4`. CI must rerun against the latest branch head; earlier failures on the preceding head are not treated as final validation.
+- No production database writes, merge, or Render deployment.
+
+
+## 2026-11-09 Stage C review-sheet ranking regression follow-up
+- Latest Stage C head `debe93af27e20b2d98f758ce78bc0b800dd7894d` passed payment validation and C0 regression. Main SchoolPro CI failed only because the new ranking source-contract assertion expected a direct `LEFT JOIN schoolpro_results`, while the function correctly builds a roster CTE and then left-joins its `marks` CTE. Updated the assertion to verify the actual roster-preserving join (`schoolpro_students` roster plus `LEFT JOIN marks`). No application or database behavior changed in this correction.
+- No production migration applied, no production data written, no merge, and no Render deployment.
+
+- Follow-up review of the replacement function found it also needed to preserve the existing published-result columns/positions and allocated-subject summary introduced by the prior broadsheet migration. Rebuilt the new migration from that established function and changed only the rank eligibility/order behavior: full roster retained, unassessed class and published positions null, published totals/scores and pre-mark allocated subjects retained. Extended the source-contract test to protect these existing fields. This is still a draft-branch migration only; it has not been applied to production.
+
+
+## 2026-11-09 Stage C workflow concurrency hardening
+- Added `private.schoolpro_lock_result_scope` to lock the selected class/section/school classes, selected-session roster members, active subject allocations, saved result rows and workflow rows before completeness/state validation and lifecycle transitions.
+- Form Master submission now performs its complete Draft-matrix check only after those locks are held. Section Head class/section approval, Exam Officer final approval and whole-school publication also acquire the exact scope locks before checking the workflow state. This closes the avoidable time-of-check/time-of-use window where a concurrent mark, roster or allocation edit could race a review transition.
+- Added source-contract assertions that require the locking helper and all five transition call sites. Proposed migration only; no production Supabase changes, data writes, merge or Render deployment.
+
+
+## 2026-11-09 — Stage C result-scope locking CI correction
+- Corrected the result-scope lock helper's PL/pgSQL dollar-quote delimiter and the Node source-contract regex escaping after CI identified both issues.
+- Re-run the full SchoolPro CI and Stage C0 migration replay before treating this head as validated. No production migration or deployment was performed.
+
+
+## 2026-11-09 — Stage C result-scope lock CI corrections
+- Corrected the PL/pgSQL function-body delimiter for `private.schoolpro_lock_result_scope` from `as $` to `as $$`; the disposable Supabase migration replay had stopped at this helper declaration.
+- Corrected the `test-result-workflow.mjs` ordering assertion so it matches the actual SQL sequence using a single regex whitespace escape; the previous assertion was over-escaped and failed despite the lock call being in the correct position.
+- Both changes are committed on `feat/schoolpro-stage-c-assessment-results-workflow`; CI must rerun against the new head before this concurrency hardening is considered validated. No production migration, merge, or Render deployment was performed.
+
+
+## 2026-11-09 — Follow-up: result-scope lock delimiter replay
+- The Stage C0 full migration replay confirmed the result-scope lock helper still had a single-dollar opening delimiter. Corrected that exact helper declaration to `as $$` and committed the migration correction.
+- SchoolPro CI and payment validation passed on the preceding source-test correction commit; Stage C0 replay remained blocked by this SQL delimiter and is rerunning on the new migration commit. No production migration, merge, or Render deployment was performed.
+
+
+### Result-scope lock helper delimiter correction — 2026-11-09
+- The latest disposable-Supabase Stage C0 regression exposed a second SQL dollar-quote terminator typo in `private.schoolpro_lock_result_scope`: its PL/pgSQL body opened with `as $$` but closed with `$;`.
+- Corrected the function terminator to `$$;` so the following SQL helper definition is parsed as a separate function rather than as stray SQL.
+- Proposed migration only; no production database changes. CI rerun is required against the new branch head.
+
+
+### Result-scope lock helper terminator replay correction — 2026-11-09
+- The next full disposable-Supabase migration replay showed that the earlier delimiter correction had not reached the committed migration: `private.schoolpro_lock_result_scope` still ended with `$;`. Replaced that exact terminator with `$$;` in the branch migration file and verified the surrounding function boundary. This is the specific parser error reported at the subsequent `WITH roster` statement.
+- Re-run the complete Stage C0 migration replay and main CI against the new branch head before marking PR #133 ready. No production migration, production data write, merge or Render deployment.
+
+
+### Result-scope lock helper terminator replay correction — 2026-11-09 (verified file update)
+- The disposable-Supabase replay showed `private.schoolpro_lock_result_scope` still ended with `$;` in the committed migration. Replaced that exact terminator with `$$;` and committed the migration file correction. This ensures the next `WITH roster` helper starts outside the preceding PL/pgSQL body.
+- CI must complete against the corrected branch head before PR #133 is marked ready or merged. No production migration, production data write, merge or Render deployment.
+
+### 2026-11-09 — C0 CI database-port isolation
+- Latest-head SchoolPro CI and payment-page validation passed. The C0 regression job failed before database tests because the disposable Supabase PostgreSQL container could not bind default host port 54322 (already in use on the runner).
+- Updated `.github/workflows/schoolpro-c0-regression.yml` to configure a dedicated local database port (54332) for this job and use that port for baseline restore, migration replay, and SQL regression tests. This is CI-only; it does not change production Supabase configuration or data.
+- Commit: `92860d80dd8fd9a16c2dc2093ae29960af7a3368`. Fresh workflow validation is required on this new branch head before PR #133 can merge.

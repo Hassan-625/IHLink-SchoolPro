@@ -1,0 +1,20 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const migration=readFileSync('supabase/migrations/20261108100000_schoolpro_consistent_result_ranking_totals.sql','utf8');
+const broadsheet=readFileSync('supabase/migrations/20261012124900_schoolpro_full_class_reports_require_coordinator.sql','utf8');
+const report=readFileSync('supabase/migrations/20261011231101_schoolpro_rank_and_report_using_historical_session_class.sql','utf8');
+assert.ok(migration.includes('rank() over(order by total desc)'));
+assert.ok(!migration.includes('rank() over(order by average desc)'));
+assert.ok(migration.includes('case when e.has_history is true then e.class_id else s.class_id end=p_class'));
+assert.ok(migration.includes("s.status='active' and not exists("));
+assert.ok(migration.includes('h.school_id=s.school_id and h.student_id=s.id'));
+assert.ok(broadsheet.includes('rank() over(order by x.total desc)'));
+assert.ok(report.includes('rank() over(order by total desc)'));
+console.log('PASS: review, broadsheet and report ranking use total-score ordering and consistent historical-session roster fallback.');
+
+const reviewFix=readFileSync('supabase/migrations/20261109100000_schoolpro_review_sheet_unassessed_rank_guard.sql','utf8');
+assert.ok(reviewFix.includes('case when subjects>0 then rank() over(order by case when subjects>0 then total end desc nulls last)'),'Review-sheet ranking must assign positions only to learners with recorded results');
+assert.ok(reviewFix.includes('else null::bigint end class_position'),'Unassessed learners must have no class position');
+assert.ok(reviewFix.includes('order by r.class_position nulls last,r.student_name'),'Unassessed learners must remain visible after ranked learners');
+assert.ok(reviewFix.includes('from public.schoolpro_students s') && reviewFix.includes('left join marks m on m.student_id=s.id'),'Review sheet must preserve the complete roster');
+console.log('PASS: staff review sheet retains unassessed learners without assigning them a class position.');

@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+import assert from 'node:assert/strict';
+const page=fs.readFileSync('src/pages/schoolpro/SchoolProReportCard.tsx','utf8');
+assert.match(page,/schemeIds=\[\.\.\.new Set\(resultRows\.map\(r=>r\.assessment_scheme_id\)/);
+assert.match(page,/\.select\("id,components"\)\.in\("id",schemeIds\)/);
+assert.match(page,/setComponentsByScheme\(schemeMap\)/);
+assert.match(page,/componentsByScheme\[r\.assessment_scheme_id\|\|''\]/);
+assert.match(page,/maximumTotal=useMemo/);
+assert.match(page,/totalScore\/maximumTotal\*100/);
+assert.match(page,/r\.total_score\/rowMaximum\(r\)\*100/);
+assert.match(page,/\{r\.total_score\} \/ \{rowMaximum\(r\)\}/);
+assert.match(page,/<b>Total:<\/b> \{totalScore\.toFixed\(1\)\} \/ \{maximumTotal\.toFixed\(1\)\}/);
+console.log('SchoolPro per-result assessment scheme report-card regression passed.');

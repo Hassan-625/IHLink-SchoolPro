@@ -43,9 +43,10 @@ assert.match(authority,/status='section_approved'/i);
 assert.match(authority,/status='exam_approved'/i);
 assert.match(authority,/schoolpro_member_responsibilities_self_or_admin_read/i);
 assert.match(authority,/grant select on public\.schoolpro_member_responsibilities to authenticated/i);
-assert.match(authority,/target\.role in \('teacher','class_teacher'\)/i,
-  'Teaching staff must be eligible for an explicitly appointed section-head responsibility.');
+assert.match(authority,/target\.role = 'teacher'/i,
+  'Ordinary Subject Teachers must be excluded while other active staff may be appointed.');
 assert.match(authority,/private\.schoolpro_member_leads_student_section\(new\.school_id,new\.student_id,new\.session\)/i);
+assert.match(authority,/c\.archived_at is null/i,'Section readers must exclude archived classes.');
 assert.match(profile,/My School Responsibilities/);
 assert.match(authority,/create or replace function private\.schoolpro_can_review_class/i);
 assert.match(authority,/private\.schoolpro_is_exam_officer\(p_school\)/i);

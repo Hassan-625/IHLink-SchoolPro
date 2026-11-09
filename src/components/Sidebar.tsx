@@ -4,6 +4,7 @@ import {useSchoolSession} from '@/hooks/useSchoolSession';
 import {isNativeApp} from '@/lib/nativeAuth';
 import {schoolSections,studentSections,parentSections,teacherSections} from '@/pages/schoolpro/schoolShared';
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
+import {schoolRoleLabel} from '@/lib/schoolRoles';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -56,6 +57,7 @@ export function DashboardLayout({
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
   const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
   const role=permissions.role.toLowerCase();
+  const displayedRole=product==='schoolpro'?schoolRoleLabel(permissions.role):userRole;
   const isPlatformSchoolProSuperAdmin=product==='schoolpro'&&profile?.role==='super_admin';
   const canonical=isPlatformSchoolProSuperAdmin?schoolSections:role==='student'?studentSections:role==='parent'?parentSections:['teacher','class_teacher'].includes(role)?teacherSections:schoolSections;
   const sections=product==='schoolpro'
@@ -206,7 +208,7 @@ export function DashboardLayout({
                 <Avatar name={accountDisplayName} size="sm" />
                 <div className="hidden lg:block text-left">
                   <p className="text-sm font-bold text-ink leading-none">{accountDisplayName}</p>
-                  <p className="text-xs text-muted mt-0.5">{userRole}</p>
+                  <p className="text-xs text-muted mt-0.5">{displayedRole}</p>
                 </div>
                 <ChevronDown className="w-3.5 h-3.5 text-muted" />
               </button>

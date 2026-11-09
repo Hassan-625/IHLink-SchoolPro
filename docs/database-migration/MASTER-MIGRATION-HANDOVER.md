@@ -3012,3 +3012,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 
 
 - Follow-up fixture contract cleanup: removed stale source-test assertions for result-approval, Exam Officer, reopening, and enrollment-reader scenarios from the section-leadership disposable fixture. Those scenarios are not loaded by its migration set; the remaining assertions now match only the section appointment/read-scope cases actually executed by that fixture. The separate result-workflow source contract still asserts the full Stage C lifecycle RPC surface.
+
+
+### Stage C enum comparison and Principal source-contract CI corrections — 2026-11-09
+
+- C0 disposable Supabase migration execution found a comparison between the `schoolpro_result_status` enum column and a text parameter in `private.schoolpro_result_scope_matrix_state`. Added an explicit cast of `p_result_status` to `public.schoolpro_result_status`, preserving the RPC's text argument signature while making the comparison type-safe.
+- Full CI source-contract failure was an over-escaped regular expression for `principal_m.position_title`; corrected the assertion to match the literal SQL identifier and Principal check.
+- These are branch-only corrections on PR #133. No production Supabase migration, merge, or Render deployment.

@@ -821,6 +821,72 @@ for each row execute function private.schoolpro_prune_subject_assignments_role()
 
 -- A class is ready for Form Master submission only when every active subject
 -- allocation has a complete Draft result for every learner in that session.
+-- Serialize roster, active allocations, saved scores and workflow rows while
+-- validating/submitting/approving a result scope. This prevents a score or
+-- allocation edit racing between completeness checks and workflow transitions.
+create or replace function private.schoolpro_lock_result_scope(
+  p_school uuid,p_term text,p_session text,p_scope text,p_class uuid default null,p_section text default null
+) returns void language plpgsql security definer set search_path=''
+as $
+begin
+  if p_scope not in ('class','section','school') then raise exception 'Invalid result scope'; end if;
+  perform c.id from public.schoolpro_classes c
+  where c.school_id=p_school and (p_scope='school'
+    or (p_scope='class' and c.id=p_class)
+    or (p_scope='section' and c.level=p_section))
+  order by c.id for update;
+  perform s.id from public.schoolpro_students s
+  where s.school_id=p_school and exists(
+    select 1 from public.schoolpro_classes c
+    where c.school_id=p_school
+      and (p_scope='school' or (p_scope='class' and c.id=p_class)
+        or (p_scope='section' and c.level=p_section))
+      and c.id=coalesce((
+        select h.class_id from public.schoolpro_enrollment_history h
+        where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session)
+        order by h.created_at desc limit 1
+      ),s.class_id)
+  ) and (
+    exists(select 1 from public.schoolpro_enrollment_history h
+      where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session))
+    or s.status='active'
+  )
+  order by s.id for update;
+  perform a.subject_id from public.schoolpro_subject_assignments a
+  where a.school_id=p_school and a.session=trim(p_session) and a.ended_at is null
+    and exists(select 1 from public.schoolpro_classes c where c.school_id=p_school
+      and c.id=a.class_id and (p_scope='school' or (p_scope='class' and c.id=p_class)
+        or (p_scope='section' and c.level=p_section)))
+  order by a.class_id,a.subject_id for update;
+  perform r.id from public.schoolpro_results r
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+    and exists(select 1 from public.schoolpro_students s
+      where s.school_id=p_school and s.id=r.student_id and exists(
+        select 1 from public.schoolpro_classes c where c.school_id=p_school
+          and (p_scope='school' or (p_scope='class' and c.id=p_class)
+            or (p_scope='section' and c.level=p_section))
+          and c.id=coalesce((
+            select h.class_id from public.schoolpro_enrollment_history h
+            where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session)
+            order by h.created_at desc limit 1
+          ),s.class_id)
+      ) and (
+        exists(select 1 from public.schoolpro_enrollment_history h
+          where h.school_id=p_school and h.student_id=s.id and h.session=trim(p_session))
+        or s.status='active'
+      ))
+  order by r.id for update;
+  perform w.result_id from public.schoolpro_result_workflow w
+  where w.school_id=p_school and w.term=trim(p_term) and w.session=trim(p_session)
+    and exists(select 1 from public.schoolpro_classes c where c.school_id=p_school
+      and c.id=w.class_id and (p_scope='school' or (p_scope='class' and c.id=p_class)
+        or (p_scope='section' and c.level=p_section)))
+  order by w.result_id for update;
+end
+$;
+revoke all on function private.schoolpro_lock_result_scope(uuid,text,text,text,uuid,text) from public,anon;
+grant execute on function private.schoolpro_lock_result_scope(uuid,text,text,text,uuid,text) to authenticated;
+
 create or replace function private.schoolpro_class_result_matrix_complete(
   p_school uuid,p_class uuid,p_term text,p_session text
 ) returns boolean
@@ -932,28 +998,10 @@ begin
     and c.id=p_class and c.form_teacher_id=m.id
   where m.school_id=p_school and m.user_id=auth.uid() and m.status='active';
   if v_member is null then raise exception 'Only the assigned Form Master can submit this class result register'; end if;
+  perform private.schoolpro_lock_result_scope(p_school,p_term,p_session,'class',p_class,null);
   if not private.schoolpro_class_result_matrix_complete(p_school,p_class,p_term,p_session) then
     raise exception 'Submission blocked: every student must have a complete Draft result for every subject allocated to this class in the selected session';
   end if;
-  perform s.id from public.schoolpro_students s
-  where s.school_id=p_school and (
-    exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
-      and h.student_id=s.id and h.session=trim(p_session) and h.class_id=p_class)
-    or (s.status='active' and s.class_id=p_class and not exists(select 1
-      from public.schoolpro_enrollment_history h where h.school_id=p_school
-        and h.student_id=s.id and h.session=trim(p_session)))
-  ) order by s.id for update;
-  perform r.id from public.schoolpro_results r
-  join public.schoolpro_students s on s.id=r.student_id and s.school_id=r.school_id
-  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
-    and r.status='draft' and not r.locked
-    and (
-      exists(select 1 from public.schoolpro_enrollment_history h where h.school_id=p_school
-        and h.student_id=s.id and h.session=trim(p_session) and h.class_id=p_class)
-      or (s.status='active' and s.class_id=p_class and not exists(select 1
-        from public.schoolpro_enrollment_history h where h.school_id=p_school
-          and h.student_id=s.id and h.session=trim(p_session)))
-    ) order by r.id for update of r;
   insert into public.schoolpro_result_workflow(
     result_id,school_id,class_id,term,session,status,submitted_by,submitted_at,
     approved_by,approved_at,published_at,updated_at
@@ -1282,6 +1330,7 @@ begin
       and private.schoolpro_member_leads_class(p_school,c.id)) then
     raise exception 'Only the eligible appointed section head can approve this section; an appointed Principal takes precedence over a Vice Principal';
   end if;
+  perform private.schoolpro_lock_result_scope(p_school,p_term,p_session,'section',null,p_section);
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'section',null,p_section,'section') then
     raise exception 'Every allocated subject result for every student in the section must be complete and submitted by its Form Master';
   end if;
@@ -1334,6 +1383,7 @@ begin
   if not private.schoolpro_member_leads_class(p_school,p_class) then
     raise exception 'Only the eligible appointed Section Head can approve this class result; an appointed Principal takes precedence over a Vice Principal';
   end if;
+  perform private.schoolpro_lock_result_scope(p_school,p_term,p_session,'class',p_class,null);
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'class',p_class,null,'section') then
     raise exception 'Every allocated subject result in this class must be complete and submitted by its Form Master';
   end if;
@@ -1382,6 +1432,7 @@ begin
   if p_scope='school' and (p_class is not null or p_section is not null) then
     raise exception 'Whole-school approval cannot include a class or section filter';
   end if;
+  perform private.schoolpro_lock_result_scope(p_school,p_term,p_session,p_scope,p_class,p_section);
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,p_scope,p_class,p_section,'exam') then
     raise exception 'Every allocated class and subject result in the selected scope must be section-approved before final approval';
   end if;
@@ -1426,6 +1477,7 @@ begin
   if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then
     raise exception 'Select an academic term and session';
   end if;
+  perform private.schoolpro_lock_result_scope(p_school,p_term,p_session,'school',null,null);
   if not private.schoolpro_result_scope_mixed_state(p_school,p_term,p_session,'school',null,null,'exam') then
     raise exception 'Whole-school publication is blocked until every allocated subject result in every class has final Exam Officer approval';
   end if;

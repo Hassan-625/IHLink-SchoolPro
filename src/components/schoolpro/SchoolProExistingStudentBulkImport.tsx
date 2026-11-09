@@ -11,7 +11,6 @@ type Imported={admission_number:string;first_name:string;middle_name:string|null
 const norm=(v:unknown)=>String(v??"").trim().toLowerCase().replace(/[ _-]+/g," ").replace(/\s+/g," ");
 const cell=(v:unknown):string=>{if(v==null)return "";if(v instanceof Date)return v.toISOString().slice(0,10);if(typeof v==="object"&&v!==null&&"text"in v)return String((v as {text?:unknown}).text??"").trim();if(typeof v==="object"&&v!==null&&"result"in v)return String((v as {result?:unknown}).result??"").trim();return String(v).trim();};
 function parseCsv(source:string):string[][]{const rows:string[][]=[];let row:string[]=[],value="",quoted=false;for(let i=0;i<source.length;i++){const c=source[i];if(c==='"'){if(quoted&&source[i+1]==='"'){value+='"';i++;}else quoted=!quoted;}else if(c===","&&!quoted){row.push(value);value="";}else if((c==="\n"||c==="\r")&&!quoted){if(c==="\r"&&source[i+1]==="\n")i++;row.push(value);if(row.some(x=>x.trim()))rows.push(row);row=[];value="";}else value+=c;}row.push(value);if(row.some(x=>x.trim()))rows.push(row);return rows;}
-const existingStudentCsvTemplate="Admission Number,First Name,Middle Name,Last Name,Class,Gender,Guardian Name,Guardian Phone,Guardian Email,House\n";
 
 export function SchoolProExistingStudentBulkImport({schoolId,session,classes,houses,onImported}:Props){
  const [file,setFile]=useState<File|null>(null),[rows,setRows]=useState<Imported[]>([]),[issues,setIssues]=useState<string[]>([]),[busy,setBusy]=useState(false),[notice,setNotice]=useState("");

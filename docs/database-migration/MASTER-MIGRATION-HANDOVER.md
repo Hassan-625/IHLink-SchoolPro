@@ -3002,3 +3002,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - CI showed the active `private.schoolpro_prune_section_leadership_role()` terminator still contained `end\n$;` immediately before the trigger declaration. Corrected it to `end\n$$;`. This was the direct cause of PostgreSQL parsing the following enrollment-reader `WITH leaders AS MATERIALIZED` query as part of the preceding function body.
 - Corrected the section-leadership source test's Principal-role regex to match the actual `principal_m.role='administrator'` identifier rather than requiring a literal backslash before the dot.
 - Both changes are proposed on PR #133 only. Awaiting fresh CI; no production Supabase change, merge, or Render deployment.
+
+
+### Section-leadership disposable integration fixture alignment — 2026-11-09
+
+- The section-leadership integration fixture intentionally applies the appointment, Principal-role, and Form Master workflow migrations (through `20261108119000`), not the later full result-authority migration (`20261108120000`). Its SQL test incorrectly invoked section approval, Exam Officer, and reopening RPCs introduced only by that later migration; the disposable fixture consequently failed with a missing `schoolpro_approve_section_results` function even though the production migration itself parsed.
+- Narrowed this fixture to the behavior its migration set actually installs: explicit Nursery/Primary/Junior Secondary/Senior Secondary appointments, per-section student/class read scope, rejection of ordinary Subject Teacher appointments, appointment removal, and automatic pruning after a staff-role change. Result lifecycle RPC and Principal-precedence source contracts remain asserted against the full authority migration by the companion source-contract test.
+- This changes CI test scope only; no production schema/data, merge, or Render deployment.

@@ -3229,3 +3229,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Edit and create share the same school-scoped save path. Duplicate-key errors (PostgreSQL 23505) now receive a direct explanation that the class name/arm already exists and that the existing row should be edited. Other failures return a safe actionable message with the database error code rather than exposing raw SQL diagnostics or silently collapsing all failures into an opaque generic message.
 - Added a source-contract regression to CI for section-name validation, stable-ID class updates, school scoping, duplicate feedback, and edit/cancel UI.
 - Frontend and automated test changes only. No production class rows were edited, no production migration was applied, and no merge or Render deployment is included.
+
+
+## 2026-11-09 — Canonical SchoolPro role labels
+- Centralized the signed-in school role shown in the shared SchoolPro workspace sidebar. SchoolPro modules no longer display their own hard-coded identity label when the authenticated school role is available.
+- Standardized the canonical display labels for `proprietor` (Proprietor) and `administrator` (Administrator). Stored role codes and authorization checks are unchanged; this is a presentation-only correction.
+- The update does not change tenant access, permissions, RLS, production data, or Supabase configuration.
+- Cross-product “Navigate to My Responsibilities” rollout is tracked separately and remains outside SchoolPro, per the user's instruction.

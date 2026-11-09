@@ -76,7 +76,7 @@ assert.match(authorityMigration,/after update of role,position_title,status on p
 assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/i);
 assert.match(authorityMigration,/principal_sl\.section=sl\.section and principal_sl\.ended_at is null/i);
 assert.match(authorityMigration,/principal_m\.role='administrator'/i);
-assert.match(authorityMigration,/lower\\(coalesce\\(principal_m\\.position_title,''\\)\\)='principal'/i);
+assert.match(authorityMigration,/lower\(coalesce\(principal_m\.position_title,''\)\)='principal'/i);
 assert.doesNotMatch(authorityMigration,/target\\.role in \\('teacher','class_teacher'\\)/i);
 assert.match(authorityMigration,/current_setting\('app\.schoolpro_section_approval',true\) is distinct from 'on'/i,'Direct result approval must be blocked outside the Section Head approval RPC');
 assert.match(authorityMigration,/current_setting\('app\.schoolpro_exam_publication',true\) is distinct from 'on'/i,'Direct result publication must be blocked outside the Exam Officer publication RPC');

@@ -3131,3 +3131,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ### Result-scope lock helper terminator replay correction — 2026-11-09 (verified file update)
 - The disposable-Supabase replay showed `private.schoolpro_lock_result_scope` still ended with `$;` in the committed migration. Replaced that exact terminator with `$$;` and committed the migration file correction. This ensures the next `WITH roster` helper starts outside the preceding PL/pgSQL body.
 - CI must complete against the corrected branch head before PR #133 is marked ready or merged. No production migration, production data write, merge or Render deployment.
+
+### 2026-11-09 — C0 CI database-port isolation
+- Latest-head SchoolPro CI and payment-page validation passed. The C0 regression job failed before database tests because the disposable Supabase PostgreSQL container could not bind default host port 54322 (already in use on the runner).
+- Updated `.github/workflows/schoolpro-c0-regression.yml` to configure a dedicated local database port (54332) for this job and use that port for baseline restore, migration replay, and SQL regression tests. This is CI-only; it does not change production Supabase configuration or data.
+- Commit: `92860d80dd8fd9a16c2dc2093ae29960af7a3368`. Fresh workflow validation is required on this new branch head before PR #133 can merge.

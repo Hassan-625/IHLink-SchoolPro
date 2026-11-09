@@ -3155,3 +3155,69 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - A single school-scoped insert writes the validated batch. Explicit house selections are applied through the existing `schoolpro_assign_student_house` RPC; students without an explicit house retain the balanced automatic allocation trigger. If a post-insert manual house assignment fails, the UI reports it clearly rather than claiming all assignments succeeded.
 - Corrected the individual-enrolment form reset to preserve the required `house_id` state field (CI had identified this TypeScript error on PR #134).
 - Added a CI source-contract regression for spreadsheet parsing, validation, duplicate prevention, session assignment and batch limits. Branch-only changes; no production migration, production student writes, merge, or Render deployment.
+
+
+### Existing-student CSV template — 2026-11-09
+- Added a header-only downloadable CSV template directly in the existing-student bulk-import panel. Its columns match the importers required and optional field aliases, avoiding manual header typing and reducing spreadsheet-format errors.
+- The template contains no sample student records; operators populate it with their schools real register. Class and house values must still match active records in the selected school workspace.
+- Added source-contract assertions for the template filename and visible download link. This is a frontend-only improvement; no database schema, production data, migration, merge or deployment is included in this change.
+
+
+## 2026-11-09 — Existing-student import register expansion and roster layout
+
+- Expanded the existing-student download from a narrow CSV header list to a multi-sheet Excel workbook plus CSV alternative.
+- Excel workbook fields: admission number; first, middle and last names; date of birth; formula-derived age; gender; section; class; arm; house; guardian first, middle and surname; guardian phone and email.
+- Workbook includes an Instructions sheet and 500 prefilled age-formula rows. Age is derived from date of birth rather than stored as a stale age value.
+- Import maps section/class/arm to active class records in the selected school, maps house names to active houses, combines separate guardian name fields into the existing guardian contact-name field, and stores date_of_birth using the existing column. No school/class/house/session IDs are required in the workbook.
+- Existing admission number duplicate checks, 500-row batch limit, selected-session enrollment, and validation-before-write behavior remain in place.
+- Expanded the student roster card across the full desktop grid. Its existing constrained horizontal-scroll region and minimum table width preserve usable mobile behavior.
+- No production migration or production records were changed for this UI/import enhancement. Database inspection confirmed date_of_birth already exists; guardian name parts are combined into the existing guardian_name field.
+- Pending: validate the latest PR #135 head through CI. Do not merge or deploy without explicit approval.
+
+
+## 2026-11-09 — Stage C requirements: school calendar, activities and continuous academic sessions
+
+### School calendar configuration
+- During school onboarding, administrators must be able to configure the academic calendar, including the academic year/session, term boundaries, instructional days, weekends, holidays, vacations, staff/student activities, examination periods and other school-defined events.
+- Provide a dedicated School Calendar page after onboarding so authorised school administrators can create, edit, review and publish calendar events throughout the year.
+- Support recurring weekly activities with configurable weekday, start/end dates, time and activity details, alongside one-off dated events and full-year calendar planning.
+- Calendar configuration must support the attendance engine: school-open/instructional dates are authoritative for attendance eligibility and denominator calculations. Holidays, weekends and non-instructional dates must not be counted as open school days unless explicitly configured as instructional.
+- Keep calendar changes auditable and preserve historical calendar versions/records so past attendance and reports are not silently recalculated when a future calendar is edited.
+
+### Continuous academic-session lifecycle
+- Remove hard-coded assumptions that the active session is only 2026/2027. Schools must be able to configure successive sessions such as 2027/2028, 2028/2029 and later without code changes.
+- When a school completes its current academic session, the system should support preparing the next sequential session. During plan configuration or successful annual plan renewal, it should guide the administrator to configure the next session and, where the school has enabled the policy, automatically create a draft next session using the next sequential year range.
+- Session creation/activation must be idempotent and must not duplicate sessions on repeated renewal events. Subscription renewal must not silently activate a new academic session or overwrite dates; administrators must be able to review and confirm the proposed dates before activation.
+- Preserve historical sessions, term calendars, enrolments, assessments, attendance, results and certificates. The selected working session remains explicit; changing the working session must not promote students or alter historical records.
+- Support schools whose academic year does not follow a simple September-to-July pattern by allowing administrators to configure actual start/end dates and term boundaries rather than deriving dates solely from the session label.
+
+### Dependencies and acceptance criteria
+- Calendar and session configuration must be available during onboarding and remain editable through dedicated school administration pages.
+- Attendance calculations must consume the configured calendar, not assume every weekday is an open school day.
+- Next-session generation must be sequential, reviewable, idempotent and independent of destructive changes to the prior session.
+- Add automated tests for weekly recurring events, full-year calendar coverage, holidays/non-instructional days, session rollover, repeated renewal idempotency, historical-session preservation and attendance calendar integration.
+- These are requirements to implement and verify in Stage C; no production workspace data or calendar/session records are to be created until the user provides explicit end-to-end verification instructions.
+
+
+## 2026-11-09 — Stage C requirements: calendar-driven attendance and punctuality
+
+### Calendar-authoritative attendance
+- Calculate the number of school-open/instructional days for a selected school, academic session and term from the published school calendar. Exclude weekends, holidays, vacations and non-instructional dates unless an authorised calendar entry explicitly marks the date as instructional.
+- Track each learner's present days, absent days, late days and (where configured) excused/approved absences. Keep late arrivals distinct from absences; a late student is not automatically absent.
+- Calculate attendance percentage using present days divided by eligible school-open days for the learner's enrolled period, multiplied by 100. Expose the denominator and the counts so staff and families can understand the calculation.
+- Calculate punctuality separately from attendance. Punctuality needs an explicit count of on-time and late arrivals (or date-level arrival states); it cannot be inferred from present/absent totals alone. Schools configure punctuality thresholds and grade bands, with versioned rules applied consistently to the selected session/term.
+- Prevent attendance entries on calendar dates marked closed/non-instructional. Reconcile present, absent, late and approved-excuse states against eligible dates and flag missing/unresolved dates rather than silently treating them as present or absent.
+
+### Flexible attendance capture
+- Retain the existing Form Master daily, class-scoped attendance workflow.
+- Add an authorised cumulative/periodic attendance entry path so a school can record a verified term or date-range summary without requiring a Form Master to submit a daily screen for every date.
+- Prefer date-level bulk capture/import for auditability. Where schools enter aggregate totals, retain the source period, operator, timestamp, approval/reconciliation status and the exact totals; do not fabricate individual daily records from an aggregate.
+- Provide bulk class attendance entry for a selected date/range, validate dates against the calendar and roster, and support authorised corrections with an audit trail.
+- Restrict daily and cumulative entry to authorised school roles; ordinary subject teachers must not receive attendance write access by default.
+
+### Attendance reporting and acceptance
+- Provide student, class, section and school summaries for open days, present, absent, late, approved absences, attendance percentage, punctuality percentage and punctuality grade.
+- Make attendance and punctuality summaries available to authorised staff and, subject to school publication policy, student/guardian reports.
+- Preserve historical attendance and the calendar/rule version used for each calculation so later calendar or grading changes do not silently rewrite prior reports.
+- Add tests for holidays/weekends, mid-session enrolment, calendar changes, date-level bulk entry, cumulative entry reconciliation, late-versus-absent treatment, grade-band boundaries, corrections and role-based access.
+- These are Stage C requirements to implement; no production attendance records or workspace data are to be created until the user supplies the end-to-end verification instructions.

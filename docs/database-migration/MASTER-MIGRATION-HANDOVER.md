@@ -3033,3 +3033,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The C0 disposable Supabase regression found that the section-head class/student reader helpers checked active membership and active appointment but did not exclude archived classes. Both helpers now require the resolved class to be non-archived.
 - Corrected the Stage C source-contract test to match the agreed eligibility policy: ordinary Subject Teacher role is excluded; Class Teachers/Form Masters and every other active staff role remain eligible for formal section appointment.
 - No production migration, data write, merge or Render deployment. Fresh CI validation pending.
+
+
+### Stage C final-authority schema regression — 2026-11-09
+- Extended the C0 disposable-Supabase SQL regression to inspect the final Stage C section-authority functions installed by the complete migration chain.
+- The regression now fails if the final appointment RPC does not require active membership, exclude only ordinary Subject Teachers, and require authorized school administration; it also checks that both current-class and historical-student section authority enforce Principal precedence.
+- This closes a test-coverage gap: the older isolated section-leadership fixture stops before the final authority migration, so its role-specific appointment checks alone could not prove the final all-active-staff eligibility contract against the complete schema.
+- Branch-only CI test change, commit `8c061f94e6d1cbb0485dace0ae6e01847a3ba04c`. No production Supabase migration/data changes, merge, or Render deployment.

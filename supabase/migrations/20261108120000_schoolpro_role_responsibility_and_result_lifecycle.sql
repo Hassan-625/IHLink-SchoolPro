@@ -149,7 +149,7 @@ as $$
     ),st.class_id) and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
-        m.role not in ('teacher','parent','student')
+        m.role <> 'teacher'
         and (
           (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
           or not exists(
@@ -179,7 +179,7 @@ as $$
     join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
-        m.role not in ('teacher','parent','student')
+        m.role <> 'teacher'
         and (
           (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
           or not exists(
@@ -255,7 +255,7 @@ begin
   select * into target from public.schoolpro_members
    where id=p_member and school_id=p_school for update;
   if target.id is null or target.status<>'active'
-     or target.role in ('teacher','parent','student') then
+     or target.role = 'teacher' then
     raise exception 'An active school staff member may be appointed section head; ordinary Subject Teacher, parent and student accounts are not eligible';
   end if;
   if coalesce(p_assigned,false) then
@@ -394,7 +394,7 @@ as $$
 begin
   update public.schoolpro_section_leaders sl set ended_at=now()
   where sl.school_id=new.school_id and sl.member_id=new.id and sl.ended_at is null
-    and (new.status<>'active' or new.role in ('teacher','parent','student'));
+    and (new.status<>'active' or new.role = 'teacher');
   return new;
 end
 $;

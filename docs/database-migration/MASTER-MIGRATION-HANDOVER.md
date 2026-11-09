@@ -3093,3 +3093,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - No production migration applied, no production data written, no merge, and no Render deployment.
 
 - Follow-up review of the replacement function found it also needed to preserve the existing published-result columns/positions and allocated-subject summary introduced by the prior broadsheet migration. Rebuilt the new migration from that established function and changed only the rank eligibility/order behavior: full roster retained, unassessed class and published positions null, published totals/scores and pre-mark allocated subjects retained. Extended the source-contract test to protect these existing fields. This is still a draft-branch migration only; it has not been applied to production.
+
+
+## 2026-11-09 Stage C workflow concurrency hardening
+- Added `private.schoolpro_lock_result_scope` to lock the selected class/section/school classes, selected-session roster members, active subject allocations, saved result rows and workflow rows before completeness/state validation and lifecycle transitions.
+- Form Master submission now performs its complete Draft-matrix check only after those locks are held. Section Head class/section approval, Exam Officer final approval and whole-school publication also acquire the exact scope locks before checking the workflow state. This closes the avoidable time-of-check/time-of-use window where a concurrent mark, roster or allocation edit could race a review transition.
+- Added source-contract assertions that require the locking helper and all five transition call sites. Proposed migration only; no production Supabase changes, data writes, merge or Render deployment.

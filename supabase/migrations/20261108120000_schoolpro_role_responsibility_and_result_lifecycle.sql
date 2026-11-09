@@ -827,7 +827,7 @@ for each row execute function private.schoolpro_prune_subject_assignments_role()
 create or replace function private.schoolpro_lock_result_scope(
   p_school uuid,p_term text,p_session text,p_scope text,p_class uuid default null,p_section text default null
 ) returns void language plpgsql security definer set search_path=''
-as $
+as $$
 begin
   if p_scope not in ('class','section','school') then raise exception 'Invalid result scope'; end if;
   perform c.id from public.schoolpro_classes c

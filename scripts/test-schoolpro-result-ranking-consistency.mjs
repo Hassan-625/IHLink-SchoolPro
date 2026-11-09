@@ -16,5 +16,5 @@ const reviewFix=readFileSync('supabase/migrations/20261109100000_schoolpro_revie
 assert.ok(reviewFix.includes('case when subjects>0 then rank() over(order by case when subjects>0 then total end desc nulls last)'),'Review-sheet ranking must assign positions only to learners with recorded results');
 assert.ok(reviewFix.includes('else null::bigint end class_position'),'Unassessed learners must have no class position');
 assert.ok(reviewFix.includes('order by r.class_position nulls last,r.student_name'),'Unassessed learners must remain visible after ranked learners');
-assert.ok(reviewFix.includes('left join public.schoolpro_results'),'Review sheet must preserve the complete roster');
+assert.ok(reviewFix.includes('from public.schoolpro_students s') && reviewFix.includes('left join marks m on m.student_id=s.id'),'Review sheet must preserve the complete roster');
 console.log('PASS: staff review sheet retains unassessed learners without assigning them a class position.');

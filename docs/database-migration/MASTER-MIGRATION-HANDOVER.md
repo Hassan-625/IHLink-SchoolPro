@@ -3047,3 +3047,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The broadsheet now loads active section appointments and active administrator members, identifies sections with an appointed Principal, and exposes section-head controls only to that Principal for those sections. Other sections continue to honor their own explicit appointee. Principal identity is matched using the active administrator membership and normalized position_title.
 - Added source-contract assertions for active Principal lookup and suppression of non-Principal section controls under Principal precedence.
 - Branch-only frontend and test changes, UI commit c7283e2651fbc2c1b222e18b62e294dc65200b76; no production Supabase changes, merge, or Render deployment. CI validation is pending.
+
+
+### Stage C Principal-first review UI typecheck correction — 2026-11-09
+- The first CI run after the Principal-precedence UI change found a TypeScript narrowing issue: `member.data` was referenced after an awaited Principal lookup, where the compiler correctly no longer guaranteed it was non-null.
+- Captured the validated active member ID before subsequent asynchronous queries and reused that stable ID for responsibility, teaching-allocation, and section-appointment filtering.
+- Fix committed as `5ae50b7c3ca2921e5e3f70cd9127cbb7476ec4c4`. CI must rerun against the latest branch head; earlier failures on the preceding head are not treated as final validation.
+- No production database writes, merge, or Render deployment.

@@ -3197,3 +3197,27 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Next-session generation must be sequential, reviewable, idempotent and independent of destructive changes to the prior session.
 - Add automated tests for weekly recurring events, full-year calendar coverage, holidays/non-instructional days, session rollover, repeated renewal idempotency, historical-session preservation and attendance calendar integration.
 - These are requirements to implement and verify in Stage C; no production workspace data or calendar/session records are to be created until the user provides explicit end-to-end verification instructions.
+
+
+## 2026-11-09 — Stage C requirements: calendar-driven attendance and punctuality
+
+### Calendar-authoritative attendance
+- Calculate the number of school-open/instructional days for a selected school, academic session and term from the published school calendar. Exclude weekends, holidays, vacations and non-instructional dates unless an authorised calendar entry explicitly marks the date as instructional.
+- Track each learner's present days, absent days, late days and (where configured) excused/approved absences. Keep late arrivals distinct from absences; a late student is not automatically absent.
+- Calculate attendance percentage using present days divided by eligible school-open days for the learner's enrolled period, multiplied by 100. Expose the denominator and the counts so staff and families can understand the calculation.
+- Calculate punctuality separately from attendance. Punctuality needs an explicit count of on-time and late arrivals (or date-level arrival states); it cannot be inferred from present/absent totals alone. Schools configure punctuality thresholds and grade bands, with versioned rules applied consistently to the selected session/term.
+- Prevent attendance entries on calendar dates marked closed/non-instructional. Reconcile present, absent, late and approved-excuse states against eligible dates and flag missing/unresolved dates rather than silently treating them as present or absent.
+
+### Flexible attendance capture
+- Retain the existing Form Master daily, class-scoped attendance workflow.
+- Add an authorised cumulative/periodic attendance entry path so a school can record a verified term or date-range summary without requiring a Form Master to submit a daily screen for every date.
+- Prefer date-level bulk capture/import for auditability. Where schools enter aggregate totals, retain the source period, operator, timestamp, approval/reconciliation status and the exact totals; do not fabricate individual daily records from an aggregate.
+- Provide bulk class attendance entry for a selected date/range, validate dates against the calendar and roster, and support authorised corrections with an audit trail.
+- Restrict daily and cumulative entry to authorised school roles; ordinary subject teachers must not receive attendance write access by default.
+
+### Attendance reporting and acceptance
+- Provide student, class, section and school summaries for open days, present, absent, late, approved absences, attendance percentage, punctuality percentage and punctuality grade.
+- Make attendance and punctuality summaries available to authorised staff and, subject to school publication policy, student/guardian reports.
+- Preserve historical attendance and the calendar/rule version used for each calculation so later calendar or grading changes do not silently rewrite prior reports.
+- Add tests for holidays/weekends, mid-session enrolment, calendar changes, date-level bulk entry, cumulative entry reconciliation, late-versus-absent treatment, grade-band boundaries, corrections and role-based access.
+- These are Stage C requirements to implement; no production attendance records or workspace data are to be created until the user supplies the end-to-end verification instructions.

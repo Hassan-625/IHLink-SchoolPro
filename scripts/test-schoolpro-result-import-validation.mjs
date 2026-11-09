@@ -21,6 +21,7 @@ assert.ok(parse.includes('Existing result uses a different assessment scheme'));
 assert.ok(page.includes('import_schoolpro_results'));
 assert.ok(rpc.includes('Student is not enrolled in the selected session'));
 assert.ok(rpc.includes('Assessment scheme level % does not match the selected class level %'));
+assert.ok(rpc.includes("scheme_level='junior_secondary' and class_level in ('junior_secondary','jss')")&&rpc.includes("scheme_level='senior_secondary' and class_level in ('senior_secondary','sss')"), "Database import RPC must accept canonical and short Junior/Senior Secondary class-level aliases");
 assert.ok(rpc.includes('Subject is not assigned to this class for the selected session'));
 assert.ok(rpc.includes('a.ended_at is null'));
 assert.ok(rpc.includes('Missing assessment component'));

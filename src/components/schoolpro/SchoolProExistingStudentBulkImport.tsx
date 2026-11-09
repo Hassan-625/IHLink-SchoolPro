@@ -45,7 +45,7 @@ export function SchoolProExistingStudentBulkImport({schoolId,session,classes,hou
   if(parsed.length){const admissions=parsed.map(r=>r.admission_number);for(let i=0;i<admissions.length;i+=100){const {data,error}=await supabase.from("schoolpro_students").select("admission_number").eq("school_id",schoolId).in("admission_number",admissions.slice(i,i+100));if(error)throw error;for(const existing of data||[]){errors.push("Admission number '"+existing.admission_number+"' already exists in this school.");}}}
   setIssues(errors);if(!errors.length)setRows(parsed);
  }catch(e){setIssues([importErrorMessage(e)]);}finally{setBusy(false);}}
- async function importRows(){if(!supabase||!rows.length||busy)return;setBusy(true);setNotice("");setIssues([]);let imported=0;const assigned=new Set<string>();try{
+ async function importRows(){if(!supabase||!rows.length||busy)return;setBusy(true);setNotice("");setIssues([]);let imported=0;const assigned=new Set<string>();const savedAdmissions=new Set<string>();try{
   const batchSize=10;
   const houseByAdmission=new Map(rows.filter(r=>r.house_id).map(r=>[norm(r.admission_number),r.house_id!]));
   for(let offset=0;offset<rows.length;offset+=batchSize){
@@ -57,19 +57,29 @@ export function SchoolProExistingStudentBulkImport({schoolId,session,classes,hou
     const errorText=typeof errorValue.message==="string"?errorValue.message:"";
     const timedOut=errorValue.code==="57014"||/timeout|timed out|statement timeout|thread killed by timeout/i.test(errorText);
     if(timedOut){
-     const {data:confirmed,error:confirmationError}=await supabase.from("schoolpro_students").select("admission_number").eq("school_id",schoolId).in("admission_number",batch.map(student=>student.admission_number));
+     const {data:confirmed,error:confirmationError}=await supabase.from("schoolpro_students").select("id,admission_number").eq("school_id",schoolId).in("admission_number",batch.map(student=>student.admission_number));
      if(!confirmationError){
       const saved=new Set((confirmed||[]).map(student=>norm(student.admission_number)));
       const savedFromBatch=batch.filter(student=>saved.has(norm(student.admission_number))).length;
-      if(savedFromBatch===batch.length){imported+=savedFromBatch;setRows(rows.slice(imported));continue;}
-      if(savedFromBatch>0){imported+=savedFromBatch;setRows(rows.slice(imported));throw new Error("The timed-out batch has mixed confirmation. "+savedFromBatch+" row(s) were confirmed saved; validate the remaining rows before retrying.");}
+      for(const student of batch)if(saved.has(norm(student.admission_number)))savedAdmissions.add(norm(student.admission_number));
+      if(savedFromBatch>0){
+       imported+=savedFromBatch;
+       for(const student of confirmed||[]){
+        const house=houseByAdmission.get(norm(student.admission_number));
+        if(house){const result=await supabase.rpc("schoolpro_assign_student_house",{p_student:student.id,p_house:house,p_reason:"Existing student spreadsheet onboarding"});if(result.error)assigned.add(student.admission_number);}
+       }
+       setRows(rows.filter(student=>!savedAdmissions.has(norm(student.admission_number))));
+      }
+      if(savedFromBatch===batch.length)continue;
+      if(savedFromBatch>0)throw new Error("The timed-out batch has mixed confirmation. "+savedFromBatch+" row(s) were confirmed saved; validate the remaining rows before retrying.");
      }
     }
     throw error;
    }
    if(!data||data.length!==batch.length)throw new Error("The database did not confirm every row in the current batch.");
    imported+=data.length;
-   setRows(rows.slice(imported));
+   for(const student of data)savedAdmissions.add(norm(student.admission_number));
+   setRows(rows.filter(student=>!savedAdmissions.has(norm(student.admission_number))));
    for(const student of data){
     const house=houseByAdmission.get(norm(student.admission_number));
     if(house){
@@ -83,10 +93,10 @@ export function SchoolProExistingStudentBulkImport({schoolId,session,classes,hou
  }catch(e){
   const message=importErrorMessage(e);
   if(imported>0){
-   setRows(rows.slice(imported));
+   setRows(rows.filter(student=>!savedAdmissions.has(norm(student.admission_number))));
    setIssues(["Imported "+imported+" student(s) successfully; "+(rows.length-imported)+" row(s) remain. "+message]);
   }else setIssues([message]);
  }finally{setBusy(false);}}
  function choose(e:ChangeEvent<HTMLInputElement>){setFile(e.target.files?.[0]||null);setRows([]);setIssues([]);setNotice("");}
- return <section className="rounded-xl border p-4"><h3 className="font-bold">Bulk onboard existing students</h3><p className="mt-1 text-sm text-muted">Upload an Excel (.xlsx) or CSV register. Students are marked Existing, enrolled in the selected session, matched to this school's active classes, and optionally assigned to a house. Maximum 500 rows per batch.</p><p className="mt-2 text-xs text-muted">Use the register for student names, date of birth (age calculates automatically), gender, section, class, arm, house, and separate guardian names and contacts. SchoolPro maps these to active records in this school; do not enter internal IDs.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={()=>void downloadExcelTemplate()}>Download Excel template</Button><a className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-semibold underline" href={"data:text/csv;charset=utf-8,"+encodeURIComponent(csvTemplate)} download="schoolpro-existing-students-template.csv">Download CSV template</a></div><input type="file" accept=".xlsx,.csv" onChange={choose} className="mt-3 block w-full text-sm"/><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="secondary" disabled={!file||busy||!session} onClick={()=>void preview()}>{busy?"Checking…":"Validate spreadsheet"}</Button><Button type="button" disabled={!rows.length||busy} onClick={()=>void importRows()}>Import {rows.length||""} students</Button></div>{issues.length>0&&<div role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800"><strong>Import blocked — fix these issues and validate again:</strong><ul className="mt-2 list-disc pl-5">{issues.slice(0,30).map((issue,i)=><li key={i}>{issue}</li>)}</ul>{issues.length>30&&<p>And {issues.length-30} more issue(s).</p>}</div>}{rows.length>0&&<p className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">Validation passed: {rows.length} student rows are ready. No records have been saved yet.</p>}{notice&&<p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}</section>;
+ return <section className="rounded-xl border p-4"><h3 className="font-bold">Bulk onboard existing students</h3><p className="mt-1 text-sm text-muted">Upload an Excel (.xlsx) or CSV register. Students are marked Existing, enrolled in the selected session, matched to this school's active classes, and optionally assigned to a house. Maximum 500 rows per batch.</p><p className="mt-2 text-xs text-muted">Use the register for student names, date of birth (age calculates automatically), gender, section, class, arm, house, and separate guardian names and contacts. SchoolPro maps these to active records in this school; do not enter internal IDs.</p><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="secondary" onClick={()=>void downloadExcelTemplate()}>Download Excel template</Button><a className="inline-flex items-center rounded-md border px-3 py-2 text-sm font-semibold underline" href={"data:text/csv;charset=utf-8,"+encodeURIComponent(csvTemplate)} download="schoolpro-existing-students-template.csv">Download CSV template</a></div><input type="file" accept=".xlsx,.csv" onChange={choose} className="mt-3 block w-full text-sm"/><div className="mt-3 flex flex-wrap gap-2"><Button type="button" variant="secondary" disabled={!file||busy||!session} onClick={()=>void preview()}>{busy?"Checking…":"Validate spreadsheet"}</Button><Button type="button" disabled={!rows.length||busy} onClick={()=>void importRows()}>Import {rows.length||""} students</Button></div>{issues.length>0&&<div role="alert" className="mt-3 rounded-lg bg-rose-50 p-3 text-sm text-rose-800"><strong>Import blocked — fix these issues and validate again:</strong><ul className="mt-2 list-disc pl-5">{issues.slice(0,30).map((issue,i)=><li key={i}>{issue}</li>)}</ul>{issues.length>30&&<p>And {issues.length-30} more issue(s).</p>}</div>}{rows.length>0&&<p className="mt-3 rounded-lg bg-blue-50 p-3 text-sm text-blue-800">Validation passed: {rows.length} student rows are ready for import.</p>}{notice&&<p role="status" className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{notice}</p>}</section>;
 }

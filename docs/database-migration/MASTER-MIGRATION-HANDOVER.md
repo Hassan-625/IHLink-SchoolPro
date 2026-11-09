@@ -3126,3 +3126,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ### Result-scope lock helper terminator replay correction — 2026-11-09
 - The next full disposable-Supabase migration replay showed that the earlier delimiter correction had not reached the committed migration: `private.schoolpro_lock_result_scope` still ended with `$;`. Replaced that exact terminator with `$$;` in the branch migration file and verified the surrounding function boundary. This is the specific parser error reported at the subsequent `WITH roster` statement.
 - Re-run the complete Stage C0 migration replay and main CI against the new branch head before marking PR #133 ready. No production migration, production data write, merge or Render deployment.
+
+
+### Result-scope lock helper terminator replay correction — 2026-11-09 (verified file update)
+- The disposable-Supabase replay showed `private.schoolpro_lock_result_scope` still ended with `$;` in the committed migration. Replaced that exact terminator with `$$;` and committed the migration file correction. This ensures the next `WITH roster` helper starts outside the preceding PL/pgSQL body.
+- CI must complete against the corrected branch head before PR #133 is marked ready or merged. No production migration, production data write, merge or Render deployment.

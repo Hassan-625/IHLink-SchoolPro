@@ -3040,3 +3040,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The regression now fails if the final appointment RPC does not require active membership, exclude only ordinary Subject Teachers, and require authorized school administration; it also checks that both current-class and historical-student section authority enforce Principal precedence.
 - This closes a test-coverage gap: the older isolated section-leadership fixture stops before the final authority migration, so its role-specific appointment checks alone could not prove the final all-active-staff eligibility contract against the complete schema.
 - Branch-only CI test change, commit `8c061f94e6d1cbb0485dace0ae6e01847a3ba04c`. No production Supabase migration/data changes, merge, or Render deployment.
+
+
+### Stage C Principal-first section review UI correction — 2026-11-09
+- The database already enforced Principal precedence, but the Class Broadsheet UI treated every active section appointee as an approver. This could expose approval/return/reopening controls to a Vice Principal or another appointee even when an active Principal was appointed to that same section; the RPC would reject the action, but the UI was misleading.
+- The broadsheet now loads active section appointments and active administrator members, identifies sections with an appointed Principal, and exposes section-head controls only to that Principal for those sections. Other sections continue to honor their own explicit appointee. Principal identity is matched using the active administrator membership and normalized position_title.
+- Added source-contract assertions for active Principal lookup and suppression of non-Principal section controls under Principal precedence.
+- Branch-only frontend and test changes, UI commit c7283e2651fbc2c1b222e18b62e294dc65200b76; no production Supabase changes, merge, or Render deployment. CI validation is pending.

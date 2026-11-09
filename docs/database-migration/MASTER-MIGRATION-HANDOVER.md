@@ -1,3 +1,14 @@
+## Stage C continuation — existing-student first-time onboarding (2026-11-09)
+
+**Branch:** `feat/schoolpro-existing-student-onboarding`  
+**Status:** Implementation in progress; no merge, production migration, production data write, or Render deployment.
+
+Added a distinct `existing` admission type for students who were already attending a school before it first adopts SchoolPro. The Students & Enrolment screen now distinguishes New Student, Existing Student and Transfer In, explains the existing-student path, retains the school's admission number and selected current class, optionally accepts an existing house assignment, and labels existing students in the roster. If no house is selected, the existing balanced automatic house-allocation trigger remains the fallback. Existing students are still enrolled against the selected academic session so session-scoped enrollment history is created by the existing trigger.
+
+A forward migration expands the `schoolpro_students.admission_type` check constraint to allow `existing` while preserving `new` and `transfer_in`. No student rows were created or changed. Bulk spreadsheet onboarding is not included in this increment and remains a follow-up enhancement. Validation and CI are pending.
+
+---
+
 ## Stage C continuation — staff review-sheet unassessed ranking boundary (2026-11-09)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
@@ -3136,3 +3147,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Latest-head SchoolPro CI and payment-page validation passed. The C0 regression job failed before database tests because the disposable Supabase PostgreSQL container could not bind default host port 54322 (already in use on the runner).
 - Updated `.github/workflows/schoolpro-c0-regression.yml` to configure a dedicated local database port (54332) for this job and use that port for baseline restore, migration replay, and SQL regression tests. This is CI-only; it does not change production Supabase configuration or data.
 - Commit: `92860d80dd8fd9a16c2dc2093ae29960af7a3368`. Fresh workflow validation is required on this new branch head before PR #133 can merge.
+
+
+### Existing-student bulk onboarding — 2026-11-09 (PR #134)
+- Added an Excel (.xlsx) and CSV bulk-import panel to the SchoolPro student workspace. The importer requires Admission Number, First Name, Last Name and Class; supports Middle Name, Gender, Guardian Name, Guardian Phone, Guardian Email and House; maps class/house labels only to active records in the selected school; assigns the selected working academic session; and marks every row as `existing`.
+- Validation checks required columns, duplicate headings, duplicate admission numbers within the file, existing admission numbers in the same school, invalid gender/email values, unknown classes/houses, and a 500-row batch ceiling. No records are written during preview; the operator must explicitly run Import after a clean validation.
+- A single school-scoped insert writes the validated batch. Explicit house selections are applied through the existing `schoolpro_assign_student_house` RPC; students without an explicit house retain the balanced automatic allocation trigger. If a post-insert manual house assignment fails, the UI reports it clearly rather than claiming all assignments succeeded.
+- Corrected the individual-enrolment form reset to preserve the required `house_id` state field (CI had identified this TypeScript error on PR #134).
+- Added a CI source-contract regression for spreadsheet parsing, validation, duplicate prevention, session assignment and batch limits. Branch-only changes; no production migration, production student writes, merge, or Render deployment.

@@ -46,6 +46,13 @@ begin
     raise exception 'Staff invitation acceptance does not preserve Principal designation';
   end if;
 
+  -- Principal and full school administrators retain Games module access.
+  permission_reader := pg_get_functiondef('public.schoolpro_user_permissions(uuid)'::regprocedure);
+  if position('if m.role = ''administrator'' and m.position_title = ''Principal'' then' in permission_reader)=0
+    or (length(permission_reader)-length(replace(permission_reader, '''games''', '')))/length('''games''') < 5 then
+    raise exception 'School administrator and Principal permission sets must include Games';
+  end if;
+
   -- Legacy direct membership policies must not survive on timetable or attendance.
   select count(*) into n from pg_policy p join pg_class c on c.oid=p.polrelid
   join pg_namespace s on s.oid=c.relnamespace

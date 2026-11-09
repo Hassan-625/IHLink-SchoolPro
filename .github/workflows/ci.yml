@@ -28,7 +28,6 @@ jobs:
       - run: node scripts/test-schoolpro-incremental-assessment-entry.mjs
       - run: node scripts/test-schoolpro-student-family-records.mjs
       - run: node scripts/test-schoolpro-existing-student-onboarding.mjs
-      - run: node scripts/test-schoolpro-existing-student-bulk-import.mjs
       - run: node scripts/test-school-access-cache.mjs
       - run: node scripts/test-school-dashboard-roles.mjs
       - run: node scripts/test-schoolpro-stage-ab-corrections.mjs

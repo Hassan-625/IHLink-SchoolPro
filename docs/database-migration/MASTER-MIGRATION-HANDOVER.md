@@ -2967,3 +2967,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Request history refreshes after a new request and after a review decision. The existing Exam Officer pending queue remains separate.
 - Extended `scripts/test-schoolpro-correction-review-atomicity.mjs` to assert the requester-only RLS predicate, user-scoped query and status/review-note UI. The existing CI job already invokes this regression script.
 - Proposed migration and frontend changes are on PR #133 only. No production Supabase changes, merge or Render deployment occurred. CI has not yet validated this latest increment.
+
+
+### Stage C CI correction — section leadership UI contract (2026-11-09; PR #133)
+
+- Corrected `scripts/test-schoolpro-section-leadership.mjs` after the latest CI run exposed stale source assertions that still expected the former Head Teacher / Vice Principal / Principal-only UI rules.
+- The regression now verifies that appointment controls are rendered only for active staff, that all staff roles other than ordinary Subject Teacher, parent and student are eligible, and that the old role-specific UI restrictions do not return. Existing database, integration, Principal-precedence, and score-entry boundary assertions remain in place.
+- This is a test-only correction to match the already-implemented and user-confirmed appointment policy. Commit: `ac20ec30ab939db286cd903a24dd36304ae5b54b`. CI must rerun against this head; no production Supabase change, merge, or Render deployment has occurred.

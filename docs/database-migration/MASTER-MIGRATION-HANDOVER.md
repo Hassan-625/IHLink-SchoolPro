@@ -2995,3 +2995,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ### Stage C migration parser correction — 2026-11-09
 
 - CI isolated a malformed dollar-quote terminator on the new `private.schoolpro_prune_section_leadership_role()` trigger function. It ended with `$;` instead of `$$;`, causing the following enrollment-reader SQL function's `WITH` clause to be parsed in the wrong context. Corrected the terminator; the eligibility predicate remains unchanged. This is a proposed migration correction only, not applied to production.
+
+
+### Stage C repeat CI parser and assertion correction — 2026-11-09
+
+- CI showed the active `private.schoolpro_prune_section_leadership_role()` terminator still contained `end\n$;` immediately before the trigger declaration. Corrected it to `end\n$$;`. This was the direct cause of PostgreSQL parsing the following enrollment-reader `WITH leaders AS MATERIALIZED` query as part of the preceding function body.
+- Corrected the section-leadership source test's Principal-role regex to match the actual `principal_m.role='administrator'` identifier rather than requiring a literal backslash before the dot.
+- Both changes are proposed on PR #133 only. Awaiting fresh CI; no production Supabase change, merge, or Render deployment.

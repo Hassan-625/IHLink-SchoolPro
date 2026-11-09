@@ -3086,3 +3086,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Captured the validated active member ID before subsequent asynchronous queries and reused that stable ID for responsibility, teaching-allocation, and section-appointment filtering.
 - Fix committed as `5ae50b7c3ca2921e5e3f70cd9127cbb7476ec4c4`. CI must rerun against the latest branch head; earlier failures on the preceding head are not treated as final validation.
 - No production database writes, merge, or Render deployment.
+
+
+## 2026-11-09 Stage C review-sheet ranking regression follow-up
+- Latest Stage C head `debe93af27e20b2d98f758ce78bc0b800dd7894d` passed payment validation and C0 regression. Main SchoolPro CI failed only because the new ranking source-contract assertion expected a direct `LEFT JOIN schoolpro_results`, while the function correctly builds a roster CTE and then left-joins its `marks` CTE. Updated the assertion to verify the actual roster-preserving join (`schoolpro_students` roster plus `LEFT JOIN marks`). No application or database behavior changed in this correction.
+- No production migration applied, no production data written, no merge, and no Render deployment.

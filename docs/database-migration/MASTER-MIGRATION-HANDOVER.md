@@ -1,3 +1,11 @@
+## Stage C continuation — staff review-sheet unassessed ranking boundary (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`
+
+Corrected a remaining consistency gap in `schoolpro_class_review_sheet`: the staff review sheet previously assigned a class position to every roster row, including learners with no recorded subject scores. The new follow-up migration preserves the complete class roster, ranks only learners with at least one recorded result, leaves `class_position` null for unassessed learners, and sorts those learners after ranked entries. Added a source-contract regression assertion to the existing ranking test, which is already part of SchoolPro CI. No production migration or data write has been applied.
+
+
 ## Stage C continuation — result import RPC PostgreSQL integration coverage (2026-11-09)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  

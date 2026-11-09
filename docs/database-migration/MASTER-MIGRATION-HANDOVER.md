@@ -1,3 +1,12 @@
+## Stage C continuation — student register age validation and Nursery Pre-Nursery arms (2026-11-09)
+
+**Branch:** `fix/schoolpro-student-age-and-prenursery`  
+**Status:** Proposed application changes; CI and review pending. No production student records or class records have been written by this change.
+
+The existing-student Excel/CSV register now labels the student family-name column **Last Name** consistently. The importer continues accepting the older **Surname** heading for backward compatibility. Date of Birth is required for bulk onboarding; the displayed age is calculated against **1 September 2026**, the age-reference date for the 2026/2027 school year, rather than the spreadsheet viewer's current date. The importer independently recalculates age from Date of Birth and blocks students below the recommended minimum age for their matched class: Pre-Nursery 2, Nursery 1 3, Nursery 2 4, Nursery 3 5, Primary 1–6 ages 6–11, JSS 1–3 ages 12–14, and SSS 1–3 ages 15–17. Age values typed or cached in the workbook are not trusted.
+
+The Classes & Arms page now provides an explicit, idempotent **Add Pre-Nursery A & B** action. It creates the two arms as class name `Pre-Nursery`, level `nursery`, capacity 40, only when a school administrator clicks it; existing arms are not duplicated. This keeps Pre-Nursery inside the Nursery section. No automatic production class creation occurs on page load.
+
 ## Stage C continuation — existing-student first-time onboarding (2026-11-09)
 
 **Branch:** `feat/schoolpro-existing-student-onboarding`  

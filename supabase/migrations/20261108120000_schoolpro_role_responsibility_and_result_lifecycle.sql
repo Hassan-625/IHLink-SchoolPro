@@ -892,7 +892,7 @@ select exists(select 1 from expected)
       and r.student_id=e.student_id and r.subject_id=e.subject_id
       and r.term=trim(p_term) and r.session=trim(p_session)
     left join public.schoolpro_result_workflow w on w.result_id=r.id
-    where r.id is null or r.status<>p_result_status or w.status is distinct from p_workflow_status
+    where r.id is null or r.status<>p_result_status::public.schoolpro_result_status or w.status is distinct from p_workflow_status
   )
   and not exists(
     select 1 from public.schoolpro_result_workflow w

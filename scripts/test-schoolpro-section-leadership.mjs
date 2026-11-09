@@ -80,7 +80,7 @@ assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/
 assert.match(integration,/Class Teacher must be eligible for a formal Primary section-head appointment/i);
 assert.match(integration,/An ordinary subject teacher must not be appointed as section head/i);
 assert.match(authorityMigration,/principal_sl\.section=sl\.section and principal_sl\.ended_at is null/i);
-assert.match(authorityMigration,/principal_m\\.role='administrator'/i);
+assert.match(authorityMigration,/principal_m\.role='administrator'/i);
 assert.match(authorityMigration,/lower\\(coalesce\\(principal_m\\.position_title,''\\)\\)='principal'/i);
 assert.doesNotMatch(authorityMigration,/target\\.role in \\('teacher','class_teacher'\\)/i);
 assert.match(authorityMigration,/current_setting\('app\.schoolpro_section_approval',true\) is distinct from 'on'/i,'Direct result approval must be blocked outside the Section Head approval RPC');

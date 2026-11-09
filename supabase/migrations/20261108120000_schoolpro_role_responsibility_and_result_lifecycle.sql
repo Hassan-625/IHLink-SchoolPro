@@ -146,7 +146,7 @@ as $$
       where eh.school_id=p_school and eh.student_id=p_student
         and eh.session=trim(coalesce(p_session,''))
       order by eh.created_at desc limit 1
-    ),st.class_id) and c.level=sl.section
+    ),st.class_id) and c.level=sl.section and c.archived_at is null
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
         m.role <> 'teacher'
@@ -176,7 +176,7 @@ as $$
     select 1 from public.schoolpro_members m
     join public.schoolpro_section_leaders sl
       on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
-    join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section
+    join public.schoolpro_classes c on c.school_id=p_school and c.id=p_class and c.level=sl.section and c.archived_at is null
     where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
       and (
         m.role <> 'teacher'

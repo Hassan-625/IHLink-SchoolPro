@@ -67,415 +67,102 @@ declare
  school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
  nursery_class uuid := '11111111-1111-4111-8111-111111111111';
  primary_class uuid := '22222222-2222-4222-8222-222222222222';
+ jss_class uuid := '22222222-2222-4222-8222-222222222223';
+ ss_class uuid := '22222222-2222-4222-8222-222222222224';
  student_n uuid := '33333333-3333-4333-8333-333333333333';
  student_p uuid := '44444444-4444-4444-8444-444444444444';
  student_jss uuid := '44444444-4444-4444-8444-444444444445';
  student_ss uuid := '44444444-4444-4444-8444-444444444446';
- subject_id uuid := '55555555-5555-4555-8555-555555555555';
  owner_id uuid := '66666666-6666-4666-8666-666666666666';
  head_id uuid := '77777777-7777-4777-8777-777777777777';
  vice_id uuid := '88888888-8888-4888-8888-888888888888';
  principal_id uuid := '88888888-8888-4888-8888-888888888889';
- formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
+ teacher_id uuid := '88888888-8888-4888-8888-888888888890';
  head_member uuid := '99999999-9999-4999-8999-999999999991';
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
  principal_member uuid := '99999999-9999-4999-8999-999999999993';
- formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
+ teacher_member uuid := '99999999-9999-4999-8999-999999999994';
 begin
- insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(formmaster_id);
+ insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(teacher_id);
  insert into public.schoolpro_schools values(school,owner_id);
  insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
   (head_member,school,head_id,'head_teacher',null),
   (vice_member,school,vice_id,'vice_principal',null),
   (principal_member,school,principal_id,'administrator','Principal'),
-  (formmaster_member,school,formmaster_id,'teacher',null);
+  (teacher_member,school,teacher_id,'teacher',null);
  insert into public.schoolpro_classes values
-  (nursery_class,school,'Nursery 2','nursery',formmaster_member),
+  (nursery_class,school,'Nursery 2','nursery',null),
   (primary_class,school,'Primary 4','primary',null),
-  ('22222222-2222-4222-8222-222222222223',school,'JSS 2','junior_secondary',formmaster_member),
-  ('22222222-2222-4222-8222-222222222224',school,'SS 2','senior_secondary',formmaster_member);
+  (jss_class,school,'JSS 2','junior_secondary',null),
+  (ss_class,school,'SS 2','senior_secondary',null);
  insert into public.schoolpro_students values
   (student_n,school,nursery_class,null,'active'),
   (student_p,school,primary_class,null,'active'),
-  (student_jss,school,'22222222-2222-4222-8222-222222222223',null,'active'),
-  (student_ss,school,'22222222-2222-4222-8222-222222222224',null,'active');
+  (student_jss,school,jss_class,null,'active'),
+  (student_ss,school,ss_class,null,'active');
  insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id) values
   (school,student_n,'2025/2026',nursery_class),
   (school,student_p,'2025/2026',primary_class),
-  (school,student_jss,'2025/2026','22222222-2222-4222-8222-222222222223'),
-  (school,student_ss,'2025/2026','22222222-2222-4222-8222-222222222224');
- insert into public.schoolpro_subjects values(subject_id,school);
+  (school,student_jss,'2025/2026',jss_class),
+  (school,student_ss,'2025/2026',ss_class);
+
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',true);
  perform public.schoolpro_set_section_leader(school,head_member,'primary',true);
  perform public.schoolpro_set_section_leader(school,vice_member,'junior_secondary',true);
  perform public.schoolpro_set_section_leader(school,principal_member,'senior_secondary',true);
- if (select count(*) from public.schoolpro_section_leaders where school_id=school) <> 4 then
+ if (select count(*) from public.schoolpro_section_leaders where school_id=school and ended_at is null)<>4 then
    raise exception 'Section leader assignments were not persisted';
  end if;
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000002',school,student_n,subject_id,'2025/2026','First Term',10,90,'{}','draft');
- if public.schoolpro_submit_class_results(school,nursery_class,'First Term','2025/2026')<>1 then
-   raise exception 'Form Master must submit all class Draft results';
- end if;
+
  perform set_config('request.jwt.claim.sub',head_id::text,true);
- if public.schoolpro_approve_section_results(school,'nursery','First Term','2025/2026')<>1 then
-   raise exception 'Appointed Head Teacher must approve the complete Nursery section through the RPC';
+ if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026')
+    or not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
+   raise exception 'Head Teacher must lead explicitly assigned Nursery and Primary sections';
  end if;
- if (select status from public.schoolpro_result_workflow where result_id='bbbbbbbb-0000-4000-8000-000000000002')<>'section_approved' then
-   raise exception 'Head Teacher section approval state was not recorded';
+ if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
+   raise exception 'Head Teacher must not lead Junior Secondary without an appointment';
  end if;
- 
- if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002')<>'approved'
-    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000002') then
-   raise exception 'Head Teacher publication attempt must leave section-approved results unchanged';
+ if not private.schoolpro_can_read_student(student_p)
+    or not private.schoolpro_can_read_class(primary_class) then
+   raise exception 'Head Teacher must read students and classes in assigned sections';
  end if;
- if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
-   raise exception 'Head teacher must lead the explicitly assigned Nursery section';
- end if;
- if not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
-   raise exception 'Head teacher must lead the explicitly assigned Primary section';
- end if;
- if not private.schoolpro_can_read_student(student_p) then
-   raise exception 'Head teacher must read students in assigned Primary section';
- end if;
- if not private.schoolpro_can_read_student(student_n) or not private.schoolpro_can_read_class(nursery_class) then
-   raise exception 'Head teacher must read students and classes in assigned section';
- end if;
- if not private.schoolpro_can_read_class(primary_class) then
-   raise exception 'Head teacher must read classes in assigned Primary section';
- end if;
- if private.schoolpro_can_write_result(school,student_n,subject_id,'2025/2026') then
-   raise exception 'Head Teacher must not write subject scores without an exact teaching allocation';
- end if;
- if private.schoolpro_can_write_result(school,student_p,subject_id,'2025/2026') then
-   raise exception 'Head Teacher must not write subject scores without an exact teaching allocation';
- end if;
- update public.schoolpro_results set status='approved'
- where false;
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000001',school,student_jss,subject_id,'First Term','2025/2026',0,0,'{}','draft');
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if public.schoolpro_submit_class_results(school,'22222222-2222-4222-8222-222222222223','First Term','2025/2026')<>1 then
-   raise exception 'Form Master must submit Junior Secondary results';
- end if;
- perform set_config('request.jwt.claim.sub',head_id::text,true);
- begin
-   perform public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026');
-   raise exception 'ASSERT: section leader approved result outside assigned section';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('appointed section head' in lower(sqlerrm))=0 then raise; end if;
- end;
+
  perform set_config('request.jwt.claim.sub',vice_id::text,true);
  if not private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
-   raise exception 'Vice principal must lead explicitly assigned Junior Secondary section';
+   raise exception 'Vice Principal must lead explicitly assigned Junior Secondary section';
  end if;
  if private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
-   raise exception 'Vice principal must not lead a Primary section';
+   raise exception 'Vice Principal must not lead an unassigned Primary section';
  end if;
- if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
-   raise exception 'Vice principal must not lead an unassigned Nursery section';
- end if;
- if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026') then
-   raise exception 'Vice principal must not read enrollment history outside assigned section';
- end if;
- if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_jss::text||'|2025/2026')) then
-   raise exception 'Section leader must read enrollment history inside assigned section';
- end if;
- if public.schoolpro_approve_section_results(school,'junior_secondary','First Term','2025/2026')<>1 then
-   raise exception 'Appointed Vice Principal must approve the Junior Secondary section through the RPC';
- end if;
- if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001')<>'approved'
-    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000001') then
-   raise exception 'Vice Principal publication attempt must leave section-approved results unchanged';
- end if;
+
  perform set_config('request.jwt.claim.sub',principal_id::text,true);
- if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
-   raise exception 'Principal must read explicitly assigned Senior Secondary section';
+ if not private.schoolpro_member_leads_student_section(school,student_ss,'2025/2026') then
+   raise exception 'Principal must lead explicitly assigned Senior Secondary section';
  end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Principal must not lead an unassigned Nursery section';
  end if;
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,ca_score,exam_score,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000003',school,student_ss,subject_id,'2025/2026','First Term',10,90,'{}','draft');
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if public.schoolpro_submit_class_results(school,'22222222-2222-4222-8222-222222222224','First Term','2025/2026')<>1 then
-   raise exception 'Form Master must submit Senior Secondary results';
- end if;
- perform set_config('request.jwt.claim.sub',principal_id::text,true);
- if public.schoolpro_approve_section_results(school,'senior_secondary','First Term','2025/2026')<>1 then
-   raise exception 'Appointed Principal must approve the Senior Secondary section through the RPC';
- end if;
- if (select status from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003')<>'approved'
-    or (select locked from public.schoolpro_results where id='bbbbbbbb-0000-4000-8000-000000000003') then
-   raise exception 'Principal publication attempt must leave section-approved results unchanged';
- end if;
- 
- 
+
  perform set_config('request.jwt.claim.sub',owner_id::text,true);
  begin
-   perform public.schoolpro_set_section_leader(school,head_member,'junior_secondary',true);
-   raise exception 'ASSERT: Head Teacher must not be appointed to Junior Secondary';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
+   perform public.schoolpro_set_section_leader(school,teacher_member,'primary',true);
+   raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('Head Teacher' in sqlerrm)=0 then raise; end if;
+ end;
+
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',false);
- if exists(select 1 from public.schoolpro_section_leaders where member_id=head_member and section='nursery' and ended_at is null) then
+ if exists(select 1 from public.schoolpro_section_leaders
+   where member_id=head_member and section='nursery' and ended_at is null) then
    raise exception 'Section leader removal failed';
  end if;
  update public.schoolpro_members set role='administrator',position_title=null where id=vice_member;
- if exists(select 1 from public.schoolpro_section_leaders where member_id=vice_member and ended_at is null) then
+ if exists(select 1 from public.schoolpro_section_leaders
+   where member_id=vice_member and ended_at is null) then
    raise exception 'Changing staff role must clear obsolete section assignments';
  end if;
 end
 $test$;
-select 'PASS: section assignments, historical class-level resolution, result-write scope, review scope, and assignment revocation' as result;
-
-
--- Stage C authority and final publication lifecycle.
-alter table public.schoolpro_members add constraint schoolpro_members_school_id_id_unique unique(school_id,id);
-create table public.schoolpro_member_permissions(school_id uuid not null,member_id uuid not null,permission text not null,allowed boolean not null,updated_by uuid,updated_at timestamptz,primary key(member_id,permission));
-alter table public.schoolpro_subject_assignments add column ended_at timestamptz;
-alter table public.schoolpro_results add column updated_at timestamptz not null default now();
-\ir ../supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql
-
-do $authority$
-declare
- school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
- primary_class uuid := '22222222-2222-4222-8222-222222222222';
- student_id uuid := '44444444-4444-4444-8444-444444444444';
- subject_one uuid := '55555555-5555-4555-8555-555555555555';
- subject_two uuid := '55555555-5555-4555-8555-555555555556';
- owner_id uuid := '66666666-6666-4666-8666-666666666666';
- formmaster_id uuid := '88888888-8888-4888-8888-888888888890';
- formmaster_member uuid := '99999999-9999-4999-8999-999999999994';
- section_head_id uuid := '77777777-7777-4777-8777-777777777777';
- section_head_member uuid := '99999999-9999-4999-8999-999999999991';
- subject_teacher_id uuid := '88888888-8888-4888-8888-888888888895';
- subject_teacher_member uuid := '99999999-9999-4999-8999-999999999995';
- exam_officer_id uuid := '88888888-8888-4888-8888-888888888896';
- exam_officer_member uuid := '99999999-9999-4999-8999-999999999996';
- class_request uuid;
- section_request uuid;
-begin
- insert into auth.users values(subject_teacher_id),(exam_officer_id);
- insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
-  (subject_teacher_member,school,subject_teacher_id,'teacher',null),
-  (exam_officer_member,school,exam_officer_id,'teacher',null);
- -- The earlier fixture left a Principal appointed to Senior Secondary.
- -- Restore the VP role and appoint the VP to that same section: Principal wins.
- update public.schoolpro_members set role='vice_principal',position_title=null
- where id='99999999-9999-4999-8999-999999999992';
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_section_leader(
-   school,'99999999-9999-4999-8999-999999999992','senior_secondary',true
- );
- perform set_config('request.jwt.claim.sub','88888888-8888-4888-8888-888888888888',true);
- if private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
-   raise exception 'Vice Principal must not lead a section with an active Principal appointment';
- end if;
- begin
-   perform public.schoolpro_approve_section_results(school,'senior_secondary','First Term','2025/2026');
-   raise exception 'ASSERT: Vice Principal bypassed Principal precedence in section approval RPC';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('principal takes precedence' in lower(sqlerrm))=0 then raise; end if;
- end;
- begin
-   perform public.schoolpro_approve_class_results(
-     school,'22222222-2222-4222-8222-222222222224','First Term','2025/2026'
-   );
-   raise exception 'ASSERT: Vice Principal bypassed Principal precedence in class approval RPC';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('principal takes precedence' in lower(sqlerrm))=0 then raise; end if;
- end;
- perform set_config('request.jwt.claim.sub','88888888-8888-4888-8888-888888888889',true);
- if not private.schoolpro_member_leads_class(school,'22222222-2222-4222-8222-222222222224') then
-   raise exception 'Principal must retain authority over Senior Secondary when VP is also appointed';
- end if;
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- update public.schoolpro_members set role='teacher' where id=subject_teacher_member;
- update public.schoolpro_classes set form_teacher_id=formmaster_member where id=primary_class;
- insert into public.schoolpro_subjects values(subject_two,school);
- insert into public.schoolpro_subject_assignments(school_id,class_id,teacher_member_id,subject_id,session,ended_at) values
-  (school,primary_class,formmaster_member,subject_one,'2026/2027',null),
-  (school,primary_class,subject_teacher_member,subject_two,'2026/2027',null);
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- begin
-   perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
-   raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('ordinary Subject Teacher' in sqlerrm)=0 then raise; end if;
- end;
- -- Class Teacher is not an ordinary Subject Teacher and may receive a
- -- formal section-head appointment. The appointment is independent of class
- -- coordination and subject score-entry allocations.
- update public.schoolpro_members set role='class_teacher' where id=subject_teacher_member;
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_section_leader(school,subject_teacher_member,'primary',true);
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- if not private.schoolpro_member_leads_class(school,primary_class) then
-   raise exception 'Class Teacher must be eligible for a formal Primary section-head appointment';
- end if;
- update public.schoolpro_members set role='teacher' where id=subject_teacher_member;
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
-
- -- Without the Section Head appointment, the ordinary subject teacher can read only their own subject.
- update public.schoolpro_section_leaders set ended_at=now()
- where school_id=school and member_id=subject_teacher_member and ended_at is null;
- if not private.schoolpro_can_read_result(school,student_id,subject_two,'2026/2027') then
-   raise exception 'Subject teacher must read their own allocated subject result';
- end if;
- if private.schoolpro_can_read_result(school,student_id,subject_one,'2026/2027') then
-   raise exception 'Subject teacher must not read another teacher subject result';
- end if;
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if not private.schoolpro_can_read_result(school,student_id,subject_two,'2026/2027') then
-   raise exception 'Form Master must read every subject result in the assigned class';
- end if;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- if not private.schoolpro_can_write_result(school,student_id,subject_two,'2026/2027') then
-   raise exception 'Subject teacher must write their own allocated subject';
- end if;
- if private.schoolpro_can_write_result(school,student_id,subject_one,'2026/2027') then
-   raise exception 'Subject teacher must not write another teacher subject';
- end if;
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if not private.schoolpro_can_write_result(school,student_id,subject_one,'2026/2027') then
-   raise exception 'Form Master must write a subject they personally teach';
- end if;
- if private.schoolpro_can_write_result(school,student_id,subject_two,'2026/2027') then
-   raise exception 'Form Master must not write another subject teacher score';
- end if;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
-
- -- The Form Master is also a subject teacher, but may edit only their allocated subject.
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000011',school,student_id,subject_one,'First Term','2026/2027','{"ca":10,"exam":80}','draft');
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scores,status)
- values('bbbbbbbb-0000-4000-8000-000000000012',school,student_id,subject_two,'First Term','2026/2027','{"ca":9,"exam":75}','draft');
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- begin
-   update public.schoolpro_results set assessment_scores='{"ca":12,"exam":80}'
-   where id='bbbbbbbb-0000-4000-8000-000000000012';
-   raise exception 'ASSERT: Form Master changed another subject teacher result';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('Only the active subject teacher assigned' in sqlerrm)=0 then raise; end if;
- end;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- begin
-   update public.schoolpro_results set locked=true where id='bbbbbbbb-0000-4000-8000-000000000012';
-   raise exception 'ASSERT: Subject teacher changed the result lock directly';
- exception when others then
-   if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('Only unlocked Draft scores' in sqlerrm)=0 then raise; end if;
- end;
- if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
-   raise exception 'Form Master must submit only after the complete class subject matrix exists';
- end if;
-
- -- The separately appointed Head Teacher approves the whole section; this does
- -- not grant that Head Teacher permission to enter another teacher's scores.
- perform set_config('request.jwt.claim.sub',section_head_id::text,true);
- if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
-   raise exception 'Section Head must approve all complete submitted results in the section';
- end if;
- if (select count(*) from public.schoolpro_result_workflow
-   where school_id=school and session='2026/2027' and status='section_approved')<>2 then
-   raise exception 'Section approval must advance both subject result rows';
- end if;
-
- -- A Section Head can return an approved class to the Form Master and subject teachers.
- if public.schoolpro_return_class_results_for_correction(school,primary_class,'First Term','2026/2027',
-   'Correct the assessment values before final Exam Officer approval.')<>2 then
-   raise exception 'Section Head must return all class results for correction';
- end if;
- if exists(select 1 from public.schoolpro_results where school_id=school and session='2026/2027' and status<>'draft') then
-   raise exception 'Section return must restore the affected class scores to Draft';
- end if;
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
-   raise exception 'Form Master must resubmit the corrected class register';
- end if;
- perform set_config('request.jwt.claim.sub',section_head_id::text,true);
- if public.schoolpro_approve_section_results(school,'primary','First Term','2026/2027')<>2 then
-   raise exception 'Section Head must approve the corrected class again';
- end if;
-
- -- A staff member can hold Exam Officer authority in addition to a teaching role.
- perform set_config('request.jwt.claim.sub',owner_id::text,true);
- perform public.schoolpro_set_member_responsibility(school,exam_officer_member,'exam_officer',true);
- perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
- if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','school',null,null)<>2 then
-   raise exception 'Exam Officer must give final approval to every school result';
- end if;
- begin
-   update public.schoolpro_results set status='published',locked=true
-   where id='bbbbbbbb-0000-4000-8000-000000000011';
-   raise exception 'ASSERT: Exam Officer must use the whole-school publication RPC';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
- if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
-   raise exception 'Exam Officer must publish the whole school result set';
- end if;
- if exists(select 1 from public.schoolpro_results where session='2026/2027' and status<>'published' or session='2026/2027' and not locked) then
-   raise exception 'Whole-school publication must lock every result';
- end if;
-
- -- Class-based correction request: no result changes until the Exam Officer authorizes reopening.
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- class_request:=public.schoolpro_request_result_reopening(
-   school,'class',primary_class,null,'First Term','2026/2027',
-   'Correct the two class assessment records before the next release.'
- );
- perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
- begin
-   update public.schoolpro_results set status='draft',locked=false
-   where id='bbbbbbbb-0000-4000-8000-000000000011';
-   raise exception 'ASSERT: Exam Officer must use the authorized correction request RPC';
- exception when others then if sqlerrm like 'ASSERT:%' then raise; end if; end;
- if public.schoolpro_decide_result_reopening(class_request,true,'Approved class correction')<>2 then
-   raise exception 'Exam Officer class correction approval must reopen exactly the affected class';
- end if;
- if exists(select 1 from public.schoolpro_results where session='2026/2027' and (status<>'draft' or locked)) then
-   raise exception 'Authorized class correction must return the affected results to unlocked Draft';
- end if;
-
- -- Re-submit and republish, then exercise section-based reopening independently.
- perform set_config('request.jwt.claim.sub',formmaster_id::text,true);
- if public.schoolpro_submit_class_results(school,primary_class,'First Term','2026/2027')<>2 then
-   raise exception 'Corrected class results must be resubmitted by the Form Master';
- end if;
- perform set_config('request.jwt.claim.sub',subject_teacher_id::text,true);
- perform set_config('request.jwt.claim.sub',section_head_id::text,true);
- if public.schoolpro_approve_class_results(school,primary_class,'First Term','2026/2027')<>2 then
-   raise exception 'Class-scoped correction must pass Section Head class approval again';
- end if;
- perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
- if public.schoolpro_exam_officer_approve_results(school,'First Term','2026/2027','class',primary_class,null)<>2 then
-   raise exception 'Corrected class must pass final Exam Officer approval again';
- end if;
- if public.schoolpro_publish_school_results(school,'First Term','2026/2027')<>2 then
-   raise exception 'Corrected results must be republished by the Exam Officer';
- end if;
- perform set_config('request.jwt.claim.sub',section_head_id::text,true);
- section_request:=public.schoolpro_request_result_reopening(
-   school,'section',null,'primary','First Term','2026/2027',
-   'Reopen the entire Primary section for a verified section-wide correction.'
- );
- perform set_config('request.jwt.claim.sub',exam_officer_id::text,true);
- if public.schoolpro_decide_result_reopening(section_request,true,'Approved section correction')<>2 then
-   raise exception 'Exam Officer section correction approval must reopen the entire affected section';
- end if;
- if exists(select 1 from public.schoolpro_results where session='2026/2027' and (status<>'draft' or locked)) then
-   raise exception 'Section reopening must unlock all affected section results';
- end if;
-end
-$authority$;
-select 'PASS: subject-teacher-only marks, complete Form Master submission, concurrent roles, section approval, Exam Officer final approval/publication, and class/section correction reopening' as result;

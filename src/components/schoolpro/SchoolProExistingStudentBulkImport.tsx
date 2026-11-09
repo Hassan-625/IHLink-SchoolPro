@@ -52,7 +52,21 @@ export function SchoolProExistingStudentBulkImport({schoolId,session,classes,hou
    const batch=rows.slice(offset,offset+batchSize);
    const payload=batch.map(({row,house_id,...student})=>({...student,school_id:schoolId}));
    const {data,error}=await supabase.from("schoolpro_students").insert(payload).select("id,admission_number");
-   if(error)throw error;
+   if(error){
+    const errorValue=error as ImportFailure;
+    const errorText=typeof errorValue.message==="string"?errorValue.message:"";
+    const timedOut=errorValue.code==="57014"||/timeout|timed out|statement timeout|thread killed by timeout/i.test(errorText);
+    if(timedOut){
+     const {data:confirmed,error:confirmationError}=await supabase.from("schoolpro_students").select("admission_number").eq("school_id",schoolId).in("admission_number",batch.map(student=>student.admission_number));
+     if(!confirmationError){
+      const saved=new Set((confirmed||[]).map(student=>norm(student.admission_number)));
+      const savedFromBatch=batch.filter(student=>saved.has(norm(student.admission_number))).length;
+      if(savedFromBatch===batch.length){imported+=savedFromBatch;setRows(rows.slice(imported));continue;}
+      if(savedFromBatch>0){imported+=savedFromBatch;setRows(rows.slice(imported));throw new Error("The timed-out batch has mixed confirmation. "+savedFromBatch+" row(s) were confirmed saved; validate the remaining rows before retrying.");}
+     }
+    }
+    throw error;
+   }
    if(!data||data.length!==batch.length)throw new Error("The database did not confirm every row in the current batch.");
    imported+=data.length;
    setRows(rows.slice(imported));

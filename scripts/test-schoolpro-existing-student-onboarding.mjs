@@ -37,7 +37,8 @@ assert.match(bulk,/Date of Birth/,"The workbook must capture date of birth so ag
 assert.match(bulk,/DATEDIF/,"The Excel workbook must calculate age from date of birth.");
 assert.match(bulk,/sectionAliases/,"Section, class and arm must be automatically mapped to the selected school records.");
 assert.match(bulk,/date_of_birth:dob/,"Date of birth must be persisted to the student record.");
-assert.match(bulk,/guardian_first_name/,"Separate guardian names must be combined into the existing guardian name field.");\nassert.match(bulk,/if\(!raw\.some\(value=>String\(value\?\?""\)\.trim\(\)\)\)continue/,"Blank Excel formula rows must not be treated as student records.");
+assert.match(bulk,/guardian_first_name/,"Separate guardian names must be combined into the existing guardian name field.");
+assert.match(bulk,/if\(!raw\.some\(value=>String\(value\?\?""\)\.trim\(\)\)\)continue/,"Blank Excel formula rows must not be treated as student records.");
 assert.match(bulk,/Download Excel template/,"The Excel template download must be visible in the import panel.");
 const studentPage=readFileSync("src/pages/schoolpro/SchoolProStudents.tsx","utf8");
 assert.match(studentPage,/xl:col-span-2/,"The student roster must span the full desktop grid and retain mobile horizontal scrolling.");

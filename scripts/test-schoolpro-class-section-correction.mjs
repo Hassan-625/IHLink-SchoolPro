@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const page=readFileSync('src/pages/schoolpro/SchoolProClasses.tsx','utf8');
+assert.match(page,/function inferredClassLevel/);
+assert.match(page,/\^\(jss\|js\|junior secondary\)/);
+assert.match(page,/\^\(sss\|ss\|senior secondary\)/);
+assert.match(page,/selected section is/);
+assert.match(page,/setEditingClass\(row\)/);
+assert.match(page,/\.update\(payload\)\.eq\("id",editingClass\.id\)\.eq\("school_id",schoolId\)/);
+assert.match(page,/issue\.code==="23505"/);
+assert.match(page,/already exist in this school/);
+assert.match(page,/Existing class identity and linked records were preserved/);
+assert.match(page,/onClick=\{\(\)=>editClass\(row\)\}/);
+assert.match(page,/Cancel edit/);
+console.log('PASS: SchoolPro class section correction, stable-ID update, duplicate feedback and edit UI contracts.');

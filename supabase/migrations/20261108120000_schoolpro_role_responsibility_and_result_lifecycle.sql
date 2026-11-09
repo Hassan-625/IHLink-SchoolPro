@@ -397,7 +397,7 @@ begin
     and (new.status<>'active' or new.role = 'teacher');
   return new;
 end
-$;
+$$;
 drop trigger if exists schoolpro_prune_section_leadership_role on public.schoolpro_members;
 create trigger schoolpro_prune_section_leadership_role
 after update of role,position_title,status on public.schoolpro_members

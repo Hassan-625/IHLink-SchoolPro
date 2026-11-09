@@ -767,19 +767,26 @@ execute function private.schoolpro_enforce_subject_teacher_result_write();
 create or replace function private.validate_subject_assignment()
 returns trigger language plpgsql security definer set search_path=''
 as $$
-declare class_school uuid;subject_school uuid;member_school uuid;member_role public.school_member_role;
+declare class_school uuid;class_archived_at timestamptz;subject_school uuid;member_school uuid;member_role public.school_member_role;member_status text;
 begin
-  select school_id into class_school from public.schoolpro_classes where id=new.class_id;
+  select school_id,archived_at into class_school,class_archived_at
+  from public.schoolpro_classes where id=new.class_id;
   select school_id into subject_school from public.schoolpro_subjects where id=new.subject_id;
   if class_school is null or subject_school is null
      or class_school<>new.school_id or subject_school<>new.school_id then
     raise exception 'Class and subject must belong to the selected school';
   end if;
   if new.teacher_member_id is not null then
-    select school_id,role into member_school,member_role
+    select school_id,role,status into member_school,member_role,member_status
     from public.schoolpro_members where id=new.teacher_member_id;
     if member_school is null or member_school<>new.school_id then
       raise exception 'Assigned teacher must belong to the selected school';
+    end if;
+    if new.ended_at is null and member_status is distinct from 'active' then
+      raise exception 'An active subject allocation requires an active staff membership';
+    end if;
+    if new.ended_at is null and class_archived_at is not null then
+      raise exception 'An active subject allocation cannot target an archived class';
     end if;
     if new.ended_at is null and member_role not in ('teacher','class_teacher') then
       raise exception 'An active subject allocation requires an eligible teaching member';

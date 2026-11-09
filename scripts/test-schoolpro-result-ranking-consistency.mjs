@@ -11,3 +11,10 @@ assert.ok(migration.includes('h.school_id=s.school_id and h.student_id=s.id'));
 assert.ok(broadsheet.includes('rank() over(order by x.total desc)'));
 assert.ok(report.includes('rank() over(order by total desc)'));
 console.log('PASS: review, broadsheet and report ranking use total-score ordering and consistent historical-session roster fallback.');
+
+const reviewFix=readFileSync('supabase/migrations/20261109100000_schoolpro_review_sheet_unassessed_rank_guard.sql','utf8');
+assert.ok(reviewFix.includes('case when subjects>0 then rank() over(order by case when subjects>0 then total end desc nulls last)'),'Review-sheet ranking must assign positions only to learners with recorded results');
+assert.ok(reviewFix.includes('else null::bigint end class_position'),'Unassessed learners must have no class position');
+assert.ok(reviewFix.includes('order by r.class_position nulls last,r.student_name'),'Unassessed learners must remain visible after ranked learners');
+assert.ok(reviewFix.includes('left join public.schoolpro_results'),'Review sheet must preserve the complete roster');
+console.log('PASS: staff review sheet retains unassessed learners without assigning them a class position.');

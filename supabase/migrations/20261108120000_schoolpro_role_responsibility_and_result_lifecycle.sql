@@ -883,7 +883,7 @@ begin
         or (p_scope='section' and c.level=p_section)))
   order by w.result_id for update;
 end
-$;
+$$;
 revoke all on function private.schoolpro_lock_result_scope(uuid,text,text,text,uuid,text) from public,anon;
 grant execute on function private.schoolpro_lock_result_scope(uuid,text,text,text,uuid,text) to authenticated;
 

@@ -54,8 +54,8 @@ begin
   if class_level is not null and scheme_level not in ('all','custom',class_level)
     and not (scheme_level='secondary' and class_level in ('junior_secondary','senior_secondary','jss','sss'))
     and not (scheme_level='nursery_primary' and class_level in ('nursery','primary','nursery_primary'))
-    and not (scheme_level='junior_secondary' and class_level='jss')
-    and not (scheme_level='senior_secondary' and class_level='sss') then
+    and not (scheme_level='junior_secondary' and class_level in ('junior_secondary','jss'))
+    and not (scheme_level='senior_secondary' and class_level in ('senior_secondary','sss')) then
    raise exception 'Assessment scheme level % does not match the selected class level %',scheme_level,class_level;
   end if;
   for component in select value from jsonb_array_elements(comp) loop

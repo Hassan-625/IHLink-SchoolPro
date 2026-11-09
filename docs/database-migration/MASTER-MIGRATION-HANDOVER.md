@@ -2974,3 +2974,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Corrected `scripts/test-schoolpro-section-leadership.mjs` after the latest CI run exposed stale source assertions that still expected the former Head Teacher / Vice Principal / Principal-only UI rules.
 - The regression now verifies that appointment controls are rendered only for active staff, that all staff roles other than ordinary Subject Teacher, parent and student are eligible, and that the old role-specific UI restrictions do not return. Existing database, integration, Principal-precedence, and score-entry boundary assertions remain in place.
 - This is a test-only correction to match the already-implemented and user-confirmed appointment policy. Commit: `ac20ec30ab939db286cd903a24dd36304ae5b54b`. CI must rerun against this head; no production Supabase change, merge, or Render deployment has occurred.
+
+
+### Stage C result lifecycle CI correction — 2026-11-09 (PR #133; proposed only)
+
+- The 2026-11-09 CI run exposed that the result-row trigger did not enforce RPC-only transitions: a direct authenticated status update could attempt Section Head approval, and the trigger's old role list did not use the new all-active-staff appointment policy. It also left the workflow synchronization expecting the pre-Exam-Officer state during publication.
+- Replaced the trigger logic in proposed migration 20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql. Section approval now requires the transaction-local marker set by the complete-section approval RPC, a submitted Form Master workflow row, and the shared role-/section-/Principal-aware schoolpro_member_leads_class predicate. Publication requires the Exam Officer publication marker, an exam_approved workflow row and Exam Officer authorization. Direct client status changes are rejected.
+- Updated workflow synchronization so publication advances exam_approved to published. The source-contract test now asserts both RPC markers, the shared authority predicate and the corrected workflow state; fixed the escaped school_admin responsibility assertion.
+- This is proposed migration/test code in PR #133 only. It has not been applied to Supabase production, merged or deployed to Render. CI must validate the latest head.

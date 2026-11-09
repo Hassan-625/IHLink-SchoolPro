@@ -2990,3 +2990,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Corrected the Principal-precedence source assertion to match the migration's actual dotted identifier syntax.
 - The isolated section-leadership SQL fixture applies the section-appointment and Form Master workflow migrations, not the later final-authority migration. Removed direct status-update assertions from that older fixture rather than weakening production enforcement. The RPC-only approval/publication markers and trigger guards remain in the final authority migration and are asserted by the Stage C source-contract test; they must be exercised by the full migration/result-workflow integration path.
 - CI had exposed a fixture/migration boundary mismatch: the isolated test was asserting behavior introduced only by a later migration. No production database changes, merge, or Render deployment.
+
+
+### Stage C migration parser correction — 2026-11-09
+
+- CI isolated a malformed dollar-quote terminator on the new `private.schoolpro_prune_section_leadership_role()` trigger function. It ended with `$;` instead of `$$;`, causing the following enrollment-reader SQL function's `WITH` clause to be parsed in the wrong context. Corrected the terminator; the eligibility predicate remains unchanged. This is a proposed migration correction only, not applied to production.

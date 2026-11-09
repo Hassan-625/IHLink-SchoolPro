@@ -1,3 +1,11 @@
+## Stage C continuation — assessment scheme level alias correction (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Corrected the score-import preview's class-level compatibility check so Junior Secondary and Senior Secondary schemes accept both canonical level values (`junior_secondary` / `senior_secondary`) and their short aliases (`jss` / `sss`). This aligns row-level import validation with the scheme selector's existing compatibility rules and prevents valid same-section imports from being incorrectly rejected. Added a source-contract regression assertion. Branch-only change; no production migration, data write, merge, or Render deployment.
+
+
 # SchoolPro Master Migration and Production Cleanup Handover
 
 ## Stage C continuation — assessment workbook schema and class-level validation (2026-11-08)

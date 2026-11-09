@@ -3221,3 +3221,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Preserve historical attendance and the calendar/rule version used for each calculation so later calendar or grading changes do not silently rewrite prior reports.
 - Add tests for holidays/weekends, mid-session enrolment, calendar changes, date-level bulk entry, cumulative entry reconciliation, late-versus-absent treatment, grade-band boundaries, corrections and role-based access.
 - These are Stage C requirements to implement; no production attendance records or workspace data are to be created until the user supplies the end-to-end verification instructions.
+
+
+## 2026-11-09 — Class section correction and duplicate feedback
+- The Classes & Arms page now validates recognizable class-name prefixes against the selected academic section (for example, JSS/JS must be Junior Secondary; SSS/SS must be Senior Secondary; Nursery/Primary/Basic must match their corresponding sections) before inserting or updating a class.
+- Added an Edit action for existing classes. Administrators can correct a mistaken section/level while preserving the class UUID, Form Master assignment, and all foreign-key-linked class history; this avoids creating a duplicate class or deleting the original record.
+- Edit and create share the same school-scoped save path. Duplicate-key errors (PostgreSQL 23505) now receive a direct explanation that the class name/arm already exists and that the existing row should be edited. Other failures return a safe actionable message with the database error code rather than exposing raw SQL diagnostics or silently collapsing all failures into an opaque generic message.
+- Added a source-contract regression to CI for section-name validation, stable-ID class updates, school scoping, duplicate feedback, and edit/cancel UI.
+- Frontend and automated test changes only. No production class rows were edited, no production migration was applied, and no merge or Render deployment is included.

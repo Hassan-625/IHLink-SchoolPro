@@ -1,3 +1,11 @@
+## Stage C continuation — database import scheme-level alias enforcement (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Extended the previous secondary-level alias correction to the authoritative database import RPC. The RPC now accepts both canonical and short Junior Secondary (`junior_secondary` / `jss`) and Senior Secondary (`senior_secondary` / `sss`) class-level values, matching the frontend preview. Added source-contract assertions so backend enforcement cannot regress independently. Proposed migration only; no production database changes, merge, or Render deployment.
+
+
 ## Stage C continuation — assessment scheme level alias correction (2026-11-09)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  

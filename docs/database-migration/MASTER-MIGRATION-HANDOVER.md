@@ -3147,3 +3147,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Latest-head SchoolPro CI and payment-page validation passed. The C0 regression job failed before database tests because the disposable Supabase PostgreSQL container could not bind default host port 54322 (already in use on the runner).
 - Updated `.github/workflows/schoolpro-c0-regression.yml` to configure a dedicated local database port (54332) for this job and use that port for baseline restore, migration replay, and SQL regression tests. This is CI-only; it does not change production Supabase configuration or data.
 - Commit: `92860d80dd8fd9a16c2dc2093ae29960af7a3368`. Fresh workflow validation is required on this new branch head before PR #133 can merge.
+
+
+### Existing-student bulk onboarding — 2026-11-09 (PR #134)
+- Added an Excel (.xlsx) and CSV bulk-import panel to the SchoolPro student workspace. The importer requires Admission Number, First Name, Last Name and Class; supports Middle Name, Gender, Guardian Name, Guardian Phone, Guardian Email and House; maps class/house labels only to active records in the selected school; assigns the selected working academic session; and marks every row as `existing`.
+- Validation checks required columns, duplicate headings, duplicate admission numbers within the file, existing admission numbers in the same school, invalid gender/email values, unknown classes/houses, and a 500-row batch ceiling. No records are written during preview; the operator must explicitly run Import after a clean validation.
+- A single school-scoped insert writes the validated batch. Explicit house selections are applied through the existing `schoolpro_assign_student_house` RPC; students without an explicit house retain the balanced automatic allocation trigger. If a post-insert manual house assignment fails, the UI reports it clearly rather than claiming all assignments succeeded.
+- Corrected the individual-enrolment form reset to preserve the required `house_id` state field (CI had identified this TypeScript error on PR #134).
+- Added a CI source-contract regression for spreadsheet parsing, validation, duplicate prevention, session assignment and batch limits. Branch-only changes; no production migration, production student writes, merge, or Render deployment.

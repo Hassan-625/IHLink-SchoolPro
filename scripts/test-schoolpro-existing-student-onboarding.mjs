@@ -42,3 +42,17 @@ assert.match(bulk,/if\(!raw\.some\(value=>String\(value\?\?""\)\.trim\(\)\)\)con
 assert.match(bulk,/Download Excel template/,"The Excel template download must be visible in the import panel.");
 const studentPage=readFileSync("src/pages/schoolpro/SchoolProStudents.tsx","utf8");
 assert.match(studentPage,/xl:col-span-2/,"The student roster must span the full desktop grid and retain mobile horizontal scrolling.");
+
+assert.match(bulk,/"Last Name"/,"The downloadable register must use Last Name consistently.");
+assert.match(bulk,/surname":"last_name"/,"Older spreadsheets headed Surname must remain compatible.");
+assert.match(bulk,/DATE\\(2026,9,1\\)/,"The displayed age must use the 1 September 2026 school-year reference date, not the viewer's current date.");
+assert.match(bulk,/function minimumAgeForClass/,"The importer must enforce class-specific minimum ages.");
+assert.match(bulk,/pre\\\\s\\*nursery/,"Pre-Nursery must have its own minimum age rule.");
+assert.match(bulk,/minimumAgeForClass\\(klass\\.name\\)/,"The age minimum must be selected from the matched active class.");
+assert.match(bulk,/date of birth is required to calculate and validate the student age/,"Date of birth must be required for reliable age validation.");
+assert.match(bulk,/requires a minimum age of/,"Under-age students must be blocked with an actionable explanation.");
+const classesPage=readFileSync("src/pages/schoolpro/SchoolProClasses.tsx","utf8");
+assert.match(classesPage,/Add Pre-Nursery A &amp; B/,"School administrators must have a one-click Pre-Nursery A/B setup action.");
+assert.match(classesPage,/name:"Pre-Nursery",arm,level:"nursery"/,"Pre-Nursery arms must be created in the Nursery section.");
+assert.match(classesPage,/already has both A and B arms/,"The Pre-Nursery setup must be idempotent.");
+console.log("PASS: 2026/2027 age reference, class minimum ages, Last Name header and Pre-Nursery A/B setup.");

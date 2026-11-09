@@ -85,8 +85,8 @@ export function SchoolProResults(){
      const compatible=!schemeLevel||schemeLevel==="all"||schemeLevel==="custom"||schemeLevel===level||
       (schemeLevel==="secondary"&&["junior_secondary","senior_secondary","jss","sss"].includes(level))||
       (schemeLevel==="nursery_primary"&&["nursery","primary","nursery_primary"].includes(level))||
-      (schemeLevel==="junior_secondary"&&level==="jss")||
-      (schemeLevel==="senior_secondary"&&level==="sss");
+      (schemeLevel==="junior_secondary"&&["junior_secondary","jss"].includes(level))||
+      (schemeLevel==="senior_secondary"&&["senior_secondary","sss"].includes(level));
      if(!compatible)errs.push("Assessment scheme level "+scheme.school_level+" does not match the student's class level "+st.class_level);
     }
     const existing=st&&sub?results.find(r=>r.student_id===st.id&&r.subject_id===sub.id&&r.term===scoreForm.term&&r.session===scoreForm.session):undefined;

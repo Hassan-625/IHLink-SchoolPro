@@ -3019,3 +3019,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - C0 disposable Supabase migration execution found a comparison between the `schoolpro_result_status` enum column and a text parameter in `private.schoolpro_result_scope_matrix_state`. Added an explicit cast of `p_result_status` to `public.schoolpro_result_status`, preserving the RPC's text argument signature while making the comparison type-safe.
 - Full CI source-contract failure was an over-escaped regular expression for `principal_m.position_title`; corrected the assertion to match the literal SQL identifier and Principal check.
 - These are branch-only corrections on PR #133. No production Supabase migration, merge, or Render deployment.
+
+
+### Stage C CI corrections — 2026-11-09 (latest)
+- The latest Stage C CI exposed a real gap in `private.validate_subject_assignment()`: active allocations checked school ownership and teaching role but did not require an active staff membership or a non-archived class. The validator now enforces active membership and non-archived class state for active allocations, while preserving ended allocation history.
+- The result-workflow source test expected an obsolete inline refresh expression. Updated it to assert the current explicit selected-class impact check and conditional refresh after the correction queue reload.
+- Scope: branch-only migration and source-contract test updates. No production Supabase migration/data changes, PR merge, or Render deployment.
+- Commit sequence: validator fix `e79fa8b9fbbe2dd0db3ef57456bd4ab080a7eef8`; workflow assertion fix `d199376b1f9befd048f98d0efcf41b27d060aa5b`.
+- Fresh CI validation is pending; do not treat these fixes as passed until the new runs complete.

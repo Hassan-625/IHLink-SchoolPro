@@ -10,6 +10,9 @@ assert.match(results,/const entrySubjects=teachingTargets\.length\?subjects\.fil
   'Subject teachers must be restricted to their own allocated subjects.');
 assert.match(results,/View only · subject teacher entry/i,
   'Non-assigned subject marks must remain read-only.');
+assert.match(broadsheet,/activePrincipalSections/, 'Active Principal appointments must be loaded for each section.');
+assert.match(broadsheet,/const isPrincipal=memberRole==='administrator'&&memberPositionTitle\.trim\(\)\.toLowerCase\(\)==='principal'/, 'Only the appointed Principal retains section review controls when a Principal is active in that section.');
+assert.match(broadsheet,/!principalSections\.includes\(className\.level\)\|\|isPrincipal/, 'Vice Principals and other appointees must not see section approval controls when the Principal is appointed.');
 assert.match(broadsheet,/schoolpro_class_subject_teacher_roster/i,
   'The class broadsheet must load the active subject-teacher roster through the scoped RPC.');
 assert.match(broadsheet,/async function refreshCorrectionQueue\(/, 'The Exam Officer correction queue must have an explicit refresh path.');

@@ -27,7 +27,8 @@ jobs:
       - run: node scripts/test-schoolpro-section-leadership.mjs
       - run: node scripts/test-schoolpro-incremental-assessment-entry.mjs
       - run: node scripts/test-schoolpro-student-family-records.mjs
-      - run: node scripts/test-schoolpro-existing-student-onboarding.mjs\n      - run: node scripts/test-schoolpro-class-section-correction.mjs
+      - run: node scripts/test-schoolpro-existing-student-onboarding.mjs
+      - run: node scripts/test-schoolpro-class-section-correction.mjs
       - run: node scripts/test-school-access-cache.mjs
       - run: node scripts/test-school-dashboard-roles.mjs
       - run: node scripts/test-schoolpro-stage-ab-corrections.mjs

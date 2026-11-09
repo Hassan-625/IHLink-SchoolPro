@@ -3104,3 +3104,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ## 2026-11-09 — Stage C result-scope locking CI correction
 - Corrected the result-scope lock helper's PL/pgSQL dollar-quote delimiter and the Node source-contract regex escaping after CI identified both issues.
 - Re-run the full SchoolPro CI and Stage C0 migration replay before treating this head as validated. No production migration or deployment was performed.
+
+
+## 2026-11-09 — Stage C result-scope lock CI corrections
+- Corrected the PL/pgSQL function-body delimiter for `private.schoolpro_lock_result_scope` from `as $` to `as $$`; the disposable Supabase migration replay had stopped at this helper declaration.
+- Corrected the `test-result-workflow.mjs` ordering assertion so it matches the actual SQL sequence using a single regex whitespace escape; the previous assertion was over-escaped and failed despite the lock call being in the correct position.
+- Both changes are committed on `feat/schoolpro-stage-c-assessment-results-workflow`; CI must rerun against the new head before this concurrency hardening is considered validated. No production migration, merge, or Render deployment was performed.

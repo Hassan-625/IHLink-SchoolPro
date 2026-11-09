@@ -14,3 +14,17 @@ assert.match(migration,/check \(admission_type in \('new', 'existing', 'transfer
 assert.doesNotMatch(migration,/update public\.schoolpro_students/i,'The migration must not rewrite production student records.');
 
 console.log('PASS: existing-student onboarding is distinct, school-scoped, house-aware, and non-destructive.');
+
+const bulk=readFileSync('src/components/schoolpro/SchoolProExistingStudentBulkImport.tsx','utf8');
+assert.match(bulk,/workbook\.xlsx\.load/,'Bulk onboarding must parse Excel workbooks.');
+assert.match(bulk,/parseCsv/,'Bulk onboarding must parse CSV registers.');
+assert.match(bulk,/admission_number/,'Admission numbers must be required and checked.');
+assert.match(bulk,/duplicate admission number within this file/,'Duplicate admission numbers inside a spreadsheet must block import.');
+assert.match(bulk,/already exists in this school/,'Existing school admission numbers must block duplicate import.');
+assert.match(bulk,/class\/arm/,'Class names must map to active classes in the selected school.');
+assert.match(bulk,/schoolpro_assign_student_house/,'Optional house assignments must be preserved.');
+assert.match(bulk,/admission_type:"existing"/,'Every imported row must be classified as an existing student.');
+assert.match(bulk,/enrollment_session:session/,'Imported students must be attached to the selected academic session.');
+assert.match(bulk,/parsed.length>500/,'Bulk import must enforce a bounded batch size.');
+assert.match(bulk,/No records have been saved yet/,'Validation preview must not write student records.');
+console.log('PASS: bulk existing-student import validates Excel/CSV, duplicates, classes, houses, session and batch bounds.');

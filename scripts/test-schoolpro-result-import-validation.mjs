@@ -7,6 +7,7 @@ assert.ok(parse.includes('Missing required columns'));
 assert.ok(parse.includes('unsupported columns')&&parse.includes('allowedHeaders'), 'Import must reject unexpected workbook columns instead of silently ignoring them');
 assert.ok(parse.includes('Assessment scheme level')&&parse.includes('student\'s class level'), 'Import preview must reject assessment schemes incompatible with the selected-session class level');
 assert.ok(parse.includes('duplicate column headings'));
+assert.ok(parse.includes('["junior_secondary","jss"].includes(level)')&&parse.includes('["senior_secondary","sss"].includes(level)'), "Junior and Senior Secondary scheme validation must accept canonical and short class-level aliases");
 assert.ok(parse.includes('Missing component column'));
 assert.ok(parse.includes('score is required and must be numeric'));
 assert.ok(parse.includes('must be 0–'));

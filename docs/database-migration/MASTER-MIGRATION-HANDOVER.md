@@ -3027,3 +3027,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Scope: branch-only migration and source-contract test updates. No production Supabase migration/data changes, PR merge, or Render deployment.
 - Commit sequence: validator fix `e79fa8b9fbbe2dd0db3ef57456bd4ab080a7eef8`; workflow assertion fix `d199376b1f9befd048f98d0efcf41b27d060aa5b`.
 - Fresh CI validation is pending; do not treat these fixes as passed until the new runs complete.
+
+
+### Stage C follow-up — section reader active-class scope and appointment contract (2026-11-09)
+- The C0 disposable Supabase regression found that the section-head class/student reader helpers checked active membership and active appointment but did not exclude archived classes. Both helpers now require the resolved class to be non-archived.
+- Corrected the Stage C source-contract test to match the agreed eligibility policy: ordinary Subject Teacher role is excluded; Class Teachers/Form Masters and every other active staff role remain eligible for formal section appointment.
+- No production migration, data write, merge or Render deployment. Fresh CI validation pending.

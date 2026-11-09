@@ -3099,3 +3099,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added `private.schoolpro_lock_result_scope` to lock the selected class/section/school classes, selected-session roster members, active subject allocations, saved result rows and workflow rows before completeness/state validation and lifecycle transitions.
 - Form Master submission now performs its complete Draft-matrix check only after those locks are held. Section Head class/section approval, Exam Officer final approval and whole-school publication also acquire the exact scope locks before checking the workflow state. This closes the avoidable time-of-check/time-of-use window where a concurrent mark, roster or allocation edit could race a review transition.
 - Added source-contract assertions that require the locking helper and all five transition call sites. Proposed migration only; no production Supabase changes, data writes, merge or Render deployment.
+
+
+## 2026-11-09 — Stage C result-scope locking CI correction
+- Corrected the result-scope lock helper's PL/pgSQL dollar-quote delimiter and the Node source-contract regex escaping after CI identified both issues.
+- Re-run the full SchoolPro CI and Stage C0 migration replay before treating this head as validated. No production migration or deployment was performed.

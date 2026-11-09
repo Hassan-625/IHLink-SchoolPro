@@ -3161,3 +3161,15 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a header-only downloadable CSV template directly in the existing-student bulk-import panel. Its columns match the importers required and optional field aliases, avoiding manual header typing and reducing spreadsheet-format errors.
 - The template contains no sample student records; operators populate it with their schools real register. Class and house values must still match active records in the selected school workspace.
 - Added source-contract assertions for the template filename and visible download link. This is a frontend-only improvement; no database schema, production data, migration, merge or deployment is included in this change.
+
+
+## 2026-11-09 — Existing-student import register expansion and roster layout
+
+- Expanded the existing-student download from a narrow CSV header list to a multi-sheet Excel workbook plus CSV alternative.
+- Excel workbook fields: admission number; first, middle and last names; date of birth; formula-derived age; gender; section; class; arm; house; guardian first, middle and surname; guardian phone and email.
+- Workbook includes an Instructions sheet and 500 prefilled age-formula rows. Age is derived from date of birth rather than stored as a stale age value.
+- Import maps section/class/arm to active class records in the selected school, maps house names to active houses, combines separate guardian name fields into the existing guardian contact-name field, and stores date_of_birth using the existing column. No school/class/house/session IDs are required in the workbook.
+- Existing admission number duplicate checks, 500-row batch limit, selected-session enrollment, and validation-before-write behavior remain in place.
+- Expanded the student roster card across the full desktop grid. Its existing constrained horizontal-scroll region and minimum table width preserve usable mobile behavior.
+- No production migration or production records were changed for this UI/import enhancement. Database inspection confirmed date_of_birth already exists; guardian name parts are combined into the existing guardian_name field.
+- Pending: validate the latest PR #135 head through CI. Do not merge or deploy without explicit approval.

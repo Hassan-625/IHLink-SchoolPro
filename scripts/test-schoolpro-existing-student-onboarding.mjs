@@ -21,7 +21,7 @@ assert.match(bulk,/parseCsv/,'Bulk onboarding must parse CSV registers.');
 assert.match(bulk,/admission_number/,'Admission numbers must be required and checked.');
 assert.match(bulk,/duplicate admission number within this file/,'Duplicate admission numbers inside a spreadsheet must block import.');
 assert.match(bulk,/already exists in this school/,'Existing school admission numbers must block duplicate import.');
-assert.match(bulk,/class\/arm/,'Class names must map to active classes in the selected school.');
+assert.match(bulk,/class .*arm/,'Class and arm must map to active classes in the selected school.');
 assert.match(bulk,/schoolpro_assign_student_house/,'Optional house assignments must be preserved.');
 assert.match(bulk,/admission_type:"existing"/,'Every imported row must be classified as an existing student.');
 assert.match(bulk,/enrollment_session:session/,'Imported students must be attached to the selected academic session.');
@@ -31,3 +31,13 @@ console.log('PASS: bulk existing-student import validates Excel/CSV, duplicates,
 
 assert.match(bulk,/schoolpro-existing-students-template\.csv/,"Operators must be able to download a correctly headed CSV template.");
 assert.match(bulk,/Download CSV template/,"The CSV template download must be visible in the import panel.");
+assert.match(bulk,/schoolpro-existing-students-template\.xlsx/,"Operators must be able to download a complete Excel workbook.");
+assert.match(bulk,/Guardian First Name/,"The workbook must capture guardian names separately.");
+assert.match(bulk,/Date of Birth/,"The workbook must capture date of birth so age can be calculated.");
+assert.match(bulk,/DATEDIF/,"The Excel workbook must calculate age from date of birth.");
+assert.match(bulk,/sectionAliases/,"Section, class and arm must be automatically mapped to the selected school records.");
+assert.match(bulk,/date_of_birth:dob/,"Date of birth must be persisted to the student record.");
+assert.match(bulk,/guardian_first_name/,"Separate guardian names must be combined into the existing guardian name field.");
+assert.match(bulk,/Download Excel template/,"The Excel template download must be visible in the import panel.");
+const studentPage=readFileSync("src/pages/schoolpro/SchoolProStudents.tsx","utf8");
+assert.match(studentPage,/xl:col-span-2/,"The student roster must span the full desktop grid and retain mobile horizontal scrolling.");

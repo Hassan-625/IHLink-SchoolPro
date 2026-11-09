@@ -3110,3 +3110,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Corrected the PL/pgSQL function-body delimiter for `private.schoolpro_lock_result_scope` from `as $` to `as $$`; the disposable Supabase migration replay had stopped at this helper declaration.
 - Corrected the `test-result-workflow.mjs` ordering assertion so it matches the actual SQL sequence using a single regex whitespace escape; the previous assertion was over-escaped and failed despite the lock call being in the correct position.
 - Both changes are committed on `feat/schoolpro-stage-c-assessment-results-workflow`; CI must rerun against the new head before this concurrency hardening is considered validated. No production migration, merge, or Render deployment was performed.
+
+
+## 2026-11-09 — Follow-up: result-scope lock delimiter replay
+- The Stage C0 full migration replay confirmed the result-scope lock helper still had a single-dollar opening delimiter. Corrected that exact helper declaration to `as $$` and committed the migration correction.
+- SchoolPro CI and payment validation passed on the preceding source-test correction commit; Stage C0 replay remained blocked by this SQL delimiter and is rerunning on the new migration commit. No production migration, merge, or Render deployment was performed.

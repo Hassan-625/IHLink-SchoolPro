@@ -1,3 +1,14 @@
+## Stage C continuation — existing-student first-time onboarding (2026-11-09)
+
+**Branch:** `feat/schoolpro-existing-student-onboarding`  
+**Status:** Implementation in progress; no merge, production migration, production data write, or Render deployment.
+
+Added a distinct `existing` admission type for students who were already attending a school before it first adopts SchoolPro. The Students & Enrolment screen now distinguishes New Student, Existing Student and Transfer In, explains the existing-student path, retains the school's admission number and selected current class, optionally accepts an existing house assignment, and labels existing students in the roster. If no house is selected, the existing balanced automatic house-allocation trigger remains the fallback. Existing students are still enrolled against the selected academic session so session-scoped enrollment history is created by the existing trigger.
+
+A forward migration expands the `schoolpro_students.admission_type` check constraint to allow `existing` while preserving `new` and `transfer_in`. No student rows were created or changed. Bulk spreadsheet onboarding is not included in this increment and remains a follow-up enhancement. Validation and CI are pending.
+
+---
+
 ## Stage C continuation — staff review-sheet unassessed ranking boundary (2026-11-09)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  

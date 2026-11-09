@@ -3155,3 +3155,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - A single school-scoped insert writes the validated batch. Explicit house selections are applied through the existing `schoolpro_assign_student_house` RPC; students without an explicit house retain the balanced automatic allocation trigger. If a post-insert manual house assignment fails, the UI reports it clearly rather than claiming all assignments succeeded.
 - Corrected the individual-enrolment form reset to preserve the required `house_id` state field (CI had identified this TypeScript error on PR #134).
 - Added a CI source-contract regression for spreadsheet parsing, validation, duplicate prevention, session assignment and batch limits. Branch-only changes; no production migration, production student writes, merge, or Render deployment.
+
+
+### Existing-student CSV template — 2026-11-09
+- Added a header-only downloadable CSV template directly in the existing-student bulk-import panel. Its columns match the importers required and optional field aliases, avoiding manual header typing and reducing spreadsheet-format errors.
+- The template contains no sample student records; operators populate it with their schools real register. Class and house values must still match active records in the selected school workspace.
+- Added source-contract assertions for the template filename and visible download link. This is a frontend-only improvement; no database schema, production data, migration, merge or deployment is included in this change.

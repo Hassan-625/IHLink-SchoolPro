@@ -44,7 +44,7 @@ assert.match(authority,/create or replace function private\.schoolpro_lock_resul
   'Workflow transitions must serialize the roster, active subject allocations, result rows and workflow rows.');
 assert.ok((authority.match(/perform private\.schoolpro_lock_result_scope\(p_school,p_term,p_session/gi)||[]).length>=5,
   'Form Master submission, Section Head approval, Exam Officer approval and publication must lock their exact result scope before completeness checks.');
-assert.match(authority,/perform private\.schoolpro_lock_result_scope\(p_school,p_term,p_session,'class',p_class,null\);\\s*if not private\\.schoolpro_class_result_matrix_complete/i,
+assert.match(authority,/perform private\.schoolpro_lock_result_scope\(p_school,p_term,p_session,'class',p_class,null\);\s*if not private\.schoolpro_class_result_matrix_complete/i,
   'Form Master completeness must be checked after locking the class result scope.');
 assert.match(authority,/Only the Exam Officer can publish school results/i);
 assert.match(authority,/app\.schoolpro_correction_reopen/i);

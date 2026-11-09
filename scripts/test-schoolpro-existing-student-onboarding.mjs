@@ -29,5 +29,5 @@ assert.match(bulk,/parsed.length>500/,'Bulk import must enforce a bounded batch 
 assert.match(bulk,/No records have been saved yet/,'Validation preview must not write student records.');
 console.log('PASS: bulk existing-student import validates Excel/CSV, duplicates, classes, houses, session and batch bounds.');
 
-assert.match(bulk,/schoolpro-existing-students-template\\.csv/,"Operators must be able to download a correctly headed CSV template.");
+assert.match(bulk,/schoolpro-existing-students-template\.csv/,"Operators must be able to download a correctly headed CSV template.");
 assert.match(bulk,/Download CSV template/,"The CSV template download must be visible in the import panel.");

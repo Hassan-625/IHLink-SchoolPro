@@ -3173,3 +3173,27 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Expanded the student roster card across the full desktop grid. Its existing constrained horizontal-scroll region and minimum table width preserve usable mobile behavior.
 - No production migration or production records were changed for this UI/import enhancement. Database inspection confirmed date_of_birth already exists; guardian name parts are combined into the existing guardian_name field.
 - Pending: validate the latest PR #135 head through CI. Do not merge or deploy without explicit approval.
+
+
+## 2026-11-09 — Stage C requirements: school calendar, activities and continuous academic sessions
+
+### School calendar configuration
+- During school onboarding, administrators must be able to configure the academic calendar, including the academic year/session, term boundaries, instructional days, weekends, holidays, vacations, staff/student activities, examination periods and other school-defined events.
+- Provide a dedicated School Calendar page after onboarding so authorised school administrators can create, edit, review and publish calendar events throughout the year.
+- Support recurring weekly activities with configurable weekday, start/end dates, time and activity details, alongside one-off dated events and full-year calendar planning.
+- Calendar configuration must support the attendance engine: school-open/instructional dates are authoritative for attendance eligibility and denominator calculations. Holidays, weekends and non-instructional dates must not be counted as open school days unless explicitly configured as instructional.
+- Keep calendar changes auditable and preserve historical calendar versions/records so past attendance and reports are not silently recalculated when a future calendar is edited.
+
+### Continuous academic-session lifecycle
+- Remove hard-coded assumptions that the active session is only 2026/2027. Schools must be able to configure successive sessions such as 2027/2028, 2028/2029 and later without code changes.
+- When a school completes its current academic session, the system should support preparing the next sequential session. During plan configuration or successful annual plan renewal, it should guide the administrator to configure the next session and, where the school has enabled the policy, automatically create a draft next session using the next sequential year range.
+- Session creation/activation must be idempotent and must not duplicate sessions on repeated renewal events. Subscription renewal must not silently activate a new academic session or overwrite dates; administrators must be able to review and confirm the proposed dates before activation.
+- Preserve historical sessions, term calendars, enrolments, assessments, attendance, results and certificates. The selected working session remains explicit; changing the working session must not promote students or alter historical records.
+- Support schools whose academic year does not follow a simple September-to-July pattern by allowing administrators to configure actual start/end dates and term boundaries rather than deriving dates solely from the session label.
+
+### Dependencies and acceptance criteria
+- Calendar and session configuration must be available during onboarding and remain editable through dedicated school administration pages.
+- Attendance calculations must consume the configured calendar, not assume every weekday is an open school day.
+- Next-session generation must be sequential, reviewable, idempotent and independent of destructive changes to the prior session.
+- Add automated tests for weekly recurring events, full-year calendar coverage, holidays/non-instructional days, session rollover, repeated renewal idempotency, historical-session preservation and attendance calendar integration.
+- These are requirements to implement and verify in Stage C; no production workspace data or calendar/session records are to be created until the user provides explicit end-to-end verification instructions.

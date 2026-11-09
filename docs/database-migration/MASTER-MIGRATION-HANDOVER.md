@@ -1,3 +1,11 @@
+## Stage C continuation — result import RPC PostgreSQL integration coverage (2026-11-09)
+
+**PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  
+**Branch:** `feat/schoolpro-stage-c-assessment-results-workflow`  
+
+Added a disposable PostgreSQL integration fixture for the authoritative `import_schoolpro_results` RPC. It exercises all four combinations of canonical and short Junior/Senior Secondary class-level values, verifies valid imports persist, and verifies a genuinely mismatched scheme is rejected without leaving partial rows. Added a dedicated PostgreSQL 16 CI job; this does not connect to the configured production Supabase project. No production migration, data write, merge, or Render deployment.
+
+
 ## Stage C continuation — database import scheme-level alias enforcement (2026-11-09)
 
 **PR:** [#133 — Stage C: harden assessment score import validation](https://github.com/Hassan-625/IHLink-SchoolPro/pull/133)  

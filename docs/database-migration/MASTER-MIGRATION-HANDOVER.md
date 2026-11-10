@@ -3242,7 +3242,7 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Investigated the HA ACADEMY bulk existing-student import failure. Spreadsheet validation succeeds, but the production INSERT is rejected by the `schoolpro_students` RLS policy with SQLSTATE `42501`.
 - Confirmed the INSERT policy requires `private.has_school_access(school_id, ['proprietor','administrator'])`; the separate restrictive student-record policy applies to SELECT, not INSERT. A read-only check confirmed the HA ACADEMY owner and active Proprietor membership, and the access helper passed when evaluated with that owner's JWT identity.
 - Added a pre-write client check in PR #141 to compare the authenticated Supabase user/session, selected school ID/name, active profile, and owner or active Proprietor/Administrator membership before any student INSERT. A mismatch stops the import with a specific explanation and no student rows are submitted.
-- No RLS policy, grants, production student records, or Supabase schema were changed. PR #141 remains unmerged pending appropriate CI/review; the reported Vercel status is not a Render deployment and must not be treated as deployment verification.
+- No RLS policy, grants, production student records, or Supabase schema were changed in PR #141. PR #141 was subsequently merged as `8f2204f87ba7bbcf8e47af327c5504dfa9a63757`; its Render deployment was reported Live, but the preflight did not resolve the INSERT rejection. The reported Vercel status is an obsolete integration and is not Render deployment verification.
 
 
 ## 2026-11-10 — Existing-student import database-identity diagnostic (PR preparation)

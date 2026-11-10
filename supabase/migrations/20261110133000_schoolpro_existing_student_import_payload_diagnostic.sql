@@ -48,7 +48,8 @@ begin
       v_row_school := null;
     end;
 
-    if v_row_school is null
+    if p_school_id is null
+       or v_row_school is null
        or v_row_school <> p_school_id
        or not coalesce(private.has_school_access(v_row_school, array[
          'proprietor'::school_member_role,

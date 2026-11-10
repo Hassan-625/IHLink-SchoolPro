@@ -3236,3 +3236,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Standardized the canonical display labels for `proprietor` (Proprietor) and `administrator` (Administrator). Stored role codes and authorization checks are unchanged; this is a presentation-only correction.
 - The update does not change tenant access, permissions, RLS, production data, or Supabase configuration.
 - Cross-product “Navigate to My Responsibilities” rollout is tracked separately and remains outside SchoolPro, per the user's instruction.
+
+
+## 2026-11-10 — Existing-student import access preflight
+- Investigated the HA ACADEMY bulk existing-student import failure. Spreadsheet validation succeeds, but the production INSERT is rejected by the `schoolpro_students` RLS policy with SQLSTATE `42501`.
+- Confirmed the INSERT policy requires `private.has_school_access(school_id, ['proprietor','administrator'])`; the separate restrictive student-record policy applies to SELECT, not INSERT. A read-only check confirmed the HA ACADEMY owner and active Proprietor membership, and the access helper passed when evaluated with that owner's JWT identity.
+- Added a pre-write client check in PR #141 to compare the authenticated Supabase user/session, selected school ID/name, active profile, and owner or active Proprietor/Administrator membership before any student INSERT. A mismatch stops the import with a specific explanation and no student rows are submitted.
+- No RLS policy, grants, production student records, or Supabase schema were changed. PR #141 remains unmerged pending appropriate CI/review; the reported Vercel status is not a Render deployment and must not be treated as deployment verification.

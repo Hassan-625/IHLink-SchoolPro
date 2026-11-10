@@ -45,7 +45,31 @@ export function SchoolProExistingStudentBulkImport({schoolId,schoolName,session,
   if(parsed.length){const admissions=parsed.map(r=>r.admission_number);for(let i=0;i<admissions.length;i+=100){const {data,error}=await supabase.from("schoolpro_students").select("admission_number").eq("school_id",schoolId).in("admission_number",admissions.slice(i,i+100));if(error)throw error;for(const existing of data||[]){errors.push("Admission number '"+existing.admission_number+"' already exists in this school.");}}}
   setIssues(errors);if(!errors.length)setRows(parsed);
  }catch(e){setIssues([importErrorMessage(e)]);}finally{setBusy(false);}}
+ async function verifyImportAccess(){
+  if(!supabase)throw new Error("SchoolPro connection is unavailable. Refresh the page and sign in again.");
+  const [{data:authData,error:authError},{data:sessionData,error:sessionError}]=await Promise.all([supabase.auth.getUser(),supabase.auth.getSession()]);
+  if(authError)throw new Error("Could not verify your signed-in account: "+authError.message);
+  if(sessionError)throw new Error("Could not verify your active session: "+sessionError.message);
+  const authenticatedUser=authData.user,sessionUser=sessionData.session?.user;
+  if(!authenticatedUser||!sessionUser||authenticatedUser.id!==sessionUser.id)throw new Error("Your SchoolPro sign-in session is missing or inconsistent. Sign out, sign in again, then validate the spreadsheet.");
+  if(!schoolId)throw new Error("No school workspace is selected. Select the school before importing.");
+  const [{data:school,error:schoolError},{data:profile,error:profileError}]=await Promise.all([
+   supabase.from("schoolpro_schools").select("id,name,owner_id").eq("id",schoolId).maybeSingle(),
+   supabase.from("profiles").select("id,email,role,status").eq("id",authenticatedUser.id).maybeSingle(),
+  ]);
+  if(schoolError)throw new Error("Could not verify the selected school workspace: "+schoolError.message);
+  if(profileError)throw new Error("Could not verify your SchoolPro account status: "+profileError.message);
+  if(!school)throw new Error("The selected school workspace could not be found or is not visible to this account. Refresh the school selector before importing.");
+  if(!profile||profile.status!=="active")throw new Error("The signed-in account is not active in IHLink. Ask an administrator to check the account status.");
+  if(norm(school.name)!==norm(schoolName))throw new Error("Workspace mismatch: the import targets "+school.name+", but this page is displaying "+schoolName+". Refresh the selected school before importing.");
+  if(profile.role!=="super_admin"&&school.owner_id!==authenticatedUser.id){
+   const {data:membership,error:membershipError}=await supabase.from("schoolpro_members").select("role,status").eq("school_id",schoolId).eq("user_id",authenticatedUser.id).eq("status","active").in("role",["proprietor","administrator"]).maybeSingle();
+   if(membershipError)throw new Error("Could not verify your school-enrolment membership: "+membershipError.message);
+   if(!membership)throw new Error("Access pre-check failed: "+(profile.email||"This account")+" is not the active Proprietor or an authorised school administrator for "+school.name+". No student records were submitted.");
+  }
+ }
  async function importRows(){if(!supabase||!rows.length||busy)return;setBusy(true);setNotice("");setIssues([]);const previouslySaved=savedCount;let imported=0;const assigned=new Set<string>();const savedAdmissions=new Set<string>();try{
+  await verifyImportAccess();
   const batchSize=10;
   const houseByAdmission=new Map(rows.filter(r=>r.house_id).map(r=>[norm(r.admission_number),r.house_id!]));
   for(let offset=0;offset<rows.length;offset+=batchSize){

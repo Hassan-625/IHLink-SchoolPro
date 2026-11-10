@@ -3250,3 +3250,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a `SECURITY INVOKER` / `STABLE` RPC design. It rejects unauthenticated or unauthorised callers, only reveals school ownership/membership detail after the shared access helper confirms leadership access, and performs no writes. Execution is revoked from `PUBLIC` and granted only to `authenticated`.
 - The diagnostic is deliberately separate from the Import button. Running it cannot insert students or assign houses. The existing import remains unchanged and still requires an explicit operator action.
 - Migration is proposed in source control only. It has not been applied to Supabase production; the diagnostic button will report that the RPC is unavailable until the migration is deliberately applied. No production student records or permissions were changed.
+
+
+## 2026-11-10 — Existing-student import exact-batch RLS preflight (PR preparation)
+- Added a read-only SECURITY INVOKER RPC that receives only the selected school UUID and the actual batch's school_id values, then evaluates each value against the same private.has_school_access(..., proprietor/administrator) helper used by the schoolpro_students INSERT policy.
+- The importer calls this preflight immediately before each batch INSERT. It reports spreadsheet row numbers only and never sends student names, admission numbers, guardian details, or other student data to the diagnostic.
+- The check distinguishes a tenant-ID mismatch in the actual payload from an authorization-context discrepancy. It does not bypass RLS or perform inserts/updates/deletes.
+- Proposed source changes only. No production migration application, student writes, RLS policy changes, merge, or Render deployment.

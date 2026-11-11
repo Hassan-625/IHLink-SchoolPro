@@ -3271,3 +3271,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The first disposable PostgreSQL run exposed a test harness path issue: psql resolves `\\ir` relative to the test script's directory, so the migration include incorrectly resolved under `scripts/supabase/`.
 - Corrected the workflow to apply the migration explicitly from the repository root, then run the assertion script separately. The assertion script no longer performs a relative migration include.
 - This was a CI harness path failure, not a migration SQL or authorization assertion failure. The corrected job must pass before PR #143 can be considered validated.
+
+
+### PR #143 disposable PostgreSQL role setup correction (2026-11-11)
+- The first corrected CI attempt fixed the migration path, then exposed a second test-harness prerequisite: plain PostgreSQL 16 does not create Supabase API roles `anon` and `authenticated` automatically.
+- The migration itself created the diagnostic function successfully; the job stopped at its privilege-revocation statement because the disposable database lacked role `anon`.
+- CI now creates `anon` and `authenticated` as `NOLOGIN` roles in the disposable PostgreSQL job before applying the migration. This mirrors the minimum Supabase role names required by the migration and does not affect any hosted project.
+- No production migration, permissions, or student data were changed. Awaiting the new CI run.

@@ -43,8 +43,6 @@ grant execute on function private.has_school_access(uuid, public.school_member_r
 create table public.test_write_sentinel(id integer primary key);
 insert into public.test_write_sentinel values (1);
 
-\ir supabase/migrations/20261110133000_schoolpro_existing_student_import_payload_diagnostic.sql
-
 do $assert$
 declare
   v_fn oid := 'public.schoolpro_existing_student_import_payload_check(uuid,jsonb)'::regprocedure;

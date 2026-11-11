@@ -3284,3 +3284,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The next CI run confirmed the workflow creates the required `anon` and `authenticated` roles, but the SQL assertion script redundantly attempted to create them again and stopped with `role "anon" already exists`.
 - Removed role creation from the assertion script; the workflow owns this one-time database bootstrap, while the test script assumes the Supabase API roles are present and verifies their privileges.
 - This is a disposable CI harness correction only. No production Supabase changes, Render deployment, or student imports were made.
+
+
+### PR #143 disposable PostgreSQL role teardown correction (2026-11-11)
+- The latest CI run successfully applied the diagnostic migration and completed all authorization, tenant-match, malformed/empty payload, grant, and no-write assertions. The job then failed only during cleanup because PostgreSQL will not drop `authenticated` while the migration's grants still depend on that role.
+- Removed explicit `DROP ROLE` statements from the SQL test. The CI job uses a disposable PostgreSQL service container that is destroyed at job teardown, so role deletion is unnecessary; leaving the roles in that disposable database is safe and avoids dropping privileges from the migration under test.
+- No production Supabase changes, Render deployment, or student imports were made.

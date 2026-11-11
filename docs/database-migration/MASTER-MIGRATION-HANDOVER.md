@@ -3278,3 +3278,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The migration itself created the diagnostic function successfully; the job stopped at its privilege-revocation statement because the disposable database lacked role `anon`.
 - CI now creates `anon` and `authenticated` as `NOLOGIN` roles in the disposable PostgreSQL job before applying the migration. This mirrors the minimum Supabase role names required by the migration and does not affect any hosted project.
 - No production migration, permissions, or student data were changed. Awaiting the new CI run.
+
+
+### PR #143 disposable PostgreSQL role idempotency correction (2026-11-11)
+- The next CI run confirmed the workflow creates the required `anon` and `authenticated` roles, but the SQL assertion script redundantly attempted to create them again and stopped with `role "anon" already exists`.
+- Removed role creation from the assertion script; the workflow owns this one-time database bootstrap, while the test script assumes the Supabase API roles are present and verifies their privileges.
+- This is a disposable CI harness correction only. No production Supabase changes, Render deployment, or student imports were made.

@@ -2,8 +2,6 @@
 -- This creates only local test roles/functions/data in the CI service database.
 \set ON_ERROR_STOP on
 
-create role anon nologin;
-create role authenticated nologin;
 
 create schema auth;
 create schema private;

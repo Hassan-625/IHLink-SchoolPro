@@ -34,4 +34,7 @@ jobs:
         run: |
           pg_container="$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n 1)"
           test -n "$pg_container"
-          docker exec -i "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 < scripts/test-schoolpro-student-insert-returning-rls.integration.sql
+          docker exec "$pg_container" mkdir -p /tmp/schoolpro-rls-test/supabase/migrations
+          docker cp scripts/test-schoolpro-student-insert-returning-rls.integration.sql "$pg_container":/tmp/schoolpro-rls-test/test.sql
+          docker cp supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql "$pg_container":/tmp/schoolpro-rls-test/supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --file /tmp/schoolpro-rls-test/test.sql

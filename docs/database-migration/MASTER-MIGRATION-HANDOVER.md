@@ -3265,3 +3265,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The test asserts the RPC is SECURITY INVOKER, executable by authenticated, not executable by anon or PUBLIC, and does not mutate a write-sentinel row.
 - Added the integration test as a separate GitHub Actions job. This is CI-only test infrastructure; it does not create a SchoolPro workspace or touch production records.
 - The migration and test remain proposed in PR #143. No production Supabase migration, production student write, merge, or Render deployment is authorised or performed by this change.
+
+
+### PR #143 CI correction — 2026-11-11
+- The first disposable PostgreSQL run exposed a test harness path issue: psql resolves `\\ir` relative to the test script's directory, so the migration include incorrectly resolved under `scripts/supabase/`.
+- Corrected the workflow to apply the migration explicitly from the repository root, then run the assertion script separately. The assertion script no longer performs a relative migration include.
+- This was a CI harness path failure, not a migration SQL or authorization assertion failure. The corrected job must pass before PR #143 can be considered validated.

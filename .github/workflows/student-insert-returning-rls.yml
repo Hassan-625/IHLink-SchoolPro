@@ -22,17 +22,16 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-    env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_student_returning_test
     steps:
       - uses: actions/checkout@v4
-      - name: Install PostgreSQL client
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client
       - name: Create Supabase API roles in disposable PostgreSQL
         run: |
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
-          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+          pg_container="$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n 1)"
+          test -n "$pg_container"
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
       - name: Verify school-owner INSERT ... RETURNING and tenant read isolation
-        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-student-insert-returning-rls.integration.sql
+        run: |
+          pg_container="$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n 1)"
+          test -n "$pg_container"
+          docker exec -i "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 < scripts/test-schoolpro-student-insert-returning-rls.integration.sql

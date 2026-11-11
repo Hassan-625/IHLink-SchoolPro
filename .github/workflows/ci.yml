@@ -642,5 +642,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
-      - name: Apply the exact-batch diagnostic migration and test authorization boundaries
+      - name: Apply the exact-batch diagnostic migration
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file supabase/migrations/20261110133000_schoolpro_existing_student_import_payload_diagnostic.sql
+      - name: Test authorization boundaries in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-existing-student-import-payload-diagnostic.integration.sql

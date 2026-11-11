@@ -91,6 +91,17 @@ export function SchoolProExistingStudentBulkImport({schoolId,schoolName,session,
   for(let offset=0;offset<rows.length;offset+=batchSize){
    const batch=rows.slice(offset,offset+batchSize);
    const payload=batch.map(({row,house_id,...student})=>({...student,school_id:schoolId}));
+   // Check only tenant IDs from the exact payload; never send student or guardian details.
+   const {data:payloadCheck,error:payloadCheckError}=await supabase.rpc("schoolpro_existing_student_import_payload_check",{
+    p_school_id:schoolId,
+    p_rows:payload.map(student=>({school_id:student.school_id})),
+   });
+   if(payloadCheckError)throw new Error("Could not verify the actual import batch against school access: "+payloadCheckError.message);
+   const check=payloadCheck as {all_rows_authorized?:boolean;failed_rows?:number[];reason?:string};
+   if(!check?.all_rows_authorized){
+    const failed=Array.isArray(check?.failed_rows)?check.failed_rows.map(index=>batch[index-1]?.row??index).join(", "):"unknown";
+    throw new Error("Import stopped before writing. The database rejected the batch preflight for spreadsheet row(s): "+failed+". "+(check?.reason||"The submitted school ID does not satisfy the active account's school-access policy.")+" No student records were submitted.");
+   }
    const {data,error}=await supabase.from("schoolpro_students").insert(payload).select("id,admission_number");
    if(error){
     const errorValue=error as ImportFailure;

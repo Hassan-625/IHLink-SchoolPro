@@ -3250,3 +3250,43 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a `SECURITY INVOKER` / `STABLE` RPC design. It rejects unauthenticated or unauthorised callers, only reveals school ownership/membership detail after the shared access helper confirms leadership access, and performs no writes. Execution is revoked from `PUBLIC` and granted only to `authenticated`.
 - The diagnostic is deliberately separate from the Import button. Running it cannot insert students or assign houses. The existing import remains unchanged and still requires an explicit operator action.
 - Migration is proposed in source control only. It has not been applied to Supabase production; the diagnostic button will report that the RPC is unavailable until the migration is deliberately applied. No production student records or permissions were changed.
+
+
+## 2026-11-10 — Existing-student import exact-batch RLS preflight (PR preparation)
+- Added a read-only SECURITY INVOKER RPC that receives only the selected school UUID and the actual batch's school_id values, then evaluates each value against the same private.has_school_access(..., proprietor/administrator) helper used by the schoolpro_students INSERT policy.
+- The importer calls this preflight immediately before each batch INSERT. It reports spreadsheet row numbers only and never sends student names, admission numbers, guardian details, or other student data to the diagnostic.
+- The check distinguishes a tenant-ID mismatch in the actual payload from an authorization-context discrepancy. It does not bypass RLS or perform inserts/updates/deletes.
+- Proposed source changes only. No production migration application, student writes, RLS policy changes, merge, or Render deployment.
+
+
+## 2026-11-11 — Existing-student import payload diagnostic PostgreSQL coverage (PR #143)
+- Added a dedicated PostgreSQL 16 disposable-database integration test that applies the exact-batch diagnostic migration and exercises the function under the authenticated role.
+- Coverage includes an authorised matching batch, a mismatched tenant ID with exact failed-row reporting, malformed UUID input, an empty batch, a non-array payload, inactive account, and missing authentication identity.
+- The test asserts the RPC is SECURITY INVOKER, executable by authenticated, not executable by anon or PUBLIC, and does not mutate a write-sentinel row.
+- Added the integration test as a separate GitHub Actions job. This is CI-only test infrastructure; it does not create a SchoolPro workspace or touch production records.
+- The migration and test remain proposed in PR #143. No production Supabase migration, production student write, merge, or Render deployment is authorised or performed by this change.
+
+
+### PR #143 CI correction — 2026-11-11
+- The first disposable PostgreSQL run exposed a test harness path issue: psql resolves `\\ir` relative to the test script's directory, so the migration include incorrectly resolved under `scripts/supabase/`.
+- Corrected the workflow to apply the migration explicitly from the repository root, then run the assertion script separately. The assertion script no longer performs a relative migration include.
+- This was a CI harness path failure, not a migration SQL or authorization assertion failure. The corrected job must pass before PR #143 can be considered validated.
+
+
+### PR #143 disposable PostgreSQL role setup correction (2026-11-11)
+- The first corrected CI attempt fixed the migration path, then exposed a second test-harness prerequisite: plain PostgreSQL 16 does not create Supabase API roles `anon` and `authenticated` automatically.
+- The migration itself created the diagnostic function successfully; the job stopped at its privilege-revocation statement because the disposable database lacked role `anon`.
+- CI now creates `anon` and `authenticated` as `NOLOGIN` roles in the disposable PostgreSQL job before applying the migration. This mirrors the minimum Supabase role names required by the migration and does not affect any hosted project.
+- No production migration, permissions, or student data were changed. Awaiting the new CI run.
+
+
+### PR #143 disposable PostgreSQL role idempotency correction (2026-11-11)
+- The next CI run confirmed the workflow creates the required `anon` and `authenticated` roles, but the SQL assertion script redundantly attempted to create them again and stopped with `role "anon" already exists`.
+- Removed role creation from the assertion script; the workflow owns this one-time database bootstrap, while the test script assumes the Supabase API roles are present and verifies their privileges.
+- This is a disposable CI harness correction only. No production Supabase changes, Render deployment, or student imports were made.
+
+
+### PR #143 disposable PostgreSQL role teardown correction (2026-11-11)
+- The latest CI run successfully applied the diagnostic migration and completed all authorization, tenant-match, malformed/empty payload, grant, and no-write assertions. The job then failed only during cleanup because PostgreSQL will not drop `authenticated` while the migration's grants still depend on that role.
+- Removed explicit `DROP ROLE` statements from the SQL test. The CI job uses a disposable PostgreSQL service container that is destroyed at job teardown, so role deletion is unnecessary; leaving the roles in that disposable database is safe and avoids dropping privileges from the migration under test.
+- No production Supabase changes, Render deployment, or student imports were made.

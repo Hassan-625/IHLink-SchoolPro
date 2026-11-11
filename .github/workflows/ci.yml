@@ -615,3 +615,38 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Execute subject-assignment trigger and tenant-boundary regression
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-subject-assignment-guard.integration.sql
+
+
+  existing-student-import-payload-diagnostic-integration:
+    name: Existing-student import payload diagnostic (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_import_payload_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_import_payload_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_import_payload_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+      - name: Apply the exact-batch diagnostic migration
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file supabase/migrations/20261110133000_schoolpro_existing_student_import_payload_diagnostic.sql
+      - name: Test authorization boundaries in disposable PostgreSQL
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-existing-student-import-payload-diagnostic.integration.sql

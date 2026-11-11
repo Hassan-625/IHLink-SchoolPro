@@ -48,9 +48,6 @@ insert into public.test_write_sentinel values (1);
 do $assert$
 declare
   v_fn oid := 'public.schoolpro_existing_student_import_payload_check(uuid,jsonb)'::regprocedure;
-  v_result jsonb;
-  v_school uuid := 'ac7ac8a8-5035-4e39-8868-cad54add84a6';
-  v_other uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
   v_acl_has_public_execute boolean;
 begin
   if (select prosecdef from pg_proc where oid = v_fn) then
@@ -70,13 +67,20 @@ begin
   if v_acl_has_public_execute then
     raise exception 'PUBLIC must not have EXECUTE on the diagnostic';
   end if;
+end;
+$assert$;
 
-  perform set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
-  perform set_config('test.active_account', 'true', false);
-  perform set_config('test.authorized_school', v_school::text, false);
+select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
+select set_config('test.active_account', 'true', false);
+select set_config('test.authorized_school', 'ac7ac8a8-5035-4e39-8868-cad54add84a6', false);
+set role authenticated;
 
-  execute 'set local role authenticated';
-
+do $assert$
+declare
+  v_result jsonb;
+  v_school uuid := 'ac7ac8a8-5035-4e39-8868-cad54add84a6';
+  v_other uuid := 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
+begin
   v_result := public.schoolpro_existing_student_import_payload_check(
     v_school,
     jsonb_build_array(
@@ -140,9 +144,14 @@ begin
   if v_result->>'authenticated' <> 'false'
      or v_result->>'all_rows_authorized' <> 'false' then
     raise exception 'Unauthenticated request must be rejected; got %', v_result;
+  end if;
+end;
+$assert$;
 
-  execute 'reset role';
+reset role;
 
+do $assert$
+begin
   if (select count(*) from public.test_write_sentinel) <> 1 then
     raise exception 'Diagnostic unexpectedly changed the write sentinel';
   end if;

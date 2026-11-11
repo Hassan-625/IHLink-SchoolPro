@@ -52,8 +52,8 @@ begin
        or v_row_school is null
        or v_row_school <> p_school_id
        or not coalesce(private.has_school_access(v_row_school, array[
-         'proprietor'::school_member_role,
-         'administrator'::school_member_role
+         'proprietor'::public.school_member_role,
+         'administrator'::public.school_member_role
        ]), false) then
       v_all_authorized := false;
       v_failed := array_append(v_failed, v_index);

@@ -3257,3 +3257,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The importer calls this preflight immediately before each batch INSERT. It reports spreadsheet row numbers only and never sends student names, admission numbers, guardian details, or other student data to the diagnostic.
 - The check distinguishes a tenant-ID mismatch in the actual payload from an authorization-context discrepancy. It does not bypass RLS or perform inserts/updates/deletes.
 - Proposed source changes only. No production migration application, student writes, RLS policy changes, merge, or Render deployment.
+
+
+## 2026-11-11 — Existing-student import payload diagnostic PostgreSQL coverage (PR #143)
+- Added a dedicated PostgreSQL 16 disposable-database integration test that applies the exact-batch diagnostic migration and exercises the function under the authenticated role.
+- Coverage includes an authorised matching batch, a mismatched tenant ID with exact failed-row reporting, malformed UUID input, an empty batch, a non-array payload, inactive account, and missing authentication identity.
+- The test asserts the RPC is SECURITY INVOKER, executable by authenticated, not executable by anon or PUBLIC, and does not mutate a write-sentinel row.
+- Added the integration test as a separate GitHub Actions job. This is CI-only test infrastructure; it does not create a SchoolPro workspace or touch production records.
+- The migration and test remain proposed in PR #143. No production Supabase migration, production student write, merge, or Render deployment is authorised or performed by this change.

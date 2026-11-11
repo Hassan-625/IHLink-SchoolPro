@@ -1,0 +1,40 @@
+name: Student insert RETURNING RLS regression
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  student-insert-returning-rls:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_student_returning_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_student_returning_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create Supabase API roles in disposable PostgreSQL
+        run: |
+          pg_container="$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n 1)"
+          test -n "$pg_container"
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --command "CREATE ROLE anon NOLOGIN"
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --command "CREATE ROLE authenticated NOLOGIN"
+      - name: Verify school-owner INSERT ... RETURNING and tenant read isolation
+        run: |
+          pg_container="$(docker ps --filter "ancestor=postgres:16" --format '{{.ID}}' | head -n 1)"
+          test -n "$pg_container"
+          docker exec "$pg_container" mkdir -p /tmp/schoolpro-rls-test/supabase/migrations
+          docker cp scripts/test-schoolpro-student-insert-returning-rls.integration.sql "$pg_container":/tmp/schoolpro-rls-test/test.sql
+          docker cp supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql "$pg_container":/tmp/schoolpro-rls-test/supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql
+          docker exec "$pg_container" psql -U postgres -d schoolpro_student_returning_test --set ON_ERROR_STOP=1 --file /tmp/schoolpro-rls-test/test.sql

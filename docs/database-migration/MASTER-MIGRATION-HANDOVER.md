@@ -3290,3 +3290,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The latest CI run successfully applied the diagnostic migration and completed all authorization, tenant-match, malformed/empty payload, grant, and no-write assertions. The job then failed only during cleanup because PostgreSQL will not drop `authenticated` while the migration's grants still depend on that role.
 - Removed explicit `DROP ROLE` statements from the SQL test. The CI job uses a disposable PostgreSQL service container that is destroyed at job teardown, so role deletion is unnecessary; leaving the roles in that disposable database is safe and avoids dropping privileges from the migration under test.
 - No production Supabase changes, Render deployment, or student imports were made.
+
+
+## 2026-11-11 — Existing-student import INSERT RETURNING RLS correction (PR preparation)
+- Production Postgres logs show the exact PostgREST statement is an INSERT into `schoolpro_students` with `RETURNING id, admission_number`; SQLSTATE 42501 names the `Scoped student records` SELECT policy. The separate import diagnostic and leadership INSERT policy both pass for the HA ACADEMY owner.
+- The SELECT policy previously called `private.schoolpro_can_read_student(id)`, which queried `schoolpro_students` again by the new row ID. That nested stable lookup can fail to see the row inserted by the current command snapshot, causing the INSERT RETURNING response to be rejected even when the owner is authorised.
+- Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
+- Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
+- Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.

@@ -161,8 +161,6 @@ drop function auth.uid();
 drop type public.school_member_role;
 drop schema private;
 drop schema auth;
-drop role authenticated;
-drop role anon;
 
 do $assert$
 begin

@@ -81,7 +81,7 @@ on public.schoolpro_students for insert to authenticated
 with check (school_id = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'::uuid);
 
 -- Apply the exact production migration after the minimal schema and helper stubs exist.
-\ir ../supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql
+\ir supabase/migrations/20261111150000_schoolpro_student_insert_returning_rls.sql
 
 select set_config('request.jwt.claim.sub', '11111111-1111-1111-1111-111111111111', false);
 select set_config('test.active_account', 'true', false);

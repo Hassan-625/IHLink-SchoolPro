@@ -90,6 +90,8 @@ begin
      or position('extract(isodow' in guard)=0
      or position('term_start_date' in guard)=0
      or position('new.attendance_date is not distinct from old.attendance_date' in guard)=0
+     or position('new.class_id is not distinct from old.class_id' in guard)=0
+     or position('new.student_id is not distinct from old.student_id' in guard)=0
      or position('schoolpro_calendar_events' in guard)>0 then
     raise exception 'Attendance guard does not enforce the authoritative calendar and correction exception';
   end if;

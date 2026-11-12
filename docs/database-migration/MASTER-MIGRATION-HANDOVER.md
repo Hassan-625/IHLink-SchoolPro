@@ -3377,3 +3377,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The distinct-identity fixture correction advanced the Stage C0 SQL suite through migration replay, role defaults, and the authenticated Board RLS denials. The withdrawal RPC then correctly rejected the fixture school because `private.schoolpro_operationally_active` requires both an active school status and an active subscription; the disposable school seed had neither.
 - Added an active school status and a disposable annual Starter subscription to the test fixture so the owner-authorized Board withdrawal RPC is exercised under the same operational-school preconditions as production. All fixture rows remain inside the test transaction and are rolled back.
 - No production schema, subscriptions, roles, or data changed. Test commit: `844e47b68afca0279100e002c5f5fe20242299b0`. Fresh CI is required; PR #146 remains open/unmerged.
+
+
+### Standard reports vs Enterprise Advanced Reports backend correction (2026-11-12)
+- Read-only inspection of the live Supabase function definitions found a backend mismatch: `private.schoolpro_module_allowed(...,'reports')` required the `advanced_reports` feature, which also blocked standard broadsheets on Starter/Professional. The Advanced Reports page had a frontend entitlement gate, but `schoolpro_class_review_sheet` lacked an independent server-side entitlement check.
+- Added migration `supabase/migrations/20261112180000_schoolpro_separate_standard_and_advanced_reports.sql` on PR #146's branch. It removes the Advanced Reports tier check from the general `reports` module permission while preserving active-account, active-school and role-permission checks.
+- The dedicated `schoolpro_class_review_sheet` RPC now independently requires the reports role permission and the active `advanced_reports` entitlement; platform Super Admin bypass remains consistent with the existing UI gate.
+- Extended the C0 SQL regression and Advanced Reports source-contract test to assert this separation. The migration is CI-only until reviewed, merged and explicitly approved for production rollout.
+- No production SQL was written and no Render deployment occurred.

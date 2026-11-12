@@ -78,7 +78,7 @@ jobs:
           mkdir -p supabase/migrations
           # Use a dedicated database port so parallel CI workflows or stale runner
           # services cannot collide with Supabase CLI default port 54322.
-          printf '\n[db]\nport = 54332\n' >> supabase/config.toml
+          printf '\n[db]\nport = 54342\n' >> supabase/config.toml
           supabase start -x studio,edge-runtime,logflare,vector,imgproxy
           restore_migrations
           trap - EXIT
@@ -92,7 +92,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54342/postgres"
           # Supabase already creates public in its local database; the dump's
           # CREATE SCHEMA public would otherwise stop the restore immediately.
           sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
@@ -104,7 +104,7 @@ jobs:
         run: |
           set -euo pipefail
           baseline_cutoff="20261106164431"
-          database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54342/postgres"
           while IFS= read -r migration; do
             filename="${migration##*/}"
             migration_stamp="${filename%%_*}"
@@ -119,7 +119,7 @@ jobs:
           PGPASSWORD: postgres
         run: |
           set -euo pipefail
-          database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
+          database_url="postgresql://postgres:postgres@127.0.0.1:54342/postgres"
           for test_file in \
             supabase/tests/schoolpro_class_member_delete_security.sql \
             supabase/tests/schoolpro_operational_membership_security.sql \

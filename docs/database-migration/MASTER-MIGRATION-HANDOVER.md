@@ -3323,3 +3323,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — PR #146 legacy Board withdrawal role restoration
+- Security review found that the original Board workflow elevated a member's stored school role to `administrator` and recorded the prior role in `schoolpro_board_members.previous_role`. The revised permission resolver removes the Board shortcut, but direct `private.has_school_access(...)` checks still rely on the stored membership role.
+- PR #146's revised Board appointment writer previously ended an appointment without restoring the recorded role. That left a withdrawn legacy Board member with administrator-level membership authority for direct RPC/RLS guards.
+- Updated `private.schoolpro_set_board_role` so withdrawal first captures the active appointment's `previous_role`, marks the appointment ended (preserving its history), and restores that role only when the member is still stored as administrator and the recorded role was not administrator. Genuine administrators are not demoted.
+- Extended `schoolpro_operational_membership_security.sql` to assert that Board withdrawal restores the recorded non-administrator role and that direct `has_school_access` authorization remains role-list based without a Board shortcut.
+- This is a source change on PR #146 branch `fix/schoolpro-role-scoped-access`, not a production repair. Existing already-ended legacy appointments remain a separate reconciliation concern: their historical state cannot safely be auto-restored without distinguishing a Board-derived administrator role from a later legitimate administrator promotion.
+- New commit: `ec41d1e26abe03ae74fcba7a1120e4def0e7bfb1`. GitHub reports the commit status pending with no checks reported yet; validation is not complete.
+- No production migration, production role update, merge, workspace deletion, or Render deployment was performed.

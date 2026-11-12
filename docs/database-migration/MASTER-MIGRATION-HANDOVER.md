@@ -3347,3 +3347,7 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Latest C0 regression reached the new `schoolpro_board_module_rls_runtime.sql` test after all migrations and earlier SQL regressions passed. The first run failed while seeding the Payroll fixture because `schoolpro_payroll_records.member_id` is required to reference an active staff membership; the fixture had omitted it.
 - Corrected the disposable test fixture to set `member_id` to its Teacher/Board member. This is a test-only correction; no production schema/data changes.
 - New commit: `40dd623ae9a4bcd53610819005a9ca60d2649a4e`. Awaiting fresh CI. Board withdrawal/restoration runtime coverage remains outstanding.
+### PR #146 runtime RLS test correction — private schema boundary (2026-11-12)
+- The next disposable C0 run confirmed migrations and the three preceding SQL regressions passed, then the new runtime test failed because the `authenticated` role correctly has no `USAGE` on schema `private`; direct invocation of `private.has_school_access` from the test role is not a valid runtime assertion.
+- Removed that direct helper call. The test now validates the effective authorization boundary through the authenticated role's actual Finance, Payroll and Medical RLS-visible rows, verifies Board appointment leaves the membership role as Teacher, and attempts the Payroll approval RPC.
+- Test-only correction; no production changes. New commit `45260dfbb2b3a60b8a7cd55219a61f933deb496f`. Awaiting fresh CI.

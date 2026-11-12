@@ -3310,3 +3310,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — PR #137 reconciliation with current main
+- Reconciled the student age / Pre-Nursery correction onto current main while preserving intervening student-onboarding changes already merged into main, including workbook school-name binding and the current access-diagnostic/import flow.
+- Ported the 1 September 2026 age reference, class-specific minimum-age validation from Date of Birth, Last Name workbook header with Surname compatibility, and idempotent Pre-Nursery A/B setup with archived-arm restoration. Updated the existing-student onboarding regression to cover these requirements.
+- No production data, class rows, Supabase schema, or Render deployment changed. Fresh CI is required before review/merge.

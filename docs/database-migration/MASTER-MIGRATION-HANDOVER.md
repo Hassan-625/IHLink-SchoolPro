@@ -3357,3 +3357,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The disposable C0 runtime test now reaches the actual restrictive RLS policy, but failed because `private.schoolpro_module_allowed` is a SECURITY INVOKER function and its nested authorization checks resolve additional functions in schema `private`. The authenticated role lacked schema `USAGE`, so RLS evaluation failed with `permission denied for schema private` before any access assertion ran.
 - Added `GRANT USAGE ON SCHEMA private TO authenticated` to the PR #146 migration. This grants schema name resolution only; it does not grant EXECUTE on private functions. Existing per-function REVOKE/GRANT boundaries remain authoritative, and the schema remains outside the PostgREST exposed-schema list.
 - This is a proposed migration on the PR branch only. No production Supabase permissions or data were changed. CI must validate the effective Finance, Payroll and Medical RLS denial assertions before proceeding.
+
+
+### PR #146 Board withdrawal runtime coverage added (2026-11-12)
+- The Stage C0 disposable Supabase regression now passes on commit `02724886e0e16b2e8346d5055d561df4bf026c89`, including TypeScript, production build, source contracts, migrations and SQL security/lifecycle tests. Student INSERT RETURNING RLS and payment-page validation also passed.
+- Extended `schoolpro_board_module_rls_runtime.sql` to exercise `private.schoolpro_set_board_role(..., null)` as the school owner. The test checks that a legacy administrator-elevated Board member is restored to the recorded Teacher role, the appointment receives `ended_at`, `ended_by` and `Appointment withdrawn` audit fields, and a genuine administrator (recorded previous role administrator) is not demoted.
+- Test commits: `56664d059a42c36e4a4623214b0b28ed890a1470` (initial extension) and `2f2bdd83c1accded5022e0a446e81fc932b8f8a4` (separate non-owner identity for legacy member, respecting the function's owner/staff guard).
+- This is disposable CI coverage only. The extended test has not yet passed in a fresh run. The broader SchoolPro CI was still running at last check; tenant acceptance was skipped by workflow design.
+- PR #146 remains open and unmerged. No production migration, production role/data change, merge, or Render deployment was performed.

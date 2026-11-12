@@ -189,7 +189,7 @@ begin
     new.updated_at := now();
     new.updated_by := auth.uid();
   else
-    new.created_by := coalesce(new.created_by, auth.uid());
+    new.created_by := auth.uid();
     new.updated_by := auth.uid();
   end if;
   return new;

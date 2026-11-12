@@ -3391,3 +3391,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Learners without a saved daily attendance row remain unmarked rather than defaulting to Present; every learner must be explicitly marked Present, Absent, Late or Excused before save. The register shows the Unmarked count and blocks incomplete submission.
 - The regression is wired into standard SchoolPro CI. No attendance schema/RLS changes or production attendance writes.
 - **Status:** current-main replacement branch; CI pending. No Render deployment.
+
+
+## 2026-11-12 — Explicit attendance status carried onto latest main
+- Reapplied the daily attendance correction from PR #152 after the House Master appointment-gate merge.
+- Learners without a saved daily attendance row remain unmarked rather than defaulting to Present; every learner must be explicitly marked Present, Absent, Late or Excused before save. The register shows the Unmarked count and blocks incomplete submission.
+- The regression is wired into standard SchoolPro CI. No attendance schema/RLS changes or production attendance writes.
+- **Status:** current-main replacement branch; CI pending. No Render deployment.

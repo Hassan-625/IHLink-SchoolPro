@@ -1,0 +1,105 @@
+-- Separate standard academic reporting from Enterprise Advanced Reports.
+-- Standard report cards, broadsheets and ordinary exports remain role-controlled.
+-- The Advanced Reports RPC enforces the Enterprise entitlement server-side.
+begin;
+
+create or replace function private.schoolpro_module_allowed(target_school uuid, required_permission text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $function$
+ select auth.uid() is not null
+   and coalesce(private.is_active_account(),false)
+   and private.schoolpro_operationally_active(target_school)
+   and required_permission=any(public.schoolpro_user_permissions(target_school))
+   and (
+     private.is_admin(array['super_admin']::public.user_role[])
+     or case required_permission
+       when 'cbt' then private.schoolpro_plan_feature_allowed(target_school,'cbt')
+       when 'branding' then private.schoolpro_plan_feature_allowed(target_school,'custom_branding')
+       else true
+     end
+   )
+$function$;
+
+CREATE OR REPLACE FUNCTION public.schoolpro_class_review_sheet(p_school uuid, p_class uuid, p_term text, p_session text)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE
+ SET search_path TO ''
+AS $function$
+declare output jsonb;
+begin
+ if not private.schoolpro_module_allowed(p_school,'reports') then
+  raise exception 'Reports module permission denied';
+ end if;
+ if not private.is_admin(array['super_admin']::public.user_role[])
+    and not private.schoolpro_plan_feature_allowed(p_school,'advanced_reports') then
+  raise exception 'Advanced Reports requires an active Enterprise entitlement';
+ end if;
+ if not private.schoolpro_can_review_class(p_school,p_class) then raise exception 'Not authorized for this class';end if;
+ if nullif(trim(p_term),'') is null or nullif(trim(p_session),'') is null then raise exception 'Select a term and session';end if;
+ with roster as (
+  select s.id,s.admission_number,concat_ws(' ',s.first_name,s.last_name) name
+  from public.schoolpro_students s
+  left join lateral (select h.class_id,true has_history from public.schoolpro_enrollment_history h where h.student_id=s.id and h.school_id=s.school_id and h.session=trim(p_session) limit 1) e on true
+  where s.school_id=p_school and case when e.has_history is true then e.class_id else s.class_id end=p_class
+   and (e.has_history is true or (s.status='active' and not exists(
+    select 1 from public.schoolpro_enrollment_history h where h.school_id=s.school_id and h.student_id=s.id and h.session=trim(p_session)
+   )))
+ ), marks as (
+  select r.* from public.schoolpro_results r join roster s on s.id=r.student_id
+  where r.school_id=p_school and r.term=trim(p_term) and r.session=trim(p_session)
+ ), totals as (
+  select s.id student_id,s.admission_number,s.name student_name,
+   coalesce(sum(m.total_score),0) total,coalesce(avg(m.total_score),0) average,count(m.id) subjects,
+   coalesce(sum(m.total_score) filter(where m.status='published' and m.locked),0) published_total,
+   coalesce(avg(m.total_score) filter(where m.status='published' and m.locked),0) published_average,
+   count(m.id) filter(where m.status='published' and m.locked) published_subjects,
+   coalesce(jsonb_object_agg(m.subject_id,m.total_score) filter(where m.id is not null),'{}') scores,
+   coalesce(jsonb_object_agg(m.subject_id,m.total_score) filter(where m.id is not null and m.status='published' and m.locked),'{}') published_scores,
+   count(m.id) filter(where m.status='draft') draft_scores,
+   count(m.id) filter(where m.status='approved') approved_scores,
+   count(m.id) filter(where m.status='published') published_status_rows
+  from roster s left join marks m on m.student_id=s.id group by s.id,s.admission_number,s.name
+ ), ranked as (
+  select t.*,
+   case when subjects>0 then rank() over(order by case when subjects>0 then total end desc nulls last)::bigint
+        else null::bigint end class_position,
+   case when published_subjects>0 then rank() over(order by case when published_subjects>0 then published_total end desc nulls last)::bigint
+        else null::bigint end published_position
+  from totals t
+ ), subject_scope_raw as (
+  select sa.subject_id,true assigned
+  from public.schoolpro_subject_assignments sa
+  where sa.school_id=p_school and sa.class_id=p_class and sa.session=trim(p_session)
+  union all
+  select distinct m.subject_id,false assigned from marks m where m.subject_id is not null
+ ), subject_scope as (
+  select subject_id,bool_or(assigned) assigned from subject_scope_raw group by subject_id
+ ), subject_summary as (
+  select su.id,su.name,su.code,ss.assigned,
+   avg(m.total_score) average,count(m.id) recorded,
+   avg(m.total_score) filter(where m.status='published' and m.locked) published_average,
+   count(m.id) filter(where m.status='published' and m.locked) published_recorded
+  from subject_scope ss
+  join public.schoolpro_subjects su on su.id=ss.subject_id and su.school_id=p_school
+  left join marks m on m.subject_id=su.id
+  group by su.id,su.name,su.code,ss.assigned
+ )
+ select jsonb_build_object(
+  'rows',coalesce((select jsonb_agg(to_jsonb(r) order by r.class_position nulls last,r.student_name) from ranked r),'[]'),
+  'subjects',coalesce((select jsonb_agg(to_jsonb(s) order by s.name) from subject_summary s),'[]'),
+  'review',true
+ ) into output;
+ return output;
+end $function$
+;
+
+comment on function private.schoolpro_module_allowed(uuid,text) is
+  'Checks active school, active membership and module role permission. Standard reports are role-controlled; Enterprise Advanced Reports are separately entitlement-gated.';
+comment on function public.schoolpro_class_review_sheet(uuid,uuid,text,text) is
+  'Returns class review analytics only to a role-authorized class reviewer with an active Enterprise Advanced Reports entitlement (platform Super Admin bypass retained).';
+
+commit;

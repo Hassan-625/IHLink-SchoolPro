@@ -1,3 +1,12 @@
+## PR #146 — Board role runtime authorization regression (2026-11-12)
+
+**Branch:** `fix/schoolpro-role-scoped-access`  
+**Status:** Added disposable PostgreSQL RLS coverage; CI validation pending. No production migration, data write, merge or Render deployment.
+
+Added `supabase/tests/schoolpro_board_module_rls_runtime.sql` to the existing disposable Supabase baseline workflow. The fixture creates isolated owner/staff identities, a school, a Teacher membership with a Board designation, and representative Finance fee structure, Payroll draft, and Medical record rows. It then switches to the authenticated database role and asserts that the Board-designated Teacher remains a Teacher, fails the direct Proprietor/Administrator role check, cannot read the three restricted module records through RLS, and cannot approve a Payroll draft through the existing RPC. All fixture writes are rolled back.
+
+This fills a gap left by source-contract checks: it exercises actual RLS policies and an invoker RPC under an authenticated role against a disposable PostgreSQL database. It does not yet cover the Board withdrawal RPC previous_role restoration transition or every Finance/Medical write RPC. CI must pass before PR #146 can be considered ready. The test uses no production rows and does not connect to production Supabase.
+
 ## Stage C0 — role-scoped school access correction (2026-11-12)
 
 **Branch:** `fix/schoolpro-role-scoped-access`  

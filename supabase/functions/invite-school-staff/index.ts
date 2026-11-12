@@ -39,7 +39,7 @@ Deno.serve(async(req:Request)=>{
    if(error)throw error;if(!data)return respond({error:'This invitation is no longer waiting for acceptance. Refresh the staff list.'},400);
    return respond({ok:true,schoolCode:school.code,joiningCode:code,email:data.email,role:data.position_title==='Principal'?'principal':data.role,positionTitle:data.position_title});
   }
-  if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'principal', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'parent'].includes(role)||!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
+  if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'principal', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'parent'].includes(role)||(role!=='parent'&&(!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
   if(role==='parent'){
    if(guardianPhone.length>40)return respond({error:'Guardian phone must be 40 characters or fewer.'},400);
@@ -49,6 +49,20 @@ Deno.serve(async(req:Request)=>{
   }
   const {data:existing,error:ee}=await admin.from('profiles').select('id,last_name,phone').eq('email',normalized).maybeSingle();if(ee)throw ee;
   if(existing?.id===school.owner_id)return respond({error:'The proprietor already has school access.'},400);
+  if(role==='parent'){
+   // Do not provision an Auth user, confirm an email, or create a guardian link
+   // on the school's behalf. The intended guardian must authenticate with this
+   // exact email and accept the school invitation before any student access exists.
+   const invitationCode=crypto.randomUUID()+crypto.randomUUID();
+   const {error:invitationError}=await admin.from('schoolpro_access_invitations').insert({
+    school_id:schoolId,email:normalized,role:'parent',student_ids:studentIds,
+    relationship,token_hash:await hash(invitationCode),
+    expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id
+   });
+   if(invitationError)throw invitationError;
+   return respond({ok:true,created:false,requiresAcceptance:true,guardianInvitation:true,
+    email:normalized,role:'parent',schoolCode:school.code,expiresInDays:7});
+  }
   const code=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(code);
   if(existing){
    const {data:initial,error:initialError}=await admin.from('schoolpro_initial_credentials').select('user_id').eq('user_id',existing.id).eq('school_id',schoolId).is('consumed_at',null).maybeSingle();if(initialError)throw initialError;

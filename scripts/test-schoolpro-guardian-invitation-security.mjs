@@ -14,12 +14,17 @@ assert.match(parentPath, /relationship/, "The guardian relationship must be pres
 assert.match(parentPath, /expires_at:new Date\(Date.now\(\)\+7\*86400000\)/, "Guardian invitations must expire after seven days.");
 assert.match(parentPath, /guardianInvitation:true/, "The response must identify the guardian acceptance flow.");
 assert.doesNotMatch(parentPath, /email_confirm|createUser|schoolpro_accept_access_invitation/, "School staff must not verify an email or activate a guardian link on the guardian's behalf.");
+assert.match(edge, /email_confirmed_at/, "Invitation acceptance must require a verified Auth email.");
 
 const form = readFileSync("src/components/SchoolAccountForm.tsx", "utf8");
 assert.match(form, /guardianInvitation/, "The form must distinguish guardian invitations from staff account provisioning.");
 assert.match(form, /create or sign in to an IHLink account using this exact email/i, "The guardian must authenticate with the invited email.");
 assert.match(form, /access activates only after the guardian accepts/i, "The UI must explain that no student access exists before acceptance.");
 assert.match(form, /!parent\?\(\['firstName','middleName','surname'\]as const\):\[\]/, "Guardian identity details must be supplied by the guardian during account creation, not invented by school staff.");
+
+const migration = readFileSync("supabase/migrations/20261112153000_schoolpro_guardian_invitation_verified_email.sql", "utf8");
+assert.match(migration, /email_confirmed_at is not null/, "School-code acceptance must reject unverified Auth identities.");
+assert.match(migration, /lower\(trim\(u\.email\)\)=account_email/, "Verified Auth email must match the invited profile email.");
 
 const parents = readFileSync("src/pages/schoolpro/SchoolProParents.tsx", "utf8");
 assert.match(parents, /Contact details imported with student records\. These are contact records, not IHLink parent login accounts\./, "Imported contacts must remain distinct from authenticated guardian accounts.");

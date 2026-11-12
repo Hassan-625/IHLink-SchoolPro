@@ -259,7 +259,7 @@ begin
 
   -- Isolate the trigger under test. The attendance session is supplied
   -- explicitly, so the unrelated session-stamping trigger is not needed.
-  alter table public.schoolpro_attendance disable trigger all;
+  alter table public.schoolpro_attendance disable trigger user;
   alter table public.schoolpro_attendance enable trigger schoolpro_validate_instructional_day;
 
   -- Inclusive term start and end dates, and an ordinary instructional weekday.

@@ -52,7 +52,9 @@ begin
 
  if coalesce(cardinality(public.schoolpro_user_permissions(v_other_school_id)),0)<>0 then raise exception 'Cross-school permissions exposed';end if;
 
+ perform set_config('request.jwt.claim.sub',v_owner_id::text,true);
  update public.schoolpro_members set role='proprietor' where id=v_member_id;
+ perform set_config('request.jwt.claim.sub',v_staff_id::text,true);
  v_permissions:=public.schoolpro_user_permissions(v_school_id);
  if not ('finance'=any(v_permissions)) or not ('medical'=any(v_permissions)) or not ('payroll'=any(v_permissions)) or not ('roles'=any(v_permissions)) then raise exception 'Proprietor-wide module scope failed';end if;
 

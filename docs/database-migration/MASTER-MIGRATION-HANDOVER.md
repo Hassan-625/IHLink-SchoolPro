@@ -1,3 +1,16 @@
+## Stage C0 — school-wide House and Games roster (2026-11-12)
+
+**Branch:** `feat/schoolpro-schoolwide-house-roster`  
+**Status:** Implementation opened for CI/review; no merge, production migration, production data write, or Render deployment.
+
+Added a school-wide read-only roster to the existing Houses, Games & Competitions workspace. It groups active students under their current house using active `schoolpro_student_house_history` rows, displays each group's count, student full name (including middle name), admission number, and current class/arm, and explicitly lists students with no active house assignment under Unassigned. The roster is school-scoped and relies on the existing Games module route and existing RLS policy that permits Games module readers to view house history. It does not create or change assignments.
+
+The House Master page remains separate and unchanged: `SchoolProHouseDashboard.tsx` continues to call the appointment-scoped `schoolpro_house_master_roster` RPC, so a House Master sees only their appointed house. The school-wide roster is rendered in the Games workspace for members already authorized for the Games module; it does not broaden access to the House Master route.
+
+Added `scripts/test-schoolpro-schoolwide-house-roster.mjs`, registered it in `package.json`, and wired it into the Stage C0 regression workflow. CI must still confirm typecheck, build and regression results. No production data was read or written during this code change; no schema change was required.
+
+---
+
 ## Stage C0 — student house and imported guardian visibility (2026-11-12)
 
 **Branch:** `fix/schoolpro-house-and-guardian-visibility`  
@@ -3310,3 +3323,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — House Master dashboard appointment access correction (PR preparation)
+- Corrected the House Master dashboard's navigation and route boundary. The sidebar previously exposed `/schoolpro/house-dashboard` to every school member, and the route relied only on the generic `dashboard` permission.
+- Added a shared appointment-access hook that checks the existing read-only `schoolpro_house_master_roster` RPC. The RPC already restricts returned roster data to an active House Master appointment held by a teacher or class teacher; an active appointment remains detectable even when its house currently has no students because the RPC returns the house row with a null student.
+- Added a route gate so direct URL navigation receives the same appointment check as sidebar navigation. Platform Super Admin retains access for support/oversight.
+- No new SQL migration, permission grant, or RLS change. No production data, student records, appointments, or house assignments were changed. No merge or Render deployment performed.
+- Regression coverage added to the existing C0 workflow source-contract test. CI is required on the exact PR head before this correction is considered validated.

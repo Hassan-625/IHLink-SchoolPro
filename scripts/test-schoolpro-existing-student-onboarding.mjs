@@ -48,6 +48,11 @@ assert.match(bulk,/surname":"last_name"/,"Older spreadsheets headed Surname must
 assert.ok(bulk.includes("DATE(2026,9,1)"),"The displayed age must use the 1 September 2026 school-year reference date.");
 assert.match(bulk,/function minimumAgeForClass/,"The importer must enforce class-specific minimum ages.");
 assert.ok(bulk.includes("if(/^pre\\s*nursery\\b/.test(value))return 2;"),"Pre-Nursery must have its own minimum age rule.");
+assert.ok(bulk.includes(".replace(/\\s+/g,\" \" )") || bulk.includes(".replace(/\\s+/g,\" \""),"Class labels must normalize real whitespace.");
+assert.ok(bulk.includes("value.match(/^nursery\\s*([123])\\b/)"),"Nursery class names must match their numeric levels.");
+assert.ok(bulk.includes("value.match(/^(?:primary|basic)\\s*([1-6])\\b/)"),"Primary and Basic class names must match their numeric levels.");
+assert.ok(bulk.includes("value.match(/^(?:jss|js|junior secondary)\\s*([123])\\b/)"),"JSS aliases must match their numeric levels.");
+assert.ok(bulk.includes("value.match(/^(?:sss|ss|senior secondary)\\s*([123])\\b/)"),"SSS aliases must match their numeric levels.");
 assert.ok(bulk.includes("minimumAgeForClass(klass.name)"),"The age minimum must be selected from the matched active class.");
 assert.match(bulk,/date of birth is required to calculate and validate the student age/,"Date of birth must be required for reliable age validation.");
 assert.match(bulk,/requires a minimum age of/,"Under-age students must be blocked with an actionable explanation.");

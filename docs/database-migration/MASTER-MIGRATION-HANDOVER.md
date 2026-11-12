@@ -3406,3 +3406,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The school-code join RPC requires `auth.users.email_confirmed_at` and an exact case-insensitive match with the active profile email; the Edge Function independently checks the verified Auth identity.
 - Updated parent form/login copy and added account-access/source-contract regressions to C0 CI. No production Auth users or guardian links were created.
 - **Status:** current-main replacement branch; CI pending. No production migration/data write/Render deployment.
+
+
+## 2026-11-12 — Attendance and punctuality calculation contract carried onto current main
+- Carried forward the attendance/punctuality calculation specification from the stale design PR #154 into `integration/schoolpro-attendance-punctuality-design-current-main`, based directly on current `main` after the guardian onboarding merge.
+- Preserved the approved definitions: attendance = present days / eligible instructional open days; punctuality = present / (present + late); absences and excused absences remain separately reconciled; zero denominators return not-applicable; cumulative and daily sources cannot overlap or double-count; grading scales are school-owned/versioned; published historical calculations retain their calculation and grade-scale versions.
+- Updated the calendar dependency to reflect PR #156's merged instructional-calendar enforcement. Stage C implementation must consume configured open days and student enrollment boundaries, not guessed weekdays or user-entered denominators.
+- This is documentation/specification only. No schema or application code changed, no production migration or data write occurred, and no Render deployment was performed.
+- **Status:** current-main replacement PR prepared; CI/review pending. The original PR #154 remains stale and is not merged.

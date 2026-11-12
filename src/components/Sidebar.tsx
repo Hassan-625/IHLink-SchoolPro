@@ -6,6 +6,7 @@ import {schoolSections,studentSections,parentSections,teacherSections} from '@/p
 import {useSchoolProPermissions} from '@/hooks/useSchoolProPermissions';
 import {schoolRoleLabel} from '@/lib/schoolRoles';
 import {permissionForSchoolPath} from '@/lib/schoolPermissions';
+import {useSchoolProHouseMasterAccess} from '@/hooks/useSchoolProHouseMasterAccess';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ChevronDown, LogOut, Settings, Bell, Search } from 'lucide-react';
@@ -55,7 +56,7 @@ export function DashboardLayout({
   const showSuperAdminSchoolSelector=product==='schoolpro'&&profile?.role==='super_admin'&&['/schoolpro/proprietor-dashboard','/schoolpro/admin-dashboard'].includes(location.pathname);
   const houseRosterDoesNotRequireSession=product==='schoolpro'&&location.pathname==='/schoolpro/house-dashboard';
   const scopedChildren=product==='schoolpro'?(showSuperAdminSchoolSelector?<>{children}<SchoolSessionBar/></>:<><SchoolSessionBar/>{sessionScope.session||houseRosterDoesNotRequireSession?children:<p role="status">Select the academic session above to open this page.</p>}</>):children;
-  const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();
+  const permissions=useSchoolProPermissions();const classScope=useSchoolClassScope();const houseMasterAccess=useSchoolProHouseMasterAccess();
   const role=permissions.role.toLowerCase();
   const displayedRole=product==='schoolpro'?schoolRoleLabel(permissions.role):userRole;
   const isPlatformSchoolProSuperAdmin=product==='schoolpro'&&profile?.role==='super_admin';
@@ -65,7 +66,8 @@ export function DashboardLayout({
       if(isPlatformSchoolProSuperAdmin)return true;
       const teacherScopeAllowed=!['teacher','class_teacher'].includes(role)||!['/schoolpro/former-students','/schoolpro/broadsheet','/schoolpro/result-templates'].includes(item.href)||classScope.coordinatorClassIds.length>0;
       if(!teacherScopeAllowed)return false;
-      if(item.href==='/schoolpro/house-dashboard'||item.href==='/schoolpro/profile')return true;
+      if(item.href==='/schoolpro/house-dashboard')return houseMasterAccess.allowed;
+      if(item.href==='/schoolpro/profile')return true;
       if(item.href==='/schoolpro/workspace-deletion')return role==='proprietor';
       if(item.href==='/schoolpro/reports')return permissions.hasRolePermission('reports');
       if(['/schoolpro/cbt','/schoolpro/question-bank'].includes(item.href))return permissions.hasRolePermission('cbt');

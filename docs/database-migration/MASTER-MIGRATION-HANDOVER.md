@@ -3385,3 +3385,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The dedicated `schoolpro_class_review_sheet` RPC now independently requires the reports role permission and the active `advanced_reports` entitlement; platform Super Admin bypass remains consistent with the existing UI gate.
 - Extended the C0 SQL regression and Advanced Reports source-contract test to assert this separation. The migration is CI-only until reviewed, merged and explicitly approved for production rollout.
 - No production SQL was written and no Render deployment occurred.
+
+
+## 2026-11-12 — PR #146 latest CI verification
+- Rechecked PR #146 head `e805501adb53c937eb27d572371a77533d238f1f`: all four required workflows completed successfully.
+- Passing workflows: Student INSERT/RETURNING RLS regression; payment-page validation; SchoolPro Stage C0 security and workflow regression; full SchoolPro CI.
+- The full SchoolPro CI includes disposable PostgreSQL/Supabase checks for result import, assessment completeness, section leadership authorization, graduation certificates, Form Master attendance RLS, result PIN rate limiting, academic calendar, house allocation, tenant integrity, result-verification exposure, subject assignment guard, existing-student import diagnostics, and payment-review RLS. Receipt Storage isolation and progression subject requirements also completed successfully; no failed jobs were reported.
+- PR #146 remains open and unmerged. CI success is not merge or production-deployment approval. No production migration, data write, merge, or Render deployment was performed.

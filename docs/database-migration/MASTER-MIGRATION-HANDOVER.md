@@ -3342,3 +3342,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - This is a source change on PR #146 branch `fix/schoolpro-role-scoped-access`, not a production repair. Existing already-ended legacy appointments remain a separate reconciliation concern: their historical state cannot safely be auto-restored without distinguishing a Board-derived administrator role from a later legitimate administrator promotion.
 - New commit: `ec41d1e26abe03ae74fcba7a1120e4def0e7bfb1`. GitHub reports the commit status pending with no checks reported yet; validation is not complete.
 - No production migration, production role update, merge, workspace deletion, or Render deployment was performed.
+
+### PR #146 runtime RLS fixture correction (2026-11-12)
+- Latest C0 regression reached the new `schoolpro_board_module_rls_runtime.sql` test after all migrations and earlier SQL regressions passed. The first run failed while seeding the Payroll fixture because `schoolpro_payroll_records.member_id` is required to reference an active staff membership; the fixture had omitted it.
+- Corrected the disposable test fixture to set `member_id` to its Teacher/Board member. This is a test-only correction; no production schema/data changes.
+- New commit: `40dd623ae9a4bcd53610819005a9ca60d2649a4e`. Awaiting fresh CI. Board withdrawal/restoration runtime coverage remains outstanding.

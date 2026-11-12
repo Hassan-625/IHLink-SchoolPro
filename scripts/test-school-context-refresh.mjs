@@ -6,7 +6,8 @@ let user={id:'owner'},search='',pathname='/schoolpro/library',profileRole='custo
 const selected=new Map([['ihlink_schoolpro_workspace_owner','school']]);
 const source=ts.transpileModule(readFileSync('src/hooks/useSchoolProContext.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
 const contextSource=readFileSync('src/hooks/useSchoolProContext.ts','utf8');
-assert.ok(contextSource.includes("const selected=profile?.role==='super_admin'?(valid||localStorage.getItem('ihlink_schoolpro_admin_school')):"),'Platform Super Admin must use only the explicit admin school selection, never a remembered member workspace.');
+assert.ok(contextSource.includes("const selected=profile?.role==='super_admin'?valid:"),'Platform Super Admin must use only the explicit school_id query selection, never a remembered admin or member workspace.');
+assert.ok(!contextSource.includes("valid||localStorage.getItem('ihlink_schoolpro_admin_school')"),'A saved Super Admin workspace must not silently become active.');
 assert.ok(contextSource.includes("if(profile?.role==='super_admin'&&selected)"),'Platform Super Admin must resolve the school explicitly selected in the Super Admin dashboard.');
 assert.ok(contextSource.includes("if(profile?.role==='super_admin'&&!selected)"),'Platform Super Admin without a selected school must remain outside school workspace context.');
 const never=new Promise(()=>{}),query={select(){return this},eq(){return this},order(){return this},limit(){return this},maybeSingle(){return never}};

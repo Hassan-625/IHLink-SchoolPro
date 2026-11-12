@@ -3310,3 +3310,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+
+## 2026-11-12 — Instructional calendar migration-file generation path
+- Codespaces is unavailable to the user because of billing restrictions, and the local Windows environment does not have the Supabase CLI installed.
+- Added `.github/workflows/create-schoolpro-instructional-calendar-migration.yml` on branch `automation/schoolpro-calendar-migration-bootstrap`. It uses the stable Supabase CLI in GitHub Actions to run exactly `supabase migration new schoolpro_instructional_calendar`, then commits the timestamped empty SQL file to the same branch.
+- The workflow does not authenticate to Supabase, execute SQL, link a project, apply migrations, access production data, or deploy to Render. It requires GitHub Actions to be enabled and the repository's Actions policy to permit the workflow's contents-write permission.
+- This is an enablement step only. The instructional calendar schema and SQL remain unimplemented pending generation and review of the timestamped migration file. No merge or production change was performed.

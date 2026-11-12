@@ -224,7 +224,7 @@ begin
   insert into public.schoolpro_result_term_settings
     (school_id,session,term,term_start_date,term_end_date)
   values
-    (v_school,'2026/2027','First Term',date '2026-11-16',date '2026-11-20'),
+    (v_school,'2026/2027','First Term',date '2026-11-16',date '2026-11-22'),
     (v_school,'2027/2028','First Term',date '2027-09-06',date '2027-09-10');
 
   insert into public.schoolpro_instructional_calendar_settings
@@ -313,7 +313,7 @@ begin
      and attendance_date=date '2026-11-20';
 
   perform pg_temp.assert_schoolpro_attendance_update_rejected(
-    v_school,v_student_one,null,date '2026-11-20',
+    v_school,v_student_two,null,date '2026-11-20',
     'Attendance cannot be recorded on a non-instructional school day');
   perform pg_temp.assert_schoolpro_attendance_update_rejected(
     v_school,null,v_class_two,date '2026-11-20',

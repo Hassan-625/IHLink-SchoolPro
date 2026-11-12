@@ -44,6 +44,9 @@ jobs:
       - name: C0 workflow and class/member deletion source contracts
         run: npm run test:schoolpro-c0-workflows
 
+      - name: School-wide house roster and House Master scope contracts
+        run: npm run test:schoolpro-schoolwide-house-roster
+
       - name: Advanced Reports source contracts
         run: npm run test:schoolpro-advanced-reports
 

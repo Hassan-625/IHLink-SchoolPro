@@ -186,6 +186,7 @@ begin
        or new.session is distinct from old.session then
       raise exception 'Instructional calendar school and session identity cannot be changed';
     end if;
+    new.created_by := old.created_by;
     new.updated_at := now();
     new.updated_by := auth.uid();
   else
@@ -197,6 +198,28 @@ end;
 $function$;
 
 revoke all on function private.schoolpro_touch_instructional_calendar_row() from public, anon, authenticated;
+
+create or replace function private.schoolpro_guard_instructional_calendar_settings()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+begin
+  -- is_configured is derived state, never an operator-controlled flag.
+  new.is_configured := (
+    select count(*) = 7
+    from public.schoolpro_instructional_weekdays w
+    where w.school_id = new.school_id and w.session = new.session
+  );
+  return new;
+end;
+$function$;
+
+revoke all on function private.schoolpro_guard_instructional_calendar_settings() from public, anon, authenticated;
+create trigger schoolpro_instructional_settings_configuration_guard
+  before insert or update on public.schoolpro_instructional_calendar_settings
+  for each row execute function private.schoolpro_guard_instructional_calendar_settings();
 
 create trigger schoolpro_instructional_settings_touch
   before insert or update on public.schoolpro_instructional_calendar_settings

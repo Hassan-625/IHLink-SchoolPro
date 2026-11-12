@@ -14,13 +14,13 @@ type Event={id:string;title:string;event_type:string;status:string;academic_sess
 type Criterion={id:string;event_id:string;name:string;max_points:number;weight:number};
 type Entry={id:string;event_id:string;house_id:string|null;entry_name:string};
 type Judge={id:string;event_id:string;member_id:string;panel_role:string;ended_at:string|null};
-type Student={id:string;first_name:string;last_name:string;admission_number:string|null};
+type Student={id:string;first_name:string;middle_name:string|null;last_name:string;admission_number:string|null;class_id:string|null;class_name:string|null};
 type ResultRun={id:string;event_id:string;version:number;status:string;calculated_at:string;approved_at:string|null;published_at:string|null};
 type ResultEntry={id:string;result_run_id:string;entry_id:string;house_id:string|null;entry_name:string;is_complete:boolean;score_percent:number|null;result_position:number|null;criterion_breakdown:any};
 const input='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm';
 export function SchoolProGames(){
  const ctx=useSchoolProContext(),{user}=useAuth(),{session}=useSchoolSession();
- const [houses,setHouses]=useState<House[]>([]),[members,setMembers]=useState<Member[]>([]),[students,setStudents]=useState<Student[]>([]),[houseMasters,setHouseMasters]=useState<{id:string;house_id:string;member_id:string;assigned_at:string;ended_at:string|null}[]>([]);
+ const [houses,setHouses]=useState<House[]>([]),[members,setMembers]=useState<Member[]>([]),[students,setStudents]=useState<Student[]>([]),[houseMasters,setHouseMasters]=useState<{id:string;house_id:string;member_id:string;assigned_at:string;ended_at:string|null}[]>([]),[classes,setClasses]=useState<{id:string;name:string;arm:string|null}[]>([]),[houseAssignments,setHouseAssignments]=useState<{student_id:string;house_id:string}[]>([]);
  const [events,setEvents]=useState<Event[]>([]),[criteria,setCriteria]=useState<Criterion[]>([]),[entries,setEntries]=useState<Entry[]>([]),[judges,setJudges]=useState<Judge[]>([]),[resultRuns,setResultRuns]=useState<ResultRun[]>([]),[resultEntries,setResultEntries]=useState<ResultEntry[]>([]),[selectedRun,setSelectedRun]=useState('');
  const [selected,setSelected]=useState(''),[message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [houseName,setHouseName]=useState(''),[houseCode,setHouseCode]=useState(''),[houseColor,setHouseColor]=useState('#dc2626');
@@ -35,15 +35,17 @@ export function SchoolProGames(){
  const canManage=['proprietor','administrator','super_administrator','game_master'].includes(ctx.role.toLowerCase().replaceAll(' ','_'));
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
-  const [h,m,s,e,hm]=await Promise.all([
+  const [h,m,s,e,hm,cl,sh]=await Promise.all([
    supabase.from('schoolpro_houses').select('id,name,code,color,sort_order,is_active').eq('school_id',ctx.schoolId).order('sort_order'),
    supabase.from('schoolpro_members').select('id,role,position_title,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name,email)').eq('school_id',ctx.schoolId).order('created_at'),
    supabase.from('schoolpro_students').select('id,first_name,last_name,admission_number').eq('school_id',ctx.schoolId).eq('status','active').order('last_name'),
    supabase.from('schoolpro_competition_events').select('id,title,event_type,status,academic_session,term,judging_guidelines').eq('school_id',ctx.schoolId).order('created_at',{ascending:false}),
-   supabase.from('schoolpro_house_master_assignments').select('id,house_id,member_id,assigned_at,ended_at').eq('school_id',ctx.schoolId).order('assigned_at',{ascending:false})
+   supabase.from('schoolpro_house_master_assignments').select('id,house_id,member_id,assigned_at,ended_at').eq('school_id',ctx.schoolId).order('assigned_at',{ascending:false}),
+   supabase.from('schoolpro_classes').select('id,name,arm').eq('school_id',ctx.schoolId).is('archived_at',null).order('name').order('arm'),
+   supabase.from('schoolpro_student_house_history').select('student_id,house_id').eq('school_id',ctx.schoolId).is('effective_to',null)
   ]);
-  if(h.error||m.error||s.error||e.error||hm.error){setError('Some Games records could not be loaded. Check your access and refresh.');return;}
-  setHouses(h.data||[]);setMembers((m.data||[]) as unknown as Member[]);setStudents(s.data||[]);setEvents(e.data||[]);setHouseMasters(hm.data||[]);
+  if(h.error||m.error||s.error||e.error||hm.error||cl.error||sh.error){setError('Some Games or school roster records could not be loaded. Check your access and refresh.');return;}
+  setHouses(h.data||[]);setMembers((m.data||[]) as unknown as Member[]);setStudents((s.data||[]) as Student[]);setEvents(e.data||[]);setHouseMasters(hm.data||[]);setClasses(cl.data||[]);setHouseAssignments(sh.data||[]);
  },[ctx.schoolId]);
  const loadEvent=useCallback(async(id:string)=>{
   if(!supabase||!ctx.schoolId||!id){setCriteria([]);setEntries([]);setJudges([]);setResultRuns([]);setResultEntries([]);setSelectedRun('');return;}
@@ -84,6 +86,14 @@ export function SchoolProGames(){
  const loadStandings=useCallback(async()=>{if(!supabase||!ctx.schoolId)return;const r=await supabase.from('schoolpro_house_competition_standings').select('house_id,house_name,color,total_points,events_scored').eq('school_id',ctx.schoolId).order('total_points',{ascending:false});if(!r.error)setStandings(r.data||[])},[ctx.schoolId]);
  useEffect(()=>{void loadStandings()},[loadStandings,events,judges]);
  const teachingMembers=useMemo(()=>members.filter(m=>['teacher','class_teacher'].includes(m.role)),[members]);
+ const houseRosterGroups=useMemo(()=>{
+  const assignmentByStudent=new Map(houseAssignments.map(a=>[a.student_id,a.house_id]));
+  const classById=new Map(classes.map(c=>[c.id,[c.name,c.arm].filter(Boolean).join(' ')]));
+  const activeStudents=students.filter(s=>s && (s as any).status!=='inactive');
+  const groups=activeHouses.map(h=>({house:h,students:activeStudents.filter(s=>assignmentByStudent.get(s.id)===h.id)}));
+  const unassigned=activeStudents.filter(s=>!assignmentByStudent.has(s.id)||!activeHouses.some(h=>h.id===assignmentByStudent.get(s.id)));
+  return [...groups,{house:{id:'unassigned',name:'Unassigned',color:'#64748B'} as House,students:unassigned}].map(group=>({...group,rows:group.students.map(s=>({...s,classLabel:(s.class_id&&classById.get(s.class_id))||s.class_name||'Class not assigned'}))}));
+ },[activeHouses,students,houseAssignments,classes]);
  return <ModulePage product="schoolpro" sections={schoolSections} title="Houses, Games & Competitions" description="Manage house membership, appoint teaching staff as House Masters and event judges, configure competitions and scoring, and track inter-house standings." userName={ctx.schoolName} userRole={ctx.role} metrics={[{label:'Active houses',value:String(activeHouses.length)},{label:'Competition events',value:String(events.length)},{label:'Assigned event judges',value:String(activeJudges.length)},{label:'Active students',value:String(students.length)}]}>
   {(error||message)&&<div role="status" className={error?'rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700':'rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700'}>{error||message}</div>}
   <div className="grid min-w-0 gap-5 xl:grid-cols-2">

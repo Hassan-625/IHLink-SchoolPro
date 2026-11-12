@@ -3310,3 +3310,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — Stage C attendance: require explicit daily status before saving
+- Review of the existing daily attendance screen found that every learner with no saved record was initialized as `present`, and the save payload independently defaulted any missing status to `present`. This could turn an incomplete register into false present records when an operator saved without reviewing every learner.
+- Updated the daily register so a learner without a previously saved attendance row starts as unmarked. Existing saved statuses continue to load normally. The page displays an Unmarked count, requires an explicit Present/Absent/Late/Excused choice for every learner, and blocks save while any roster entry remains unresolved.
+- Added `scripts/test-schoolpro-explicit-attendance-marking.mjs` and wired it into SchoolPro CI. This is a frontend correctness correction; it does not change the attendance enum/table, create attendance rows, or bypass the Form Master class-scoped RLS policy.
+- Branch `fix/schoolpro-explicit-attendance-marking`. No production attendance records, production migration, merge, or Render deployment.
+- Remaining Stage C work: enforce the school calendar on attendance dates at the database boundary; add versioned punctuality thresholds/grades and separate punctuality metrics; add audited bulk/date-level and aggregate-period capture with reconciliation; and add calendar, calculation, and role-scope integration coverage.

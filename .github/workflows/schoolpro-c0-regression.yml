@@ -53,6 +53,9 @@ jobs:
       - name: Existing appointment lifecycle source contracts
         run: npm run test:schoolpro-lifecycle-appointments
 
+      - name: Guardian invitation and acceptance security source contracts
+        run: npm run test:schoolpro-guardian-invitations
+
       - name: Set up Supabase CLI
         id: supabase-cli
         uses: supabase/setup-cli@v1

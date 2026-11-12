@@ -77,6 +77,7 @@ import { SchoolProInvoice } from "@/pages/schoolpro/SchoolProInvoice";
 import { SchoolProPayments } from "@/pages/schoolpro/SchoolProPayments";
 import { SchoolProSubscription } from "@/pages/schoolpro/SchoolProSubscription";
 import { SchoolProPermissionGate } from "@/components/SchoolProPermissionGate";
+import { SchoolProHouseMasterGate } from "@/components/SchoolProHouseMasterGate";
 import { ResetPasswordPage } from "@/pages/auth/ResetPasswordPage";
 import { UpdatePasswordPage } from "@/pages/auth/UpdatePasswordPage";
 import { VerifyEmailPage } from "@/pages/auth/VerifyEmailPage";
@@ -146,7 +147,7 @@ export default function App(){
   <Route path="/schoolpro/discipline" element={<Guard permission="discipline"><SchoolProDiscipline/></Guard>}/>
   <Route path="/schoolpro/leave" element={<Guard permission="dashboard"><SchoolProLeave/></Guard>}/>
   <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
-  <Route path="/schoolpro/house-dashboard" element={<Guard><SchoolProHouseDashboard/></Guard>}/>
+  <Route path="/schoolpro/house-dashboard" element={<Guard permission="dashboard"><SchoolProHouseMasterGate><SchoolProHouseDashboard/></SchoolProHouseMasterGate></Guard>}/>
   <Route path="/schoolpro/judge" element={<Guard><SchoolProJudgePortal/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>
   <Route path="/schoolpro/subjects" element={<Guard permission="subjects"><SchoolProSubjects/></Guard>}/>

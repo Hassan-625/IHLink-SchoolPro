@@ -3351,3 +3351,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The next disposable C0 run confirmed migrations and the three preceding SQL regressions passed, then the new runtime test failed because the `authenticated` role correctly has no `USAGE` on schema `private`; direct invocation of `private.has_school_access` from the test role is not a valid runtime assertion.
 - Removed that direct helper call. The test now validates the effective authorization boundary through the authenticated role's actual Finance, Payroll and Medical RLS-visible rows, verifies Board appointment leaves the membership role as Teacher, and attempts the Payroll approval RPC.
 - Test-only correction; no production changes. New commit `45260dfbb2b3a60b8a7cd55219a61f933deb496f`. Awaiting fresh CI.
+
+
+### PR #146 authenticated RLS private-schema privilege correction (2026-11-12)
+- The disposable C0 runtime test now reaches the actual restrictive RLS policy, but failed because `private.schoolpro_module_allowed` is a SECURITY INVOKER function and its nested authorization checks resolve additional functions in schema `private`. The authenticated role lacked schema `USAGE`, so RLS evaluation failed with `permission denied for schema private` before any access assertion ran.
+- Added `GRANT USAGE ON SCHEMA private TO authenticated` to the PR #146 migration. This grants schema name resolution only; it does not grant EXECUTE on private functions. Existing per-function REVOKE/GRANT boundaries remain authoritative, and the schema remains outside the PostgREST exposed-schema list.
+- This is a proposed migration on the PR branch only. No production Supabase permissions or data were changed. CI must validate the effective Finance, Payroll and Medical RLS denial assertions before proceeding.

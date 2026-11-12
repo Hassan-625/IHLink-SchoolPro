@@ -3361,3 +3361,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - First execution of the new runtime regression successfully replayed the migration and passed the calendar catalog/security contract assertions, then exposed a test-harness issue: `DISABLE TRIGGER ALL` also targets PostgreSQL's internal foreign-key constraint triggers and is denied in the disposable Supabase database.
 - Corrected the fixture isolation to `DISABLE TRIGGER USER`, then re-enable only `schoolpro_validate_instructional_day`. This leaves system foreign-key enforcement active while suppressing unrelated application triggers only for the isolated attendance test.
 - This is a test-only correction; no production schema or data changed. A fresh CI run is required to validate the corrected harness.
+
+
+## 2026-11-12 — House Master dashboard appointment boundary re-applied to current main
+- Re-applied the House Master dashboard correction from the earlier conflicted PR #149 onto the current `main` baseline in `integration/schoolpro-house-master-appointment-access`.
+- The dashboard route now has an appointment-specific gate; the sidebar exposes it only when the authenticated teacher/class teacher has an active House Master appointment. The gate uses the existing read-only `schoolpro_house_master_roster` RPC, which returns the active house row even when no learners are assigned, and retains platform Super Admin oversight access.
+- No new migration, RLS policy, role grant, student/house assignment or production row was added or changed. Source-contract regression assertions were extended.
+- **Status:** replacement branch created from current `main`; awaiting CI before a replacement PR can be merged.

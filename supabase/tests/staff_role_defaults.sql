@@ -26,7 +26,20 @@ begin
  permissions:=public.schoolpro_user_permissions(school_id);
  if not ('admissions'=any(permissions)) or 'finance'=any(permissions) then raise exception 'Receptionist scope failed';end if;
  if coalesce(cardinality(public.schoolpro_user_permissions(other_school)),0)<>0 then raise exception 'Cross-school permissions exposed';end if;
+ update public.schoolpro_members set role='proprietor' where id=member_id;
+ permissions:=public.schoolpro_user_permissions(school_id);
+ if not ('finance'=any(permissions)) or not ('medical'=any(permissions)) or not ('payroll'=any(permissions)) or not ('roles'=any(permissions)) then raise exception 'Proprietor-wide module scope failed';end if;
+ update public.schoolpro_members set role='administrator' where id=member_id;
+ permissions:=public.schoolpro_user_permissions(school_id);
+ if not ('finance'=any(permissions)) or not ('medical'=any(permissions)) or not ('payroll'=any(permissions)) or not ('games'=any(permissions)) then raise exception 'Administrator-wide module scope failed';end if;
  update public.schoolpro_members set role='head_teacher' where id=member_id;
+ insert into public.schoolpro_board_members(member_id,school_id,title,previous_role,appointed_by)
+ values(member_id,school_id,'Board Member','head_teacher',owner_id);
+ permissions:=public.schoolpro_user_permissions(school_id);
+ if not ('results'=any(permissions)) or 'finance'=any(permissions) or 'medical'=any(permissions) or 'payroll'=any(permissions) or 'roles'=any(permissions) then
+  raise exception 'Board designation must preserve the member original module scope';
+ end if;
+ delete from public.schoolpro_board_members where member_id=member_id;
  insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed,updated_by) values(school_id,member_id,'results',false,owner_id);
  if 'results'=any(public.schoolpro_user_permissions(school_id)) then raise exception 'Explicit deny ignored';end if;
  perform set_config('request.jwt.claim.sub','',true);

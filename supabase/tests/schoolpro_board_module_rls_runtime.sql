@@ -1,7 +1,12 @@
 -- Runtime RLS regression: Board designation must not grant Finance, Payroll or Medical access.
 -- Runs only against the disposable Supabase database restored by schoolpro-c0-regression.yml.
 begin;
-do $test$
+create temporary table board_rls_fixture (
+  owner_id uuid, staff_id uuid, school_id uuid, member_id uuid,
+  student_id uuid, fee_id uuid, payroll_id uuid, health_id uuid
+) on commit drop;
+
+do $seed$
 declare
   v_owner uuid := gen_random_uuid();
   v_staff uuid := gen_random_uuid();
@@ -11,8 +16,9 @@ declare
   v_fee uuid := gen_random_uuid();
   v_payroll uuid := gen_random_uuid();
   v_health uuid := gen_random_uuid();
-  v_count integer;
 begin
+  insert into pg_temp.board_rls_fixture values
+    (v_owner,v_staff,v_school,v_member,v_student,v_fee,v_payroll,v_health);
   insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
   values
     (v_owner,'authenticated','authenticated','owner-'||v_owner||'@example.invalid','{}','{}',now(),now()),
@@ -34,31 +40,40 @@ begin
   values(v_payroll,v_school,'2026-11',1000,0,'draft');
   insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
   values(v_health,v_school,v_student,'RLS fixture',v_owner);
+end
+$seed$;
 
-  perform set_config('request.jwt.claim.sub',v_staff::text,true);
-  perform set_config('request.jwt.claims',json_build_object('sub',v_staff::text,'role','authenticated')::text,true);
-  execute 'set local role authenticated';
+set local role authenticated;
+select set_config('request.jwt.claim.sub',staff_id::text,true),
+       set_config('request.jwt.claims',json_build_object('sub',staff_id::text,'role','authenticated')::text,true)
+from pg_temp.board_rls_fixture;
 
-  if private.has_school_access(v_school,array['proprietor','administrator']::public.school_member_role[]) then
+do $assert$
+declare
+  f pg_temp.board_rls_fixture%rowtype;
+  v_count integer;
+begin
+  select * into f from pg_temp.board_rls_fixture;
+  if private.has_school_access(f.school_id,array['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'Board member unexpectedly passes direct proprietor/administrator role check';
   end if;
-  if (select role from public.schoolpro_members where id=v_member) <> 'teacher'::public.school_member_role then
+  if (select role from public.schoolpro_members where id=f.member_id) <> 'teacher'::public.school_member_role then
     raise exception 'Board designation changed the actual membership role';
   end if;
-  select count(*) into v_count from public.schoolpro_fee_structures where id=v_fee;
+  select count(*) into v_count from public.schoolpro_fee_structures where id=f.fee_id;
   if v_count <> 0 then raise exception 'Board member can read Finance fee structures'; end if;
-  select count(*) into v_count from public.schoolpro_payroll_records where id=v_payroll;
+  select count(*) into v_count from public.schoolpro_payroll_records where id=f.payroll_id;
   if v_count <> 0 then raise exception 'Board member can read Payroll records'; end if;
-  select count(*) into v_count from public.schoolpro_health_records where id=v_health;
+  select count(*) into v_count from public.schoolpro_health_records where id=f.health_id;
   if v_count <> 0 then raise exception 'Board member can read Medical records'; end if;
   begin
-    perform public.process_schoolpro_payroll(v_payroll);
+    perform public.process_schoolpro_payroll(f.payroll_id);
     raise exception 'Board member unexpectedly executed Payroll approval RPC';
   exception when others then
     if sqlerrm = 'Board member unexpectedly executed Payroll approval RPC' then raise; end if;
   end;
-  execute 'reset role';
 end
-$test$;
+$assert$;
+reset role;
 rollback;
 select 'PASS: Board designation denied direct Finance, Payroll and Medical RLS access and Payroll approval RPC' as result;

@@ -3368,3 +3368,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Platform Super Admin context now accepts only a valid explicit `school_id` URL parameter; remembered `ihlink_schoolpro_admin_school` state is no longer an implicit workspace. The oversight selector writes the selected school to the URL so reloads preserve deliberate context. Normal school-user remembered workspace behavior remains unchanged.
 - Updated source-contract tests to assert the no-fallback rule and query-parameter selection. No production Supabase or Render changes were made.
 - **Status:** integration branch created from current `main`; CI pending before a replacement PR can be considered for merge.
+
+
+## 2026-11-12 — Verification workspace removal protection re-applied to current main
+- Re-applied the workspace deletion guard from the earlier conflicted PR #150 onto the current `main` baseline in `integration/schoolpro-protect-verification-workspaces`.
+- A database trigger rejects deletion-lifecycle request inserts and status/school reassignment updates for the two explicitly retained verification workspaces (IHLINK Academy and HA ACADEMY), including legacy protected requests being retargeted away from the protected school IDs.
+- Added a disposable temporary-table SQL regression that executes the actual trigger function for normal workspace acceptance, protected insert rejection, reassignment into a protected workspace, and reassignment out of a legacy protected workspace. The fixture rolls back.
+- Wired the SQL regression into the C0 disposable Supabase workflow and added source-contract assertions for both protected IDs and OLD/NEW row checks.
+- No production migration, workspace deletion request, school status, tenant row, storage object, or Render deployment was changed.
+- **Status:** replacement branch created from current `main`; CI pending.

@@ -3310,3 +3310,22 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+## Stage C continuation — attendance and punctuality calculation design (2026-11-12)
+
+**Branch:** `design/schoolpro-attendance-punctuality-calculations`  
+**Status:** Design documentation only. No schema, application code, production records, migration, merge, or Render deployment.
+
+Recovered and preserved the user's explicit requirements: attendance percentage = present days / actual school-open days × 100; track late days and approved absences separately; calculate punctuality percentage and grade; support cumulative/periodic attendance entry as an alternative to daily Form Master capture; preserve historical sessions and audit corrections.
+
+Added `docs/database-migration/SCHOOLPRO-ATTENDANCE-PUNCTUALITY-DESIGN.md` defining:
+- Attendance percentage: `present_days / open_days * 100`.
+- Punctuality percentage: `present_days / (present_days + late_days) * 100`; absences and excused absences do not count as attended-on-time days or as punctuality denominator.
+- Explicit not-applicable behavior when denominators are zero.
+- Calendar-derived denominator adjusted for student enrollment dates.
+- Cumulative capture reconciliation invariant: present + late + absent + excused = eligible open days; no fabricated daily rows from aggregate totals.
+- Protection against overlap/double-counting between daily and cumulative sources.
+- School-owned, versioned punctuality grade bands; no invented universal grade thresholds; historical/published calculations retain their exact rule version.
+- Role-scoped permissions, audit history, reporting requirements, and 18 regression cases.
+
+This work depends on the instructional calendar design in `SCHOOLPRO-INSTRUCTIONAL-CALENDAR-DESIGN.md`; calculations must not be enabled until calendar-authoritative open-day counts are implemented. The local Supabase CLI remains unavailable in the connected environment, so no migration was generated and no frontend calculation was implemented against an unverified denominator.

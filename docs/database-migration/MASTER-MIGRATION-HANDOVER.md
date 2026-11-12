@@ -3355,3 +3355,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Extended the instructional-calendar disposable SQL fixtures with a second synthetic school, class and learner. The second school has a term but no instructional calendar; attendance must fail readiness even though another school has a fully configured calendar for the same session.
 - The same-school second-session fixture separately confirms readiness is session-scoped. Both cases execute only in the disposable CI database and are rolled back.
 - **Status:** runtime cases now include school and session isolation. Awaiting the latest GitHub Actions run; PR #156 remains open and unmerged until all required workflows pass.
+
+
+## 2026-11-12 — Disposable attendance-trigger test harness correction
+- First execution of the new runtime regression successfully replayed the migration and passed the calendar catalog/security contract assertions, then exposed a test-harness issue: `DISABLE TRIGGER ALL` also targets PostgreSQL's internal foreign-key constraint triggers and is denied in the disposable Supabase database.
+- Corrected the fixture isolation to `DISABLE TRIGGER USER`, then re-enable only `schoolpro_validate_instructional_day`. This leaves system foreign-key enforcement active while suppressing unrelated application triggers only for the isolated attendance test.
+- This is a test-only correction; no production schema or data changed. A fresh CI run is required to validate the corrected harness.

@@ -120,7 +120,7 @@ assert.match(studentsPage,/no larger than 5 MB/);
 assert.ok(studentsPage.includes('storage.from("school-result-templates").upload'));
 assert.match(studentsPage,/photo_storage_path:path/);
 assert.match(studentsPage,/Students enrolment table, scroll horizontally to view all columns/);
-assert.ok(studentsPage.includes('min-w-[920px]'));
+assert.ok(studentsPage.includes('min-w-[1040px]'));
 assert.match(attendancePage,/grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4/);
 assert.match(attendancePage,/Daily attendance register, scroll horizontally to view all columns/);
 assert.ok(attendancePage.includes('min-w-[760px]'));

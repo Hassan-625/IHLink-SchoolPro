@@ -1,3 +1,15 @@
+## Stage C0 — student house and imported guardian visibility (2026-11-12)
+
+**Branch:** `fix/schoolpro-house-and-guardian-visibility`  
+**Status:** Branch implementation; awaiting CI/review. No merge, production migration, production data write, or Render deployment.
+
+Read-only production inspection for HA ACADEMY confirmed 150 student records, 150 active rows in `schoolpro_student_house_history`, 150 students with at least one imported guardian contact field, and zero authenticated `schoolpro_guardian_links`. The active house distribution at inspection was Blue House 44, Green House 36, Red House 36 and Yellow House 34. This confirms that the import persisted the house assignments and guardian contact data; the missing information was a presentation/model distinction, not a reason to re-import.
+
+Updated Students & Enrolment to read each student's current house from active house-history rows joined in memory to the school's active house catalogue, and added a House column to the register. Updated Parents & Guardians to retrieve and display imported guardian name/phone/email directly from student records in a clearly separated "Imported parent & guardian contacts" table, with explicit status distinguishing contact-only records from authenticated IHLink parent-account links. Existing parent-account creation/linking workflow remains separate and available; imported contact details are not silently converted into login accounts.
+
+No student/guardian data was changed. No new table, function, policy, or migration was created. Production Supabase access was read-only.
+
+
 ## Stage C continuation — existing-student first-time onboarding (2026-11-09)
 
 **Branch:** `feat/schoolpro-existing-student-onboarding`  

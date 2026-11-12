@@ -3377,3 +3377,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Parent form fields no longer collect guardian identity or credentials from school staff; imported guardian contacts remain contact-only until a guardian accepts. Parent login copy now explicitly requires email verification.
 - Added source-contract tests, an account-access harness covering unverified denial and verified acceptance, and a dedicated C0 workflow step. All tests are synthetic/local; no production Auth users or guardian links were created.
 - **Status:** re-applied onto current `main`; CI pending. No production migration, data write, merge or Render deployment.
+
+
+## 2026-11-12 — Guardian-owned invitation acceptance re-applied to current main
+- Reapplied the verified guardian-owned onboarding correction from PR #147 onto current `main` in `integration/schoolpro-guardian-verified-invitations-current-main`.
+- School staff can prepare a seven-day invitation bound to the selected active student IDs and relationship, but the parent invitation path does not create an Auth user, confirm an email, create a guardian link, or accept access on the guardian's behalf. The guardian must authenticate using the exact invited email, verify that email with IHLink, and then use the school code to accept.
+- The school-code join RPC requires `auth.users.email_confirmed_at` and an exact case-insensitive match with the active profile email before accepting a pending invitation. The Edge Function acceptance action independently checks the verified Auth identity.
+- Parent form fields no longer collect guardian identity or credentials from school staff; imported guardian contacts remain contact-only until a guardian accepts. Parent login copy now explicitly requires email verification.
+- Added source-contract tests, an account-access harness covering unverified denial and verified acceptance, and a dedicated C0 workflow step. All tests are synthetic/local; no production Auth users or guardian links were created.
+- **Status:** re-applied onto current `main`; CI pending. No production migration, data write, merge or Render deployment.

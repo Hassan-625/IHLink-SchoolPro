@@ -3398,3 +3398,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Learners without a saved daily attendance row remain unmarked rather than defaulting to Present; every learner must be explicitly marked Present, Absent, Late or Excused before save. The register shows the Unmarked count and blocks incomplete submission.
 - The regression is wired into standard SchoolPro CI. No attendance schema/RLS changes or production attendance writes.
 - **Status:** current-main replacement branch; CI pending. No Render deployment.
+
+
+## 2026-11-12 — Guardian-owned invitation acceptance re-applied after protected-workspace merge
+- Reapplied the verified guardian-owned onboarding correction from PR #147 onto latest `main` in `integration/schoolpro-guardian-verified-invitations-after-attendance`, preserving PR #159's protected-workspace migration, SQL regression and C0 wiring.
+- School staff prepare a seven-day invitation bound to selected active student IDs and relationship, but the parent path does not create an Auth user, confirm email, create guardian links or accept on the guardian's behalf. The guardian must authenticate using the exact invited email, verify that email with IHLink, and accept with the school code.
+- The school-code join RPC requires `auth.users.email_confirmed_at` and an exact case-insensitive match with the active profile email; the Edge Function independently checks the verified Auth identity.
+- Updated parent form/login copy and added account-access/source-contract regressions to C0 CI. No production Auth users or guardian links were created.
+- **Status:** current-main replacement branch; CI pending. No production migration/data write/Render deployment.

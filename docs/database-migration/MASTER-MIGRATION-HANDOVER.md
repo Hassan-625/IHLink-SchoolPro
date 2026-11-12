@@ -3377,3 +3377,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Wired the SQL regression into the C0 disposable Supabase workflow and added source-contract assertions for both protected IDs and OLD/NEW row checks.
 - No production migration, workspace deletion request, school status, tenant row, storage object, or Render deployment was changed.
 - **Status:** replacement branch created from current `main`; CI pending.
+
+
+## 2026-11-12 — House Master dashboard appointment boundary re-applied after protected workspace merge
+- Reapplied the House Master dashboard correction from earlier PR #149 onto the latest `main` baseline after PR #159 merged, preserving the protected-workspace SQL regression and CI wiring.
+- The dashboard route now has an appointment-specific gate; the sidebar exposes it only when the authenticated teacher/class teacher has an active House Master appointment. The gate uses the existing read-only `schoolpro_house_master_roster` RPC, which returns the active house row even when no learners are assigned, and retains platform Super Admin oversight access.
+- No new migration, RLS policy, role grant, student/house assignment or production row was added or changed. Source-contract regression assertions were extended while preserving current main's Super Admin workspace-selection and protected-workspace assertions.
+- **Status:** replacement branch created from latest `main`; CI pending.

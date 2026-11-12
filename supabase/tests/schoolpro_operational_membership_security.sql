@@ -15,6 +15,20 @@ begin
   if position('set role = ''administrator''' in lower(board_writer))>0 then
     raise exception 'Board appointment writer must not elevate membership to administrator';
   end if;
+  if position('select previous_role' in lower(board_writer))=0
+    or position('set role = old_role' in lower(board_writer))=0
+    or position('old_role <> ''administrator''' in lower(board_writer))=0 then
+    raise exception 'Withdrawing a legacy Board appointment must restore its recorded non-administrator role';
+  end if;
+
+  -- Direct RPC/RLS authorization uses the stored membership role, not the
+  -- permission resolver. Confirm that helper remains role-list based and has
+  -- no Board appointment shortcut.
+  board_writer := pg_get_functiondef('private.has_school_access(uuid,public.school_member_role[])'::regprocedure);
+  if position('m.role = any(allowed_roles)' in lower(board_writer))=0
+    or position('schoolpro_board_members' in lower(board_writer))>0 then
+    raise exception 'Direct school authorization must rely on the restored membership role, not Board designation';
+  end if;
 
   board_role_trigger := pg_get_functiondef('private.schoolpro_clear_changed_board_role()'::regprocedure);
   if position('previous_role' in board_role_trigger)=0

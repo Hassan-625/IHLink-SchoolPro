@@ -124,6 +124,7 @@ jobs:
             supabase/tests/schoolpro_class_member_delete_security.sql \
             supabase/tests/schoolpro_operational_membership_security.sql \
             supabase/tests/staff_role_defaults.sql \
+            supabase/tests/schoolpro_board_module_rls_runtime.sql \
             supabase/tests/schoolpro_c0_lifecycle_regression.sql
           do
             echo "Running $test_file"

@@ -1,14 +1,27 @@
+## Stage C0 — role-scoped school access correction (2026-11-12)
+
+**Branch:** `fix/schoolpro-role-scoped-access`  
+**Status:** Proposed migration and regression coverage on this branch only. No production Supabase migration, production data write, merge, or Render deployment.
+
+The access rule confirmed by the user is that only the School Proprietor and School Administrator have broad school-wide read/write authority. Every other member retains access only to the modules assigned to their actual school role, plus explicit member-level module grants that are not denied. Module visibility does not itself grant management rights; existing table policies and workflow RPCs remain responsible for action-specific authorization.
+
+Corrected the Board appointment escalation at its source. The legacy Board appointment workflow changed the member's actual `schoolpro_members.role` to `administrator`, which caused both the permission resolver and role-based RLS policies to treat a Board designation as full school administration. The proposed migration restores each active Board appointee's recorded `previous_role` where the only change was that legacy elevation, changes future Board appointments to preserve the actual membership role, and ends appointment history when a member's actual role is changed. A Board designation no longer injects a broad permission set. Genuine Administrators remain Administrators; a Board member whose underlying role was already Administrator retains that role and its authority.
+
+The central permission resolver now grants the full module set to school owners/Proprietors and actual Administrators, including Games, while other roles continue to use their existing module-specific defaults and explicit allow/deny overrides. Added regression assertions for Proprietor/Administrator breadth, Board appointment non-escalation, and preservation of the member's underlying module scope.
+
+Validation is pending CI. The Supabase CLI migration-generation command could not be completed in the available runtime; the migration file was added to the feature branch using the repository's established timestamped migration convention. Do not apply it to production until reviewed and explicitly approved.
+
 ## Stage C0 — student house and imported guardian visibility (2026-11-12)
 
+**PR:** [#145 — Show imported house assignments and guardian contacts](https://github.com/Hassan-625/IHLink-SchoolPro/pull/145)  
 **Branch:** `fix/schoolpro-house-and-guardian-visibility`  
-**Status:** Branch implementation; awaiting CI/review. No merge, production migration, production data write, or Render deployment.
+**Status:** Squash-merged and verified Live on Render. Merge commit `6ee2043e5a1e70a58caa70b26a7921dbbdb72b2d`; deployment `dep-dbqmnfqjnfac73bnvfng`.
 
 Read-only production inspection for HA ACADEMY confirmed 150 student records, 150 active rows in `schoolpro_student_house_history`, 150 students with at least one imported guardian contact field, and zero authenticated `schoolpro_guardian_links`. The active house distribution at inspection was Blue House 44, Green House 36, Red House 36 and Yellow House 34. This confirms that the import persisted the house assignments and guardian contact data; the missing information was a presentation/model distinction, not a reason to re-import.
 
 Updated Students & Enrolment to read each student's current house from active house-history rows joined in memory to the school's active house catalogue, and added a House column to the register. Updated Parents & Guardians to retrieve and display imported guardian name/phone/email directly from student records in a clearly separated "Imported parent & guardian contacts" table, with explicit status distinguishing contact-only records from authenticated IHLink parent-account links. Existing parent-account creation/linking workflow remains separate and available; imported contact details are not silently converted into login accounts.
 
 No student/guardian data was changed. No new table, function, policy, or migration was created. Production Supabase access was read-only.
-
 
 ## Stage C continuation — existing-student first-time onboarding (2026-11-09)
 

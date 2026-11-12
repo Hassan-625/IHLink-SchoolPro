@@ -3326,3 +3326,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The SQL regression now verifies that ordinary workspaces remain eligible, inserts targeting either protected workspace are rejected, reassignment into a protected workspace is rejected, and a legacy protected request cannot be reassigned out of the protected set.
 - The probe is transaction-scoped and rolled back; it does not create or alter any production workspace, request, or tenant record.
 - The original PR #150 CI run passed; this follow-up requires a fresh exact-head C0 SQL regression before the protection change is considered fully runtime-validated.
+
+
+## 2026-11-12 — Workspace-deletion lifecycle review after PR #150 CI
+- Re-reviewed the base lifecycle migration `20261107235950_schoolpro_workspace_deletion_lifecycle.sql` and the Admin control-panel page on PR #78.
+- Confirmed the state path is proprietor/owner request (`pending`) → independent active platform Super Admin review (`approved` or `rejected`) → a different Super Admin executes only an `approved` request. The requester cannot review or execute; the reviewer cannot execute; the requester can cancel only while pending.
+- Execution is intentionally a safe deactivation: it suspends workspace access and retains student/member/class, financial, audit, legal and Storage history. It is not a physical tenant-data or Storage purge.
+- The request table has RLS, no direct authenticated write privileges, and uses the four guarded lifecycle RPCs. The Admin route is explicitly Super Admin-only. The review UI requires a review note; execution requires exact school-name confirmation and separately invokes the execution RPC.
+- PR #78 visually disables review/execution for the two protected verification workspace IDs, including legacy request rows. PR #150 adds the database-level trigger guard, so UI bypass does not permit creating or retargeting a protected request.
+- CI evidence: PR #150 exact head `7a04f22309a05dcbebf3a6cbc9c09a28ad8da185` passed all four workflows, including disposable local Supabase migration replay and C0 SQL regressions. Admin PR #78 head `23aeb1a2c090b29d3af0c0c09e7cd7d85a54f685` passed its unit tests, SchoolPro control-panel regression, typecheck and production build.
+- Remaining limitation: the lifecycle state transitions have been reviewed at source/permission level; no real request was created and no execution was attempted. Do not test destructive transitions against production. Any future end-to-end state-transition exercise must use a disposable database fixture and must stop before actual production execution.
+- Both PRs remain open/unmerged; no production migration, production data mutation, merge or Render deployment occurred.

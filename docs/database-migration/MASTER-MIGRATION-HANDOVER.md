@@ -3368,3 +3368,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Platform Super Admin context now accepts only a valid explicit `school_id` URL parameter; remembered `ihlink_schoolpro_admin_school` state is no longer an implicit workspace. The oversight selector writes the selected school to the URL so reloads preserve deliberate context. Normal school-user remembered workspace behavior remains unchanged.
 - Updated source-contract tests to assert the no-fallback rule and query-parameter selection. No production Supabase or Render changes were made.
 - **Status:** integration branch created from current `main`; CI pending before a replacement PR can be considered for merge.
+
+
+## 2026-11-12 — House Master dashboard appointment boundary re-applied to current main
+- Reapplied the House Master dashboard correction from earlier PR #149 onto the latest `main` baseline in `integration/schoolpro-house-master-appointment-access-current-main` after the Super Admin workspace-selection merge.
+- The dashboard route now has an appointment-specific gate; the sidebar exposes it only when the authenticated teacher/class teacher has an active House Master appointment. The gate uses the existing read-only `schoolpro_house_master_roster` RPC, which returns the active house row even when no learners are assigned, and retains platform Super Admin oversight access.
+- No new migration, RLS policy, role grant, student/house assignment or production row was added or changed. Source-contract regression assertions were extended while preserving the latest Super Admin workspace-selector tests already on `main`.
+- **Status:** replacement branch created from current `main`; CI pending.

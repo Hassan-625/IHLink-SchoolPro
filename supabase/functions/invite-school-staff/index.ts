@@ -15,6 +15,9 @@ Deno.serve(async(req:Request)=>{
   const body=await req.json();
   if(body.action==='accept'){
    const code=String(body.code||'').trim();if(code.length<20||code.length>120)return respond({error:'Enter the joining code supplied by your school.'},400);
+   const {data:identity,error:identityError}=await admin.auth.admin.getUserById(user.id);
+   if(identityError)throw identityError;
+   if(!identity.user?.email_confirmed_at||String(identity.user.email||'').trim().toLowerCase()!==String(user.email||'').trim().toLowerCase())return respond({error:'Verify the email address on your IHLink account before accepting school access.'},403);
    const {data:allowed,error:re}=await admin.rpc('schoolpro_take_login_attempt',{p_key:await hash('school-accept:'+user.id),p_limit:8});if(re)throw re;if(!allowed)return respond({error:'Too many attempts. Please try again in 15 minutes.'},429);
    const {data,error}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:user.id,p_hash:await hash(code)});if(error)throw error;
    return data?respond({ok:true}):respond({error:'This joining code is invalid, expired or belongs to another email.'},400);

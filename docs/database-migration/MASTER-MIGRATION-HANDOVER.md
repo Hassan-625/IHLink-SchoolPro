@@ -3319,3 +3319,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - IHLink Admin Control Panel PR separately marks these two workspaces as protected and disables review/execution controls for any legacy request row.
 - The existing independent review/execution rules remain unchanged: requester cannot review; requester and approving reviewer cannot execute.
 - No production migration was applied, no production school status or request row was changed, no data/Storage objects were deleted, and no merge or Render deployment was performed. CI validation is pending.
+
+
+## 2026-11-12 — Protected verification workspace guard runtime coverage (PR #150 follow-up)
+- Extended `supabase/tests/schoolpro_protected_workspace_removal.sql` beyond catalog/source inspection to execute the actual trigger function against a disposable temporary probe table.
+- The SQL regression now verifies that ordinary workspaces remain eligible, inserts targeting either protected workspace are rejected, reassignment into a protected workspace is rejected, and a legacy protected request cannot be reassigned out of the protected set.
+- The probe is transaction-scoped and rolled back; it does not create or alter any production workspace, request, or tenant record.
+- The original PR #150 CI run passed; this follow-up requires a fresh exact-head C0 SQL regression before the protection change is considered fully runtime-validated.

@@ -64,18 +64,16 @@ begin
   end if;
 
   guard := pg_get_functiondef('private.schoolpro_enforce_instructional_attendance_day()'::regprocedure);
-  foreach table_name in array array[
-    'public_holiday','school_holiday','emergency_closure','make_up_instructional'
-  ] loop
-    if position(table_name in guard)=0 then
-      -- Exception types are enforced by the table check constraint and resolved
-      -- by the trigger as the exception_type value.
-      if table_name='public_holiday' or table_name='school_holiday'
-         or table_name='emergency_closure' or table_name='make_up_instructional' then
-        null;
-      end if;
-    end if;
-  end loop;
+  if not exists(
+    select 1 from pg_constraint
+    where conrelid='public.schoolpro_instructional_calendar_exceptions'::regclass
+      and contype='c'
+      and pg_get_constraintdef(oid) like '%public_holiday%'
+      and pg_get_constraintdef(oid) like '%school_holiday%'
+      and pg_get_constraintdef(oid) like '%emergency_closure%'
+      and pg_get_constraintdef(oid) like '%make_up_instructional%'
+  ) then raise exception 'Instructional exception types are incomplete'; end if;
+
   if position('schoolpro_instructional_calendar_exceptions' in guard)=0
      or position('schoolpro_instructional_weekdays' in guard)=0
      or position('is_configured' in guard)=0

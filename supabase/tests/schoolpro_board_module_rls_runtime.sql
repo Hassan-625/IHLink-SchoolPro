@@ -36,8 +36,8 @@ begin
   values(v_student,v_school,'RLS-'||v_student,'RLS','Student','Primary 1');
   insert into public.schoolpro_fee_structures(id,school_id,name,term,session,amount,created_by)
   values(v_fee,v_school,'RLS fixture','First Term','2026/2027',1000,v_owner);
-  insert into public.schoolpro_payroll_records(id,school_id,period,gross,deductions,status)
-  values(v_payroll,v_school,'2026-11',1000,0,'draft');
+  insert into public.schoolpro_payroll_records(id,school_id,member_id,period,gross,deductions,status)
+  values(v_payroll,v_school,v_member,'2026-11',1000,0,'draft');
   insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
   values(v_health,v_school,v_student,'RLS fixture',v_owner);
 end

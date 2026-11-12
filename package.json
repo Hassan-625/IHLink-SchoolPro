@@ -35,7 +35,8 @@
     "test:schoolpro-grade-scale": "node scripts/test-schoolpro-grade-scale-and-subject-statistics.mjs",
     "test:schoolpro-allocated-subjects": "node scripts/test-schoolpro-allocated-subjects-broadsheet.mjs",
     "test:schoolpro-printable-class-average": "node scripts/test-schoolpro-printable-class-average-consistency.mjs",
-    "test:schoolpro-report-card-schemes": "node scripts/test-schoolpro-report-card-assessment-schemes.mjs"
+    "test:schoolpro-report-card-schemes": "node scripts/test-schoolpro-report-card-assessment-schemes.mjs",
+    "test:schoolpro-guardian-invitations": "node scripts/test-schoolpro-guardian-invitation-security.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

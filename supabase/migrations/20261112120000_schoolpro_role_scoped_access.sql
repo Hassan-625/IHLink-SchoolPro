@@ -51,6 +51,7 @@ set search_path = ''
 as $function$
 declare
   m public.schoolpro_members;
+  old_role public.school_member_role;
 begin
   if auth.uid() is null
      or not private.is_active_account()
@@ -93,6 +94,17 @@ begin
     end if;
 
     if p_title is null then
+      -- Legacy appointments elevated the membership role to administrator.
+      -- Capture the recorded role before ending the appointment, then restore
+      -- it so direct has_school_access() checks cannot retain that elevation.
+      select previous_role
+        into old_role
+        from public.schoolpro_board_members
+       where member_id = m.id
+         and school_id = p_school
+         and ended_at is null
+       for update;
+
       update public.schoolpro_board_members
          set ended_at = now(),
              ended_by = auth.uid(),
@@ -100,6 +112,15 @@ begin
        where member_id = m.id
          and school_id = p_school
          and ended_at is null;
+
+      if old_role is not null
+         and old_role <> 'administrator'::public.school_member_role
+         and m.role = 'administrator'::public.school_member_role then
+        update public.schoolpro_members
+           set role = old_role
+         where id = m.id
+           and school_id = p_school;
+      end if;
     else
       if p_title not in (
         'Chairperson','Director','Co-owner','Board Secretary',

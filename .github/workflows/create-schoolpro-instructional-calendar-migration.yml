@@ -1,3 +1,4 @@
+# Workflow bootstrap trigger: generate the migration on this branch only.
 name: Create SchoolPro instructional calendar migration
 
 on:

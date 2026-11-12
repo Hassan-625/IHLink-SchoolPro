@@ -7,7 +7,7 @@ const routes = readFileSync('src/App.tsx', 'utf8');
 
 assert.match(games, /schoolpro_student_house_history/);
 assert.match(games, /\.is\('effective_to',\s*null\)/);
-assert.match(games, /schoolpro_classes/);
+assert.match(games, /class_name/);
 assert.match(games, /houseRosterGroups/);
 assert.match(games, /School-wide house roster/);
 assert.match(games, /Unassigned/);

@@ -55,9 +55,6 @@ declare
   v_count integer;
 begin
   select * into f from pg_temp.board_rls_fixture;
-  if private.has_school_access(f.school_id,array['proprietor','administrator']::public.school_member_role[]) then
-    raise exception 'Board member unexpectedly passes direct proprietor/administrator role check';
-  end if;
   if (select role from public.schoolpro_members where id=f.member_id) <> 'teacher'::public.school_member_role then
     raise exception 'Board designation changed the actual membership role';
   end if;

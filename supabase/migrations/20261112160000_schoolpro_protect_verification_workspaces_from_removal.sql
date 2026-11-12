@@ -5,22 +5,25 @@ begin;
 create or replace function private.schoolpro_guard_protected_workspace_removal()
 returns trigger
 language plpgsql
-security definer
 set search_path = ''
 as $function$
 begin
   if new.school_id in (
     'eb601205-cffd-420d-97d0-7d5ca081628a'::uuid, -- IHLINK Academy
     'ac7ac8a8-5035-4e39-8868-cad54add84a6'::uuid  -- HA ACADEMY
-  ) or (
-    tg_op = 'UPDATE'
-    and old.school_id in (
-      'eb601205-cffd-420d-97d0-7d5ca081628a'::uuid,
-      'ac7ac8a8-5035-4e39-8868-cad54add84a6'::uuid
-    )
   ) then
     raise exception 'This SchoolPro verification workspace is protected from workspace removal'
       using errcode = '42501';
+  end if;
+
+  if tg_op = 'UPDATE' then
+    if old.school_id in (
+      'eb601205-cffd-420d-97d0-7d5ca081628a'::uuid,
+      'ac7ac8a8-5035-4e39-8868-cad54add84a6'::uuid
+    ) then
+      raise exception 'This SchoolPro verification workspace is protected from workspace removal'
+        using errcode = '42501';
+    end if;
   end if;
 
   return new;

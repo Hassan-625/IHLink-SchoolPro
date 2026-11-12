@@ -62,7 +62,7 @@ response=await invite.post({schoolId:school,email:'new-staff@example.test',role:
 invite.setRateAllowed(false);assert.equal((await invite.post({schoolId:school,email:'another-staff@example.test',role:'teacher',...names})).status,429);assert.equal(invite.counts().creates,1);
 const initial=await harness('supabase/functions/schoolpro-account-login/index.ts');
 initial.tables.profiles.push({id:'initial',email:'initial@example.test',status:'active'});
-initial.accounts.set('initial',{id:'initial',email:'initial@example.test',password:'inaccessible-random-password',ban_duration:'876000h',app_metadata:{schoolpro_initial_login:true}});
+initial.accounts.set('initial',{id:'initial',email:'initial@example.test',email_confirmed_at:'2026-11-12T00:00:00Z',password:'inaccessible-random-password',ban_duration:'876000h',app_metadata:{schoolpro_initial_login:true}});
 initial.tables.schoolpro_initial_credentials.push({user_id:'initial',surname:'adu',consumed_at:null,expires_at:new Date(Date.now()+86400000).toISOString()});
 const initialInput={email:'initial@example.test',password:'Adu'};
 response=await initial.post(initialInput);assert.equal(response.data.requiresPasswordChange,true);assert.equal(response.data.session,undefined);

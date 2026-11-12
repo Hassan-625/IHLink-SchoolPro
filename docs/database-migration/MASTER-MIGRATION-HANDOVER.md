@@ -3310,3 +3310,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — Super Admin explicit SchoolPro workspace selection
+- Root cause confirmed in current `main`: `useSchoolProContext` accepted `ihlink_schoolpro_admin_school` as an implicit active workspace, and `SchoolProLiveDashboard.loadSchools` fell back to that remembered ID or the first school returned. This could silently reopen HA ACADEMY instead of requiring a deliberate school choice.
+- Updated the Super Admin context resolver to accept only a valid explicit `school_id` URL selection. With no selection, platform Super Admin remains a global identity with `schoolId=null`; it is not converted into a school Proprietor or member.
+- Updated the oversight dashboard to leave the selector empty until an explicit choice and write the selected school into the `school_id` query parameter. The selected context is visible and reproducible on reload without hidden local-storage fallback. Normal school-user remembered workspace resolution is unchanged.
+- Added source-contract assertions for explicit selection, no first-school fallback, and query-parameter-based workspace switching.
+- Branch `fix/schoolpro-super-admin-explicit-workspace-selection`; proposed source changes only. No production Supabase changes, merge, Render deployment, or workspace/data mutation.

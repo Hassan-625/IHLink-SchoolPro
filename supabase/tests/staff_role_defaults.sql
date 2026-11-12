@@ -58,7 +58,10 @@ begin
  v_permissions:=public.schoolpro_user_permissions(v_school_id);
  if not ('finance'=any(v_permissions)) or not ('medical'=any(v_permissions)) or not ('payroll'=any(v_permissions)) or not ('roles'=any(v_permissions)) then raise exception 'Proprietor-wide module scope failed';end if;
 
+ -- The proprietor-role guard requires the school owner for both promotion and demotion.
+ perform set_config('request.jwt.claim.sub',v_owner_id::text,true);
  update public.schoolpro_members set role='administrator' where id=v_member_id;
+ perform set_config('request.jwt.claim.sub',v_staff_id::text,true);
  v_permissions:=public.schoolpro_user_permissions(v_school_id);
  if not ('finance'=any(v_permissions)) or not ('medical'=any(v_permissions)) or not ('payroll'=any(v_permissions)) or not ('games'=any(v_permissions)) then raise exception 'Administrator-wide module scope failed';end if;
 

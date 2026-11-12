@@ -1,3 +1,16 @@
+## Stage C0 — school-wide House and Games roster (2026-11-12)
+
+**Branch:** `feat/schoolpro-schoolwide-house-roster`  
+**Status:** Implementation opened for CI/review; no merge, production migration, production data write, or Render deployment.
+
+Added a school-wide read-only roster to the existing Houses, Games & Competitions workspace. It groups active students under their current house using active `schoolpro_student_house_history` rows, displays each group's count, student full name (including middle name), admission number, and current class/arm, and explicitly lists students with no active house assignment under Unassigned. The roster is school-scoped and relies on the existing Games module route and existing RLS policy that permits Games module readers to view house history. It does not create or change assignments.
+
+The House Master page remains separate and unchanged: `SchoolProHouseDashboard.tsx` continues to call the appointment-scoped `schoolpro_house_master_roster` RPC, so a House Master sees only their appointed house. The school-wide roster is rendered in the Games workspace for members already authorized for the Games module; it does not broaden access to the House Master route.
+
+Added `scripts/test-schoolpro-schoolwide-house-roster.mjs`, registered it in `package.json`, and wired it into the Stage C0 regression workflow. CI must still confirm typecheck, build and regression results. No production data was read or written during this code change; no schema change was required.
+
+---
+
 ## Stage C0 — student house and imported guardian visibility (2026-11-12)
 
 **Branch:** `fix/schoolpro-house-and-guardian-visibility`  

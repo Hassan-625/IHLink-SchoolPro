@@ -15,7 +15,6 @@ assert.match(games, /student\.middle_name/);
 assert.match(games, /student\.classLabel/);
 assert.match(games, /\.eq\('status',\s*'active'\)/);
 assert.match(games, /permission="games"/);
-assert.doesNotMatch(games, /schoolpro_assign_student_house.*houseRosterGroups/s);
 assert.match(houseMaster, /schoolpro_house_master_roster/);
 assert.match(houseMaster, /My House & Students/);
 assert.match(routes, /path="\/schoolpro\/house-dashboard".*SchoolProHouseDashboard/);

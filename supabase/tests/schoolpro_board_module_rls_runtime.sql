@@ -18,6 +18,7 @@ declare
   v_payroll uuid := gen_random_uuid();
   v_health uuid := gen_random_uuid();
   v_legacy uuid := gen_random_uuid();
+  v_legacy_user uuid := gen_random_uuid();
   v_genuine_admin uuid := gen_random_uuid();
 begin
   insert into pg_temp.board_rls_fixture values
@@ -25,16 +26,18 @@ begin
   insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
   values
     (v_owner,'authenticated','authenticated','owner-'||v_owner||'@example.invalid','{}','{}',now(),now()),
-    (v_staff,'authenticated','authenticated','staff-'||v_staff||'@example.invalid','{}','{}',now(),now());
+    (v_staff,'authenticated','authenticated','staff-'||v_staff||'@example.invalid','{}','{}',now(),now()),
+    (v_legacy_user,'authenticated','authenticated','legacy-'||v_legacy_user||'@example.invalid','{}','{}',now(),now());
   insert into public.profiles(id,email,status)
-  values (v_owner,'owner-'||v_owner||'@example.invalid','active'),(v_staff,'staff-'||v_staff||'@example.invalid','active')
+  values (v_owner,'owner-'||v_owner||'@example.invalid','active'),(v_staff,'staff-'||v_staff||'@example.invalid','active'),
+    (v_legacy_user,'legacy-'||v_legacy_user||'@example.invalid','active')
   on conflict(id) do update set status='active';
   insert into public.schoolpro_schools(id,owner_id,name,code)
   values(v_school,v_owner,'Board RLS runtime fixture','BR-'||v_school);
   insert into public.schoolpro_members(id,school_id,user_id,role)
   values
     (v_member,v_school,v_staff,'teacher'),
-    (v_legacy,v_school,v_owner,'administrator'),
+    (v_legacy,v_school,v_legacy_user,'administrator'),
     (v_genuine_admin,v_school,v_staff,'administrator');
   insert into public.schoolpro_board_members(member_id,school_id,title,previous_role,appointed_by)
   values

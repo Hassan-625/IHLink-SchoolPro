@@ -1,3 +1,14 @@
+## PR #147 — guardian verification CI follow-up (2026-11-12)
+
+The first CI attempt exposed two stale test assumptions rather than a failure of the intended guardian security rule:
+- The C0 source-contract test counted every invitation insert as a staff/principal invitation. The guardian path intentionally inserts a parent invitation with `role='parent'` and no staff `position_title`. The assertion now counts only `role:storedRole` staff invitation inserts.
+- The account-access harness expected a school-created guardian joining token and immediate acceptance. The secure flow intentionally returns the school code, then requires the guardian to sign in with their own Auth identity and verified email before `schoolpro_join_school_code` can accept the pending invitation. The harness now models an unverified guardian being denied, then a verified matching Auth identity being accepted and linked to the invited child.
+- Parent login copy no longer says guardians use a surname as their initial password; it now instructs them to verify their own IHLink email before using the school code.
+
+These are regression-harness and user-facing copy corrections. They do not relax the email verification requirement or create Auth users on behalf of guardians. Latest PR head after these updates: `d085e8489ebeab737efff901cc507e649393e63e`. CI must complete again on this head before PR #147 can be considered ready. No production data, Auth users, guardian links, migration, merge or Render deployment was changed.
+
+---
+
 ## Stage C0 — student house and imported guardian visibility (2026-11-12)
 
 **Branch:** `fix/schoolpro-house-and-guardian-visibility`  

@@ -307,7 +307,9 @@ begin
   if tg_op = 'UPDATE'
      and new.attendance_date is not distinct from old.attendance_date
      and new.school_id is not distinct from old.school_id
-     and new.session is not distinct from old.session then
+     and new.session is not distinct from old.session
+     and new.class_id is not distinct from old.class_id
+     and new.student_id is not distinct from old.student_id then
     return new;
   end if;
 

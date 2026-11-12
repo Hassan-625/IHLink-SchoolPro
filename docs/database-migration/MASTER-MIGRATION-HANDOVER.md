@@ -3310,3 +3310,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Proposed migration adds a row-value-based SECURITY DEFINER predicate that applies the existing student-read access rules using `id`, `school_id`, `user_id` and `class_id` supplied by the policy row. Both duplicate school-user SELECT policies are updated to use it; no INSERT policy, role grants, or tenant boundary is broadened.
 - Added a disposable PostgreSQL regression that verifies an authorised school owner can INSERT ... RETURNING the new student's ID/admission number and that an unrelated account cannot read that row. Added a dedicated GitHub Actions workflow for the regression.
 - Source-only preparation. No production migration was applied, no student data or permissions were changed, and no merge or Render deployment was performed.
+
+
+## 2026-11-12 — Protect verification workspaces from removal (PR preparation)
+- Added a database trigger guard to the workspace-removal request table for the two workspaces explicitly retained for verification: IHLINK Academy (`eb601205-cffd-420d-97d0-7d5ca081628a`) and HA ACADEMY (`ac7ac8a8-5035-4e39-8868-cad54add84a6`).
+- The trigger rejects both new requests and lifecycle updates referencing either protected school ID, including attempts to reassign a legacy request away from a protected ID. This is a database-side safeguard; it does not rely on UI visibility or client checks.
+- Added a disposable-schema SQL regression that asserts the trigger is installed and checks both IDs plus OLD/NEW row handling. Wired it into the C0 security/workflow CI.
+- IHLink Admin Control Panel PR separately marks these two workspaces as protected and disables review/execution controls for any legacy request row.
+- The existing independent review/execution rules remain unchanged: requester cannot review; requester and approving reviewer cannot execute.
+- No production migration was applied, no production school status or request row was changed, no data/Storage objects were deleted, and no merge or Render deployment was performed. CI validation is pending.

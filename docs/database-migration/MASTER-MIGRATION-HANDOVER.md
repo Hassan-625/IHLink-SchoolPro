@@ -3384,3 +3384,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The dashboard route now has an appointment-specific gate; the sidebar exposes it only when the authenticated teacher/class teacher has an active House Master appointment. The gate uses the existing read-only `schoolpro_house_master_roster` RPC, which returns the active house row even when no learners are assigned, and retains platform Super Admin oversight access.
 - No new migration, RLS policy, role grant, student/house assignment or production row was added or changed. Source-contract regression assertions were extended while preserving current main's Super Admin workspace-selection and protected-workspace assertions.
 - **Status:** replacement branch created from latest `main`; CI pending.
+
+
+## 2026-11-12 — Guardian-owned invitation acceptance carried onto latest main
+- Reapplied PR #147's verified guardian-owned onboarding correction after the House Master appointment-gate merge, retaining the latest Super Admin workspace-selection, protected-workspace and House Master changes.
+- School staff prepare a seven-day invitation bound to selected active students and relationship; they do not create or confirm a guardian Auth account. The guardian authenticates using the exact invited email, verifies it with IHLink, then accepts with the school code.
+- The join RPC and Edge Function independently require verified Auth identity and exact invited/profile email matching. Imported guardian contacts remain contact-only until acceptance.
+- Added account-access and source-contract regressions to C0 CI. No production Auth users or guardian links created.
+- **Status:** current-main replacement branch; CI pending. No production migration or Render deployment.

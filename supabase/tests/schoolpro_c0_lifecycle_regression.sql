@@ -156,7 +156,7 @@ begin
   select pg_get_functiondef('private.schoolpro_set_section_leader(uuid,uuid,text,boolean)'::regprocedure) into def;
   if position('target.status' in def)=0 or position('ended_at' in def)=0 then raise exception 'Section leader appointment writer does not enforce active membership/history'; end if;
   select pg_get_functiondef('private.schoolpro_set_board_role(uuid,uuid,text)'::regprocedure) into def;
-  if position('status=' in regexp_replace(def, '\\s+', '', 'g'))=0 or position('active' in def)=0 or position('ended_at' in def)=0 then raise exception 'Board appointment writer does not enforce active membership/history'; end if;
+  if position('status=' in regexp_replace(def, '[[:space:]]+', '', 'g'))=0 or position('active' in def)=0 or position('ended_at' in def)=0 then raise exception 'Board appointment writer does not enforce active membership/history'; end if;
   select pg_get_functiondef('private.schoolpro_cached_access_schools(text,text)'::regprocedure) into def;
   if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'Cached access reader includes inactive memberships'; end if;
   select pg_get_functiondef('private.schoolpro_cached_staff_schools()'::regprocedure) into def;

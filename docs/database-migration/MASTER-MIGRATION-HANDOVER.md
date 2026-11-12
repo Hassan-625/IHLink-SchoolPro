@@ -3377,3 +3377,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Wired the SQL regression into the C0 disposable Supabase workflow and added source-contract assertions for both protected IDs and OLD/NEW row checks.
 - No production migration, workspace deletion request, school status, tenant row, storage object, or Render deployment was changed.
 - **Status:** replacement branch created from current `main`; CI pending.
+
+
+## 2026-11-12 — Require explicit attendance status for every learner
+- Reapplied the daily attendance correction from PR #152 onto current `main` in `integration/schoolpro-explicit-attendance-status-current-main` after the instructional calendar and subsequent C0 merges.
+- Learners without a saved attendance row now load as unmarked rather than Present. The register shows an Unmarked count, offers an explicit empty status option, and blocks saving until every learner has a selected Present, Absent, Late or Excused status. Existing saved values continue to load.
+- Added the explicit-attendance source regression to the standard SchoolPro CI workflow. This prevents false present records from an incomplete daily register and does not change attendance schema or RLS.
+- **Status:** replacement branch created from current `main`; CI pending. No production attendance rows or deployment changed.

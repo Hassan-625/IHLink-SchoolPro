@@ -1,3 +1,14 @@
+## PR #137 — age validation and Pre-Nursery arms reconciled to current main (2026-11-12)
+
+**Branch:** `integration/schoolpro-age-prenursery-current-main`  
+**Status:** Ported the isolated age/workbook and class-setup corrections onto current `main`; fresh CI pending. No schema migration, production student/class write, Supabase production change, or Render deployment.
+
+- Workbook now uses the 1 September 2026 school-year reference date for age calculation and validates class-specific minimum ages, including Pre-Nursery.
+- The downloadable register uses **Last Name**, while retaining compatibility with older **Surname** headings.
+- Class setup provides idempotent Pre-Nursery A/B creation, detects existing arms, and restores archived arms instead of creating duplicates.
+- Existing-student onboarding regression coverage was extended for these rules.
+- The three source/test files were ported from PR #137 onto current main without copying its stale handover history. All other merged onboarding, house, guardian, calendar, and attendance changes remain intact.
+
 ## Stage C0 — school-wide House and Games roster (2026-11-12)
 
 **Branch:** `feat/schoolpro-schoolwide-house-roster`  

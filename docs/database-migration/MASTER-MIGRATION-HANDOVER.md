@@ -3361,3 +3361,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - First execution of the new runtime regression successfully replayed the migration and passed the calendar catalog/security contract assertions, then exposed a test-harness issue: `DISABLE TRIGGER ALL` also targets PostgreSQL's internal foreign-key constraint triggers and is denied in the disposable Supabase database.
 - Corrected the fixture isolation to `DISABLE TRIGGER USER`, then re-enable only `schoolpro_validate_instructional_day`. This leaves system foreign-key enforcement active while suppressing unrelated application triggers only for the isolated attendance test.
 - This is a test-only correction; no production schema or data changed. A fresh CI run is required to validate the corrected harness.
+
+
+## 2026-11-12 — Rebased Super Admin explicit workspace selection correction
+- Reapplied PR #151's Super Admin workspace-selection correction onto current `main` in integration branch `integration/schoolpro-explicit-superadmin-workspace` after the original PR diverged from the calendar merge.
+- Platform Super Admin context now accepts only a valid explicit `school_id` URL parameter; remembered `ihlink_schoolpro_admin_school` state is no longer an implicit workspace. The oversight selector writes the selected school to the URL so reloads preserve deliberate context. Normal school-user remembered workspace behavior remains unchanged.
+- Updated source-contract tests to assert the no-fallback rule and query-parameter selection. No production Supabase or Render changes were made.
+- **Status:** integration branch created from current `main`; CI pending before a replacement PR can be considered for merge.

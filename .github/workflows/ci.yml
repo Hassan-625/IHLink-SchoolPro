@@ -21,6 +21,7 @@ jobs:
       - run: node scripts/test-academic-sessions.mjs
       - run: node scripts/test-school-session-rosters.mjs
       - run: node scripts/test-schoolpro-form-master-attendance-scope.mjs
+      - run: node scripts/test-schoolpro-explicit-attendance-marking.mjs
       - run: node scripts/test-schoolpro-progression-threshold.mjs
       - run: node scripts/test-schoolpro-progression-subject-requirements.mjs
       - run: node scripts/test-schoolpro-production-graduation-certificates.mjs

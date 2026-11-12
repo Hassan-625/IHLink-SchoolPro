@@ -3316,3 +3316,10 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Reconciled the student age / Pre-Nursery correction onto current main while preserving intervening student-onboarding changes already merged into main, including workbook school-name binding and the current access-diagnostic/import flow.
 - Ported the 1 September 2026 age reference, class-specific minimum-age validation from Date of Birth, Last Name workbook header with Surname compatibility, and idempotent Pre-Nursery A/B setup with archived-arm restoration. Updated the existing-student onboarding regression to cover these requirements.
 - No production data, class rows, Supabase schema, or Render deployment changed. Fresh CI is required before review/merge.
+
+
+### PR #137 CI completion — 2026-11-12
+- Fresh CI completed successfully on reconciliation commit `f5f3e38e4ac4791d8bf67cc13f6e788005dc7071`.
+- All four required workflows passed: SchoolPro CI (including receipt-storage isolation, student INSERT RETURNING RLS, result import, house allocation, assessment, tenant integrity, attendance and related database integration jobs), Stage C0 security/workflow regression (including disposable local Supabase SQL security/lifecycle tests), Validate payment pages, and Student INSERT RETURNING RLS regression.
+- The tenant-acceptance job in SchoolPro CI was skipped by its existing workflow design; it is not counted as a pass.
+- PR #137 remains open and unmerged. The branch is reconciled with current main and GitHub reports it mergeable. No production migration, production student/class write, Supabase production change, or Render deployment was performed.

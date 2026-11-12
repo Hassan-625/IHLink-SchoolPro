@@ -63,6 +63,16 @@ begin
     raise exception 'Calendar configuration must require all seven weekdays';
   end if;
 
+  helper := pg_get_functiondef('private.schoolpro_guard_instructional_calendar_settings()'::regprocedure);
+  if position('new.is_configured :=' in helper)=0 or position('count(*) = 7' in helper)=0 then
+    raise exception 'Calendar readiness must be derived, not user-set';
+  end if;
+  if not exists(select 1 from pg_trigger
+    where tgrelid='public.schoolpro_instructional_calendar_settings'::regclass
+      and tgname='schoolpro_instructional_settings_configuration_guard' and not tgisinternal) then
+    raise exception 'Derived calendar readiness guard trigger is missing';
+  end if;
+
   guard := pg_get_functiondef('private.schoolpro_enforce_instructional_attendance_day()'::regprocedure);
   if not exists(
     select 1 from pg_constraint

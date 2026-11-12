@@ -3371,3 +3371,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Fresh Stage C0 SQL runtime reached the Board RLS test after schema restore, all migrations, TypeScript/build, and earlier SQL security regressions passed. The test fixture then failed during setup because it reused the same Auth user for both the Teacher/Board membership and the separate genuine Administrator membership, violating the unique `(school_id,user_id)` constraint.
 - Corrected the disposable fixture to provision a distinct Auth identity and profile for the genuine Administrator. This preserves the intended test: the Teacher/Board member is tested under their own authenticated JWT, while withdrawal of the separate legacy Board member and genuine Administrator is invoked by the school owner.
 - Test-only correction; no production data or permissions changed. Commit: `6052c33491a4f98bc5a4c29d0a8d46e71b443038`. Fresh CI is required; PR #146 remains open/unmerged.
+
+
+### PR #146 Board withdrawal runtime fixture — active subscription prerequisite (2026-11-12)
+- The distinct-identity fixture correction advanced the Stage C0 SQL suite through migration replay, role defaults, and the authenticated Board RLS denials. The withdrawal RPC then correctly rejected the fixture school because `private.schoolpro_operationally_active` requires both an active school status and an active subscription; the disposable school seed had neither.
+- Added an active school status and a disposable annual Starter subscription to the test fixture so the owner-authorized Board withdrawal RPC is exercised under the same operational-school preconditions as production. All fixture rows remain inside the test transaction and are rolled back.
+- No production schema, subscriptions, roles, or data changed. Test commit: `844e47b68afca0279100e002c5f5fe20242299b0`. Fresh CI is required; PR #146 remains open/unmerged.

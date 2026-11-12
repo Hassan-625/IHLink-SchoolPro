@@ -3365,3 +3365,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Test commits: `56664d059a42c36e4a4623214b0b28ed890a1470` (initial extension) and `2f2bdd83c1accded5022e0a446e81fc932b8f8a4` (separate non-owner identity for legacy member, respecting the function's owner/staff guard).
 - This is disposable CI coverage only. The extended test has not yet passed in a fresh run. The broader SchoolPro CI was still running at last check; tenant acceptance was skipped by workflow design.
 - PR #146 remains open and unmerged. No production migration, production role/data change, merge, or Render deployment was performed.
+
+
+### PR #146 disposable Board RLS fixture identity correction (2026-11-12)
+- Fresh Stage C0 SQL runtime reached the Board RLS test after schema restore, all migrations, TypeScript/build, and earlier SQL security regressions passed. The test fixture then failed during setup because it reused the same Auth user for both the Teacher/Board membership and the separate genuine Administrator membership, violating the unique `(school_id,user_id)` constraint.
+- Corrected the disposable fixture to provision a distinct Auth identity and profile for the genuine Administrator. This preserves the intended test: the Teacher/Board member is tested under their own authenticated JWT, while withdrawal of the separate legacy Board member and genuine Administrator is invoked by the school owner.
+- Test-only correction; no production data or permissions changed. Commit: `6052c33491a4f98bc5a4c29d0a8d46e71b443038`. Fresh CI is required; PR #146 remains open/unmerged.

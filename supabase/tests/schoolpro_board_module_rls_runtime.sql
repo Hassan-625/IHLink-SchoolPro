@@ -37,6 +37,9 @@ begin
   on conflict(id) do update set status='active';
   insert into public.schoolpro_schools(id,owner_id,name,code)
   values(v_school,v_owner,'Board RLS runtime fixture','BR-'||v_school);
+  update public.schoolpro_schools set status='active' where id=v_school;
+  insert into public.schoolpro_subscriptions(school_id,tier,billing_cycle,amount,status)
+  values(v_school,'starter','annual',50000,'active');
   insert into public.schoolpro_members(id,school_id,user_id,role)
   values
     (v_member,v_school,v_staff,'teacher'),

@@ -96,7 +96,7 @@ assert.ok(classes.includes('min-w-[480px]'));
 assert.match(classes,/overflow-x-auto/);
 assert.match(staffPage,/flex min-w-0 flex-wrap items-center gap-3/);
 assert.match(staffPage,/aria-label="Staff access table, scroll horizontally to view all columns"/);
-assert.ok(staffPage.includes('min-w-[920px]'));
+assert.ok(staffPage.includes('min-w-[1040px]'));
 assert.match(staffPage,/overflow-x-auto overscroll-x-contain/);
 assert.match(parents,/aria-label="School workspace"/);
 assert.ok(parents.includes('grid min-w-0 gap-5 xl:grid-cols-[390px_minmax(0,1fr)]'));

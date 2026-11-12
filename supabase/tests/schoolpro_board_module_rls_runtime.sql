@@ -3,7 +3,8 @@
 begin;
 create temporary table board_rls_fixture (
   owner_id uuid, staff_id uuid, school_id uuid, member_id uuid,
-  student_id uuid, fee_id uuid, payroll_id uuid, health_id uuid
+  student_id uuid, fee_id uuid, payroll_id uuid, health_id uuid,
+  legacy_member_id uuid, genuine_admin_member_id uuid
 ) on commit drop;
 
 do $seed$
@@ -16,22 +17,30 @@ declare
   v_fee uuid := gen_random_uuid();
   v_payroll uuid := gen_random_uuid();
   v_health uuid := gen_random_uuid();
+  v_legacy uuid := gen_random_uuid();
+  v_genuine_admin uuid := gen_random_uuid();
 begin
   insert into pg_temp.board_rls_fixture values
-    (v_owner,v_staff,v_school,v_member,v_student,v_fee,v_payroll,v_health);
+    (v_owner,v_staff,v_school,v_member,v_student,v_fee,v_payroll,v_health,v_legacy,v_genuine_admin);
   insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
   values
     (v_owner,'authenticated','authenticated','owner-'||v_owner||'@example.invalid','{}','{}',now(),now()),
     (v_staff,'authenticated','authenticated','staff-'||v_staff||'@example.invalid','{}','{}',now(),now());
-  insert into public.profiles(id,email)
-  values (v_owner,'owner-'||v_owner||'@example.invalid'),(v_staff,'staff-'||v_staff||'@example.invalid')
-  on conflict(id) do nothing;
+  insert into public.profiles(id,email,status)
+  values (v_owner,'owner-'||v_owner||'@example.invalid','active'),(v_staff,'staff-'||v_staff||'@example.invalid','active')
+  on conflict(id) do update set status='active';
   insert into public.schoolpro_schools(id,owner_id,name,code)
   values(v_school,v_owner,'Board RLS runtime fixture','BR-'||v_school);
   insert into public.schoolpro_members(id,school_id,user_id,role)
-  values(v_member,v_school,v_staff,'teacher');
+  values
+    (v_member,v_school,v_staff,'teacher'),
+    (v_legacy,v_school,v_owner,'administrator'),
+    (v_genuine_admin,v_school,v_staff,'administrator');
   insert into public.schoolpro_board_members(member_id,school_id,title,previous_role,appointed_by)
-  values(v_member,v_school,'Board Member','teacher',v_owner);
+  values
+    (v_member,v_school,'Board Member','teacher',v_owner),
+    (v_legacy,v_school,'Board Member','teacher',v_owner),
+    (v_genuine_admin,v_school,'Board Member','administrator',v_owner);
   insert into public.schoolpro_students(id,school_id,admission_number,first_name,last_name,class_name)
   values(v_student,v_school,'RLS-'||v_student,'RLS','Student','Primary 1');
   insert into public.schoolpro_fee_structures(id,school_id,name,term,session,amount,created_by)
@@ -73,5 +82,40 @@ begin
 end
 $assert$;
 reset role;
+
+-- Exercise the withdrawal path as the school owner. Legacy elevated Board
+-- members must return to their recorded role; genuine administrators must stay admins.
+select set_config('request.jwt.claim.sub',owner_id::text,true),
+       set_config('request.jwt.claims',json_build_object('sub',owner_id::text,'role','authenticated')::text,true)
+from pg_temp.board_rls_fixture;
+set local role authenticated;
+do $withdraw$
+declare
+  f pg_temp.board_rls_fixture%rowtype;
+  v_role public.school_member_role;
+  v_ended timestamptz;
+  v_ended_by uuid;
+  v_reason text;
+begin
+  select * into f from pg_temp.board_rls_fixture;
+  perform private.schoolpro_set_board_role(f.school_id,f.legacy_member_id,null);
+  select role into v_role from public.schoolpro_members where id=f.legacy_member_id;
+  if v_role <> 'teacher'::public.school_member_role then
+    raise exception 'Withdrawing legacy Board appointment did not restore the recorded Teacher role';
+  end if;
+  select ended_at,ended_by,end_reason into v_ended,v_ended_by,v_reason
+    from public.schoolpro_board_members where member_id=f.legacy_member_id;
+  if v_ended is null or v_ended_by <> f.owner_id or v_reason <> 'Appointment withdrawn' then
+    raise exception 'Legacy Board appointment withdrawal audit fields are incorrect';
+  end if;
+
+  perform private.schoolpro_set_board_role(f.school_id,f.genuine_admin_member_id,null);
+  select role into v_role from public.schoolpro_members where id=f.genuine_admin_member_id;
+  if v_role <> 'administrator'::public.school_member_role then
+    raise exception 'Withdrawing a Board appointment demoted a genuine administrator';
+  end if;
+end
+$withdraw$;
+reset role;
 rollback;
-select 'PASS: Board designation denied direct Finance, Payroll and Medical RLS access and Payroll approval RPC' as result;
+select 'PASS: Board RLS denial, Payroll RPC denial, legacy role restoration and genuine administrator preservation' as result;

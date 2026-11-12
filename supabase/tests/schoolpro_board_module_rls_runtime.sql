@@ -43,6 +43,7 @@ begin
 end
 $seed$;
 
+grant select on pg_temp.board_rls_fixture to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claim.sub',staff_id::text,true),
        set_config('request.jwt.claims',json_build_object('sub',staff_id::text,'role','authenticated')::text,true)

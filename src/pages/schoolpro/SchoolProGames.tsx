@@ -14,7 +14,7 @@ type Event={id:string;title:string;event_type:string;status:string;academic_sess
 type Criterion={id:string;event_id:string;name:string;max_points:number;weight:number};
 type Entry={id:string;event_id:string;house_id:string|null;entry_name:string};
 type Judge={id:string;event_id:string;member_id:string;panel_role:string;ended_at:string|null};
-type Student={id:string;first_name:string;middle_name:string|null;last_name:string;admission_number:string|null;class_id:string|null;class_name:string|null};
+type Student={id:string;first_name:string;middle_name:string|null;last_name:string;admission_number:string|null;class_id:string|null;class_name:string|null;status:string};
 type ResultRun={id:string;event_id:string;version:number;status:string;calculated_at:string;approved_at:string|null;published_at:string|null};
 type ResultEntry={id:string;result_run_id:string;entry_id:string;house_id:string|null;entry_name:string;is_complete:boolean;score_percent:number|null;result_position:number|null;criterion_breakdown:any};
 const input='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm';
@@ -38,7 +38,7 @@ export function SchoolProGames(){
   const [h,m,s,e,hm,cl,sh]=await Promise.all([
    supabase.from('schoolpro_houses').select('id,name,code,color,sort_order,is_active').eq('school_id',ctx.schoolId).order('sort_order'),
    supabase.from('schoolpro_members').select('id,role,position_title,profile:profiles!schoolpro_members_user_id_fkey(first_name,last_name,email)').eq('school_id',ctx.schoolId).order('created_at'),
-   supabase.from('schoolpro_students').select('id,first_name,last_name,admission_number').eq('school_id',ctx.schoolId).eq('status','active').order('last_name'),
+   supabase.from('schoolpro_students').select('id,first_name,middle_name,last_name,admission_number,class_id,class_name,status').eq('school_id',ctx.schoolId).eq('status','active').order('last_name'),
    supabase.from('schoolpro_competition_events').select('id,title,event_type,status,academic_session,term,judging_guidelines').eq('school_id',ctx.schoolId).order('created_at',{ascending:false}),
    supabase.from('schoolpro_house_master_assignments').select('id,house_id,member_id,assigned_at,ended_at').eq('school_id',ctx.schoolId).order('assigned_at',{ascending:false}),
    supabase.from('schoolpro_classes').select('id,name,arm').eq('school_id',ctx.schoolId).is('archived_at',null).order('name').order('arm'),
@@ -89,7 +89,7 @@ export function SchoolProGames(){
  const houseRosterGroups=useMemo(()=>{
   const assignmentByStudent=new Map(houseAssignments.map(a=>[a.student_id,a.house_id]));
   const classById=new Map(classes.map(c=>[c.id,[c.name,c.arm].filter(Boolean).join(' ')]));
-  const activeStudents=students.filter(s=>s && (s as any).status!=='inactive');
+  const activeStudents=students.filter(s=>s.status==='active');
   const groups=activeHouses.map(h=>({house:h,students:activeStudents.filter(s=>assignmentByStudent.get(s.id)===h.id)}));
   const unassigned=activeStudents.filter(s=>!assignmentByStudent.has(s.id)||!activeHouses.some(h=>h.id===assignmentByStudent.get(s.id)));
   return [...groups,{house:{id:'unassigned',name:'Unassigned',color:'#64748B'} as House,students:unassigned}].map(group=>({...group,rows:group.students.map(s=>({...s,classLabel:(s.class_id&&classById.get(s.class_id))||s.class_name||'Class not assigned'}))}));
@@ -107,6 +107,13 @@ export function SchoolProGames(){
    </Card>
    <Card className="min-w-0"><h3 className="font-bold">Manual student house assignment</h3><p className="text-xs text-muted">Use this for transfer students or students admitted without automatic house placement.</p>
     {canManage&&<div className="mt-3 space-y-2"><select className={input} value={manualStudent} onChange={e=>setManualStudent(e.target.value)}><option value="">Choose student</option>{students.map(s=><option key={s.id} value={s.id}>{s.first_name} {s.last_name} · {s.admission_number||'No admission number'}</option>)}</select><select className={input} value={manualHouse} onChange={e=>setManualHouse(e.target.value)}><option value="">Choose house</option>{activeHouses.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><input className={input} placeholder="Reason (optional)" value={manualReason} onChange={e=>setManualReason(e.target.value)}/><Button disabled={busy||!manualStudent||!manualHouse} onClick={()=>void assignStudent()}>Assign house</Button></div>}
+   </Card>
+   <Card className="min-w-0 xl:col-span-2"><div className="flex flex-wrap items-start justify-between gap-2"><div><h3 className="font-bold">School-wide house roster</h3><p className="text-xs text-muted">Read-only overview of all active students grouped by their current house. House Masters continue to see only their own assigned roster on “My House & Students”.</p></div><span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold">{students.filter(s=>s.status==='active').length} active students</span></div>
+    <div className="mt-4 grid gap-3 md:grid-cols-2">
+     {houseRosterGroups.map(group=><section key={group.house.id} className="min-w-0 rounded-xl border p-3"><div className="mb-3 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><span className="h-3.5 w-3.5 rounded-full" style={{backgroundColor:group.house.color}}/><h4 className="font-semibold">{group.house.name}</h4></div><span className="text-sm font-semibold tabular-nums">{group.students.length}</span></div>
+      {!group.students.length?<p className="text-xs text-muted">No active students in this group.</p>:<div className="max-h-72 overflow-y-auto"><table className="w-full text-sm"><thead className="sticky top-0 bg-white text-left text-xs text-muted"><tr><th className="py-1.5 pr-2">Student</th><th className="py-1.5 pr-2">Admission No.</th><th className="py-1.5">Class / Arm</th></tr></thead><tbody>{group.rows.map(student=><tr key={student.id} className="border-t"><td className="py-2 pr-2">{[student.first_name,student.middle_name,student.last_name].filter(Boolean).join(' ')}</td><td className="py-2 pr-2 whitespace-nowrap">{student.admission_number||'—'}</td><td className="py-2">{student.classLabel}</td></tr>)}</tbody></table></div>}
+     </section>)}
+    </div>
    </Card>
    <Card className="min-w-0"><h3 className="font-bold">Inter-house standings</h3><p className="text-xs text-muted">Calculated from the house-points ledger, including adjustments and penalties.</p><div className="mt-3 space-y-2">{standings.map((s,i)=><div key={s.house_id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border p-3"><div className="flex items-center gap-3"><span className="font-bold text-muted">#{i+1}</span><span className="h-3 w-3 rounded-full" style={{backgroundColor:s.color}}/><span className="font-semibold">{s.house_name}</span></div><span className="font-bold tabular-nums">{s.total_points} pts</span></div>)}{!standings.length&&<p className="text-sm text-muted">No house points have been awarded yet.</p>}</div>
     {canManage&&<div className="mt-4 grid gap-2 sm:grid-cols-2"><select className={input} value={awardHouse} onChange={e=>setAwardHouse(e.target.value)}><option value="">House</option>{activeHouses.map(h=><option key={h.id} value={h.id}>{h.name}</option>)}</select><input className={input} type="number" step="0.5" placeholder="Points (+/-)" value={awardPointValue} onChange={e=>setAwardPointValue(e.target.value)}/><input className={input+' sm:col-span-2'} placeholder="Reason / award / penalty" value={awardReason} onChange={e=>setAwardReason(e.target.value)}/><Button disabled={busy||!awardHouse||!awardPointValue||!awardReason.trim()} onClick={()=>void submitHouseAward()}>Record house points</Button></div>}

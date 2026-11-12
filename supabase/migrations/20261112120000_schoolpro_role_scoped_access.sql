@@ -2,6 +2,13 @@
 -- A Board appointment is a designation, not an administrator role elevation.
 begin;
 
+-- RLS policies invoke selected private authorization helpers as invoker functions.
+-- USAGE permits schema-qualified name resolution only. Function EXECUTE remains
+-- individually controlled by the existing REVOKE/GRANT statements below and
+-- elsewhere; the private schema is not exposed through the PostgREST API.
+grant usage on schema private to authenticated;
+
+
 -- Keep a member's actual school role unchanged when a Board appointment is made.
 -- If the role is genuinely changed later, end the Board appointment while
 -- preserving its history. During legacy-role restoration, preserve the row when

@@ -59,5 +59,8 @@ assert.match(bulk,/requires a minimum age of/,"Under-age students must be blocke
 const classesPage=readFileSync("src/pages/schoolpro/SchoolProClasses.tsx","utf8");
 assert.match(classesPage,/Add Pre-Nursery A &amp; B/,"School administrators must have a one-click Pre-Nursery A/B setup action.");
 assert.match(classesPage,/name:"Pre-Nursery",arm,level:"nursery"/,"Pre-Nursery arms must be created in the Nursery section.");
-assert.match(classesPage,/already has both A and B arms/,"The Pre-Nursery setup must be idempotent.");
+assert.match(classesPage,/const existing=rows\.find/,"Pre-Nursery setup must detect an existing arm before inserting.");
+assert.match(classesPage,/schoolpro_set_class_archive_state/,"An archived Pre-Nursery arm must be restored instead of duplicated.");
+assert.match(classesPage,/if\(!existing\)toCreate\.push\(arm\)/,"Only missing Pre-Nursery arms may be inserted.");
+assert.match(classesPage,/Pre-Nursery A and B are available/,"The setup action must confirm both arms are available.");
 console.log("PASS: 2026/2027 age reference, class minimum ages, Last Name header and Pre-Nursery A/B setup.");

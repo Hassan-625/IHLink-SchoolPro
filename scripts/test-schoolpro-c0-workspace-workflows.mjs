@@ -47,7 +47,7 @@ assert.match(app,/SchoolProLeave/);
 assert.ok(app.includes('path="/schoolpro/staff-discipline"'));
 assert.ok(app.includes('path="/schoolpro/leave"'));
 assert.ok(app.includes('path="/schoolpro/workspace-deletion"'));
-assert.match(app,/<SchoolProHouseMasterGate><SchoolProHouseDashboard\\/><\\/SchoolProHouseMasterGate>/);
+assert.ok(app.includes('<SchoolProHouseMasterGate><SchoolProHouseDashboard/></SchoolProHouseMasterGate>'));
 assert.match(houseMasterGate,/useSchoolProHouseMasterAccess/);
 assert.match(houseMasterGate,/access\.allowed/);
 assert.match(houseMasterAccess,/schoolpro_house_master_roster/);

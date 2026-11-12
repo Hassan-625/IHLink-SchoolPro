@@ -3331,3 +3331,33 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added `.github/workflows/create-schoolpro-instructional-calendar-migration.yml` on branch `automation/schoolpro-calendar-migration-bootstrap`. It uses the stable Supabase CLI in GitHub Actions to run exactly `supabase migration new schoolpro_instructional_calendar`, then commits the timestamped empty SQL file to the same branch.
 - The workflow does not authenticate to Supabase, execute SQL, link a project, apply migrations, access production data, or deploy to Render. It requires GitHub Actions to be enabled and the repository's Actions policy to permit the workflow's contents-write permission.
 - This is an enablement step only. The instructional calendar schema and SQL remain unimplemented pending generation and review of the timestamped migration file. No merge or production change was performed.
+
+## 2026-11-12 — Instructional calendar enforcement implementation (C0 prerequisite for attendance calculations)
+
+- The CLI-generation workflow initially failed because it requested the unsupported Supabase CLI version label `v3.stable`. The workflow was corrected to use the supported `latest` channel; GitHub Actions resolved this to Supabase CLI 3.1.0.
+- Supabase CLI generated `supabase/migrations/20261112134248_schoolpro_instructional_calendar.sql` on the bootstrap branch. The generated empty file was then used as the source for the implementation branch `feat/schoolpro-instructional-calendar-enforcement`; its timestamp was not fabricated.
+- The implementation adds session-scoped calendar settings, a complete seven-day ISO weekday pattern, explicit date exceptions (public holiday, school holiday, emergency closure, make-up instructional day), same-school active-member read access, Proprietor/School Administrator write access, and audit capture.
+- A database attendance trigger runs alphabetically after `schoolpro_stamp_activity_period`, requires an explicitly configured calendar and a date inside a configured term, gives date exceptions precedence over the weekly pattern, and rejects attendance on closed days. Status/notes corrections to an existing row remain allowed only when attendance date, school, session, class and student identity are unchanged; moving an attendance row to another class or student re-runs calendar validation.
+- General-purpose `schoolpro_calendar_events` titles and free-text event types are not used to infer instructional status. Existing attendance status values, ownership/session validators, active-student checks, activation guard and audit trigger are retained.
+- Added `supabase/tests/schoolpro_instructional_calendar.sql` catalog/security regression coverage and registered it in the disposable Stage C0 SQL workflow.
+- Read-only production catalog inspection confirmed the current attendance trigger chain, academic-session and term columns, role enum, private-schema grants and existing RLS policies. No production data, schema, permissions or migration history was changed.
+- **Status:** implementation branch now includes transaction-scoped runtime attendance fixtures in `supabase/tests/schoolpro_instructional_calendar.sql`. The new cases exercise inclusive term boundaries, configured instructional weekdays, closed Saturday, all three closure exception types, a make-up Sunday, an unconfigured session, and update revalidation when date/student/class identity changes; ordinary status/notes corrections remain allowed. The fixtures are synthetic, run only in the disposable CI database, and roll back. CI execution is pending; cross-school and cross-session isolation are now covered by the disposable runtime fixtures. No merge, production migration or Render deployment has been performed.
+
+
+## 2026-11-12 — Instructional calendar attendance runtime regression added
+- Added transaction-scoped synthetic school, class, student, profile and term fixtures to the PR #156 SQL regression. Fixture setup suppresses unrelated lifecycle triggers only inside the disposable test transaction; the test then enables only the new instructional-day attendance trigger to isolate its behavior.
+- Runtime cases now cover inclusive term start/end boundaries, normal instructional weekdays, closed Saturday, public-holiday/school-holiday/emergency-closure rejection, a make-up instructional Sunday, a session whose calendar is not configured, and updates that change attendance date, student or class after a date is closed. Status/notes-only correction is asserted to remain permitted.
+- All fixture writes are in the disposable local Supabase CI database and the test ends with `ROLLBACK`. No production rows, schema, migration history, permissions, or Render deployment were changed.
+- **Status:** runtime SQL coverage has been added but has not yet been executed on the new commit. PR #156 remains open pending green CI and remaining cross-school/session isolation coverage.
+
+
+## 2026-11-12 — Calendar tenant-isolation runtime case
+- Extended the instructional-calendar disposable SQL fixtures with a second synthetic school, class and learner. The second school has a term but no instructional calendar; attendance must fail readiness even though another school has a fully configured calendar for the same session.
+- The same-school second-session fixture separately confirms readiness is session-scoped. Both cases execute only in the disposable CI database and are rolled back.
+- **Status:** runtime cases now include school and session isolation. Awaiting the latest GitHub Actions run; PR #156 remains open and unmerged until all required workflows pass.
+
+
+## 2026-11-12 — Disposable attendance-trigger test harness correction
+- First execution of the new runtime regression successfully replayed the migration and passed the calendar catalog/security contract assertions, then exposed a test-harness issue: `DISABLE TRIGGER ALL` also targets PostgreSQL's internal foreign-key constraint triggers and is denied in the disposable Supabase database.
+- Corrected the fixture isolation to `DISABLE TRIGGER USER`, then re-enable only `schoolpro_validate_instructional_day`. This leaves system foreign-key enforcement active while suppressing unrelated application triggers only for the isolated attendance test.
+- This is a test-only correction; no production schema or data changed. A fresh CI run is required to validate the corrected harness.

@@ -195,6 +195,9 @@ do $runtime_setup$
 declare
   v_owner uuid := gen_random_uuid();
   v_school uuid := gen_random_uuid();
+  v_school_two uuid := gen_random_uuid();
+  v_class_three uuid := gen_random_uuid();
+  v_student_three uuid := gen_random_uuid();
   v_class_one uuid := gen_random_uuid();
   v_class_two uuid := gen_random_uuid();
   v_student_one uuid := gen_random_uuid();
@@ -210,22 +213,28 @@ begin
   insert into public.schoolpro_schools (id,owner_id,name,code)
   values (v_school,v_owner,'Calendar Regression Fixture','CAL-'||replace(v_school::text,'-',''));
 
+  insert into public.schoolpro_schools (id,owner_id,name,code)
+  values (v_school_two,v_owner,'Calendar Isolation Fixture','CAL-'||replace(v_school_two::text,'-',''));
+
   insert into public.schoolpro_classes (id,school_id,name,arm,level)
   values
     (v_class_one,v_school,'Primary 4','A','primary'),
-    (v_class_two,v_school,'Primary 5','A','primary');
+    (v_class_two,v_school,'Primary 5','A','primary'),
+    (v_class_three,v_school_two,'Primary 4','A','primary');
 
   insert into public.schoolpro_students
     (id,school_id,admission_number,first_name,last_name,class_name,class_id)
   values
     (v_student_one,v_school,'CAL-STU-1','Test','Learner One','Primary 4',v_class_one),
-    (v_student_two,v_school,'CAL-STU-2','Test','Learner Two','Primary 4',v_class_one);
+    (v_student_two,v_school,'CAL-STU-2','Test','Learner Two','Primary 4',v_class_one),
+    (v_student_three,v_school_two,'CAL-STU-3','Test','Learner Three','Primary 4',v_class_three);
 
   insert into public.schoolpro_result_term_settings
     (school_id,session,term,term_start_date,term_end_date)
   values
     (v_school,'2026/2027','First Term',date '2026-11-16',date '2026-11-22'),
-    (v_school,'2027/2028','First Term',date '2027-09-06',date '2027-09-10');
+    (v_school,'2027/2028','First Term',date '2027-09-06',date '2027-09-10'),
+    (v_school_two,'2026/2027','First Term',date '2026-11-16',date '2026-11-22');
 
   insert into public.schoolpro_instructional_calendar_settings
     (school_id,session,is_configured)
@@ -297,6 +306,11 @@ begin
   -- A session without all seven configured weekdays is not attendance-ready.
   perform pg_temp.assert_schoolpro_attendance_insert_rejected(
     v_school,v_class_one,v_student_one,v_owner,date '2027-09-06','2027/2028',
+    'Configure all seven instructional weekdays');
+
+  -- A different school's calendar must not inherit this school's readiness.
+  perform pg_temp.assert_schoolpro_attendance_insert_rejected(
+    v_school_two,v_class_three,v_student_three,v_owner,date '2026-11-16','2026/2027',
     'Configure all seven instructional weekdays');
 
   -- Add a closure after an attendance row already exists. Ordinary corrections

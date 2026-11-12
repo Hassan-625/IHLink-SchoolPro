@@ -6,7 +6,7 @@ import {schoolAccessRequest} from '@/lib/schoolAccessCache';
 
 type HouseAccess={allowed:boolean;error:string|null};
 
-export function useSchoolProHouseMasterAccess(){
+export function useSchoolProHouseMasterAccess(enabled=true){
  const {user,profile}=useAuth();
  const ctx=useSchoolProContext();
  const key='house-master:'+String(user?.id||'')+':'+String(ctx.schoolId||'');
@@ -14,6 +14,7 @@ export function useSchoolProHouseMasterAccess(){
  useEffect(()=>{
   let active=true;
   if(ctx.loading)return()=>{active=false};
+  if(!enabled){setState({key,value:{allowed:false,error:null},loading:false});return()=>{active=false};}
   if(profile?.role==='super_admin'){
    setState({key,value:{allowed:true,error:null},loading:false});
    return()=>{active=false};
@@ -29,7 +30,7 @@ export function useSchoolProHouseMasterAccess(){
    return {allowed:!error&&Array.isArray(data)&&data.length>0,error:error?.message||null} satisfies HouseAccess;
   }).then(value=>{if(active)setState({key,value,loading:false})});
   return()=>{active=false};
- },[key,ctx.loading,ctx.schoolId,ctx.role,user?.id,profile?.role]);
+ },[key,ctx.loading,ctx.schoolId,ctx.role,user?.id,profile?.role,enabled]);
  return {
   allowed:state.key===key&&state.value?.allowed===true,
   loading:ctx.loading||(state.key!==key||state.loading),

@@ -271,6 +271,22 @@ begin
   join pg_namespace s on s.oid=c.relnamespace
   where s.nspname='public' and c.relname='schoolpro_discipline_records' and p.polcmd='d';
   if n<>0 then raise exception 'Student discipline DELETE policy remains'; end if;
+  -- Standard reporting is role-controlled; Enterprise analytics have their
+  -- own server-side entitlement check in the dedicated Advanced Reports RPC.
+  select pg_get_functiondef('private.schoolpro_module_allowed(uuid,text)'::regprocedure) into def;
+  if position('when ''reports''' in def)>0 or position('advanced_reports' in def)>0 then
+    raise exception 'Standard reports must not inherit the Advanced Reports plan gate';
+  end if;
+  if position('schoolpro_user_permissions' in def)=0 or position('schoolpro_operationally_active' in def)=0 then
+    raise exception 'Standard reports must retain role and active-school checks';
+  end if;
+  select pg_get_functiondef('public.schoolpro_class_review_sheet(uuid,uuid,text,text)'::regprocedure) into def;
+  if position('schoolpro_module_allowed(p_school,''reports'')' in def)=0
+     or position('schoolpro_plan_feature_allowed(p_school,''advanced_reports'')' in def)=0
+     or position('private.is_admin(array[''super_admin'']::public.user_role[])' in def)=0 then
+    raise exception 'Advanced Reports RPC must enforce role permission and Enterprise entitlement with Super Admin bypass';
+  end if;
+
 end
 $c0$;
 

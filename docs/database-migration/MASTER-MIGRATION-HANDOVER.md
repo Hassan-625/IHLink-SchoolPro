@@ -3318,3 +3318,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the oversight dashboard to leave the selector empty until an explicit choice and write the selected school into the `school_id` query parameter. The selected context is visible and reproducible on reload without hidden local-storage fallback. Normal school-user remembered workspace resolution is unchanged.
 - Added source-contract assertions for explicit selection, no first-school fallback, and query-parameter-based workspace switching.
 - Branch `fix/schoolpro-super-admin-explicit-workspace-selection`; proposed source changes only. No production Supabase changes, merge, Render deployment, or workspace/data mutation.
+
+
+### PR #151 CI regression correction — 2026-11-12
+- First full SchoolPro CI run passed all database/security integration jobs, payment-page validation, Student INSERT/RETURNING RLS, and the C0 lifecycle regression. The `validate` job failed only because `scripts/test-school-context-refresh.mjs` still asserted the removed legacy `ihlink_schoolpro_admin_school` fallback expression.
+- Updated that existing assertion to require `profile?.role==='super_admin'?valid:` and explicitly reject the saved-admin-workspace fallback. The Super Admin no-selection and explicit-context checks remain intact.
+- This is a regression-test alignment correction; no application authorization relaxation, production data change, merge, or Render deployment.

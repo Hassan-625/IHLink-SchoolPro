@@ -11,7 +11,8 @@ assert.ok(helper.includes('findSchoolProGradeBand'),'A shared grade-band resolve
 assert.ok(helper.includes("if (activeBands.length) return 'Ungraded'"),'Configured gaps must not silently fall back to generic grades');
 assert.ok(helper.includes('band.is_active !== false'),'Inactive historical bands must not affect grade selection');
 assert.ok(helper.includes('score <= Number(band.max_score)'),'Maximum boundaries must be inclusive');
-assert.ok(report.includes('schoolProGradeLabel(rowMaximum(r)>0?r.total_score/rowMaximum(r)*100:0,details?.grade_scale||[])'),'Report card subject grades must use the shared resolver');
+assert.ok(report.includes('const gradeBand=band(gradeScore)'),'Report card subject grades must resolve the selected-term or cumulative score through the school grade bands');
+assert.ok(report.includes('gradeBand?.label||schoolProGradeLabel(gradeScore,details?.grade_scale||[])'),'Report card subject grades must use the shared resolver when no active band matches');
 assert.ok(report.includes('schoolProGradeLabel(average,details?.grade_scale||[])'),'Report card overall grade must use the shared resolver');
 assert.ok(checker.includes('schoolProGradeLabel(n, scale || [])'),'Public PIN result checker must use the shared resolver');
 assert.ok(results.includes('schoolProGradeLabel(score,gradeScale)'),'Staff results must use the shared resolver');

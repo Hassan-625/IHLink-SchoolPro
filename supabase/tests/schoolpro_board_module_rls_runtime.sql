@@ -160,7 +160,7 @@ begin
     if sqlerrm = 'Board member unexpectedly executed Payroll approval RPC' then raise; end if;
   end;
 end
-$assert$;
+$assert_granted$;
 
 
 -- A direct underlying membership-role change must close the active Board appointment.

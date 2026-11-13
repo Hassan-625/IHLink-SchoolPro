@@ -1,14 +1,51 @@
 -- C0 operational membership regression; run after the complete ordered lifecycle migrations.
 begin;
 do $test$
-declare n integer; permission_reader text; audit_reader text; audit_table text; invitation_reader text;
+declare n integer; permission_reader text; audit_reader text; audit_table text; invitation_reader text; board_writer text; board_role_trigger text;
 begin
-  -- The central permission RPC must reference the role on schoolpro_members.
-  -- schoolpro_board_members has title/previous_role, not a role column.
+  -- A Board designation must never inject a school-wide administrator grant.
+  -- Its member retains the original role and module-specific permissions.
   permission_reader := pg_get_functiondef('public.schoolpro_user_permissions(uuid)'::regprocedure);
-  if position('bm.role = ''administrator''' in permission_reader)=0
-    or position('b.role' in permission_reader)>0 then
-    raise exception 'School permission reader has an invalid board-role reference';
+  if position('schoolpro_board_members' in permission_reader)>0
+    or position('bm.role' in permission_reader)>0 then
+    raise exception 'Board appointments must not bypass the member role permission set';
+  end if;
+
+  board_writer := pg_get_functiondef('private.schoolpro_set_board_role(uuid,uuid,text)'::regprocedure);
+  if position('set role = ''administrator''' in lower(board_writer))>0 then
+    raise exception 'Board appointment writer must not elevate membership to administrator';
+  end if;
+  if position('select previous_role' in lower(board_writer))=0
+    or position('set role = old_role' in lower(board_writer))=0
+    or position('old_role <> ''administrator''' in lower(board_writer))=0 then
+    raise exception 'Withdrawing a legacy Board appointment must restore its recorded non-administrator role';
+  end if;
+
+  -- Direct RPC/RLS authorization uses the stored membership role, not the
+  -- permission resolver. Confirm that helper remains role-list based and has
+  -- no Board appointment shortcut.
+  board_writer := pg_get_functiondef('private.has_school_access(uuid,public.school_member_role[])'::regprocedure);
+  if position('m.role = any(allowed_roles)' in lower(board_writer))=0
+    or position('schoolpro_board_members' in lower(board_writer))>0 then
+    raise exception 'Direct school authorization must rely on the restored membership role, not Board designation';
+  end if;
+
+  board_role_trigger := pg_get_functiondef('private.schoolpro_clear_changed_board_role()'::regprocedure);
+  if position('previous_role' in board_role_trigger)=0
+    or position('ended_at' in board_role_trigger)=0 then
+    raise exception 'Board role-change trigger must preserve restoration and appointment history';
+  end if;
+
+  if exists (
+    select 1
+    from public.schoolpro_board_members b
+    join public.schoolpro_members m
+      on m.id=b.member_id and m.school_id=b.school_id
+    where b.ended_at is null
+      and m.role='administrator'
+      and b.previous_role<>'administrator'
+  ) then
+    raise exception 'An active Board appointment still carries an elevated administrator membership role';
   end if;
 
   -- School workspace audit capture must be installed on representative workflows.

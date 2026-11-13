@@ -3454,3 +3454,40 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ## 2026-11-13 — Report-card assessment-scheme regression follow-up
 - The next PR #171 CI run passed the Stage C0 security/workflow regression, payment validation, student-insert RLS, and all disposable database integration jobs, including assessment completeness/grade scale. The main validation job then failed in `scripts/test-schoolpro-report-card-assessment-schemes.mjs` because two source assertions still expected the former unguarded current-term percentage expression.
 - Updated the regression assertion to match the current guarded grade calculation (`r.total_score / Math.max(1, rowMaximum(r)) * 100`) and retained the existing per-scheme denominator and overall total checks. No application code or schema was changed in this correction. Fresh CI is required.
+
+
+## PR #172 — Board role-scoped module access (2026-11-13)
+
+**Branch:** `fix/schoolpro-board-module-read-only-mainline`  
+**Status:** Open PR; CI validation pending. Ported only the Board authorization migration and focused tests from stale PR #146. The unrelated Advanced Reports migration and unrelated workflow port changes were excluded. No production migration, data write, merge or Render deployment has been performed.
+
+- Board appointment is a designation only; it must not elevate a Teacher or other member to the Administrator school role. The migration restores legacy active Board appointees to their recorded `previous_role`, while preserving genuine Administrators whose recorded role was already Administrator.
+- Board members may read Finance, Payroll and Medical records only when the school owner explicitly grants the corresponding module permission. These grants do not grant write, delete, insert, approval, or management rights.
+- The legacy Medical restrictive `FOR ALL` policy is split into SELECT-only access and separate restrictive clinical-write policies. Finance fee-structure and Payroll read policies honor explicit module grants without broadening write policies.
+- Board appointment withdrawal restores the recorded role and closes the appointment with audit fields. A new membership-role-change trigger ends an active Board appointment when a member's role changes independently; it does not interfere with the withdrawal path.
+- Added a disposable local Supabase runtime test for denied access before grants, allowed SELECT after explicit grants, denied writes/Payroll approval, restoration of legacy elevated Board members, and preservation of genuine Administrators. It also verifies that an independent membership-role change ends the active Board appointment with actor/reason metadata. The C0 workflow runs this test against its restored disposable baseline.
+
+**Validation:** Pending PR #172 CI. The old PR #146 branch was 48 commits ahead and 12 behind current main, so its full branch was not merged or cherry-picked. Production RLS policies were inspected read-only; no production changes were made.
+
+- **CI correction (2026-11-13):** The first PR #172 C0 disposable-Supabase run exposed a baseline helper-schema mismatch: `schoolpro_member_can_manage(uuid)` is `public`, not `private`. Updated the three Medical write-boundary policy references to `public.schoolpro_member_can_manage(uuid)`. This is a code/migration correction only; rerun the complete required CI on the new head before merge. No production change was made.
+
+
+### PR #172 CI correction — disposable private-schema grant (2026-11-13)
+- The corrected Board migration now applies successfully in the C0 disposable Supabase database. The runtime test then failed because the restored disposable baseline omitted `USAGE` on schema `private` for `authenticated`, while the production baseline was previously inspected and already has that grant.
+- Updated `supabase/tests/schoolpro_board_module_rls_runtime.sql` to grant `USAGE` on `private` to `authenticated` inside the test's existing transaction. The test ends with `ROLLBACK`, so this reproduces the production prerequisite only in the disposable test and does not broaden the production migration or alter production grants.
+- Commit: `30a04288db5dadb5f8e64fd83a91442dbc74732f`. Re-run all required PR checks on the new head before considering merge. No production migration or data change was made.
+
+### PR #172 CI correction — Board RLS runtime assertion delimiter (2026-11-13)
+- The first full PR #172 CI run completed successfully for SchoolPro CI, payment-page validation and student-insert RLS. The C0 disposable-Supabase workflow applied all migrations and passed the preceding class/member deletion and operational membership SQL tests, then stopped because the explicit-grant Board RLS assertion opened with the dollar tag `$assert_granted$` but closed with `$assert$`.
+- Corrected the closing delimiter in `supabase/tests/schoolpro_board_module_rls_runtime.sql`. This is a test syntax correction only; the Board migration and production database were not changed.
+- Correction commit: `ed153dfa81607460f0ca394873d267d5cf7a97a5`. A fresh complete PR validation is required before merge. No production migration, data write or Render deployment was performed.
+
+### PR #172 CI correction — Medical INSERT denial assertion (2026-11-13)
+- After the delimiter correction, TypeScript, production build, all C0 source contracts, migration replay, class/member deletion SQL, operational membership SQL, and the Board test's initial denial/read-grant checks passed. The Medical INSERT attempt was rejected by the existing `private.validate_schoolpro_workflow_record()` student-validation trigger before reaching the RLS policy assertion because the minimal fixture does not create the full student workflow context.
+- Updated the test to treat any database rejection of that attempted Board Medical INSERT as denial, while explicitly failing if the INSERT succeeds. This avoids requiring unrelated student lifecycle fixture setup in a Board module permission test; it does not change application code or migration behavior.
+- Test correction commits: `857bcbebdc2cfb2e92877b9f2a45de769ea4188a` and follow-up declaration-scope correction `663e6f2b98f61ef01217f7c460cac5dd876bcfed`. Full CI rerun is required. No production migration, data write, or Render deployment was performed.
+
+
+### PR #172 CI correction — lifecycle assertion formatting (2026-11-13)
+- The Board runtime SQL regression now passes, including denied writes/approval, legacy role restoration, and genuine Administrator preservation. The Stage C0 lifecycle suite then failed on a source assertion that searched for the literal substring `status=` in `private.schoolpro_set_board_role`; the migration correctly formats the predicate as `status = 'active'` with spaces.
+- Updated only the assertion to check for the `status` token, `active` predicate, and `ended_at` history field. No migration/application behavior changed. Full CI must pass on the new branch head before merge. No production change was made.

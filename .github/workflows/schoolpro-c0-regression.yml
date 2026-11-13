@@ -129,6 +129,7 @@ jobs:
           for test_file in \
             supabase/tests/schoolpro_class_member_delete_security.sql \
             supabase/tests/schoolpro_operational_membership_security.sql \
+            supabase/tests/schoolpro_board_module_rls_runtime.sql \
             supabase/tests/schoolpro_c0_lifecycle_regression.sql \
             supabase/tests/schoolpro_instructional_calendar.sql \
             supabase/tests/schoolpro_protected_workspace_removal.sql

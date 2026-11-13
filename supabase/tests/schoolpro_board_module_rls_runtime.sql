@@ -132,6 +132,25 @@ begin
   if v_affected <> 0 then raise exception 'Board Medical read grant unexpectedly allowed health-record DELETE'; end if;
 
   begin
+    insert into public.schoolpro_fee_structures(id,school_id,name,term,session,amount,created_by)
+    values(gen_random_uuid(),f.school_id,'Board write attempt','Second Term','2026/2027',1000,f.staff_id);
+    raise exception 'Board Finance read grant unexpectedly allowed fee-structure INSERT';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.schoolpro_payroll_records(id,school_id,member_id,period,gross,deductions,status)
+    values(gen_random_uuid(),f.school_id,f.member_id,'2026-12',1000,0,'draft');
+    raise exception 'Board Payroll read grant unexpectedly allowed payroll INSERT';
+  exception when insufficient_privilege then null;
+  end;
+  begin
+    insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
+    values(gen_random_uuid(),f.school_id,f.student_id,'Board write attempt',f.staff_id);
+    raise exception 'Board Medical read grant unexpectedly allowed health-record INSERT';
+  exception when insufficient_privilege then null;
+  end;
+
+  begin
     perform public.process_schoolpro_payroll(f.payroll_id);
     raise exception 'Board member unexpectedly executed Payroll approval RPC';
   exception when others then

@@ -3491,3 +3491,13 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ### PR #172 CI correction — lifecycle assertion formatting (2026-11-13)
 - The Board runtime SQL regression now passes, including denied writes/approval, legacy role restoration, and genuine Administrator preservation. The Stage C0 lifecycle suite then failed on a source assertion that searched for the literal substring `status=` in `private.schoolpro_set_board_role`; the migration correctly formats the predicate as `status = 'active'` with spaces.
 - Updated only the assertion to check for the `status` token, `active` predicate, and `ended_at` history field. No migration/application behavior changed. Full CI must pass on the new branch head before merge. No production change was made.
+
+
+### PR #172 production rollout — Board module access (2026-11-13)
+- PR #172 merged to `main` as squash commit `3bad523522a6da230aa2617b2888ff830b67b159` after all required CI workflows passed on head `8126cb2483a3486908f0379f03d9c3cd39f651f3`: Stage C0 security/workflow regression, main SchoolPro CI, payment-page validation, and student-insert RLS.
+- Superseded PR #146 was closed unmerged after #172 landed.
+- Applied migration `20261113160000_schoolpro_board_module_read_only_access.sql` to Supabase production project `lnqsroyiybutkfngbyge` using the merged `main` file. Supabase recorded it as version `20261113160322`, name `schoolpro_board_module_read_only_access`.
+- Production post-apply verification: the Board role permission shortcut is absent from `public.schoolpro_user_permissions`; `private.schoolpro_set_board_role` no longer assigns Administrator; the role-change trigger is installed; Finance fee-structure SELECT, Payroll SELECT, and Medical SELECT-only / clinical write-scope policies are present; the legacy Medical restrictive ALL policy is absent.
+- Production data counts remained unchanged: 3 schools, 150 students, 3 membership rows, 0 guardian links, 0 workspace deletion requests. There were 0 active Board appointments and 0 legacy elevated Board members at rollout time, so no membership rows required restoration.
+- Supabase security advisors were run after rollout. They reported the project's existing broader findings (including 8 RLS-enabled tables with no policies and existing SECURITY DEFINER execution warnings); no new advisor finding specific to this migration was identified in the returned results. These unrelated findings are not changed by this rollout.
+- No Render deployment was triggered and no production business rows were inserted, updated, or deleted by this rollout.

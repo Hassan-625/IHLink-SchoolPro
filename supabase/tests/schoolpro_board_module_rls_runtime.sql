@@ -81,7 +81,27 @@ begin
   select count(*) into v_count from public.schoolpro_payroll_records where id=f.payroll_id;
   if v_count <> 0 then raise exception 'Board member can read Payroll records'; end if;
   select count(*) into v_count from public.schoolpro_health_records where id=f.health_id;
-  if v_count <> 0 then raise exception 'Board member can read Medical records'; end if;
+  if v_count <> 0 then raise exception 'Board member can read Medical records without an explicit grant'; end if;
+
+  -- An explicit member-level module grant allows Board members to READ the
+  -- granted module, without changing their underlying role.
+  insert into public.schoolpro_member_permissions(school_id,member_id,permission,allowed,updated_by)
+  values
+    (f.school_id,f.member_id,'finance',true,f.owner_id),
+    (f.school_id,f.member_id,'payroll',true,f.owner_id),
+    (f.school_id,f.member_id,'medical',true,f.owner_id);
+
+  select count(*) into v_count from public.schoolpro_fee_structures where id=f.fee_id;
+  if v_count <> 1 then raise exception 'Explicit Finance read grant was not honored for Board member'; end if;
+  select count(*) into v_count from public.schoolpro_payroll_records where id=f.payroll_id;
+  if v_count <> 1 then raise exception 'Explicit Payroll read grant was not honored for Board member'; end if;
+  select count(*) into v_count from public.schoolpro_health_records where id=f.health_id;
+  if v_count <> 1 then raise exception 'Explicit Medical read grant was not honored for Board member'; end if;
+
+  if (select role from public.schoolpro_members where id=f.member_id) <> 'teacher'::public.school_member_role then
+    raise exception 'Explicit module grants changed the Board member underlying role';
+  end if;
+
   begin
     perform public.process_schoolpro_payroll(f.payroll_id);
     raise exception 'Board member unexpectedly executed Payroll approval RPC';

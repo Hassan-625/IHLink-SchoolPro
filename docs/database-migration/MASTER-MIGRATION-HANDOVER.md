@@ -3443,3 +3443,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Includes the all-term print regression originally proposed in PR #102: four synthetic preview fixtures × three terms (12 report cards), checking term-history columns, attendance/remarks, mobile horizontal fit and twelve portrait A4 pages. No production records are used.
 - Regression assertions now match the scheme-aware component renderer: zero-maximum components are omitted and missing/out-of-scheme scores render as a dash.
 - This replacement branch starts from current `main`, including the merged PR #169 class-scoped Excel averages. CI and review are pending; no production database writes, migrations or Render deployment were performed.
+
+
+## 2026-11-13 — Report-card grade resolver regression assertion correction
+- The first PR #171 CI run passed TypeScript, the Stage C0 security/workflow suite, payment validation, student-insert RLS, and all earlier SchoolPro validation checks, but the main validation job stopped at `test-schoolpro-grade-scale-and-subject-statistics.mjs`.
+- The failure was a stale source-contract assertion expecting the old inline current-term `schoolProGradeLabel(...)` expression. The current report-card implementation correctly computes the selected-term or cumulative `gradeScore`, resolves the configured school band with `findSchoolProGradeBand`, and uses the shared label resolver as fallback when no active band matches.
+- Updated the assertion to verify this actual scheme: band resolution first, shared grade resolver fallback. This changes only the regression assertion; no application behavior, database schema, production data, or Render deployment was changed. A fresh full CI run is required before merge.

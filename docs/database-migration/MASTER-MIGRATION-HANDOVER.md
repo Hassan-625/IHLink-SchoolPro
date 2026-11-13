@@ -3434,3 +3434,23 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added XLSX round-trip regressions for multi-class separation, averages, selected exports, and subject mapping mismatch.
 - Read-only production schema/value inspection confirmed `schoolpro_subjects.class_name` is section-level (currently `Nursery` / `Primary`) while student classes include arms (for example, `Nursery 1 A`, `Pre-Nursery A`, `Primary 1 B`). Updated the guard to compare normalized school sections rather than requiring exact class-label equality; Pre-Nursery maps to Nursery. Added a regression for this production naming pattern.
 - CI and review remain pending. No production database writes, migration, merge, or Render deployment performed.
+
+
+## 2026-11-13 — Report-card assessment labels, term history and all-term print regression
+- Reconciled the report-card UI work originally proposed in PR #101 onto the latest `main` in `integration/schoolpro-report-card-history-current-mainline`; stale PR #101's unrelated workflow-trigger and obsolete handover changes are excluded.
+- Report cards omit zero-maximum assessment components, normalize Assignment/CA labels to `ASS. 1` / `ASS. 2`, and display scheme-aware component maxima.
+- Second-term reports show First Term history and cumulative average; Third-term reports show First and Second Term history plus cumulative average. Values come from the existing `schoolpro_subject_statistics` RPC; missing historical values remain blank rather than fabricated zeroes. Later-term subject grade uses cumulative average when available while retaining current class average, subject position and grade remark.
+- Includes the all-term print regression originally proposed in PR #102: four synthetic preview fixtures × three terms (12 report cards), checking term-history columns, attendance/remarks, mobile horizontal fit and twelve portrait A4 pages. No production records are used.
+- Regression assertions now match the scheme-aware component renderer: zero-maximum components are omitted and missing/out-of-scheme scores render as a dash.
+- This replacement branch starts from current `main`, including the merged PR #169 class-scoped Excel averages. CI and review are pending; no production database writes, migrations or Render deployment were performed.
+
+
+## 2026-11-13 — Report-card grade resolver regression assertion correction
+- The first PR #171 CI run passed TypeScript, the Stage C0 security/workflow suite, payment validation, student-insert RLS, and all earlier SchoolPro validation checks, but the main validation job stopped at `test-schoolpro-grade-scale-and-subject-statistics.mjs`.
+- The failure was a stale source-contract assertion expecting the old inline current-term `schoolProGradeLabel(...)` expression. The current report-card implementation correctly computes the selected-term or cumulative `gradeScore`, resolves the configured school band with `findSchoolProGradeBand`, and uses the shared label resolver as fallback when no active band matches.
+- Updated the assertion to verify this actual scheme: band resolution first, shared grade resolver fallback. This changes only the regression assertion; no application behavior, database schema, production data, or Render deployment was changed. A fresh full CI run is required before merge.
+
+
+## 2026-11-13 — Report-card assessment-scheme regression follow-up
+- The next PR #171 CI run passed the Stage C0 security/workflow regression, payment validation, student-insert RLS, and all disposable database integration jobs, including assessment completeness/grade scale. The main validation job then failed in `scripts/test-schoolpro-report-card-assessment-schemes.mjs` because two source assertions still expected the former unguarded current-term percentage expression.
+- Updated the regression assertion to match the current guarded grade calculation (`r.total_score / Math.max(1, rowMaximum(r)) * 100`) and retained the existing per-scheme denominator and overall total checks. No application code or schema was changed in this correction. Fresh CI is required.

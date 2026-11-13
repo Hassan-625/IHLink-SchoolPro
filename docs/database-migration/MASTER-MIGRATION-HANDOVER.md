@@ -3476,3 +3476,8 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - The corrected Board migration now applies successfully in the C0 disposable Supabase database. The runtime test then failed because the restored disposable baseline omitted `USAGE` on schema `private` for `authenticated`, while the production baseline was previously inspected and already has that grant.
 - Updated `supabase/tests/schoolpro_board_module_rls_runtime.sql` to grant `USAGE` on `private` to `authenticated` inside the test's existing transaction. The test ends with `ROLLBACK`, so this reproduces the production prerequisite only in the disposable test and does not broaden the production migration or alter production grants.
 - Commit: `30a04288db5dadb5f8e64fd83a91442dbc74732f`. Re-run all required PR checks on the new head before considering merge. No production migration or data change was made.
+
+### PR #172 CI correction — Board RLS runtime assertion delimiter (2026-11-13)
+- The first full PR #172 CI run completed successfully for SchoolPro CI, payment-page validation and student-insert RLS. The C0 disposable-Supabase workflow applied all migrations and passed the preceding class/member deletion and operational membership SQL tests, then stopped because the explicit-grant Board RLS assertion opened with the dollar tag `$assert_granted$` but closed with `$assert$`.
+- Corrected the closing delimiter in `supabase/tests/schoolpro_board_module_rls_runtime.sql`. This is a test syntax correction only; the Board migration and production database were not changed.
+- Correction commit: `ed153dfa81607460f0ca394873d267d5cf7a97a5`. A fresh complete PR validation is required before merge. No production migration, data write or Render deployment was performed.

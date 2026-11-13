@@ -62,7 +62,7 @@ create policy "schoolpro_health_records_clinical_insert"
   with check (
     private.schoolpro_module_allowed(school_id,'medical')
     and (
-      private.schoolpro_member_can_manage(school_id)
+      public.schoolpro_member_can_manage(school_id)
       or exists (
         select 1 from public.schoolpro_members m
          where m.school_id=schoolpro_health_records.school_id
@@ -79,7 +79,7 @@ create policy "schoolpro_health_records_clinical_update"
   using (
     private.schoolpro_module_allowed(school_id,'medical')
     and (
-      private.schoolpro_member_can_manage(school_id)
+      public.schoolpro_member_can_manage(school_id)
       or exists (
         select 1 from public.schoolpro_members m
          where m.school_id=schoolpro_health_records.school_id
@@ -91,7 +91,7 @@ create policy "schoolpro_health_records_clinical_update"
   with check (
     private.schoolpro_module_allowed(school_id,'medical')
     and (
-      private.schoolpro_member_can_manage(school_id)
+      public.schoolpro_member_can_manage(school_id)
       or exists (
         select 1 from public.schoolpro_members m
          where m.school_id=schoolpro_health_records.school_id
@@ -108,7 +108,7 @@ create policy "schoolpro_health_records_clinical_delete"
   using (
     private.schoolpro_module_allowed(school_id,'medical')
     and (
-      private.schoolpro_member_can_manage(school_id)
+      public.schoolpro_member_can_manage(school_id)
       or exists (
         select 1 from public.schoolpro_members m
          where m.school_id=schoolpro_health_records.school_id

@@ -3432,4 +3432,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Adds a per-class `CLASS SUBJECT AVERAGE` row, computes each subject average within its own class, keys marks by subject ID to avoid collisions between duplicate subject names, and labels selected-student exports separately.
 - All-class exports include class context in subject labels and validate subject-to-class mappings. A full-class export is blocked when held results were omitted, preventing a partial roster from being presented as a complete class average.
 - Added XLSX round-trip regressions for multi-class separation, averages, selected exports, and subject mapping mismatch.
-- CI and exact production class/subject naming compatibility are pending review. No production database writes, migration, merge, or Render deployment performed.
+- Read-only production schema/value inspection confirmed `schoolpro_subjects.class_name` is section-level (currently `Nursery` / `Primary`) while student classes include arms (for example, `Nursery 1 A`, `Pre-Nursery A`, `Primary 1 B`). Updated the guard to compare normalized school sections rather than requiring exact class-label equality; Pre-Nursery maps to Nursery. Added a regression for this production naming pattern.
+- CI and review remain pending. No production database writes, migration, merge, or Render deployment performed.

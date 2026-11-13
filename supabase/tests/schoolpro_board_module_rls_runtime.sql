@@ -160,6 +160,29 @@ end
 $assert$;
 
 
+-- A direct underlying membership-role change must close the active Board appointment.
+select set_config('request.jwt.claim.sub',owner_id::text,true),
+       set_config('request.jwt.claims',json_build_object('sub',owner_id::text,'role','authenticated')::text,true)
+from pg_temp.board_rls_fixture;
+set local role authenticated;
+do $role_change$
+declare
+  f pg_temp.board_rls_fixture%rowtype;
+  v_ended timestamptz;
+  v_ended_by uuid;
+  v_reason text;
+begin
+  select * into f from pg_temp.board_rls_fixture;
+  update public.schoolpro_members set role='class_teacher' where id=f.member_id;
+  select ended_at,ended_by,end_reason into v_ended,v_ended_by,v_reason
+    from public.schoolpro_board_members where member_id=f.member_id;
+  if v_ended is null or v_ended_by <> f.owner_id or v_reason <> 'Membership role changed' then
+    raise exception 'Independent membership-role change did not close the active Board appointment';
+  end if;
+end
+$role_change$;
+reset role;
+
 -- Exercise the withdrawal path as the school owner. Legacy elevated Board
 -- members must return to their recorded role; genuine administrators must stay admins.
 select set_config('request.jwt.claim.sub',owner_id::text,true),

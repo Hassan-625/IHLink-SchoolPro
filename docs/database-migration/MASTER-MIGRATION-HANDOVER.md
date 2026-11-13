@@ -3454,3 +3454,17 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ## 2026-11-13 — Report-card assessment-scheme regression follow-up
 - The next PR #171 CI run passed the Stage C0 security/workflow regression, payment validation, student-insert RLS, and all disposable database integration jobs, including assessment completeness/grade scale. The main validation job then failed in `scripts/test-schoolpro-report-card-assessment-schemes.mjs` because two source assertions still expected the former unguarded current-term percentage expression.
 - Updated the regression assertion to match the current guarded grade calculation (`r.total_score / Math.max(1, rowMaximum(r)) * 100`) and retained the existing per-scheme denominator and overall total checks. No application code or schema was changed in this correction. Fresh CI is required.
+
+
+## PR #172 — Board role-scoped module access (2026-11-13)
+
+**Branch:** `fix/schoolpro-board-module-read-only-mainline`  
+**Status:** Open PR; CI validation pending. Ported only the Board authorization migration and focused tests from stale PR #146. The unrelated Advanced Reports migration and unrelated workflow port changes were excluded. No production migration, data write, merge or Render deployment has been performed.
+
+- Board appointment is a designation only; it must not elevate a Teacher or other member to the Administrator school role. The migration restores legacy active Board appointees to their recorded `previous_role`, while preserving genuine Administrators whose recorded role was already Administrator.
+- Board members may read Finance, Payroll and Medical records only when the school owner explicitly grants the corresponding module permission. These grants do not grant write, delete, insert, approval, or management rights.
+- The legacy Medical restrictive `FOR ALL` policy is split into SELECT-only access and separate restrictive clinical-write policies. Finance fee-structure and Payroll read policies honor explicit module grants without broadening write policies.
+- Board appointment withdrawal restores the recorded role and closes the appointment with audit fields. A new membership-role-change trigger ends an active Board appointment when a member's role changes independently; it does not interfere with the withdrawal path.
+- Added a disposable local Supabase runtime test for denied access before grants, allowed SELECT after explicit grants, denied writes/Payroll approval, restoration of legacy elevated Board members, and preservation of genuine Administrators. The C0 workflow runs this test against its restored disposable baseline.
+
+**Validation:** Pending PR #172 CI. The old PR #146 branch was 48 commits ahead and 12 behind current main, so its full branch was not merged or cherry-picked. Production RLS policies were inspected read-only; no production changes were made.

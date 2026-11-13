@@ -97,6 +97,7 @@ do $assert_granted$
 declare
   f pg_temp.board_rls_fixture%rowtype;
   v_count integer;
+  v_affected integer;
 begin
   select * into f from pg_temp.board_rls_fixture;
   select count(*) into v_count from public.schoolpro_fee_structures where id=f.fee_id;
@@ -108,6 +109,28 @@ begin
   if (select role from public.schoolpro_members where id=f.member_id) <> 'teacher'::public.school_member_role then
     raise exception 'Explicit module grants changed the Board member underlying role';
   end if;
+
+  update public.schoolpro_fee_structures set amount=amount+1 where id=f.fee_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Finance read grant unexpectedly allowed fee-structure UPDATE'; end if;
+  delete from public.schoolpro_fee_structures where id=f.fee_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Finance read grant unexpectedly allowed fee-structure DELETE'; end if;
+
+  update public.schoolpro_payroll_records set gross=gross+1 where id=f.payroll_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Payroll read grant unexpectedly allowed payroll UPDATE'; end if;
+  delete from public.schoolpro_payroll_records where id=f.payroll_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Payroll read grant unexpectedly allowed payroll DELETE'; end if;
+
+  update public.schoolpro_health_records set complaint='Board write attempt' where id=f.health_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Medical read grant unexpectedly allowed health-record UPDATE'; end if;
+  delete from public.schoolpro_health_records where id=f.health_id;
+  get diagnostics v_affected = row_count;
+  if v_affected <> 0 then raise exception 'Board Medical read grant unexpectedly allowed health-record DELETE'; end if;
+
   begin
     perform public.process_schoolpro_payroll(f.payroll_id);
     raise exception 'Board member unexpectedly executed Payroll approval RPC';

@@ -46,6 +46,11 @@ create policy "school payroll read"
 drop policy if exists "clinic role boundary" on public.schoolpro_health_records;
 create policy "schoolpro_health_records_explicit_module_read"
   on public.schoolpro_health_records
+  for select to authenticated
+  using (private.schoolpro_module_allowed(school_id,'medical'));
+
+create policy "schoolpro_health_records_module_read_scope"
+  on public.schoolpro_health_records
   as restrictive
   for select to authenticated
   using (private.schoolpro_module_allowed(school_id,'medical'));

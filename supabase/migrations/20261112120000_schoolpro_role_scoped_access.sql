@@ -2,6 +2,54 @@
 -- A Board appointment is a designation, not an administrator role elevation.
 begin;
 
+-- Explicit member-level module grants may expose Finance/Payroll/Medical
+-- records for reading, but must never broaden write/approval policies.
+create or replace function private.schoolpro_can_read_fee_structure(p_structure uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to ''
+as $function$
+  select auth.uid() is not null and exists(
+    select 1
+      from public.schoolpro_fee_structures f
+     where f.id=p_structure
+       and private.schoolpro_operationally_active(f.school_id)
+       and (
+         private.schoolpro_module_allowed(f.school_id,'finance')
+         or exists(
+           select 1
+             from public.schoolpro_invoices i
+            where i.fee_structure_id=f.id
+              and i.school_id=f.school_id
+              and private.schoolpro_owns_invoice_student(i.school_id,i.student_id)
+         )
+       )
+  );
+$function$;
+
+drop policy if exists "School finance reads structures" on public.schoolpro_fee_structures;
+create policy "School finance reads structures"
+  on public.schoolpro_fee_structures
+  for select to authenticated
+  using (private.schoolpro_can_read_fee_structure(id));
+
+drop policy if exists "school payroll read" on public.schoolpro_payroll_records;
+create policy "school payroll read"
+  on public.schoolpro_payroll_records
+  for select to authenticated
+  using (private.schoolpro_module_allowed(school_id,'payroll'));
+
+-- The existing ALL policy remains restricted to clinical roles and school
+-- leaders. This additional SELECT-only policy permits explicit medical reads.
+drop policy if exists "schoolpro_health_records_explicit_module_read" on public.schoolpro_health_records;
+create policy "schoolpro_health_records_explicit_module_read"
+  on public.schoolpro_health_records
+  for select to authenticated
+  using (private.schoolpro_module_allowed(school_id,'medical'));
+
+
 -- RLS policies invoke selected private authorization helpers as invoker functions.
 -- USAGE permits schema-qualified name resolution only. Function EXECUTE remains
 -- individually controlled by the existing REVOKE/GRANT statements below and

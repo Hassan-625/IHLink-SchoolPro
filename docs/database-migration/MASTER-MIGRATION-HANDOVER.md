@@ -3436,3 +3436,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - CI/review pending. No production database writes, migrations, merge, or Render deployment performed.
 
 - Added the all-term report-print regression from stale PR #102 to this current-main integration: four synthetic student fixtures across First, Second and Third Terms (12 report cards), verifies term-history columns, attendance/remarks, mobile horizontal fit, and exactly twelve portrait A4 pages. The fixture data contains the historical statistics needed to exercise the existing RPC response shape. Synthetic fixtures only; no production records.
+
+- Added all-term report-print regression from PR #102: four synthetic student fixtures across First, Second and Third Terms (12 report cards), checking history columns, attendance/remarks, mobile horizontal fit, and twelve portrait A4 pages. Test uses only `scripts/testing/academy-preview-fixtures.json`; no production records.

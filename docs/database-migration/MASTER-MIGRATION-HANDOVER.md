@@ -3434,3 +3434,5 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Subject grade uses cumulative average when available in later terms, otherwise current-term percentage; subject position, current class average and grade remark remain visible.
 - The migration defining `schoolpro_subject_statistics` returns `first_term`, `second_term`, and `cumulative_average`, and deliberately returns NULL for missing term marks; no fabricated zeroes are introduced.
 - CI/review pending. No production database writes, migrations, merge, or Render deployment performed.
+
+- Added the all-term report-print regression from stale PR #102 to this current-main integration: four synthetic student fixtures across First, Second and Third Terms (12 report cards), verifies term-history columns, attendance/remarks, mobile horizontal fit, and exactly twelve portrait A4 pages. The fixture data contains the historical statistics needed to exercise the existing RPC response shape. Synthetic fixtures only; no production records.

@@ -3434,3 +3434,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added XLSX round-trip regressions for multi-class separation, averages, selected exports, and subject mapping mismatch.
 - Read-only production schema/value inspection confirmed `schoolpro_subjects.class_name` is section-level (currently `Nursery` / `Primary`) while student classes include arms (for example, `Nursery 1 A`, `Pre-Nursery A`, `Primary 1 B`). Updated the guard to compare normalized school sections rather than requiring exact class-label equality; Pre-Nursery maps to Nursery. Added a regression for this production naming pattern.
 - CI and review remain pending. No production database writes, migration, merge, or Render deployment performed.
+
+
+## 2026-11-13 — Report-card assessment labels, term history and all-term print regression
+- Reconciled the report-card UI work originally proposed in PR #101 onto the latest `main` in `integration/schoolpro-report-card-history-current-mainline`; stale PR #101's unrelated workflow-trigger and obsolete handover changes are excluded.
+- Report cards omit zero-maximum assessment components, normalize Assignment/CA labels to `ASS. 1` / `ASS. 2`, and display scheme-aware component maxima.
+- Second-term reports show First Term history and cumulative average; Third-term reports show First and Second Term history plus cumulative average. Values come from the existing `schoolpro_subject_statistics` RPC; missing historical values remain blank rather than fabricated zeroes. Later-term subject grade uses cumulative average when available while retaining current class average, subject position and grade remark.
+- Includes the all-term print regression originally proposed in PR #102: four synthetic preview fixtures × three terms (12 report cards), checking term-history columns, attendance/remarks, mobile horizontal fit and twelve portrait A4 pages. No production records are used.
+- Regression assertions now match the scheme-aware component renderer: zero-maximum components are omitted and missing/out-of-scheme scores render as a dash.
+- This replacement branch starts from current `main`, including the merged PR #169 class-scoped Excel averages. CI and review are pending; no production database writes, migrations or Render deployment were performed.

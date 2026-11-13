@@ -41,13 +41,77 @@ create policy "school payroll read"
   for select to authenticated
   using (private.schoolpro_module_allowed(school_id,'payroll'));
 
--- The existing ALL policy remains restricted to clinical roles and school
--- leaders. This additional SELECT-only policy permits explicit medical reads.
-drop policy if exists "schoolpro_health_records_explicit_module_read" on public.schoolpro_health_records;
+-- Split the legacy restrictive ALL policy: an explicit medical grant
+-- permits SELECT, but writes remain limited to clinical roles and school leaders.
+drop policy if exists "clinic role boundary" on public.schoolpro_health_records;
 create policy "schoolpro_health_records_explicit_module_read"
   on public.schoolpro_health_records
+  as restrictive
   for select to authenticated
   using (private.schoolpro_module_allowed(school_id,'medical'));
+
+create policy "schoolpro_health_records_clinical_insert"
+  on public.schoolpro_health_records
+  as restrictive
+  for insert to authenticated
+  with check (
+    private.schoolpro_module_allowed(school_id,'medical')
+    and (
+      private.schoolpro_member_can_manage(school_id)
+      or exists (
+        select 1 from public.schoolpro_members m
+         where m.school_id=schoolpro_health_records.school_id
+           and m.user_id=auth.uid()
+           and m.role::text = any(array['nurse','counsellor','head_teacher','administrator','proprietor'])
+      )
+    )
+  );
+
+create policy "schoolpro_health_records_clinical_update"
+  on public.schoolpro_health_records
+  as restrictive
+  for update to authenticated
+  using (
+    private.schoolpro_module_allowed(school_id,'medical')
+    and (
+      private.schoolpro_member_can_manage(school_id)
+      or exists (
+        select 1 from public.schoolpro_members m
+         where m.school_id=schoolpro_health_records.school_id
+           and m.user_id=auth.uid()
+           and m.role::text = any(array['nurse','counsellor','head_teacher','administrator','proprietor'])
+      )
+    )
+  )
+  with check (
+    private.schoolpro_module_allowed(school_id,'medical')
+    and (
+      private.schoolpro_member_can_manage(school_id)
+      or exists (
+        select 1 from public.schoolpro_members m
+         where m.school_id=schoolpro_health_records.school_id
+           and m.user_id=auth.uid()
+           and m.role::text = any(array['nurse','counsellor','head_teacher','administrator','proprietor'])
+      )
+    )
+  );
+
+create policy "schoolpro_health_records_clinical_delete"
+  on public.schoolpro_health_records
+  as restrictive
+  for delete to authenticated
+  using (
+    private.schoolpro_module_allowed(school_id,'medical')
+    and (
+      private.schoolpro_member_can_manage(school_id)
+      or exists (
+        select 1 from public.schoolpro_members m
+         where m.school_id=schoolpro_health_records.school_id
+           and m.user_id=auth.uid()
+           and m.role::text = any(array['nurse','counsellor','head_teacher','administrator','proprietor'])
+      )
+    )
+  );
 
 
 -- RLS policies invoke selected private authorization helpers as invoker functions.

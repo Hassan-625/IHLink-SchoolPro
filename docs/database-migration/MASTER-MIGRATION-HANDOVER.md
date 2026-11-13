@@ -3425,3 +3425,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the calendar dependency to reflect PR #156's merged instructional-calendar enforcement. Stage C implementation must consume configured open days and student enrollment boundaries, not guessed weekdays or user-entered denominators.
 - This is documentation/specification only. No schema or application code changed, no production migration or data write occurred, and no Render deployment was performed.
 - **Status:** current-main replacement PR prepared; CI/review pending. The original PR #154 remains stale and is not merged.
+
+
+## 2026-11-13 — Class-scoped subject averages in Excel export (port of PR #100)
+- Rebased the isolated class-results export enhancement onto current `main` in `integration/schoolpro-class-subject-average-current-main`; this avoids merging the stale PR branch (3 commits ahead / 185 behind at inspection).
+- Adds a per-class `CLASS SUBJECT AVERAGE` row, computes each subject average within its own class, keys marks by subject ID to avoid collisions between duplicate subject names, and labels selected-student exports separately.
+- All-class exports include class context in subject labels and validate subject-to-class mappings. A full-class export is blocked when held results were omitted, preventing a partial roster from being presented as a complete class average.
+- Added XLSX round-trip regressions for multi-class separation, averages, selected exports, and subject mapping mismatch.
+- CI and exact production class/subject naming compatibility are pending review. No production database writes, migration, merge, or Render deployment performed.

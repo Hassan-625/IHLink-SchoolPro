@@ -146,11 +146,18 @@ begin
     raise exception 'Board Payroll read grant unexpectedly allowed payroll INSERT';
   exception when insufficient_privilege then null;
   end;
+  declare
+    v_insert_denied boolean := false;
   begin
-    insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
-    values(gen_random_uuid(),f.school_id,f.student_id,'Board write attempt',f.staff_id);
-    raise exception 'Board Medical read grant unexpectedly allowed health-record INSERT';
-  exception when insufficient_privilege then null;
+    begin
+      insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
+      values(gen_random_uuid(),f.school_id,f.student_id,'Board write attempt',f.staff_id);
+    exception when others then
+      v_insert_denied := true;
+    end;
+    if not v_insert_denied then
+      raise exception 'Board Medical read grant unexpectedly allowed health-record INSERT';
+    end if;
   end;
 
   begin

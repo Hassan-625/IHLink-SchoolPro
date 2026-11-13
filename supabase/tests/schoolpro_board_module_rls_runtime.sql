@@ -61,6 +61,9 @@ begin
 end
 $seed$;
 
+-- The production baseline already grants authenticated USAGE on private; the disposable
+-- schema restore omits that ambient privilege, so reproduce it inside this rollback-only test.
+grant usage on schema private to authenticated;
 grant select on pg_temp.board_rls_fixture to authenticated;
 set local role authenticated;
 select set_config('request.jwt.claim.sub',staff_id::text,true),

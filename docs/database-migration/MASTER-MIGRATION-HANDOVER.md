@@ -3470,3 +3470,9 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 **Validation:** Pending PR #172 CI. The old PR #146 branch was 48 commits ahead and 12 behind current main, so its full branch was not merged or cherry-picked. Production RLS policies were inspected read-only; no production changes were made.
 
 - **CI correction (2026-11-13):** The first PR #172 C0 disposable-Supabase run exposed a baseline helper-schema mismatch: `schoolpro_member_can_manage(uuid)` is `public`, not `private`. Updated the three Medical write-boundary policy references to `public.schoolpro_member_can_manage(uuid)`. This is a code/migration correction only; rerun the complete required CI on the new head before merge. No production change was made.
+
+
+### PR #172 CI correction — disposable private-schema grant (2026-11-13)
+- The corrected Board migration now applies successfully in the C0 disposable Supabase database. The runtime test then failed because the restored disposable baseline omitted `USAGE` on schema `private` for `authenticated`, while the production baseline was previously inspected and already has that grant.
+- Updated `supabase/tests/schoolpro_board_module_rls_runtime.sql` to grant `USAGE` on `private` to `authenticated` inside the test's existing transaction. The test ends with `ROLLBACK`, so this reproduces the production prerequisite only in the disposable test and does not broaden the production migration or alter production grants.
+- Commit: `30a04288db5dadb5f8e64fd83a91442dbc74732f`. Re-run all required PR checks on the new head before considering merge. No production migration or data change was made.

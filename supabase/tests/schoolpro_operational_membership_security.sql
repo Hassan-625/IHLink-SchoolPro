@@ -36,6 +36,16 @@ begin
     raise exception 'Board role-change trigger must preserve restoration and appointment history';
   end if;
 
+  if not exists (
+    select 1 from pg_trigger t
+    join pg_class c on c.oid=t.tgrelid
+    join pg_namespace s on s.oid=c.relnamespace
+    where s.nspname='public' and c.relname='schoolpro_members'
+      and t.tgname='trg_schoolpro_clear_changed_board_role' and not t.tgisinternal
+  ) then
+    raise exception 'Board role-change trigger is not installed on schoolpro_members';
+  end if;
+
   if exists (
     select 1
     from public.schoolpro_board_members b

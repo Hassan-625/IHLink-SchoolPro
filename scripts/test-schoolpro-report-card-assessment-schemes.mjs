@@ -7,7 +7,7 @@ assert.match(page,/setComponentsByScheme\(schemeMap\)/);
 assert.match(page,/componentsByScheme\[r\.assessment_scheme_id\|\|''\]/);
 assert.match(page,/maximumTotal=useMemo/);
 assert.match(page,/totalScore\/maximumTotal\*100/);
-assert.match(page,/r\.total_score\/rowMaximum\(r\)\*100/);
+assert.match(page,/r\.total_score\/Math\.max\(1,rowMaximum\(r\)\)\*100/);
 assert.match(page,/\{r\.total_score\} \/ \{rowMaximum\(r\)\}/);
 assert.match(page,/<b>Total:<\/b> \{totalScore\.toFixed\(1\)\} \/ \{maximumTotal\.toFixed\(1\)\}/);
 console.log('SchoolPro per-result assessment scheme report-card regression passed.');

@@ -101,6 +101,7 @@ declare
   f pg_temp.board_rls_fixture%rowtype;
   v_count integer;
   v_affected integer;
+  v_insert_denied boolean := false;
 begin
   select * into f from pg_temp.board_rls_fixture;
   select count(*) into v_count from public.schoolpro_fee_structures where id=f.fee_id;
@@ -146,19 +147,15 @@ begin
     raise exception 'Board Payroll read grant unexpectedly allowed payroll INSERT';
   exception when insufficient_privilege then null;
   end;
-  declare
-    v_insert_denied boolean := false;
   begin
-    begin
-      insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
-      values(gen_random_uuid(),f.school_id,f.student_id,'Board write attempt',f.staff_id);
-    exception when others then
-      v_insert_denied := true;
-    end;
-    if not v_insert_denied then
-      raise exception 'Board Medical read grant unexpectedly allowed health-record INSERT';
-    end if;
+    insert into public.schoolpro_health_records(id,school_id,student_id,complaint,recorded_by)
+    values(gen_random_uuid(),f.school_id,f.student_id,'Board write attempt',f.staff_id);
+  exception when others then
+    v_insert_denied := true;
   end;
+  if not v_insert_denied then
+    raise exception 'Board Medical read grant unexpectedly allowed health-record INSERT';
+  end if;
 
   begin
     perform public.process_schoolpro_payroll(f.payroll_id);

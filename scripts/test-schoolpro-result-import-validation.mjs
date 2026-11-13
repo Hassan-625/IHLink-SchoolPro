@@ -34,5 +34,6 @@ assert.ok(rpc.includes('uses a different assessment scheme'));
 const resultsPage = readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 assert.ok(resultsPage.includes('r.assessment_scores[c.key]??"—"'), 'Saved score breakdown must show missing components as a dash, not zero');
 const reportCard = readFileSync('src/pages/schoolpro/SchoolProReportCard.tsx','utf8');
-assert.match(reportCard,/r\.assessment_scores\[c\.key\]\?\?['"]—['"]/, 'Report cards must not render a missing assessment component as zero');
+assert.ok(reportCard.includes('components.filter(component=>Number(component.maxScore)>0)'), 'Report cards must omit assessment components with zero maximum');
+assert.match(reportCard,/schemeComponent\?\(r\.assessment_scores\[component\.key\]\?\?['"]—['"]\):['"]—['"]/, 'Report cards must show a dash for missing scores and for components outside the row assessment scheme');
 console.log('PASS: result import requires complete headers, validates every component, rejects duplicates and preserves class/session/teacher scope.');

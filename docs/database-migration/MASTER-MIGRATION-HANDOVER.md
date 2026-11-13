@@ -3425,3 +3425,12 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Updated the calendar dependency to reflect PR #156's merged instructional-calendar enforcement. Stage C implementation must consume configured open days and student enrollment boundaries, not guessed weekdays or user-entered denominators.
 - This is documentation/specification only. No schema or application code changed, no production migration or data write occurred, and no Render deployment was performed.
 - **Status:** current-main replacement PR prepared; CI/review pending. The original PR #154 remains stale and is not merged.
+
+
+## 2026-11-13 — Report-card assessment labels and term-history columns (port of PR #101)
+- Reconciled the report-card UI change onto current `main` in `integration/schoolpro-report-card-history-current-main`; did not port the stale workflow trigger change or the obsolete handover document from PR #101.
+- Report cards now omit zero-maximum assessment components, normalize assignment/CA labels to `ASS. 1` / `ASS. 2`, and show scheme-aware component maxima.
+- Second-term reports expose First Term history and cumulative average; Third-term reports expose First and Second Term history plus cumulative average. Values come only from the existing published/locked `schoolpro_subject_statistics` RPC; missing historical values remain blank.
+- Subject grade uses cumulative average when available in later terms, otherwise current-term percentage; subject position, current class average and grade remark remain visible.
+- The migration defining `schoolpro_subject_statistics` returns `first_term`, `second_term`, and `cumulative_average`, and deliberately returns NULL for missing term marks; no fabricated zeroes are introduced.
+- CI/review pending. No production database writes, migrations, merge, or Render deployment performed.

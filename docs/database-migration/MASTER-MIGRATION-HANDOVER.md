@@ -3555,3 +3555,17 @@ Follow-up inspection of SchoolProBookDemo.tsx, SchoolProTermDemoForm.tsx, and Sc
 - Required security boundaries: existing Games entitlement; Game Master / explicitly authorized leadership management; coach access limited to assigned teams; House Master access remains appointment-scoped; cross-school references rejected in PostgreSQL; no privilege elevation through appointments.
 - Next delivery is a clean PR from current `main`, with focused disposable-PostgreSQL integration tests and handover updates. PR #105 remains open and unmerged; its duplicate `schoolpro_sports_houses` migration and Calendar entitlement coupling remain explicitly excluded.
 - No production migration, production data write, or Render deployment was performed.
+
+
+### SchoolPro sports operations implementation — PR preparation (2026-11-14)
+
+- PR #179 merged the issue #178 sports scope into main (merge commit `38915be2f17a56c5be75575c0aec6c892e7a1876`); all four workflows passed on its exact head.
+- Implementation is staged on clean branch `feat/schoolpro-games-sports-operations`, based on that merged main. It is not merged or deployed.
+- New migration `20261114190000_schoolpro_sports_operations.sql` creates school-scoped sports teams, coach appointment history, team membership history, individual training sessions, fixtures, result amendment history, and fixture schedule audit.
+- Teams reference the existing `schoolpro_houses` table. Fixtures may link to an existing sports/athletics `schoolpro_competition_events` event. No duplicate sports-house catalogue is introduced.
+- PostgreSQL triggers enforce same-school house, staff, student, team, and event references; only active teaching staff (`teacher` / `class_teacher`, active membership and employment) can be appointed as coaches. Active squad membership is duplicate-protected and serialized for incompatible-squad checks.
+- RLS separates Games managers from assigned coaches. Managers use the Games permission or school ownership / proprietor / administrator / selected platform Super Admin scope. Coaches can read only their assigned teams, rosters, training sessions, fixtures and related audit history; coach roster names are exposed through a narrow RPC, not general student-table access. House Master appointment scope is unchanged.
+- Fixture result writes use `schoolpro_record_sports_fixture_result`, which records versioned result history and prevents direct score updates. Fixture reschedules/status changes create audit rows; fixture status transitions are constrained.
+- New `/schoolpro/sports` workspace is linked from the Administration navigation and gated by the existing `games` permission, not Calendar. It supports team archive/reactivation, coach appointment/end, student enrollment/removal, training session scheduling/cancellation, fixture creation/start/rescheduling, and result recording/amendment history.
+- Added static contract checks and a disposable PostgreSQL integration script covering tenant references, incompatible/duplicate squad enrollment, coach scope, unrelated-teacher denial, schedule audit, and audited result amendment. CI has been wired to run both. CI has not yet been verified on the final branch head.
+- Before merge: inspect exact CI results and any SQL/type/build failures; fix and rerun on the final head. No production migration, production data write, or Render deployment is authorized or included in this branch.

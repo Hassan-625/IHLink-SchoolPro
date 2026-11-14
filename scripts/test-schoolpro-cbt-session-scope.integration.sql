@@ -134,11 +134,6 @@ begin
     values('60000000-0000-0000-0000-000000000005','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Wrong subject','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','2026/2027','draft',auth.uid());
     raise exception 'FAIL: wrong-subject test was accepted';
   exception when insufficient_privilege then null; end;
-  begin
-    insert into public.schoolpro_cbt_tests(id,school_id,title,class_id,subject_id,session,status,created_by)
-    values('60000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Cross-school test','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026/2027','draft',auth.uid());
-    raise exception 'FAIL: cross-school teacher created test';
-  exception when insufficient_privilege then null; end;
 end $;
 insert into public.schoolpro_question_bank(id,school_id,subject_id,class_id,session,question_type,question_text,marks,created_by)
 values('70000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','2026/2027','theory','Explain the topic',5,auth.uid());
@@ -164,6 +159,19 @@ begin
     raise exception 'FAIL: assigned author published own test';
   exception when insufficient_privilege then null; end;
 end $$;
+reset role;
+
+-- A teacher allocated only in another school cannot create a test in this school.
+set local role authenticated;
+select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000007',true);
+do $
+begin
+  begin
+    insert into public.schoolpro_cbt_tests(id,school_id,title,class_id,subject_id,session,status,created_by)
+    values('60000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Cross-school test','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026/2027','draft',auth.uid());
+    raise exception 'FAIL: cross-school teacher created test';
+  exception when insufficient_privilege then null; end;
+end $;
 reset role;
 
 -- Unassigned, stale-session and ended-allocation teachers cannot read or write the scope.

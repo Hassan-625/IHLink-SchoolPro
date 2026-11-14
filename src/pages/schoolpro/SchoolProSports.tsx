@@ -14,6 +14,8 @@ type Student={id:string;first_name:string;middle_name:string|null;last_name:stri
 type Session={id:string;team_id:string;title:string;starts_at:string;ends_at:string|null;venue:string|null;status:string};
 type Fixture={id:string;event_id:string|null;home_team_id:string;away_team_id:string;scheduled_at:string;venue:string|null;status:string;home_score:number|null;away_score:number|null;result_version:number;result_notes:string|null};
 type Coach={id:string;team_id:string;member_id:string;ended_at:string|null};
+type ResultHistory={id:string;fixture_id:string;version:number;home_score:number;away_score:number;status:string;result_notes:string|null;action:string;changed_at:string};
+type FixtureAudit={id:string;fixture_id:string;previous_scheduled_at:string|null;new_scheduled_at:string|null;previous_venue:string|null;new_venue:string|null;previous_status:string|null;new_status:string|null;changed_at:string};
 type Roster={id:string;team_id:string;student_id:string;ended_at:string|null;first_name?:string;middle_name?:string|null;last_name?:string;admission_number?:string|null;class_name?:string|null};
 const field='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm';
 const localDate=(value:string)=>{if(!value)return '';const d=new Date(value);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
@@ -24,6 +26,7 @@ export function SchoolProSports(){
  const [staff,setStaff]=useState<Staff[]>([]),[students,setStudents]=useState<Student[]>([]);
  const [coaches,setCoaches]=useState<Coach[]>([]),[roster,setRoster]=useState<Roster[]>([]);
  const [sessions,setSessions]=useState<Session[]>([]),[fixtures,setFixtures]=useState<Fixture[]>([]);
+ const [resultHistory,setResultHistory]=useState<ResultHistory[]>([]),[fixtureAudit,setFixtureAudit]=useState<FixtureAudit[]>([]);
  const [events,setEvents]=useState<{id:string;title:string;event_type:string;status:string}[]>([]);
  const [message,setMessage]=useState(''),[error,setError]=useState(''),[busy,setBusy]=useState(false);
  const [teamForm,setTeamForm]=useState({name:'',sport:'',age_group:'',section_key:'',house_id:'',exclusive_membership:true});
@@ -36,16 +39,19 @@ export function SchoolProSports(){
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
   setError('');
-  const [t,c,r,a,f]=await Promise.all([
+  const [t,c,r,a,f,rh,fa]=await Promise.all([
    supabase.from('schoolpro_sports_teams').select('id,name,sport,age_group,section_key,house_id,exclusive_membership,is_active').eq('school_id',ctx.schoolId).order('sport').order('name'),
    supabase.from('schoolpro_sports_team_coaches').select('id,team_id,member_id,ended_at').eq('school_id',ctx.schoolId).is('ended_at',null),
    supabase.from('schoolpro_sports_team_members').select('id,team_id,student_id,ended_at').eq('school_id',ctx.schoolId).is('ended_at',null),
    supabase.from('schoolpro_sports_training_sessions').select('id,team_id,title,starts_at,ends_at,venue,status').eq('school_id',ctx.schoolId).order('starts_at',{ascending:false}).limit(250),
-   supabase.from('schoolpro_sports_fixtures').select('id,event_id,home_team_id,away_team_id,scheduled_at,venue,status,home_score,away_score,result_version,result_notes').eq('school_id',ctx.schoolId).order('scheduled_at',{ascending:false}).limit(250)
+   supabase.from('schoolpro_sports_fixtures').select('id,event_id,home_team_id,away_team_id,scheduled_at,venue,status,home_score,away_score,result_version,result_notes').eq('school_id',ctx.schoolId).order('scheduled_at',{ascending:false}).limit(250),
+   supabase.from('schoolpro_sports_fixture_result_history').select('id,fixture_id,version,home_score,away_score,status,result_notes,action,changed_at').eq('school_id',ctx.schoolId).order('changed_at',{ascending:false}).limit(500),
+   supabase.from('schoolpro_sports_fixture_audit').select('id,fixture_id,previous_scheduled_at,new_scheduled_at,previous_venue,new_venue,previous_status,new_status,changed_at').eq('school_id',ctx.schoolId).order('changed_at',{ascending:false}).limit(500)
   ]);
-  if([t,c,r,a,f].some(x=>x.error)){setError('Sports records could not all be loaded. Confirm your Games access and refresh.');return;}
+  if([t,c,r,a,f,rh,fa].some(x=>x.error)){setError('Sports records could not all be loaded. Confirm your Games access and refresh.');return;}
   setTeams((t.data||[]) as Team[]);setCoaches((c.data||[]) as Coach[]);
   setSessions((a.data||[]) as Session[]);setFixtures((f.data||[]) as Fixture[]);
+  setResultHistory((rh.data||[]) as ResultHistory[]);setFixtureAudit((fa.data||[]) as FixtureAudit[]);
   if(canManage){
    const [h,s,m,e]=await Promise.all([
     supabase.from('schoolpro_houses').select('id,name').eq('school_id',ctx.schoolId).eq('is_active',true).order('sort_order'),
@@ -69,7 +75,7 @@ export function SchoolProSports(){
    setHouses([]);setStaff([]);setEvents([]);
   }
  },[ctx.schoolId,canManage]);
- useEffect(()=>{setTeams([]);setHouses([]);setStaff([]);setStudents([]);setCoaches([]);setRoster([]);setSessions([]);setFixtures([]);void load()},[load]);
+ useEffect(()=>{setTeams([]);setHouses([]);setStaff([]);setStudents([]);setCoaches([]);setRoster([]);setSessions([]);setFixtures([]);setResultHistory([]);setFixtureAudit([]);void load()},[load]);
  const teamName=(id:string)=>teams.find(t=>t.id===id)?.name||'Team';
  const staffName=(id:string)=>{const s=staff.find(x=>x.id===id);return [s?.profile?.first_name,s?.profile?.last_name].filter(Boolean).join(' ')||s?.profile?.email||'Teaching staff';};
  const studentName=(id:string)=>{const s=students.find(x=>x.id===id);return s?[s.first_name,s.middle_name,s.last_name].filter(Boolean).join(' '):'Student';};
@@ -166,7 +172,7 @@ export function SchoolProSports(){
      <input className={field} placeholder="Venue" value={fixtureForm.venue} onChange={e=>setFixtureForm(p=>({...p,venue:e.target.value}))}/>
      <Button disabled={busy||!fixtureForm.home_team_id||!fixtureForm.away_team_id||fixtureForm.home_team_id===fixtureForm.away_team_id||!fixtureForm.scheduled_at} onClick={()=>void createFixture()}>Create fixture</Button>
     </div>}
-    <div className="mt-4 space-y-2">{fixtures.map(f=><div key={f.id} className="rounded-lg border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><b>{teamName(f.home_team_id)} vs {teamName(f.away_team_id)}</b><span className="text-xs text-muted">{f.status}</span></div><p className="text-xs text-muted">{new Date(f.scheduled_at).toLocaleString()} · {f.venue||'Venue not set'} · {f.home_score??'—'} : {f.away_score??'—'} · Result v{f.result_version}</p>{canManage&&f.status==='scheduled'&&<Button size="sm" variant="secondary" className="mt-2" disabled={busy} onClick={()=>void save(()=>supabase!.from('schoolpro_sports_fixtures').update({status:'in_progress',updated_at:new Date().toISOString()}).eq('id',f.id).eq('school_id',ctx.schoolId).select('id'),'Fixture started.')}>Start fixture</Button>}{canManage&&['scheduled','postponed'].includes(f.status)&&<div className="mt-2 flex flex-wrap items-center gap-2"><input aria-label="Rescheduled fixture date and time" type="datetime-local" className="rounded-lg border p-2 text-xs" defaultValue={localDate(f.scheduled_at)} onChange={e=>setScheduleDrafts(p=>({...p,[f.id]:e.target.value}))}/><Button size="sm" variant="secondary" disabled={busy||!(scheduleDrafts[f.id]||localDate(f.scheduled_at))} onClick={()=>void updateFixtureSchedule(f.id,scheduleDrafts[f.id]||localDate(f.scheduled_at),f.venue||'')}>Reschedule</Button></div>}</div>)}{!fixtures.length&&<p className="text-sm text-muted">No fixtures scheduled.</p>}</div>
+    <div className="mt-4 space-y-2">{fixtures.map(f=><div key={f.id} className="rounded-lg border p-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><b>{teamName(f.home_team_id)} vs {teamName(f.away_team_id)}</b><span className="text-xs text-muted">{f.status}</span></div><p className="text-xs text-muted">{new Date(f.scheduled_at).toLocaleString()} · {f.venue||'Venue not set'} · {f.home_score??'—'} : {f.away_score??'—'} · Result v{f.result_version}</p><div className="mt-2 space-y-1 text-xs text-muted">{resultHistory.filter(h=>h.fixture_id===f.id).map(h=><p key={h.id}>Result v{h.version} ({h.action}): {h.home_score}–{h.away_score} · {new Date(h.changed_at).toLocaleString()} {h.result_notes?`· ${h.result_notes}`:''}</p>)}{fixtureAudit.filter(a=>a.fixture_id===f.id).map(a=><p key={a.id}>Schedule audit: {a.previous_scheduled_at?new Date(a.previous_scheduled_at).toLocaleString():'—'} → {a.new_scheduled_at?new Date(a.new_scheduled_at).toLocaleString():'—'} · {a.previous_venue||'No venue'} → {a.new_venue||'No venue'}</p>)}</div>{canManage&&f.status==='scheduled'&&<Button size="sm" variant="secondary" className="mt-2" disabled={busy} onClick={()=>void save(()=>supabase!.from('schoolpro_sports_fixtures').update({status:'in_progress',updated_at:new Date().toISOString()}).eq('id',f.id).eq('school_id',ctx.schoolId).select('id'),'Fixture started.')}>Start fixture</Button>}{canManage&&['scheduled','postponed'].includes(f.status)&&<div className="mt-2 flex flex-wrap items-center gap-2"><input aria-label="Rescheduled fixture date and time" type="datetime-local" className="rounded-lg border p-2 text-xs" defaultValue={localDate(f.scheduled_at)} onChange={e=>setScheduleDrafts(p=>({...p,[f.id]:e.target.value}))}/><Button size="sm" variant="secondary" disabled={busy||!(scheduleDrafts[f.id]||localDate(f.scheduled_at))} onClick={()=>void updateFixtureSchedule(f.id,scheduleDrafts[f.id]||localDate(f.scheduled_at),f.venue||'')}>Reschedule</Button></div>}</div>)}{!fixtures.length&&<p className="text-sm text-muted">No fixtures scheduled.</p>}</div>
     {canManage&&<div className="mt-4 border-t pt-4"><h4 className="font-semibold">Record or amend a result</h4><div className="mt-2 grid gap-2 sm:grid-cols-2"><select className={field} value={resultForm.fixture_id} onChange={e=>setResultForm(p=>({...p,fixture_id:e.target.value}))}><option value="">Choose in-progress / completed fixture</option>{fixtures.filter(f=>['in_progress','completed'].includes(f.status)).map(f=><option key={f.id} value={f.id}>{teamName(f.home_team_id)} vs {teamName(f.away_team_id)} · v{f.result_version}</option>)}</select><input type="number" min="0" step="1" className={field} placeholder="Home score" value={resultForm.home_score} onChange={e=>setResultForm(p=>({...p,home_score:e.target.value}))}/><input type="number" min="0" step="1" className={field} placeholder="Away score" value={resultForm.away_score} onChange={e=>setResultForm(p=>({...p,away_score:e.target.value}))}/><input className={field} placeholder="Result notes" value={resultForm.notes} onChange={e=>setResultForm(p=>({...p,notes:e.target.value}))}/><label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={resultForm.complete} onChange={e=>setResultForm(p=>({...p,complete:e.target.checked}))}/>Mark fixture completed</label><Button disabled={busy||!resultForm.fixture_id||resultForm.home_score===''||resultForm.away_score===''} onClick={()=>void recordResult()}>Save audited result</Button></div></div>}
    </Card>
   </div>

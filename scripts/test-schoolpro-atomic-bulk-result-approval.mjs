@@ -45,7 +45,7 @@ const scopeHelper=authority.slice(
   authority.indexOf('$'+';',authority.indexOf('function private.schoolpro_result_scope_mixed_state'))+3
 );
 assert.match(scopeHelper,/target_classes as/i,
-  'Whole-school completeness must derive its scope from the school's class catalogue.');
+  "Whole-school completeness must derive its scope from the school class catalogue.");
 assert.match(scopeHelper,/schoolpro_subject_assignments/i,
   'The expected result matrix must be based on active subject allocations.');
 assert.match(scopeHelper,/a\.ended_at is null/i,

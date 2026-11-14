@@ -178,10 +178,27 @@ as $$
   )
 $$;
 
+create or replace function private.schoolpro_member_leads_class(
+  p_school uuid,p_class uuid
+)
+returns boolean language sql stable security definer
+set search_path=''
+as $
+  select exists(
+    select 1 from public.schoolpro_members m
+    join public.schoolpro_section_leaders sl
+      on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
+    join public.schoolpro_classes c
+      on c.school_id=p_school and c.id=p_class and c.level=sl.section
+    where m.school_id=p_school and m.user_id=auth.uid()
+      and m.status='active' and m.role in ('head_teacher','vice_principal')
+  )
+$;
+
 create or replace function private.schoolpro_can_read_student(p_student uuid)
 returns boolean language sql stable security definer
 set search_path=''
-as $$
+as $
   select exists(
     select 1 from public.schoolpro_students s
     where s.id=p_student and (
@@ -189,9 +206,35 @@ as $$
       or private.schoolpro_is_school_admin(s.school_id)
       or private.schoolpro_is_exam_officer(s.school_id)
       or s.user_id=auth.uid()
+      or private.schoolpro_member_leads_class(s.school_id,s.class_id)
     )
   )
-$$;
+$;
+
+create or replace function private.schoolpro_can_review_class(
+  p_school uuid,p_class uuid
+)
+returns boolean language sql stable security definer
+set search_path=''
+as $
+  select private.schoolpro_is_school_admin(p_school)
+    or private.schoolpro_is_exam_officer(p_school)
+    or private.schoolpro_member_leads_class(p_school,p_class)
+$;
+
+create or replace function private.schoolpro_can_read_result(
+  p_school uuid,p_student uuid,p_subject uuid,p_session text
+)
+returns boolean language sql stable security definer
+set search_path=''
+as $
+  select private.schoolpro_can_read_student(p_student)
+    and exists(
+      select 1 from public.schoolpro_students s
+      where s.id=p_student and s.school_id=p_school
+        and private.schoolpro_can_review_class(p_school,s.class_id)
+    )
+$;
 
 create or replace function private.schoolpro_cached_result_reader_keys()
 returns jsonb language sql stable
@@ -234,6 +277,10 @@ using (
     select a.allowed from private.schoolpro_result_access(student_id,term,session) a
   ),false)
 );
+
+create policy "schoolpro_result_subject_scope_guard"
+on public.schoolpro_results for select to authenticated
+using (private.schoolpro_can_read_result(school_id,student_id,subject_id,session));
 
 insert into public.schoolpro_schools(id,owner_id) values
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),

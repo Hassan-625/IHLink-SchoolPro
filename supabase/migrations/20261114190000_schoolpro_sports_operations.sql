@@ -165,6 +165,7 @@ create or replace function private.schoolpro_sports_is_coach(p_school uuid,p_tea
 returns boolean language sql stable security definer set search_path = ''
 as $$
   select auth.uid() is not null and coalesce(private.is_active_account(),false)
+    and private.schoolpro_operationally_active(p_school)
     and exists(
       select 1 from public.schoolpro_sports_team_coaches c
       join public.schoolpro_members m on m.id=c.member_id and m.school_id=c.school_id

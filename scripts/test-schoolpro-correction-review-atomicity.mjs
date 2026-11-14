@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
 const broadsheet=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
 const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const requesterPolicy=readFileSync('supabase/migrations/20261108121000_schoolpro_correction_requester_visibility.sql','utf8');
@@ -11,6 +12,13 @@ assert.match(authority,/create table public\.schoolpro_result_correction_batch_i
 assert.match(authority,/public\.schoolpro_request_result_reopening/i);
 assert.match(authority,/public\.schoolpro_decide_result_reopening/i);
 assert.match(authority,/Only the Exam Officer can authorize a class or section result reopening/i);
+assert.match(correctionRouting,/public\\.schoolpro_review_result_reopening/i);
+assert.match(correctionRouting,/pending_section_review/i);
+assert.match(correctionRouting,/pending_exam_officer/i);
+assert.match(correctionRouting,/section_reviewed_by=auth\\.uid\\(\\)/i);
+assert.match(correctionRouting,/request_row\\.section_reviewed_by=auth\\.uid\\(\\)/i);
+assert.match(correctionRouting,/The requester cannot review their own correction request/i);
+assert.match(correctionRouting,/The requester and Section Head reviewer cannot authorize the same correction request/i);
 assert.match(authority,/for update/i);
 assert.match(authority,/b\.status='pending'/i);
 assert.match(authority,/app\.schoolpro_correction_reopen/i);
@@ -30,4 +38,4 @@ assert.match(broadsheet,/request\.review_notes&&/, 'Requester history must displ
 assert.match(results,/Request Class Result Reopening/i);
 assert.doesNotMatch(results,/from\(['"]schoolpro_result_correction_requests['"]\)\.insert/i);
 assert.doesNotMatch(results,/decide_schoolpro_result_correction_request/i);
-console.log('PASS: Exam Officer-only class/section correction authorization is atomic, audited, snapshot-scoped and no individual-result reopen path remains.');
+console.log('PASS: class/section correction requests require Section Head review followed by independent Exam Officer authorization; requests remain atomic, audited and snapshot-scoped.');

@@ -66,6 +66,8 @@ insert into public.schoolpro_competition_entries(id,school_id,event_id,entry_nam
  ('61000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','Track Squad entry'),
  ('61000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000003','Other event entry');
 
+insert into public.schoolpro_sports_teams(id,school_id,name,sport) values
+ ('70000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000002','Other school team','Football');
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',false);
 set role authenticated;
 insert into public.schoolpro_sports_teams(id,school_id,name,sport,house_id) values
@@ -81,6 +83,20 @@ insert into public.schoolpro_sports_fixtures(id,school_id,event_id,home_entry_id
  ('80000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000002','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days');
 
 do $$ begin
+  begin
+    insert into public.schoolpro_sports_fixtures(school_id,home_team_id,away_team_id,scheduled_at)
+    values('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000003',now()+interval '2 days');
+    raise exception 'cross-school fixture team reference was accepted';
+  exception when others then
+    if sqlerrm='cross-school fixture team reference was accepted' then raise; end if;
+  end;
+  begin
+    insert into public.schoolpro_sports_team_coaches(school_id,team_id,member_id)
+    values('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001');
+    raise exception 'non-teaching Game Master was accepted as a coach';
+  exception when others then
+    if sqlerrm='non-teaching Game Master was accepted as a coach' then raise; end if;
+  end;
   begin
     insert into public.schoolpro_sports_fixtures(school_id,event_id,home_entry_id,away_entry_id,home_team_id,away_team_id,scheduled_at)
     values('10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000003','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days');

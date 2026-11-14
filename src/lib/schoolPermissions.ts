@@ -10,7 +10,7 @@ const modules:Record<string,string>={
   'inventory':'inventory','discipline':'discipline','medical':'medical','documents':'documents',
   'announcements':'announcements','roles-permissions':'roles','user-permissions':'roles',
   'settings':'branding','judge':'dashboard','staff-discipline':'dashboard','house-dashboard':'dashboard','notifications':'notifications','payroll':'payroll','calendar':'calendar',
-  'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations','games':'games','sports':'dashboard',
+  'lesson-notes':'lesson-notes','leave':'leave','promotions':'promotions','operations':'operations','games':'games','sports':'games',
 };
 export function permissionForSchoolPath(href:string){
  const page=href.split(/[?#]/)[0].replace(/^\/schoolpro\//,'').split('/')[0];

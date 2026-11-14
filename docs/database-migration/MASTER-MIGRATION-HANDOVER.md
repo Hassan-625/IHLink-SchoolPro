@@ -3517,3 +3517,16 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a focused source-contract regression and wired it into the main SchoolPro CI validation job.
 - No auth race logic, result-PIN endpoint, payment receipt workflow, Sports migration, or unrelated old PR #103/#105 changes are included. Those paths are already stronger on main or need separate entitlement/schema work.
 - This is a scoped code-only correction. No Supabase migration, production data change, or Render deployment is performed.
+
+
+## PR #105 — Sports operations extraction review (2026-11-14)
+
+**PR:** [#105 — SchoolPro: staff access, sports management, and profile correction safeguards](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105)  
+**Status:** Do not merge wholesale. Its branch is based on the superseded `fix/result-design-section-selection` base and contains unrelated staff, profile, attendance, assessment, and result work. Several isolated areas have already been superseded or separately merged; the remaining Sports implementation requires redesign against current `main`.
+
+- Current `main` already has the canonical Houses / Games / Competitions model: `schoolpro_houses`, `schoolpro_house_master_assignments`, `schoolpro_student_house_history`, competition events, judges, scoring, result approval/publication, and house-point standings. Continue extending this model; do not create a second sports-house catalogue.
+- PR #105's `20261015235000_schoolpro_sports_houses_management.sql` creates a parallel `schoolpro_sports_houses` table and gates all five sports tables with `private.schoolpro_module_allowed(school_id, 'calendar')`. This conflicts with the established Games entitlement and would make sports availability depend on the unrelated Calendar module. Its route also uses the Calendar permission. Do not apply this migration or port its route guard as written.
+- PR #105's proposed `SchoolProSports.tsx` provides basic CRUD for teams, activities, fixtures, and participants, but its current UI is not a safe drop-in: it is coupled to the duplicate sports-house table and generic CRUD path, and does not by itself establish the complete role/RLS/tenant contract required for production.
+- Remaining product gap is sports operations integrated with the canonical Games model: school-scoped teams, coaches appointed from active teaching staff, training/activity schedules, fixtures, participant enrollment, and match results. Link teams to existing canonical houses; validate every referenced team, coach, activity, and student belongs to the same selected school. Preserve the existing House Master appointment-scoped dashboard and existing Games roster/competition workflows.
+- Next implementation must use the existing Games module entitlement and permissions, with explicit Game Master / school leadership management boundaries and database-enforced school isolation. Add disposable-PostgreSQL integration coverage for cross-school reference rejection and role-based read/write denial before proposing any production migration.
+- This review was source-only. No PR was merged or closed, no migration was applied, no production rows were changed, and no Render deployment was performed.

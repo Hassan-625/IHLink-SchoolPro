@@ -3580,3 +3580,12 @@ Follow-up inspection of SchoolProBookDemo.tsx, SchoolProTermDemoForm.tsx, and Sc
 - Once the Demo expiry timestamp passes, the guards stop applying and normal annual invoice preparation, receipt submission, and settlement resume. The Demo duration formula, one-time activation, calendar/document review, and annual 14-day grace are unchanged.
 - Added a disposable PostgreSQL integration test and CI job for pre-Demo billing, active-Demo suppression (including an invoice created before activation), and post-expiry resumption.
 - Production ledger review found the merged PR #117 annual-upgrade migration is not yet recorded in the current Supabase production migration ledger. The new Demo correction must therefore remain unapplied until the verified PR #117 migration and all required predecessors are applied in the intended order. No production migration or data change has been performed; no Render deployment.
+
+
+### Term Demo customer billing visibility and lifecycle regression coverage — PR preparation (2026-11-14)
+
+- Follow-up review found the Subscription page still rendered active annual-plan “Subscribe / Renew” actions during a free term Demo. The database correctly rejects those requests after PR #181, but the customer UI would still invite an action that cannot succeed.
+- Updated the Subscription page to disable annual billing actions during an active zero-value Demo, label the plans “Available after Demo”, and explain that no payment is due until the displayed Demo end date. The handler also guards against accidental invocation.
+- Extended the existing school billing visibility test with source-contract assertions for the Demo-specific billing state and message.
+- Added a disposable PostgreSQL lifecycle fixture that applies the exact existing calendar-reviewed Demo and paid-annual-grace migrations. It tests owner-only document upload, owner/reviewer document reads, rejection of foreign document paths, three-month term boundary, exam dates inside the term, one-time activation, calculated Africa/Lagos expiry, term-Demo expiry suspension, and paid annual access through day 14 followed by suspension after grace.
+- This is test/UI coverage only; it does not change the term Demo contract, expiry formulas, or PR #117 upgrade/Finance settlement implementation. No production migration, production data change, or Render deployment.

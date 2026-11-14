@@ -151,7 +151,8 @@ grant execute on all functions in schema private to authenticated;
 alter table public.schoolpro_result_correction_batches enable row level security;
 alter table public.schoolpro_result_correction_batch_items enable row level security;
 grant select on public.schoolpro_result_correction_batches,
-  public.schoolpro_result_correction_batch_items to authenticated;
+  public.schoolpro_result_correction_batch_items,
+  public.schoolpro_classes to authenticated;
 
 create policy schoolpro_result_correction_batches_exam_officer_read
 on public.schoolpro_result_correction_batches for select to authenticated

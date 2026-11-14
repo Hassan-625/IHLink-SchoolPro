@@ -3642,3 +3642,12 @@ Read-only production verification after rollout:
 - Production counts remain 3 schools, 150 students, 0 upgrade requests, 3 subscription intents, 3 subscription payments, and 3 transfer submissions. No production business rows were inserted, updated, or deleted by the migration.
 
 No Render deployment was performed. The annual upgrade workflow is now installed in production, but no upgrade request or settlement was initiated.
+
+### Production rollout — section-leader result-read authorization (2026-11-14)
+
+- PR #186 merged as `3bba096e77603e5596b3ee521d85ccdea7ea3bc8` after all four required workflows passed on final head `9a07ec5e209cc0ad1575d540be61f4c0f12c2a9c`. The new disposable PostgreSQL integration test verified assigned/unassigned Head Teacher and Vice Principal access, Principal appointment scope, retained school-owner/administrator/Exam Officer/Super Admin access, and cross-school isolation.
+- Production migration source: `20261114213000_schoolpro_section_leader_result_read_scope.sql`; production ledger version recorded at apply time: `20261114215403`.
+- The migration removes Head Teacher and Vice Principal memberships from the school-wide `result-leader` shortcut. They receive result reads through their active section appointments instead. Principal-designated Administrators are subject to the same section appointment boundary; school owners, explicit school administrators, Exam Officers and platform Super Admin retain their intended school-wide/platform-wide access.
+- Added a restrictive SELECT policy to prevent any remaining permissive result-reader policy from bypassing the section-leader appointment check. The guard function is executable by `authenticated` and not by `anon`.
+- Read-only post-rollout verification confirms the helper and restrictive policy exist. Production had 0 result rows and 0 active section appointments at verification time; no result, student, appointment or other business rows were inserted, updated or deleted by the migration.
+- No Render deployment was performed.

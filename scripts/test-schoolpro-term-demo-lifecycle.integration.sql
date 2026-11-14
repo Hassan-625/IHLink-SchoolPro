@@ -374,10 +374,11 @@ end;
 $$;
 
 -- Paid annual subscriptions retain access through day 14, then suspend.
-update public.schoolpro_subscriptions
-set tier='starter',billing_cycle='annual',amount=50000,status='active',
-    renews_at=now()-interval '13 days'
-where school_id='22222222-2222-4222-8222-222222222222';
+insert into public.schoolpro_subscriptions(
+  school_id,tier,billing_cycle,amount,status,renews_at,managed_by_ihlink
+) values (
+  '22222222-2222-4222-8222-222222222222','starter','annual',50000,'active',now()-interval '13 days',true
+);
 
 select set_config('request.jwt.claim.sub','cccccccc-cccc-4ccc-8ccc-cccccccccccc',false);
 do $$

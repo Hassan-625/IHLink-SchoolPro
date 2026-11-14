@@ -80,6 +80,8 @@ create table public.schoolpro_sports_fixtures (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
   event_id uuid,
+  home_entry_id uuid,
+  away_entry_id uuid,
   home_team_id uuid not null,
   away_team_id uuid not null,
   scheduled_at timestamptz not null,
@@ -95,7 +97,10 @@ create table public.schoolpro_sports_fixtures (
   unique (school_id,id),
   foreign key (school_id,home_team_id) references public.schoolpro_sports_teams(school_id,id) on delete restrict,
   foreign key (school_id,away_team_id) references public.schoolpro_sports_teams(school_id,id) on delete restrict,
+  foreign key (school_id,home_entry_id) references public.schoolpro_competition_entries(school_id,id) on delete restrict,
+  foreign key (school_id,away_entry_id) references public.schoolpro_competition_entries(school_id,id) on delete restrict,
   check (home_team_id <> away_team_id),
+  check ((event_id is null and home_entry_id is null and away_entry_id is null) or (event_id is not null and home_entry_id is not null and away_entry_id is not null and home_entry_id<>away_entry_id)),
   check ((home_score is null and away_score is null) or (home_score is not null and away_score is not null))
 );
 create index schoolpro_sports_fixtures_calendar_idx
@@ -231,6 +236,10 @@ begin
       select 1 from public.schoolpro_competition_events e
       where e.id=new.event_id and e.school_id=new.school_id and e.event_type in ('sports','athletics')
     ) then raise exception 'Linked competition must be a sports or athletics event in the selected school'; end if;
+    if new.event_id is not null and (
+      not exists(select 1 from public.schoolpro_competition_entries e where e.id=new.home_entry_id and e.school_id=new.school_id and e.event_id=new.event_id)
+      or not exists(select 1 from public.schoolpro_competition_entries e where e.id=new.away_entry_id and e.school_id=new.school_id and e.event_id=new.event_id)
+    ) then raise exception 'Linked fixture entries must belong to the selected competition and school'; end if;
   end if;
   return new;
 end;

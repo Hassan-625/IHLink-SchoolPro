@@ -3613,3 +3613,32 @@ Migration sequencing note:
 - PR #117's annual-upgrade migration is still absent from the production ledger. Production does not yet have `schoolpro_upgrade_requests` or `upgrade_request_id` on subscription intents.
 - Do not apply PR #117's original migration blindly after the later Finance receipt-resubmission migrations: its `private.review_school_subscription_transfer` definition predates those production corrections and may overwrite the audited receipt-resubmission behavior. Forward-port/reconcile the upgrade schema and Finance settlement RPC against the current production function before rollout.
 - No Render deployment was performed.
+
+
+### Production rollout — annual subscription upgrades (2026-11-14)
+
+Merged and applied to Supabase production:
+
+- PR #184 — `fix(schoolpro): preserve Finance receipt resubmissions in annual upgrades`; merge commit `3973d1bf04527d38d0f12c8066659a4a4335aaf9`.
+- Source migration: `20261105100048_schoolpro_annual_upgrade_workflow.sql`.
+- Supabase production ledger version recorded at apply time: `20261114212701` (`schoolpro_annual_upgrade_workflow`).
+- All four required CI workflows passed on final head `8872cacb210b9348219ca4f45be5ade44754eefc`, including the new dedicated disposable-PostgreSQL integration job. That job verifies Finance-resubmitted receipts settle both upgrade invoices and ordinary annual subscription invoices.
+
+Finance compatibility preserved in the migration's replacement settlement function:
+
+- Exact audited Finance resubmission proof path is accepted only when the audit event matches the submission ID, actor prefix, and exact stored object path.
+- Global advisory lock serializes bank-reference reconciliation across receiving accounts.
+- Ordinary subscription settlement rejects invoices linked to an upgrade request.
+- Upgrade settlement requires an approved request and matching pending invoice, source subscription snapshot, target catalogue price, payer, and receipt.
+- Upgrade annual term starts at Finance verification; settlement is idempotent and does not reactivate a suspended school as a side effect.
+
+Read-only production verification after rollout:
+
+- `schoolpro_upgrade_requests` exists with RLS enabled and one owner/Finance read policy.
+- `upgrade_request_id` exists on both subscription intents and subscription payments.
+- Request, review, and cancellation RPCs are registered.
+- Anonymous access to upgrade records and request/review RPCs is denied; authenticated users have SELECT-only table access, with writes routed through guarded RPCs.
+- The installed Finance settlement function retains the audited receipt-resubmission condition, global bank-reference lock, ordinary-path upgrade-invoice rejection, and approved-upgrade settlement guard.
+- Production counts remain 3 schools, 150 students, 0 upgrade requests, 3 subscription intents, 3 subscription payments, and 3 transfer submissions. No production business rows were inserted, updated, or deleted by the migration.
+
+No Render deployment was performed. The annual upgrade workflow is now installed in production, but no upgrade request or settlement was initiated.

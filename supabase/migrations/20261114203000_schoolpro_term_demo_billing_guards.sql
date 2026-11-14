@@ -60,7 +60,7 @@ revoke all on function private.guard_schoolpro_term_demo_invoice()
 drop trigger if exists trg_schoolpro_term_demo_invoice_guard
   on public.schoolpro_subscription_intents;
 create trigger trg_schoolpro_term_demo_invoice_guard
-before insert or update of status
+before insert or update
 on public.schoolpro_subscription_intents
 for each row
 execute function private.guard_schoolpro_term_demo_invoice();

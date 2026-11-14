@@ -33,7 +33,7 @@ export function useSchoolProContext():SchoolContext{
    // A verified student identity takes precedence on student-only routes, even if
    // another school role or a remembered workspace was previously selected.
    if(studentPortal){
-    const studentPortalRecord=await db.from('schoolpro_students').select('school_id,schoolpro_schools!schoolpro_students_school_id_fkey(name)').eq('user_id',uid).limit(1).maybeSingle();
+    let studentPortalQuery=db.from('schoolpro_students').select('school_id,schoolpro_schools!schoolpro_students_school_id_fkey(name)').eq('user_id',uid);if(selected)studentPortalQuery=studentPortalQuery.eq('school_id',selected);const studentPortalRecord=await studentPortalQuery.limit(1).maybeSingle();
     if(studentPortalRecord.error)throw studentPortalRecord.error;
     if(studentPortalRecord.data){const school=studentPortalRecord.data.schoolpro_schools as unknown as {name?:string}|null;
      return ({schoolId:studentPortalRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:'student',loading:false,error:null});}
@@ -41,7 +41,7 @@ export function useSchoolProContext():SchoolContext{
    // Parent portal identity must be backed by an active guardian link; never infer
    // parent access from ownership or staff membership.
    if(parentPortal){
-    const parentRecord=await db.from('schoolpro_guardian_links').select('school_id,schoolpro_schools!schoolpro_guardian_links_school_id_fkey(name)').eq('guardian_user_id',uid).eq('status','active').limit(1).maybeSingle();
+    let parentPortalQuery=db.from('schoolpro_guardian_links').select('school_id,schoolpro_schools!schoolpro_guardian_links_school_id_fkey(name)').eq('guardian_user_id',uid).eq('status','active');if(selected)parentPortalQuery=parentPortalQuery.eq('school_id',selected);const parentRecord=await parentPortalQuery.limit(1).maybeSingle();
     if(parentRecord.error)throw parentRecord.error;
     if(parentRecord.data){const school=parentRecord.data.schoolpro_schools as unknown as {name?:string}|null;
      return ({schoolId:parentRecord.data.school_id,schoolName:school?.name||'SchoolPro',role:'parent',loading:false,error:null});}

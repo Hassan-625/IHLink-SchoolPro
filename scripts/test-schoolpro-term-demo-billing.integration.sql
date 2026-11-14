@@ -206,7 +206,7 @@ set status='cancelled'
 where school_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
   and status='pending';
 
-do $
+do $$
 declare v jsonb; v_invoice uuid;
 begin
   v := public.prepare_schoolpro_bank_subscription(
@@ -226,6 +226,6 @@ begin
     raise exception 'Finance settlement did not resume after Demo expiry';
   end if;
 end;
-$;
+$$;
 
 select 'PASS: term Demo suppresses annual invoice creation, receipt submission and Finance settlement until expiry; billing resumes afterward' as result;

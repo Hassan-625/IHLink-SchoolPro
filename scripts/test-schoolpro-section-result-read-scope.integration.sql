@@ -177,11 +177,8 @@ as $$
         or (
           m.role='administrator'
           and (
-            regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'principal%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g')
+              ~ '(^| )(principal|vice principal|head teacher|headteacher|headmaster|head master|headmistress|head mistress)( |$)'
           )
         )
       )
@@ -211,11 +208,8 @@ as $$
         or (
           m.role='administrator'
           and (
-            regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'principal%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
-            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g')
+              ~ '(^| )(principal|vice principal|head teacher|headteacher|headmaster|head master|headmistress|head mistress)( |$)'
           )
         )
       )

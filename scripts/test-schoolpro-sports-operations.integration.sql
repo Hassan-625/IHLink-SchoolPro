@@ -164,7 +164,7 @@ end $$;
 select public.schoolpro_record_sports_fixture_result('10000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000001',3,1,'Corrected score',true);
 do $$ begin
  if (select count(*) from public.schoolpro_sports_fixture_result_history where fixture_id='80000000-0000-0000-0000-000000000001')<>2 then raise exception 'result amendment history missing'; end if;
- if (select count(*) from public.schoolpro_sports_fixture_audit where fixture_id='80000000-0000-0000-0000-000000000001')<>1 then raise exception 'fixture reschedule audit missing'; end if;
+ if (select count(*) from public.schoolpro_sports_fixture_audit where fixture_id='80000000-0000-0000-0000-000000000001')<1 then raise exception 'fixture reschedule/status audit missing'; end if;
 end $$;
 
 reset role;

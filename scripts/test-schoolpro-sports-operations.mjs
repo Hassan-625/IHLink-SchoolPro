@@ -38,6 +38,9 @@ assert.match(migration, /references public\.schoolpro_competition_entries\(schoo
 assert.match(migration, /Linked fixture entries must belong to the selected competition and school/);
 assert.match(migration, /schoolpro_sports_fixture_audit/);
 assert.match(migration, /schoolpro_record_sports_fixture_result/);
+assert.match(migration, /grant update\(scheduled_at,venue,status,updated_at\) on public\.schoolpro_sports_fixtures to authenticated/);
+assert.match(migration, /current_user <> 'postgres'/);
+assert.doesNotMatch(migration, /app\.schoolpro_sports_result_rpc/);
 assert.match(migration, /schoolpro_sports_coach_roster/);
 assert.match(migration, /pg_advisory_xact_lock/);
 assert.match(migration, /schoolpro_close_archived_team_assignments/);

@@ -147,6 +147,13 @@ where id='80000000-0000-0000-0000-000000000001';
 select public.schoolpro_record_sports_fixture_result('10000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000001',2,1,'First score',true);
 do $$ begin
   begin
+    update public.schoolpro_sports_fixtures set status='completed'
+    where id='80000000-0000-0000-0000-000000000001';
+    raise exception 'direct fixture completion bypassed audited RPC';
+  exception when others then
+    if sqlerrm='direct fixture completion bypassed audited RPC' then raise; end if;
+  end;
+  begin
     update public.schoolpro_sports_fixtures set home_score=3
     where id='80000000-0000-0000-0000-000000000001';
     raise exception 'direct fixture result update bypassed audited RPC';

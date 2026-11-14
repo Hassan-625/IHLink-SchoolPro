@@ -53,11 +53,8 @@ as $function$
               and m.status = 'active'
               and m.role = 'administrator'
               and not (
-                regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'principal%'
-                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
-                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
-                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
-                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+                regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g')
+                  ~ '(^| )(principal|vice principal|head teacher|headteacher|headmaster|head master|headmistress|head mistress)( |$)'
               )
           )
           or private.schoolpro_is_exam_officer(s.id)
@@ -98,13 +95,8 @@ as $function$
           m.role in ('head_teacher', 'vice_principal')
           or (
             m.role = 'administrator'
-            and (
-              regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'principal%'
-              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
-              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
-              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
-              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
-            )
+            and regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g')
+              ~ '(^| )(principal|vice principal|head teacher|headteacher|headmaster|head master|headmistress|head mistress)( |$)'
           )
         )
     );

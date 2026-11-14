@@ -30,7 +30,7 @@ create or replace function private.is_active_account() returns boolean language 
 create or replace function private.schoolpro_operationally_active(p_school uuid) returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_schools where id=p_school)
 $$;
-create or replace function private.is_admin(p_roles public.user_role[]) returns boolean language sql stable as $ select auth.uid()='30000000-0000-0000-0000-000000000005'::uuid $;
+create or replace function private.is_admin(p_roles public.user_role[]) returns boolean language sql stable as $$ select auth.uid()='30000000-0000-0000-0000-000000000005'::uuid $$;
 create or replace function public.schoolpro_user_permissions(p_school uuid) returns text[] language sql stable security definer set search_path='' as $$
  select case when exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.status='active' and m.employment_status='active' and m.role='game_master') then array['games']::text[] else array[]::text[] end
 $$;

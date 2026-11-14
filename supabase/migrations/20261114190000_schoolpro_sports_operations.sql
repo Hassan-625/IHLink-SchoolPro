@@ -397,6 +397,9 @@ alter table public.schoolpro_sports_fixtures enable row level security;
 alter table public.schoolpro_sports_fixture_result_history enable row level security;
 alter table public.schoolpro_sports_fixture_audit enable row level security;
 
+revoke all on public.schoolpro_sports_teams,public.schoolpro_sports_team_coaches,public.schoolpro_sports_team_members,
+  public.schoolpro_sports_training_sessions,public.schoolpro_sports_fixtures,
+  public.schoolpro_sports_fixture_result_history,public.schoolpro_sports_fixture_audit from anon,authenticated;
 grant select,insert,update,delete on public.schoolpro_sports_teams,public.schoolpro_sports_team_coaches,
   public.schoolpro_sports_team_members,public.schoolpro_sports_training_sessions to authenticated;
 grant select,insert,delete on public.schoolpro_sports_fixtures to authenticated;

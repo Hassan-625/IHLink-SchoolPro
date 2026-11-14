@@ -711,6 +711,34 @@ jobs:
       - name: Test active term-Demo invoice and settlement guards, then post-expiry billing
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-term-demo-billing.integration.sql
 
+  annual-upgrade-finance-resubmission-integration:
+    name: Annual upgrade Finance receipt resubmission (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_annual_upgrade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_annual_upgrade_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_annual_upgrade_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Test annual upgrade and audited Finance receipt resubmission
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-annual-upgrade-postgres.integration.sql
+
   term-demo-lifecycle-integration:
     name: Term Demo lifecycle and annual grace (disposable PostgreSQL)
     runs-on: ubuntu-24.04

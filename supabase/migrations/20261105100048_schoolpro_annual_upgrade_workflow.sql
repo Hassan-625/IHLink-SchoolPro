@@ -1044,7 +1044,20 @@ begin
 
     if p_decision = 'approved' then
       if t.proof_storage_path is null
-         or t.proof_storage_path not like t.user_id::text || '/%'
+         or not (
+           t.proof_storage_path like t.user_id::text || '/%'
+           or exists (
+             select 1
+               from public.audit_logs a
+              where a.action = 'direct_transfer_resubmitted'
+                and a.product = t.platform_code
+                and a.target_type = 'direct_transfer'
+                and a.target_id = t.id::text
+                and a.actor_id::text = split_part(t.proof_storage_path, '/', 1)
+                and a.metadata ->> 'new_proof_storage_path' = t.proof_storage_path
+                and t.proof_storage_path like '%/finance-resubmissions/' || t.id::text || '/%'
+           )
+         )
          or not exists (
            select 1
              from storage.objects
@@ -1329,7 +1342,20 @@ begin
   end if;
 
   if p_decision = 'approved' then
-    if t.proof_storage_path not like t.user_id::text || '/%'
+    if not (
+           t.proof_storage_path like t.user_id::text || '/%'
+           or exists (
+             select 1
+               from public.audit_logs a
+              where a.action = 'direct_transfer_resubmitted'
+                and a.product = t.platform_code
+                and a.target_type = 'direct_transfer'
+                and a.target_id = t.id::text
+                and a.actor_id::text = split_part(t.proof_storage_path, '/', 1)
+                and a.metadata ->> 'new_proof_storage_path' = t.proof_storage_path
+                and t.proof_storage_path like '%/finance-resubmissions/' || t.id::text || '/%'
+           )
+         )
        or not exists (
          select 1
            from storage.objects

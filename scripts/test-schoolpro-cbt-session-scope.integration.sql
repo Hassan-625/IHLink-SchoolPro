@@ -11,7 +11,11 @@ create function auth.uid() returns uuid language sql stable as $$
 $$;
 create function private.is_active_account() returns boolean language sql stable as $$ select auth.uid() is not null $$;
 create function private.schoolpro_operationally_active(p_school uuid) returns boolean language sql stable as $$ select p_school is not null $$;
-create function private.schoolpro_module_allowed(p_school uuid,p_module text) returns boolean language sql stable as $ select p_school is not null and p_module='cbt' $;\ncreate function private.schoolpro_valid_session(p_session text) returns boolean language sql immutable as $ select p_session ~ '^[0-9]{4}/[0-9]{4}
+create function private.schoolpro_module_allowed(p_school uuid,p_module text) returns boolean language sql stable as $$ select p_school is not null and p_module='cbt' $$;
+create function private.schoolpro_valid_session(p_session text) returns boolean language sql immutable as $$
+  select p_session ~ '^[0-9]{4}/[0-9]{4}$'
+     and split_part(p_session,'/',2)::integer=split_part(p_session,'/',1)::integer+1
+$$;
 create function public.schoolpro_can_manage_cbt(p_school uuid) returns boolean language sql stable as $$
   select auth.uid()='00000000-0000-0000-0000-000000000005'::uuid
 $$;
@@ -88,12 +92,15 @@ insert into public.schoolpro_members values
  ('40000000-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000002','active','teacher'),
  ('40000000-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000003','active','teacher'),
  ('40000000-0000-0000-0000-000000000004','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000004','active','teacher'),
- ('40000000-0000-0000-0000-000000000005','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','00000000-0000-0000-0000-000000000007','active','teacher'),\n ('40000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000009','active','teacher');
+ ('40000000-0000-0000-0000-000000000005','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','00000000-0000-0000-0000-000000000007','active','teacher'),
+ ('40000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000009','active','teacher');
 insert into public.schoolpro_subject_assignments values
  ('50000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001','2026/2027',null),
  ('50000000-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000002','2025/2026',null),
  ('50000000-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000003','2026/2027',now()),
- ('50000000-0000-0000-0000-000000000004','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000004','2026/2027',null),\n ('50000000-0000-0000-0000-000000000005','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000005','2026/2027',null),\n ('50000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000006','2026/2027',null);
+ ('50000000-0000-0000-0000-000000000004','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000004','2026/2027',null),
+ ('50000000-0000-0000-0000-000000000005','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','20000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000005','2026/2027',null),
+ ('50000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','40000000-0000-0000-0000-000000000006','2026/2027',null);
 
 \ir ../supabase/migrations/20261115100000_schoolpro_cbt_session_scoped_authorization.sql
 

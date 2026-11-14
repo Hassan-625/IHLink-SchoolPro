@@ -3509,3 +3509,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added focused regression assertions for common labels, all four profiles, missing/invalid assessment schemes, and empty/invalid term totals. Existing school-scoped template-copy and roster paging assertions remain in the same test.
 - Deliberately excluded the large `SchoolProResultTemplates.tsx` UI/workflow diff, auth/context changes, payment flows, document security migrations, and unrelated PR #103 content. Those require separate scoped review and tests against current `main`.
 - This helper-only change is not yet merged; run CI on the new PR head before considering merge. No Supabase migration, production data change, or Render deployment was performed.
+
+
+### Selected student/guardian portal workspace correction (2026-11-14)
+- The old PR #103 contained a narrow school-context fix that was not yet present on current `main`: student and active-guardian portal identity lookups returned the first linked school even when the user had explicitly selected another workspace.
+- Ported only the two query filters into `useSchoolProContext.ts`. When a valid workspace is selected, student and active guardian lookups are constrained to that school; without a selection, existing behavior is preserved. Platform Super Admin still requires explicit school selection and is not treated as a school owner.
+- Added a focused source-contract regression and wired it into the main SchoolPro CI validation job.
+- No auth race logic, result-PIN endpoint, payment receipt workflow, Sports migration, or unrelated old PR #103/#105 changes are included. Those paths are already stronger on main or need separate entitlement/schema work.
+- This is a scoped code-only correction. No Supabase migration, production data change, or Render deployment is performed.

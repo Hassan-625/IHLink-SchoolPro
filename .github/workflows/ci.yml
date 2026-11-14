@@ -34,6 +34,7 @@ jobs:
       - run: node scripts/test-school-dashboard-roles.mjs
       - run: node scripts/test-schoolpro-stage-ab-corrections.mjs
       - run: node scripts/test-school-context-relationships.mjs
+      - run: node scripts/test-schoolpro-selected-portal-workspace.mjs
       - run: node scripts/test-school-lesson-paging.mjs
       - run: node scripts/test-result-section-data.mjs
       - run: node scripts/test-result-workflow.mjs

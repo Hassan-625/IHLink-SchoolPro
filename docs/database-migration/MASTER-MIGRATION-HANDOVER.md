@@ -3544,3 +3544,14 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 ### Clarification — Demo is term-based on current main
 
 Follow-up inspection of SchoolProBookDemo.tsx, SchoolProTermDemoForm.tsx, and SchoolProOnboardingStatus.tsx found that current main already implements the term-based Demo request UI and uses schoolpro_demo_requests plus the schoolpro-demo-documents storage bucket. The published customer contract is that access ends at term end or 14 days after exams finish, whichever is later. Therefore PR #104's one-year Demo activation model must **not** be adopted as the assumed requirement. Issue #177 has been corrected to preserve the current term-based contract and audit existing SQL/RLS/expiry behavior before identifying any genuine gap. No production action taken.
+
+
+### SchoolPro Games sports operations scope — issue #178 (2026-11-14)
+
+- Created [issue #178](https://github.com/Hassan-625/IHLink-SchoolPro/issues/178) to track the missing sports operations as a separately scoped implementation from stale PR #105.
+- Reconfirmed current `main` already provides canonical house configuration/history, House Master appointments, school-wide house roster, competition events/entries/criteria, judge assignments, score submission, versioned result approval/publication, and house-point ledger/standings.
+- The competition migration enforces same-school relationships for event criteria, entries, judges, scores, and house-point ledger records through database triggers. New sports operations must follow this database-enforced tenant-link pattern and add equivalent role/RLS coverage.
+- Issue #178 scopes the remaining work to school-scoped teams/squads, active teaching-staff coach appointments, training/activity schedules, fixtures, participant enrollment, and match results. Teams may reference `schoolpro_houses`; competitions must reuse canonical event/entry/result behavior rather than duplicate it.
+- Required security boundaries: existing Games entitlement; Game Master / explicitly authorized leadership management; coach access limited to assigned teams; House Master access remains appointment-scoped; cross-school references rejected in PostgreSQL; no privilege elevation through appointments.
+- Next delivery is a clean PR from current `main`, with focused disposable-PostgreSQL integration tests and handover updates. PR #105 remains open and unmerged; its duplicate `schoolpro_sports_houses` migration and Calendar entitlement coupling remain explicitly excluded.
+- No production migration, production data write, or Render deployment was performed.

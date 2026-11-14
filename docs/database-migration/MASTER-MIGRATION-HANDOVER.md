@@ -3651,3 +3651,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Added a restrictive SELECT policy to prevent any remaining permissive result-reader policy from bypassing the section-leader appointment check. The guard function is executable by `authenticated` and not by `anon`.
 - Read-only post-rollout verification confirms the helper and restrictive policy exist. Production had 0 result rows and 0 active section appointments at verification time; no result, student, appointment or other business rows were inserted, updated or deleted by the migration.
 - No Render deployment was performed.
+
+### Class-result submission metadata access correction (2026-11-14)
+
+- PR #188 merged as `7312e788ba777640dfb4ac13c67db303efab3138` from final head `5b366f0b5cb4b3952c2cabff1aef9d0660e2c4da`. All four required workflows passed on that exact head: SchoolPro CI (23 jobs), Stage C0 security/workflow regression, payment-page validation, and student-insert RETURNING RLS regression. No review threads or submitted reviews were outstanding.
+- Migration source: `20261114220000_schoolpro_class_result_submission_scope.sql`. It replaces the broad SELECT policy on `schoolpro_class_result_submissions` with the dedicated `private.schoolpro_can_read_class_result_submission(school_id, class_id)` authorization helper.
+- The helper retains access for platform Super Admin, school owner, active Proprietor, generic Administrator, explicit `school_admin`, and Exam Officer. Head Teacher, Vice Principal and Principal-designated Administrator position titles do not gain school-wide visibility solely from an Administrator role; they must have an active appointment covering the class. Form Masters are limited to their assigned class. Subject Teachers do not gain class-wide submission metadata access; their score access remains assignment-scoped.
+- Disposable PostgreSQL integration coverage verifies assigned/unassigned section leaders, Principal-title Administrator, Form Master, Subject Teacher, retained school-wide authorities, and cross-school isolation.
+- No production migration was applied and no production business rows were changed. No published results or score rows were modified. No Render deployment was performed.

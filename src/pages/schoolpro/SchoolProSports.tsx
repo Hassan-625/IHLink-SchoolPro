@@ -22,7 +22,9 @@ const field='mt-1 w-full rounded-lg border border-border bg-white p-2.5 text-sm'
 const localDate=(value:string)=>{if(!value)return '';const d=new Date(value);return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16)};
 export function SchoolProSports(){
  const ctx=useSchoolProContext(),{user}=useAuth();
- const canManage=canManageSchoolOperation('games',ctx.role);
+ const roleCanManage=canManageSchoolOperation('games',ctx.role);
+ const [hasGamesPermission,setHasGamesPermission]=useState(false);
+ const canManage=roleCanManage||hasGamesPermission;
  const sections=['teacher','class_teacher'].includes(ctx.role.toLowerCase().replaceAll(' ','_'))?teacherSections:schoolSections;
  const [teams,setTeams]=useState<Team[]>([]),[houses,setHouses]=useState<{id:string;name:string}[]>([]);
  const [staff,setStaff]=useState<Staff[]>([]),[students,setStudents]=useState<Student[]>([]);
@@ -38,6 +40,15 @@ export function SchoolProSports(){
  const [resultForm,setResultForm]=useState({fixture_id:'',home_score:'',away_score:'',notes:'',complete:true});
  const [search,setSearch]=useState('');
  const [scheduleDrafts,setScheduleDrafts]=useState<Record<string,string>>({});
+ useEffect(()=>{
+  if(roleCanManage){setHasGamesPermission(false);return;}
+  if(!supabase||!ctx.schoolId){setHasGamesPermission(false);return;}
+  let current=true;
+  void supabase.rpc('schoolpro_user_permissions',{p_school:ctx.schoolId}).then(({data,error})=>{
+   if(current)setHasGamesPermission(!error&&Array.isArray(data)&&data.includes('games'));
+  });
+  return()=>{current=false;};
+ },[ctx.schoolId,roleCanManage]);
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
   setError('');

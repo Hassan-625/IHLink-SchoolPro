@@ -34,6 +34,7 @@ import { SchoolProStaffDiscipline } from "@/pages/schoolpro/SchoolProStaffDiscip
 import { SchoolProDiscipline } from "@/pages/schoolpro/SchoolProDiscipline";
 import { SchoolProLeave } from "@/pages/schoolpro/SchoolProLeave";
 import { SchoolProGames } from "@/pages/schoolpro/SchoolProGames";
+import { SchoolProSports } from "@/pages/schoolpro/SchoolProSports";
 import { SchoolProHouseDashboard } from "@/pages/schoolpro/SchoolProHouseDashboard";
 import { SchoolProJudgePortal } from "@/pages/schoolpro/SchoolProJudgePortal";
 import { SchoolProClasses } from "@/pages/schoolpro/SchoolProClasses";
@@ -147,6 +148,7 @@ export default function App(){
   <Route path="/schoolpro/discipline" element={<Guard permission="discipline"><SchoolProDiscipline/></Guard>}/>
   <Route path="/schoolpro/leave" element={<Guard permission="dashboard"><SchoolProLeave/></Guard>}/>
   <Route path="/schoolpro/games" element={<Guard permission="games"><SchoolProGames/></Guard>}/>
+  <Route path="/schoolpro/sports" element={<Guard permission="games"><SchoolProSports/></Guard>}/>
   <Route path="/schoolpro/house-dashboard" element={<Guard permission="dashboard"><SchoolProHouseMasterGate><SchoolProHouseDashboard/></SchoolProHouseMasterGate></Guard>}/>
   <Route path="/schoolpro/judge" element={<Guard><SchoolProJudgePortal/></Guard>}/>
   <Route path="/schoolpro/classes" element={<Guard permission="classes"><SchoolProClasses/></Guard>}/>

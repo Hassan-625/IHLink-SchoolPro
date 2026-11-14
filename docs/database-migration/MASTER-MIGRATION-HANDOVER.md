@@ -3517,3 +3517,30 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Added a focused source-contract regression and wired it into the main SchoolPro CI validation job.
 - No auth race logic, result-PIN endpoint, payment receipt workflow, Sports migration, or unrelated old PR #103/#105 changes are included. Those paths are already stronger on main or need separate entitlement/schema work.
 - This is a scoped code-only correction. No Supabase migration, production data change, or Render deployment is performed.
+
+
+## PR #105 — Sports operations extraction review (2026-11-14)
+
+**PR:** [#105 — SchoolPro: staff access, sports management, and profile correction safeguards](https://github.com/Hassan-625/IHLink-SchoolPro/pull/105)  
+**Status:** Do not merge wholesale. Its branch is based on the superseded `fix/result-design-section-selection` base and contains unrelated staff, profile, attendance, assessment, and result work. Several isolated areas have already been superseded or separately merged; the remaining Sports implementation requires redesign against current `main`.
+
+- Current `main` already has the canonical Houses / Games / Competitions model: `schoolpro_houses`, `schoolpro_house_master_assignments`, `schoolpro_student_house_history`, competition events, judges, scoring, result approval/publication, and house-point standings. Continue extending this model; do not create a second sports-house catalogue.
+- PR #105's `20261015235000_schoolpro_sports_houses_management.sql` creates a parallel `schoolpro_sports_houses` table and gates all five sports tables with `private.schoolpro_module_allowed(school_id, 'calendar')`. This conflicts with the established Games entitlement and would make sports availability depend on the unrelated Calendar module. Its route also uses the Calendar permission. Do not apply this migration or port its route guard as written.
+- PR #105's proposed `SchoolProSports.tsx` provides basic CRUD for teams, activities, fixtures, and participants, but its current UI is not a safe drop-in: it is coupled to the duplicate sports-house table and generic CRUD path, and does not by itself establish the complete role/RLS/tenant contract required for production.
+- Remaining product gap is sports operations integrated with the canonical Games model: school-scoped teams, coaches appointed from active teaching staff, training/activity schedules, fixtures, participant enrollment, and match results. Link teams to existing canonical houses; validate every referenced team, coach, activity, and student belongs to the same selected school. Preserve the existing House Master appointment-scoped dashboard and existing Games roster/competition workflows.
+- Next implementation must use the existing Games module entitlement and permissions, with explicit Game Master / school leadership management boundaries and database-enforced school isolation. Add disposable-PostgreSQL integration coverage for cross-school reference rejection and role-based read/write denial before proposing any production migration.
+- This review was source-only. No PR was merged or closed, no migration was applied, no production rows were changed, and no Render deployment was performed.
+
+
+## PR #103 and PR #104 reconciliation (2026-11-14)
+
+- PR #103 was closed as superseded after its safe section-template helper, UI, and selected-workspace changes were isolated and merged in #173, #174, and #175. The stale aggregate branch is not to be merged.
+- PR #104 is **not** safe to merge wholesale. Its annual upgrade request model and settlement path conflict with the newer, already-merged PR #117 implementation, which has immutable time-prorated quotes and a separate Finance approval/settlement path.
+- Review of current `main` confirms the Subscription UI recognizes a zero-amount Demo entitlement and displays its expiry, but the PR #104 Demo-specific backend lifecycle is not present in the current annual-upgrade migration: the latter contains no `schoolpro_demo_requests`, `activate_schoolpro_demo`, `free_access_ends_at`, or Demo expiry enforcement. PR #104's migration contains Demo activation, paid-invoice suppression during active Demo, and expiry enforcement, but also rewrites the upgrade and transfer-settlement paths in ways that must not replace PR #117.
+- Keep PR #104 open pending a separate Demo-only design/review. Required work: confirm existing Demo request/calendar/document schema and storage bucket on current main; port only the Demo lifecycle and expiry rules; integrate with the current PR #117 billing/upgrade schema without changing its quote/Finance workflow; add disposable PostgreSQL tests for one-time activation, one-year term, active-Demo invoice suppression, expiry, and paid annual 14-day grace; then obtain CI and security review. Do not activate Demo for any production school or apply its migration without explicit production approval.
+
+
+
+### Clarification — Demo is term-based on current main
+
+Follow-up inspection of SchoolProBookDemo.tsx, SchoolProTermDemoForm.tsx, and SchoolProOnboardingStatus.tsx found that current main already implements the term-based Demo request UI and uses schoolpro_demo_requests plus the schoolpro-demo-documents storage bucket. The published customer contract is that access ends at term end or 14 days after exams finish, whichever is later. Therefore PR #104's one-year Demo activation model must **not** be adopted as the assumed requirement. Issue #177 has been corrected to preserve the current term-based contract and audit existing SQL/RLS/expiry behavior before identifying any genuine gap. No production action taken.

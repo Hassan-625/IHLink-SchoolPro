@@ -206,6 +206,7 @@ select public.schoolpro_request_result_reopening(
  '20000000-0000-4000-8000-000000000001',null,
  'First Term','2025/2026','Correct the uploaded subject marks'
 ) as teacher_request \gset
+select set_config('test.teacher_request', :'teacher_request', false);
 
 do $test$
 begin
@@ -311,6 +312,7 @@ select public.schoolpro_request_result_reopening(
  '20000000-0000-4000-8000-000000000001',null,
  'Second Term','2025/2026','Request correction to published class marks'
 ) as form_master_request \gset
+select set_config('test.form_master_request', :'form_master_request', false);
 select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333',false);
 do $test$
 begin

@@ -632,3 +632,133 @@ end;
 $upgrade_negative_paths$;
 
 select 'PASS: annual upgrade negative-path integration tests' as result;
+
+-- Finance-reviewed receipt corrections must remain valid for both the
+-- annual-upgrade settlement branch and ordinary annual subscription branch.
+do $upgrade_finance_receipt_resubmission$
+declare
+  v_owner uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+  v_finance uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  v_upgrade_school uuid := '11111111-1111-4111-8111-111111111111';
+  v_upgrade_subscription uuid := '22222222-2222-4222-8222-222222222222';
+  v_standard_school uuid := '33333333-3333-4333-8333-333333333333';
+  v_catalog uuid := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  v_bank uuid := 'ffffffff-ffff-4fff-8fff-ffffffffffff';
+  v_request jsonb;
+  v_result jsonb;
+  v_request_id uuid;
+  v_invoice_id uuid;
+  v_submission_id uuid;
+  v_proof_path text;
+  v_invoice_amount numeric;
+begin
+  -- Separate school for an upgrade receipt resubmitted by Finance.
+  insert into public.schoolpro_schools(id,owner_id,name,plan,status)
+  values(v_upgrade_school,v_owner,'Upgrade Resubmission School','starter','active');
+
+  insert into public.schoolpro_subscriptions(
+    id,school_id,tier,billing_cycle,amount,status,starts_at,renews_at
+  ) values (
+    v_upgrade_subscription,v_upgrade_school,'starter','annual',50000,'active',
+    clock_timestamp()-interval '180 days',clock_timestamp()+interval '185 days'
+  );
+
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  perform set_config('request.test.active','true',true);
+  perform set_config('request.test.school_id',v_upgrade_school::text,true);
+  perform set_config('request.test.school_role','proprietor',true);
+  perform set_config('request.test.admin_role','',true);
+
+  v_request:=public.request_schoolpro_upgrade(v_upgrade_school,v_catalog);
+  v_request_id:=(v_request->>'id')::uuid;
+  v_invoice_amount:=(v_request->>'outstanding_amount')::numeric;
+
+  perform set_config('request.jwt.claim.sub',v_finance::text,true);
+  perform set_config('request.test.admin_role','finance',true);
+  perform public.review_schoolpro_upgrade(
+    v_request_id,'approved','Approve upgrade before audited receipt resubmission',1
+  );
+
+  select id into v_invoice_id from public.schoolpro_subscription_intents
+   where upgrade_request_id=v_request_id and status='pending';
+  if v_invoice_id is null then raise exception 'Upgrade resubmission fixture did not create its invoice'; end if;
+
+  v_submission_id:=gen_random_uuid();
+  v_proof_path:=v_finance::text||'/finance-resubmissions/'||v_submission_id::text||'/receipt.png';
+
+  insert into storage.objects(bucket_id,name)
+  values('direct-transfer-proofs',v_proof_path);
+
+  insert into public.direct_transfer_submissions(
+    id,user_id,platform_code,invoice_id,source_reference,bank_account_id,
+    amount,sender_name,customer_reference,proof_storage_path,status
+  )
+  select v_submission_id,v_owner,'schoolpro_subscription',i.id,i.reference,v_bank,
+    i.amount,'Synthetic Upgrade Payer','UPGRADE-FINANCE-RESUB-001',v_proof_path,'awaiting_verification'
+  from public.schoolpro_subscription_intents i where i.id=v_invoice_id;
+
+  insert into public.audit_logs(
+    actor_id,action,product,target_type,target_id,metadata
+  ) values (
+    v_finance,'direct_transfer_resubmitted','schoolpro_subscription','direct_transfer',
+    v_submission_id::text,jsonb_build_object('new_proof_storage_path',v_proof_path)
+  );
+
+  v_result:=private.review_school_subscription_transfer(
+    v_submission_id,'approved','Approve audited Finance-resubmitted upgrade receipt'
+  );
+
+  if not exists(select 1 from public.schoolpro_upgrade_requests where id=v_request_id and status='paid')
+     or not exists(select 1 from public.direct_transfer_submissions where id=v_submission_id and status='approved')
+     or not exists(select 1 from public.schoolpro_subscription_payments
+       where upgrade_request_id=v_request_id and amount=v_invoice_amount and status='credited') then
+    raise exception 'Audited Finance receipt resubmission did not settle the upgrade: %',v_result;
+  end if;
+
+  -- Separate school for the ordinary annual-subscription settlement branch.
+  insert into public.schoolpro_schools(id,owner_id,name,plan,status)
+  values(v_standard_school,v_owner,'Standard Resubmission School','starter','trial');
+
+  insert into public.schoolpro_subscription_intents(
+    school_id,payer_user_id,catalog_id,billing_cycle,amount,reference,status,payment_method
+  ) values (
+    v_standard_school,v_owner,v_catalog,'annual',100000,'SCHSUB-STANDARD-RESUB-001','pending','bank_transfer'
+  ) returning id into v_invoice_id;
+
+  v_submission_id:=gen_random_uuid();
+  v_proof_path:=v_finance::text||'/finance-resubmissions/'||v_submission_id::text||'/receipt.png';
+
+  insert into storage.objects(bucket_id,name)
+  values('direct-transfer-proofs',v_proof_path);
+
+  insert into public.direct_transfer_submissions(
+    id,user_id,platform_code,invoice_id,source_reference,bank_account_id,
+    amount,sender_name,customer_reference,proof_storage_path,status
+  )
+  select v_submission_id,v_owner,'schoolpro_subscription',i.id,i.reference,v_bank,
+    i.amount,'Synthetic Standard Payer','STANDARD-FINANCE-RESUB-001',v_proof_path,'awaiting_verification'
+  from public.schoolpro_subscription_intents i where i.id=v_invoice_id;
+
+  insert into public.audit_logs(
+    actor_id,action,product,target_type,target_id,metadata
+  ) values (
+    v_finance,'direct_transfer_resubmitted','schoolpro_subscription','direct_transfer',
+    v_submission_id::text,jsonb_build_object('new_proof_storage_path',v_proof_path)
+  );
+
+  v_result:=private.review_school_subscription_transfer(
+    v_submission_id,'approved','Approve audited Finance-resubmitted annual subscription receipt'
+  );
+
+  if not exists(select 1 from public.direct_transfer_submissions where id=v_submission_id and status='approved')
+     or not exists(select 1 from public.schoolpro_subscription_intents where id=v_invoice_id and status='paid')
+     or not exists(select 1 from public.schoolpro_subscriptions
+       where school_id=v_standard_school and tier='professional' and billing_cycle='annual' and amount=100000 and status='active') then
+    raise exception 'Audited Finance receipt resubmission did not settle the ordinary subscription: %',v_result;
+  end if;
+
+  raise notice 'PASS: audited Finance receipt resubmission accepted for upgrade and ordinary subscription settlement';
+end;
+$upgrade_finance_receipt_resubmission$;
+
+select 'PASS: annual-upgrade and standard-subscription Finance receipt resubmission compatibility' as result;

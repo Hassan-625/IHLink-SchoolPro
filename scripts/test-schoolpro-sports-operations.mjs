@@ -48,6 +48,7 @@ assert.doesNotMatch(migration, /app\.schoolpro_sports_result_rpc/);
 assert.match(migration, /schoolpro_sports_coach_roster/);
 assert.match(migration, /pg_advisory_xact_lock/);
 assert.match(migration, /schoolpro_close_archived_team_assignments/);
+assert.match(migration, /new\.ended_at is not null or t\.is_active/);
 assert.match(migration, /schoolpro_prevent_sports_school_reassignment/);
 assert.doesNotMatch(migration, /schoolpro_module_allowed\([^)]*'calendar'/);
 console.log('PASS: SchoolPro sports operations UI, Games entitlement, canonical Houses, coach scope, tenant guards and audited results are wired.');

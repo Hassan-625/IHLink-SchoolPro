@@ -3679,3 +3679,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Pre-apply read-only inspection found 0 correction requests. Post-apply verification confirms both Section Head RLS policies, reviewer metadata, and the review RPC exist; authenticated execution is granted and anon execution is denied. Production still has 0 correction requests and 0 reopened result rows.
 - No production result rows, student records, correction requests, or other business data were inserted, updated, or deleted by this migration. Render's configured auto-deploy for main published the merged changes: live deployment `dep-dbse0fm8bjmc73efm3k0`, commit `c86d91155a6a91432c7153c02a71d876ea7a29ac` (PR #192 handover commit), completed successfully at 2026-11-14 22:27:31 UTC. PR #191's application commit was included in the preceding successful auto-deploy. No manual Render deploy was issued.
 - Security advisors continue to report the project's existing broad findings (policy-less RPC-only tables, SECURITY DEFINER grants, and leaked-password protection disabled). The new review RPC explicitly revokes execution from `PUBLIC` and `anon`, grants it to `authenticated`, and post-apply privilege checks confirmed anon cannot execute it.
+
+
+### Whole-school result publication boundary regression — PR #194 (2026-11-14)
+
+- PR #194 merged as `e066e42dcb395b28a6a6cc770b60f2e7d63c2379` from corrected final head `1e6eb34d1eb988d121cf4180f1513e4d2b0350d6` after all three required workflows passed on that exact head: SchoolPro CI, student-insert RETURNING RLS regression, and payment-page validation.
+- Test-only change to `scripts/test-schoolpro-atomic-bulk-result-approval.mjs`; no application behavior, migration, production Supabase access, or business-data change.
+- The regression now asserts the whole-school expected result matrix from the school class catalogue, active subject allocations, session-specific enrollment/current active class fallback, assessment completeness, missing or mis-scoped result blocking, Exam Officer approval, publication scope locking, authorization, final approval requirements, immutable published results, audit behavior, and anonymous/public caller denial.
+- An initial CI run caught a JavaScript assertion-string syntax error; it was corrected before the final head. All required checks passed on the corrected head before merge.
+- No Supabase production migration or data operation was required. Render's configured main-branch auto-deploy behavior applies; no manual deployment was initiated for this test-only change.

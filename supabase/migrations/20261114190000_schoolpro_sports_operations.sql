@@ -329,7 +329,7 @@ using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoo
 
 create policy schoolpro_sports_coaches_read on public.schoolpro_sports_team_coaches for select to authenticated
 using (private.schoolpro_sports_can_manage(school_id)
-  or exists(select 1 from public.schoolpro_members m where m.id=member_id and m.school_id=school_id and m.user_id=auth.uid()));
+  or exists(select 1 from public.schoolpro_members m where m.id=schoolpro_sports_team_coaches.member_id and m.school_id=schoolpro_sports_team_coaches.school_id and m.user_id=auth.uid()));
 create policy schoolpro_sports_coaches_manage on public.schoolpro_sports_team_coaches for all to authenticated
 using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoolpro_sports_can_manage(school_id));
 
@@ -352,7 +352,7 @@ using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoo
 
 create policy schoolpro_sports_result_history_read on public.schoolpro_sports_fixture_result_history for select to authenticated
 using (private.schoolpro_sports_can_manage(school_id) or exists(
-  select 1 from public.schoolpro_sports_fixtures f where f.id=fixture_id and f.school_id=school_id
+  select 1 from public.schoolpro_sports_fixtures f where f.id=schoolpro_sports_fixture_audit.fixture_id and f.school_id=schoolpro_sports_fixture_audit.school_id
     and (private.schoolpro_sports_is_coach(school_id,f.home_team_id) or private.schoolpro_sports_is_coach(school_id,f.away_team_id))
 ));
 create policy schoolpro_sports_fixture_audit_read on public.schoolpro_sports_fixture_audit for select to authenticated
@@ -360,3 +360,23 @@ using (private.schoolpro_sports_can_manage(school_id) or exists(
   select 1 from public.schoolpro_sports_fixtures f where f.id=fixture_id and f.school_id=school_id
     and (private.schoolpro_sports_is_coach(school_id,f.home_team_id) or private.schoolpro_sports_is_coach(school_id,f.away_team_id))
 ));
+
+
+-- A coach receives a narrowly scoped roster projection, not general student-table access.
+create or replace function public.schoolpro_sports_coach_roster(p_school uuid,p_team uuid)
+returns table (
+  team_id uuid,student_id uuid,admission_number text,first_name text,middle_name text,
+  last_name text,class_name text,class_arm text,joined_at timestamptz
+)
+language sql stable security definer set search_path = ''
+as $$
+  select tm.team_id,st.id,st.admission_number,st.first_name,st.middle_name,st.last_name,
+    coalesce(c.name,st.class_name),c.arm,tm.joined_at
+  from public.schoolpro_sports_team_members tm
+  join public.schoolpro_students st on st.id=tm.student_id and st.school_id=tm.school_id and st.status='active'
+  left join public.schoolpro_classes c on c.id=st.class_id and c.school_id=st.school_id
+  where tm.school_id=p_school and tm.team_id=p_team and tm.ended_at is null
+    and (private.schoolpro_sports_can_manage(p_school) or private.schoolpro_sports_is_coach(p_school,p_team));
+$$;
+revoke all on function public.schoolpro_sports_coach_roster(uuid,uuid) from public,anon;
+grant execute on function public.schoolpro_sports_coach_roster(uuid,uuid) to authenticated;

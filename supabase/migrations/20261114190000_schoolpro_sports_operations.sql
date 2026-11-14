@@ -95,6 +95,7 @@ create table public.schoolpro_sports_fixtures (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (school_id,id),
+  foreign key (school_id,event_id) references public.schoolpro_competition_events(school_id,id) on delete restrict,
   foreign key (school_id,home_team_id) references public.schoolpro_sports_teams(school_id,id) on delete restrict,
   foreign key (school_id,away_team_id) references public.schoolpro_sports_teams(school_id,id) on delete restrict,
   foreign key (school_id,home_entry_id) references public.schoolpro_competition_entries(school_id,id) on delete restrict,

@@ -7,10 +7,10 @@ const permissions = read('../src/lib/schoolPermissions.ts');
 const ui = read('../src/pages/schoolpro/SchoolProSports.tsx');
 const migration = read('../supabase/migrations/20261114190000_schoolpro_sports_operations.sql');
 
-assert.match(app, /path="\/schoolpro\/sports" element={<Guard permission="games"><SchoolProSports\/><\/Guard>}/);
+assert.match(app, /path="\/schoolpro\/sports" element={<Guard permission="dashboard"><SchoolProSports\/><\/Guard>}/);
 assert.match(app, /import \{ SchoolProSports \} from "@\/pages\/schoolpro\/SchoolProSports"/);
 assert.match(nav, /Sports Teams & Fixtures.*href:'\/schoolpro\/sports'/);
-assert.match(permissions, /'sports':'games'/);
+assert.match(permissions, /'sports':'dashboard'/);
 assert.match(ui, /schoolpro_sports_teams/);
 assert.match(ui, /schoolpro_sports_team_coaches/);
 assert.match(ui, /schoolpro_sports_team_members/);

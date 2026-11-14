@@ -149,6 +149,18 @@ as $$
     );
 $$;
 
+create or replace function private.schoolpro_sports_is_member(p_school uuid,p_member uuid)
+returns boolean language sql stable security definer set search_path = ''
+as $
+  select auth.uid() is not null and exists(
+    select 1 from public.schoolpro_members m
+    where m.id=p_member and m.school_id=p_school and m.user_id=auth.uid()
+      and m.status='active' and m.employment_status='active'
+  );
+$;
+revoke all on function private.schoolpro_sports_is_member(uuid,uuid) from public,anon;
+grant execute on function private.schoolpro_sports_is_member(uuid,uuid) to authenticated;
+
 create or replace function private.schoolpro_sports_is_coach(p_school uuid,p_team uuid)
 returns boolean language sql stable security definer set search_path = ''
 as $$
@@ -307,9 +319,10 @@ begin
     p_school,p_fixture,next_version,p_home_score,p_away_score,next_status,nullif(btrim(p_notes),''),
     case when f.result_version=0 then 'recorded' else 'amended' end,auth.uid()
   );
+  perform set_config('app.schoolpro_sports_result_rpc','off',true);
   return next_version;
 end;
-$$;
+$;
 revoke all on function public.schoolpro_record_sports_fixture_result(uuid,uuid,integer,integer,text,boolean) from public,anon;
 grant execute on function public.schoolpro_record_sports_fixture_result(uuid,uuid,integer,integer,text,boolean) to authenticated;
 
@@ -332,7 +345,7 @@ using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoo
 
 create policy schoolpro_sports_coaches_read on public.schoolpro_sports_team_coaches for select to authenticated
 using (private.schoolpro_sports_can_manage(school_id)
-  or exists(select 1 from public.schoolpro_members m where m.id=schoolpro_sports_team_coaches.member_id and m.school_id=schoolpro_sports_team_coaches.school_id and m.user_id=auth.uid()));
+  or private.schoolpro_sports_is_member(schoolpro_sports_team_coaches.school_id,schoolpro_sports_team_coaches.member_id));
 create policy schoolpro_sports_coaches_manage on public.schoolpro_sports_team_coaches for all to authenticated
 using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoolpro_sports_can_manage(school_id));
 

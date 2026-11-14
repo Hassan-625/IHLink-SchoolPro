@@ -278,7 +278,7 @@ on public.schoolpro_results for select to authenticated
 using (
   case
     when school_id = any(
-      (select private.schoolpro_cached_access_schools('results','result-leader'))
+      private.schoolpro_cached_access_schools('results','result-leader')
     ) then true
     else (
       (select private.schoolpro_cached_result_reader_keys())

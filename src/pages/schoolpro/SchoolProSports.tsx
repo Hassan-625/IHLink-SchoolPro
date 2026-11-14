@@ -5,7 +5,7 @@ import {supabase} from '@/lib/supabase';
 import {ModulePage} from '@/components/ModulePage';
 import {Card} from '@/components/ui/Card';
 import {Button} from '@/components/ui/Button';
-import {schoolSections} from './schoolShared';
+import {schoolSections,teacherSections} from './schoolShared';
 import {canManageSchoolOperation} from '@/lib/schoolOperationalRoles';
 
 type Team={id:string;name:string;sport:string;age_group:string|null;section_key:string|null;house_id:string|null;exclusive_membership:boolean;is_active:boolean};
@@ -23,6 +23,7 @@ const localDate=(value:string)=>{if(!value)return '';const d=new Date(value);ret
 export function SchoolProSports(){
  const ctx=useSchoolProContext(),{user}=useAuth();
  const canManage=canManageSchoolOperation('games',ctx.role);
+ const sections=['teacher','class_teacher'].includes(ctx.role.toLowerCase().replaceAll(' ','_'))?teacherSections:schoolSections;
  const [teams,setTeams]=useState<Team[]>([]),[houses,setHouses]=useState<{id:string;name:string}[]>([]);
  const [staff,setStaff]=useState<Staff[]>([]),[students,setStudents]=useState<Student[]>([]);
  const [coaches,setCoaches]=useState<Coach[]>([]),[roster,setRoster]=useState<Roster[]>([]);
@@ -131,7 +132,7 @@ export function SchoolProSports(){
   if(!supabase||!scheduled)return;await save(()=>supabase!.from('schoolpro_sports_fixtures').update({scheduled_at:new Date(scheduled).toISOString(),venue:venue||null,status:'scheduled',updated_at:new Date().toISOString()}).eq('id',id).eq('school_id',ctx.schoolId).select('id'),'Fixture rescheduled; audit history retained.');
  }
  async function archiveTeam(team:Team){if(!supabase)return;await save(()=>supabase!.from('schoolpro_sports_teams').update({is_active:!team.is_active,updated_at:new Date().toISOString()}).eq('id',team.id).eq('school_id',ctx.schoolId).select('id'),team.is_active?'Team archived.':'Team reactivated.');}
- return <ModulePage product="schoolpro" sections={schoolSections} title="Sports Teams & Operations" description="Manage school sports teams, teaching-staff coaches, active student squads, training sessions, fixtures and audited match results. Houses and competitions remain linked to the canonical Games model." userName={ctx.schoolName} userRole={ctx.role} metrics={[{label:'Active teams',value:String(activeTeams.length)},{label:'Active squad members',value:String(roster.length)},{label:'Training sessions',value:String(sessions.length)},{label:'Fixtures',value:String(fixtures.length)}]}>
+ return <ModulePage product="schoolpro" sections={sections} title="Sports Teams & Operations" description="Manage school sports teams, teaching-staff coaches, active student squads, training sessions, fixtures and audited match results. Houses and competitions remain linked to the canonical Games model." userName={ctx.schoolName} userRole={ctx.role} metrics={[{label:'Active teams',value:String(activeTeams.length)},{label:'Active squad members',value:String(roster.length)},{label:'Training sessions',value:String(sessions.length)},{label:'Fixtures',value:String(fixtures.length)}]}>
   {(error||message)&&<div role="status" className={error?'rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-700':'rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700'}>{error||message}</div>}
   <p className="text-sm text-muted">Every operation is scoped to the selected school. Coaches can read only their appointed teams, rosters, sessions and fixtures. Team houses use the existing Houses catalogue; linked competition events continue to use the existing scoring and house-points workflow.</p>
   <input className={field} placeholder="Search teams and sports" value={search} onChange={e=>setSearch(e.target.value)}/>

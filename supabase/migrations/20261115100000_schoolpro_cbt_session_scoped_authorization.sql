@@ -28,6 +28,7 @@ as $function$
     and p_class is not null
     and p_subject is not null
     and nullif(btrim(p_session), '') is not null
+    and private.schoolpro_valid_session(btrim(p_session))
     and exists (
       select 1
       from public.schoolpro_classes c

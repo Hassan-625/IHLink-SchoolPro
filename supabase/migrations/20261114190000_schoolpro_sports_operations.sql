@@ -376,7 +376,12 @@ grant update(scheduled_at,venue,status,updated_at) on public.schoolpro_sports_fi
 grant select on public.schoolpro_sports_fixture_result_history,public.schoolpro_sports_fixture_audit to authenticated;
 
 create policy schoolpro_sports_teams_read on public.schoolpro_sports_teams for select to authenticated
-using (private.schoolpro_sports_can_manage(school_id) or private.schoolpro_sports_is_coach(school_id,id));
+using (private.schoolpro_sports_can_manage(school_id) or private.schoolpro_sports_is_coach(school_id,id) or exists(
+  select 1 from public.schoolpro_sports_fixtures f
+  where f.school_id=schoolpro_sports_teams.school_id
+    and (f.home_team_id=schoolpro_sports_teams.id or f.away_team_id=schoolpro_sports_teams.id)
+    and (private.schoolpro_sports_is_coach(f.school_id,f.home_team_id) or private.schoolpro_sports_is_coach(f.school_id,f.away_team_id))
+));
 create policy schoolpro_sports_teams_manage on public.schoolpro_sports_teams for all to authenticated
 using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoolpro_sports_can_manage(school_id));
 

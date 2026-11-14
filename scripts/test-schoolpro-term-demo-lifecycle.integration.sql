@@ -85,6 +85,8 @@ create table public.schoolpro_demo_requests (
   meeting_format text,
   status text not null,
   notes text,
+  activated_at timestamptz,
+  free_access_ends_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

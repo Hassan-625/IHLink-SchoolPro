@@ -1,4 +1,5 @@
 \set ON_ERROR_STOP on
+begin;
 create extension if not exists pgcrypto;
 create role authenticated;
 create role anon;

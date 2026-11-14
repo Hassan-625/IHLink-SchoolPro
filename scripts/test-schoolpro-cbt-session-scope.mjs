@@ -15,8 +15,8 @@ assert.match(migration,/drop policy if exists "schoolpro_plan_access" on public\
 assert.match(migration,/drop policy if exists "schoolpro_plan_attempts"/);
 assert.match(migration,/drop policy if exists "schoolpro_plan_answers"/);
 assert.match(migration,/drop policy if exists "test question authors write"/);
-assert.match(migration,/public\.schoolpro_cbt_can_author\( test_row\.school_id,test_row\.class_id,test_row\.subject_id,test_row\.session\)/);
-assert.match(manager,/class_id:classid,subject_id:subjectid,session:session\.trim\(\)/);
+assert.match(migration,/private\\.schoolpro_cbt_can_author\( test_row\.school_id,test_row\.class_id,test_row\.subject_id,test_row\.session\)/);
+assert.match(manager,/class_id:classId,subject_id:subjectId,session:session\.trim\(\)/);
 assert.match(manager,/q\.session===test\?\.session/);
 assert.match(bank,/session:session\.trim\(\)/);
 assert.match(bank,/academic session \(e\.g\. 2026\/2027\)/i);

@@ -34,9 +34,9 @@ create or replace function private.is_admin(p_roles public.user_role[]) returns 
 create or replace function public.schoolpro_user_permissions(p_school uuid) returns text[] language sql stable security definer set search_path='' as $$
  select case when exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.status='active' and m.employment_status='active' and m.role='game_master') then array['games']::text[] else array[]::text[] end
 $$;
-create or replace function private.schoolpro_module_allowed(p_school uuid,p_permission text) returns boolean language sql stable security definer set search_path='' as $$
- select auth.uid() is not null and p_permission=any(public.schoolpro_user_permissions(p_school))
-$$;
+create or replace function private.schoolpro_module_allowed(p_school uuid,p_permission text) returns boolean language sql stable security definer set search_path='' as $
+ select auth.uid() is not null and p_permission='games' and exists(select 1 from public.schoolpro_schools where id=p_school)
+$;
 grant usage on schema public,auth,private to authenticated,anon;
 grant execute on function auth.uid() to authenticated,anon;
 grant execute on function private.is_active_account() to authenticated;
@@ -53,7 +53,10 @@ insert into public.schoolpro_members(id,school_id,user_id,role,status,employment
  ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','game_master','active','active'),
  ('20000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','teacher','active','active'),
  ('20000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000003','class_teacher','active','active'),
- ('20000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000004','teacher','active','active');
+ ('20000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000002','30000000-0000-0000-0000-000000000004','teacher','active','active'),
+ ('20000000-0000-0000-0000-000000000005','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000006','teacher','active','active');
+insert into public.schoolpro_member_responsibilities(school_id,member_id,responsibility) values
+ ('10000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000005','school_admin');
 insert into public.schoolpro_students(id,school_id,status,first_name,last_name,admission_number,class_name) values
  ('40000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','active','Ada','One','A001','Basic 5'),
  ('40000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','active','Ben','Two','B001','Basic 5');
@@ -202,6 +205,13 @@ do $$ begin
  if (select count(*) from public.schoolpro_sports_teams where school_id='10000000-0000-0000-0000-000000000001')<>0 then raise exception 'unassigned teacher can see sports teams'; end if;
  if (select count(*) from public.schoolpro_sports_coach_roster('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001'))<>0 then raise exception 'unassigned teacher can access coach roster'; end if;
 end $$;
+reset role;
+select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000006',false);
+set role authenticated;
+do $ begin
+ if not private.schoolpro_sports_can_manage('10000000-0000-0000-0000-000000000001') then raise exception 'explicit school_admin responsibility did not grant Games management'; end if;
+ insert into public.schoolpro_sports_teams(school_id,name,sport) values('10000000-0000-0000-0000-000000000001','Leadership approved team','Football');
+end $;
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',false);
 set role authenticated;

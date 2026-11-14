@@ -195,6 +195,9 @@ begin
     if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and t.is_active) then
       raise exception 'Participant team must be active and belong to the selected school';
     end if;
+    if new.ended_at is null then
+      perform pg_advisory_xact_lock(hashtextextended(new.school_id::text||':'||new.student_id::text,0));
+    end if;
     if new.ended_at is null and exists(
       select 1 from public.schoolpro_sports_team_members other
       join public.schoolpro_sports_teams other_team on other_team.id=other.team_id and other_team.school_id=other.school_id
@@ -352,13 +355,13 @@ using (private.schoolpro_sports_can_manage(school_id)) with check (private.schoo
 
 create policy schoolpro_sports_result_history_read on public.schoolpro_sports_fixture_result_history for select to authenticated
 using (private.schoolpro_sports_can_manage(school_id) or exists(
-  select 1 from public.schoolpro_sports_fixtures f where f.id=schoolpro_sports_fixture_audit.fixture_id and f.school_id=schoolpro_sports_fixture_audit.school_id
-    and (private.schoolpro_sports_is_coach(school_id,f.home_team_id) or private.schoolpro_sports_is_coach(school_id,f.away_team_id))
+  select 1 from public.schoolpro_sports_fixtures f where f.id=schoolpro_sports_fixture_result_history.fixture_id and f.school_id=schoolpro_sports_fixture_result_history.school_id
+    and (private.schoolpro_sports_is_coach(schoolpro_sports_fixture_result_history.school_id,f.home_team_id) or private.schoolpro_sports_is_coach(schoolpro_sports_fixture_result_history.school_id,f.away_team_id))
 ));
 create policy schoolpro_sports_fixture_audit_read on public.schoolpro_sports_fixture_audit for select to authenticated
 using (private.schoolpro_sports_can_manage(school_id) or exists(
-  select 1 from public.schoolpro_sports_fixtures f where f.id=fixture_id and f.school_id=school_id
-    and (private.schoolpro_sports_is_coach(school_id,f.home_team_id) or private.schoolpro_sports_is_coach(school_id,f.away_team_id))
+  select 1 from public.schoolpro_sports_fixtures f where f.id=schoolpro_sports_fixture_audit.fixture_id and f.school_id=schoolpro_sports_fixture_audit.school_id
+    and (private.schoolpro_sports_is_coach(schoolpro_sports_fixture_audit.school_id,f.home_team_id) or private.schoolpro_sports_is_coach(schoolpro_sports_fixture_audit.school_id,f.away_team_id))
 ));
 
 

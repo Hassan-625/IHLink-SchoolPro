@@ -30,6 +30,7 @@ create table public.schoolpro_members (
   school_id uuid not null references public.schoolpro_schools(id),
   user_id uuid not null,
   role public.school_member_role not null,
+  position_title text,
   status text not null default 'active'
 );
 
@@ -155,15 +156,12 @@ as $$ select false $$;
 
 grant usage on schema private to authenticated;
 
--- Apply the exact production forward migration under test.
-\ir ../supabase/migrations/20261114213000_schoolpro_section_leader_result_read_scope.sql
-
 create or replace function private.schoolpro_member_leads_student_section(
   p_school uuid,p_student uuid,p_session text
 )
 returns boolean language sql stable security definer
 set search_path=''
-as $$
+as $
   select exists(
     select 1
     from public.schoolpro_members m
@@ -174,9 +172,25 @@ as $$
       on c.school_id=p_school and c.id=st.class_id and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid()
       and m.status='active'
-      and m.role in ('head_teacher','vice_principal')
+      and (
+        m.role in ('head_teacher','vice_principal')
+        or (
+          m.role='administrator'
+          and (
+            regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'principal%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+          )
+        )
+      )
   )
-$$;
+$;
+
+-- Apply the exact production forward migration under test.
+\ir ../supabase/migrations/20261114213000_schoolpro_section_leader_result_read_scope.sql
+
 
 create or replace function private.schoolpro_member_leads_class(
   p_school uuid,p_class uuid
@@ -191,9 +205,22 @@ as $$
     join public.schoolpro_classes c
       on c.school_id=p_school and c.id=p_class and c.level=sl.section
     where m.school_id=p_school and m.user_id=auth.uid()
-      and m.status='active' and m.role in ('head_teacher','vice_principal')
+      and m.status='active'
+      and (
+        m.role in ('head_teacher','vice_principal')
+        or (
+          m.role='administrator'
+          and (
+            regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'principal%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
+            or regexp_replace(lower(trim(coalesce(m.position_title,''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+          )
+        )
+      )
   )
-$$;
+$;
 
 create or replace function private.schoolpro_can_read_student(p_student uuid)
 returns boolean language sql stable security definer
@@ -286,16 +313,19 @@ insert into public.schoolpro_schools(id,owner_id) values
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'),
  ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd');
 
-insert into public.schoolpro_members(id,school_id,user_id,role) values
- ('10000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','head_teacher'),
- ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-2222-4222-8222-222222222222','head_teacher'),
- ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','33333333-3333-4333-8333-333333333333','vice_principal'),
- ('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','44444444-4444-4444-8444-444444444444','exam_officer'),
- ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','administrator');
+insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
+ ('10000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','11111111-1111-4111-8111-111111111111','head_teacher',null),
+ ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-2222-4222-8222-222222222222','head_teacher',null),
+ ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','33333333-3333-4333-8333-333333333333','vice_principal',null),
+ ('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','44444444-4444-4444-8444-444444444444','exam_officer',null),
+ ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','administrator',null),
+ ('10000000-0000-4000-8000-000000000006','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','66666666-6666-4666-8666-666666666666','administrator','Principal'),
+ ('10000000-0000-4000-8000-000000000007','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','77777777-7777-4777-8777-777777777777','administrator','Principal');
 
 insert into public.schoolpro_section_leaders(id,school_id,member_id,section) values
  ('20000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000001','primary'),
- ('20000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000003','junior_secondary');
+ ('20000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000003','junior_secondary'),
+ ('20000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000006','senior_secondary');
 
 insert into public.schoolpro_member_responsibilities(school_id,member_id,responsibility) values
  ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000005','school_admin');
@@ -304,19 +334,22 @@ insert into public.schoolpro_classes(id,school_id,level) values
  ('30000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','primary'),
  ('30000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','nursery'),
  ('30000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','junior_secondary'),
- ('30000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','primary');
+ ('30000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','primary'),
+ ('30000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','senior_secondary');
 
 insert into public.schoolpro_students(id,school_id,class_id) values
  ('40000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000001'),
  ('40000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000002'),
  ('40000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000003'),
- ('40000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','30000000-0000-4000-8000-000000000004');
+ ('40000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','30000000-0000-4000-8000-000000000004'),
+ ('40000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000005');
 
 insert into public.schoolpro_results(id,school_id,student_id,subject_id,session,term,status) values
  ('50000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','40000000-0000-4000-8000-000000000001','60000000-0000-4000-8000-000000000001','2025/2026','First','published'),
  ('50000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','40000000-0000-4000-8000-000000000002','60000000-0000-4000-8000-000000000002','2025/2026','First','published'),
  ('50000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','40000000-0000-4000-8000-000000000003','60000000-0000-4000-8000-000000000003','2025/2026','First','published'),
- ('50000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','40000000-0000-4000-8000-000000000004','60000000-0000-4000-8000-000000000004','2025/2026','First','published');
+ ('50000000-0000-4000-8000-000000000004','cccccccc-cccc-4ccc-8ccc-cccccccccccc','40000000-0000-4000-8000-000000000004','60000000-0000-4000-8000-000000000004','2025/2026','First','published'),
+ ('50000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','40000000-0000-4000-8000-000000000005','60000000-0000-4000-8000-000000000005','2025/2026','First','published');
 
 set role authenticated;
 
@@ -352,11 +385,32 @@ begin
 end
 $test$;
 
+-- Principal stored as Administrator remains restricted to the assigned section.
+select set_config('request.jwt.claim.sub','66666666-6666-4666-8666-666666666666',false);
+do $test$
+begin
+  if (select count(*) from public.schoolpro_results) <> 1
+     or not exists(select 1 from public.schoolpro_results where id='50000000-0000-4000-8000-000000000005') then
+    raise exception 'Assigned Principal administrator must see only the appointed Senior Secondary result';
+  end if;
+end
+$test$;
+
+-- An Administrator titled Principal without an active appointment receives no result rows.
+select set_config('request.jwt.claim.sub','77777777-7777-4777-8777-777777777777',false);
+do $test$
+begin
+  if (select count(*) from public.schoolpro_results) <> 0 then
+    raise exception 'Unassigned Principal administrator received school-wide result access';
+  end if;
+end
+$test$;
+
 -- Exam Officer, explicit school administrator, and school owner retain school-wide access.
 select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444',false);
 do $test$
 begin
-  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 3
+  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 4
      or exists(select 1 from public.schoolpro_results where school_id='cccccccc-cccc-4ccc-8ccc-cccccccccccc') then
     raise exception 'Exam Officer school-wide scope or cross-school isolation failed';
   end if;
@@ -366,7 +420,7 @@ $test$;
 select set_config('request.jwt.claim.sub','55555555-5555-4555-8555-555555555555',false);
 do $test$
 begin
-  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 3 then
+  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 4 then
     raise exception 'Explicit school administrator must retain school-wide result access';
   end if;
 end
@@ -375,7 +429,7 @@ $test$;
 select set_config('request.jwt.claim.sub','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',false);
 do $test$
 begin
-  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 3 then
+  if (select count(*) from public.schoolpro_results where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') <> 4 then
     raise exception 'School owner must retain school-wide result access';
   end if;
 end
@@ -386,7 +440,7 @@ select set_config('request.jwt.claim.sub','99999999-9999-4999-8999-999999999999'
 select set_config('request.test.admin_role','super_admin',false);
 do $test$
 begin
-  if (select count(*) from public.schoolpro_results) <> 4 then
+  if (select count(*) from public.schoolpro_results) <> 5 then
     raise exception 'Platform Super Admin must retain cross-school result access';
   end if;
 end

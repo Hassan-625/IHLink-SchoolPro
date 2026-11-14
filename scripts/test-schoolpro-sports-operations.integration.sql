@@ -184,4 +184,12 @@ do $$ begin
  if (select count(*) from public.schoolpro_sports_coach_roster('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001'))<>0 then raise exception 'unassigned teacher can access coach roster'; end if;
 end $$;
 reset role;
+select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',false);
+set role authenticated;
+update public.schoolpro_sports_teams set is_active=false where id='70000000-0000-0000-0000-000000000001';
+do $ begin
+ if (select count(*) from public.schoolpro_sports_team_coaches where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not end active coach appointments'; end if;
+ if (select count(*) from public.schoolpro_sports_team_members where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not close active squad memberships'; end if;
+end $;
+reset role;
 rollback;

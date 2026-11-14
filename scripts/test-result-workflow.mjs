@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 const broadsheet=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
 const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 
 assert.match(results,/const entrySubjects=teachingTargets\.length\?subjects\.filter/i,
@@ -35,6 +36,21 @@ assert.match(broadsheet,/schoolpro_publish_school_results/i,
   'The Exam Officer must publish the whole-school result set.');
 assert.match(broadsheet,/Pending class \/ section correction requests/i,
   'The Exam Officer must have a pending class/section correction queue.');
+assert.match(broadsheet,/schoolpro_review_result_reopening/i,
+  'The Section Head must forward or reject a teacher/Form Master correction request before Exam Officer review.');
+assert.match(broadsheet,/pending_section_review/);
+assert.match(broadsheet,/pending_exam_officer/);
+assert.match(broadsheet,/Forward to Exam Officer/i);
+assert.match(broadsheet,/canReviewCorrectionRequest/);
+assert.match(broadsheet,/schoolpro_review_result_reopening/i,
+  'The Section Head must forward or reject teacher/Form Master requests before Exam Officer review.');
+assert.match(broadsheet,/pending_section_review/);
+assert.match(broadsheet,/pending_exam_officer/);
+assert.match(broadsheet,/Forward to Exam Officer/i);
+assert.match(broadsheet,/canReviewSectionQueue/);
+assert.match(correctionRouting,/status='pending_section_review'/i);
+assert.match(correctionRouting,/status='pending_exam_officer'/i);
+assert.match(correctionRouting,/The requester and Section Head reviewer cannot authorize the same correction request/i);
 assert.match(broadsheet,/schoolpro_decide_result_reopening/i,
   'Only the Exam Officer can approve or reject a correction reopening request.');
 assert.match(authority,/Only the active subject teacher assigned to this class and subject can enter or update these scores/i);

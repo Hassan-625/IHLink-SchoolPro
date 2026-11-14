@@ -851,3 +851,32 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Verify class, section, reviewer and tenant boundaries for result submissions
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-class-result-submission-scope.integration.sql
+
+
+  cbt-session-scope-integration:
+    name: CBT class, subject and session authorization (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_cbt_session_scope_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_cbt_session_scope_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_cbt_session_scope_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Exercise CBT authoring, question bank, marking and student self-read policies
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-cbt-session-scope.integration.sql

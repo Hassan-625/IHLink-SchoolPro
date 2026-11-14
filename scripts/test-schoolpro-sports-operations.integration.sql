@@ -72,7 +72,8 @@ select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001'
 set role authenticated;
 insert into public.schoolpro_sports_teams(id,school_id,name,sport,house_id) values
  ('70000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','Blue Eagles','Football','50000000-0000-0000-0000-000000000001'),
- ('70000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','Track Squad','Athletics',null);
+ ('70000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','Track Squad','Athletics',null),
+ ('70000000-0000-0000-0000-000000000004','10000000-0000-0000-0000-000000000001','Unrelated Squad','Football',null);
 insert into public.schoolpro_sports_team_coaches(school_id,team_id,member_id,assigned_by) values
  ('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000002',auth.uid());
 insert into public.schoolpro_sports_team_members(school_id,team_id,student_id,assigned_by) values
@@ -171,7 +172,8 @@ reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000002',false);
 set role authenticated;
 do $$ begin
- if (select count(*) from public.schoolpro_sports_teams where school_id='10000000-0000-0000-0000-000000000001')<>1 then raise exception 'coach can see only assigned team'; end if;
+ if (select count(*) from public.schoolpro_sports_teams where school_id='10000000-0000-0000-0000-000000000001')<>2 then raise exception 'coach should see assigned team and fixture opponent metadata only'; end if;
+ if (select count(*) from public.schoolpro_sports_team_members where school_id='10000000-0000-0000-0000-000000000001')<>1 then raise exception 'coach can see only assigned team roster'; end if;
  if (select count(*) from public.schoolpro_sports_coach_roster('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001'))<>1 then raise exception 'coach scoped roster unavailable'; end if;
  if (select count(*) from public.schoolpro_sports_training_sessions where school_id='10000000-0000-0000-0000-000000000001')<>1 then raise exception 'coach training session scope incorrect'; end if;
  if (select count(*) from public.schoolpro_sports_fixtures where school_id='10000000-0000-0000-0000-000000000001')<>1 then raise exception 'coach fixture scope incorrect'; end if;

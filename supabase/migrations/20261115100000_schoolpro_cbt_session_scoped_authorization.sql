@@ -249,9 +249,9 @@ with check (
     join public.schoolpro_cbt_tests t on t.id=test_id
     where q.id=question_id
       and q.school_id=t.school_id
-      and q.subject_id=t.subject_id
+      and q.subject_id is not distinct from t.subject_id
       and (q.class_id is null or q.class_id=t.class_id)
-      and q.session=t.session
+      and q.session is not distinct from t.session
   )
 );
 
@@ -290,9 +290,9 @@ with check (
     join public.schoolpro_cbt_tests t on t.id=test_id
     where q.id=question_id
       and q.school_id=t.school_id
-      and q.subject_id=t.subject_id
+      and q.subject_id is not distinct from t.subject_id
       and (q.class_id is null or q.class_id=t.class_id)
-      and q.session=t.session
+      and q.session is not distinct from t.session
   )
 );
 

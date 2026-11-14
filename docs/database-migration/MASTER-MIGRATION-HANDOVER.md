@@ -3501,3 +3501,11 @@ These IDs do not match the two historical workspace IDs listed in the 2026-10-28
 - Production data counts remained unchanged: 3 schools, 150 students, 3 membership rows, 0 guardian links, 0 workspace deletion requests. There were 0 active Board appointments and 0 legacy elevated Board members at rollout time, so no membership rows required restoration.
 - Supabase security advisors were run after rollout. They reported the project's existing broader findings (including 8 RLS-enabled tables with no policies and existing SECURITY DEFINER execution warnings); no new advisor finding specific to this migration was identified in the returned results. These unrelated findings are not changed by this rollout.
 - No Render deployment was triggered and no production business rows were inserted, updated, or deleted by this rollout.
+
+
+### Result-design helper extraction from stale PR #103 (2026-11-14)
+- Created clean branch `fix/result-template-section-helpers-mainline` from current `main`; did not merge or cherry-pick the 175-commit stale PR #103 branch.
+- Ported only isolated, reusable helper behavior: normalize class labels into Nursery / Primary / Junior Secondary / Senior Secondary; expose matching secondary-school report-template profiles; validate scheme-derived assessment maxima; and safely sum saved per-subject term totals.
+- Added focused regression assertions for common labels, all four profiles, missing/invalid assessment schemes, and empty/invalid term totals. Existing school-scoped template-copy and roster paging assertions remain in the same test.
+- Deliberately excluded the large `SchoolProResultTemplates.tsx` UI/workflow diff, auth/context changes, payment flows, document security migrations, and unrelated PR #103 content. Those require separate scoped review and tests against current `main`.
+- This helper-only change is not yet merged; run CI on the new PR head before considering merge. No Supabase migration, production data change, or Render deployment was performed.

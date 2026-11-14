@@ -21,7 +21,8 @@ create table public.schoolpro_students(
 );
 create table public.schoolpro_classes(id uuid primary key,school_id uuid not null,name text not null,arm text);
 create table public.schoolpro_houses(id uuid primary key,school_id uuid not null,name text not null,is_active boolean default true,sort_order integer default 1);
-create table public.schoolpro_competition_events(id uuid primary key,school_id uuid not null,event_type text not null);
+create table public.schoolpro_competition_events(id uuid primary key,school_id uuid not null,event_type text not null,unique(school_id,id));
+create table public.schoolpro_competition_entries(id uuid primary key,school_id uuid not null,event_id uuid not null,entry_name text not null,unique(school_id,id));
 create or replace function private.is_active_account() returns boolean language sql stable as $$ select auth.uid() is not null $$;
 create or replace function private.schoolpro_operationally_active(p_school uuid) returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_schools where id=p_school)
@@ -58,7 +59,12 @@ insert into public.schoolpro_houses(id,school_id,name) values
  ('50000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','Red');
 insert into public.schoolpro_competition_events(id,school_id,event_type) values
  ('60000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','sports'),
- ('60000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','sports');
+ ('60000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000002','sports'),
+ ('60000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','sports');
+insert into public.schoolpro_competition_entries(id,school_id,event_id,entry_name) values
+ ('61000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','Blue Eagles entry'),
+ ('61000000-0000-0000-0000-000000000002','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','Track Squad entry'),
+ ('61000000-0000-0000-0000-000000000003','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000003','Other event entry');
 
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',false);
 set role authenticated;
@@ -71,10 +77,17 @@ insert into public.schoolpro_sports_team_members(school_id,team_id,student_id,as
  ('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',auth.uid());
 insert into public.schoolpro_sports_training_sessions(school_id,team_id,title,starts_at) values
  ('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','Tuesday training',now()+interval '1 day');
-insert into public.schoolpro_sports_fixtures(id,school_id,event_id,home_team_id,away_team_id,scheduled_at) values
- ('80000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days');
+insert into public.schoolpro_sports_fixtures(id,school_id,event_id,home_entry_id,away_entry_id,home_team_id,away_team_id,scheduled_at) values
+ ('80000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000002','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days');
 
 do $$ begin
+  begin
+    insert into public.schoolpro_sports_fixtures(school_id,event_id,home_entry_id,away_entry_id,home_team_id,away_team_id,scheduled_at)
+    values('10000000-0000-0000-0000-000000000001','60000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000001','61000000-0000-0000-0000-000000000003','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days');
+    raise exception 'fixture accepted an entry from another event';
+  exception when others then
+    if sqlerrm='fixture accepted an entry from another event' then raise; end if;
+  end;
   begin
     insert into public.schoolpro_sports_teams(school_id,name,sport,house_id)
     values('10000000-0000-0000-0000-000000000001','Cross-school house','Football','50000000-0000-0000-0000-000000000002');

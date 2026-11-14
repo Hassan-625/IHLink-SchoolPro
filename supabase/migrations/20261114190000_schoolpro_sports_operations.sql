@@ -144,14 +144,18 @@ as $$
   select auth.uid() is not null
     and coalesce(private.is_active_account(),false)
     and private.schoolpro_operationally_active(p_school)
+    and private.schoolpro_module_allowed(p_school,'games')
     and (
       private.is_admin(array['super_admin']::public.user_role[])
       or exists(select 1 from public.schoolpro_schools s where s.id=p_school and s.owner_id=auth.uid())
       or exists(select 1 from public.schoolpro_members m
         where m.school_id=p_school and m.user_id=auth.uid()
           and m.status='active' and m.employment_status='active'
-          and m.role in ('proprietor'::public.school_member_role,'administrator'::public.school_member_role))
-      or private.schoolpro_module_allowed(p_school,'games')
+          and m.role in ('proprietor'::public.school_member_role,'administrator'::public.school_member_role,'game_master'::public.school_member_role))
+      or exists(select 1 from public.schoolpro_member_responsibilities r
+        join public.schoolpro_members m on m.id=r.member_id and m.school_id=r.school_id
+        where r.school_id=p_school and r.responsibility='school_admin' and r.ended_at is null
+          and m.user_id=auth.uid() and m.status='active' and m.employment_status='active')
     );
 $$;
 

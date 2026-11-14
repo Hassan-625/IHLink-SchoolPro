@@ -35,6 +35,7 @@ assert.match(migration, /schoolpro_sports_is_coach/);
 assert.match(migration, /alter table public\.schoolpro_sports_fixtures enable row level security/);
 assert.match(migration, /schoolpro_sports_fixture_result_history/);
 assert.match(migration, /references public\.schoolpro_competition_entries\(school_id,id\)/);
+assert.match(migration, /references public\.schoolpro_competition_events\(school_id,id\)/);
 assert.match(migration, /Linked fixture entries must belong to the selected competition and school/);
 assert.match(migration, /schoolpro_sports_fixture_audit/);
 assert.match(migration, /schoolpro_record_sports_fixture_result/);

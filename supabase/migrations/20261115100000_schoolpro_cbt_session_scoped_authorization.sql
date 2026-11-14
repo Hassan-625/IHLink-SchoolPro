@@ -333,6 +333,34 @@ with check (
 drop policy if exists "schoolpro_plan_attempts" on public.schoolpro_cbt_attempts;
 drop policy if exists "schoolpro_plan_answers" on public.schoolpro_cbt_answers;
 
+-- Assigned subject teachers may review attempts and answers only for tests in
+-- their exact active class/subject/session allocation. Student self-read stays.
+drop policy if exists "cbt attempt staff read" on public.schoolpro_cbt_attempts;
+create policy "CBT assigned staff read attempts"
+on public.schoolpro_cbt_attempts
+for select to authenticated
+using (
+  exists (
+    select 1 from public.schoolpro_cbt_tests t
+    where t.id=test_id
+      and private.schoolpro_cbt_can_read_test(t.school_id,t.class_id,t.subject_id,t.session)
+  )
+);
+
+drop policy if exists "cbt answer staff read" on public.schoolpro_cbt_answers;
+create policy "CBT assigned staff read answers"
+on public.schoolpro_cbt_answers
+for select to authenticated
+using (
+  exists (
+    select 1
+    from public.schoolpro_cbt_attempts a
+    join public.schoolpro_cbt_tests t on t.id=a.test_id
+    where a.id=attempt_id
+      and private.schoolpro_cbt_can_read_test(t.school_id,t.class_id,t.subject_id,t.session)
+  )
+);
+
 -- Manual theory marking is a privileged write path: use the same exact active
 -- allocation check as test authoring rather than a school-wide teacher role.
 create or replace function public.mark_schoolpro_theory_answer(

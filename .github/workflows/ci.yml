@@ -55,6 +55,7 @@ jobs:
       - run: node scripts/test-class-results-export.mjs
       - run: node scripts/test-school-student-selection.mjs
       - run: node scripts/test-operational-roles.mjs
+      - run: node scripts/test-schoolpro-sports-operations.mjs
       - run: node scripts/test-native-entry-security.mjs
       - run: node scripts/test-browser-vault.mjs
       - run: node scripts/test-app-idle-lock.mjs
@@ -652,3 +653,32 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file supabase/migrations/20261110133000_schoolpro_existing_student_import_payload_diagnostic.sql
       - name: Test authorization boundaries in disposable PostgreSQL
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-existing-student-import-payload-diagnostic.integration.sql
+
+
+  schoolpro-sports-operations-integration:
+    name: SchoolPro sports tenant isolation and audited results (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_sports_operations_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_sports_operations_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_sports_operations_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply sports operations migration and test tenant, role, roster and result boundaries
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-sports-operations.integration.sql

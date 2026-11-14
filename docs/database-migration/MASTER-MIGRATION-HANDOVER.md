@@ -3589,3 +3589,27 @@ Follow-up inspection of SchoolProBookDemo.tsx, SchoolProTermDemoForm.tsx, and Sc
 - Extended the existing school billing visibility test with source-contract assertions for the Demo-specific billing state and message.
 - Added a disposable PostgreSQL lifecycle fixture that applies the exact existing calendar-reviewed Demo and paid-annual-grace migrations. It tests owner-only document upload, owner/reviewer document reads, rejection of foreign document paths, three-month term boundary, exam dates inside the term, one-time activation, calculated Africa/Lagos expiry, term-Demo expiry suspension, and paid annual access through day 14 followed by suspension after grace.
 - This is test/UI coverage only; it does not change the term Demo contract, expiry formulas, or PR #117 upgrade/Finance settlement implementation. No production migration, production data change, or Render deployment.
+
+
+### Production rollout — Sports Operations and term-Demo billing guards (2026-11-14)
+
+Merged and deployed to Supabase production:
+
+- PR #180 Sports Operations — merge commit `190aa6429234b169a68c60203d45b8b6077080ea`; migration source `20261114190000_schoolpro_sports_operations.sql`; production ledger version `20261114211322`.
+- PR #181 active term-Demo billing guards — merge commit `aec8a5efc5bca573841fed0c5af714794a19c6ee`; migration source `20261114203000_schoolpro_term_demo_billing_guards.sql`; production ledger version `20261114211328`.
+- PR #182 term-Demo billing visibility and lifecycle regression suite — merge commit `c251b80c75366da13d53eefc7d7bc97bb7d247c2`; UI and disposable PostgreSQL test changes only; no migration.
+
+Read-only production verification after rollout:
+
+- All seven sports operations tables exist with RLS enabled.
+- Twelve sports table policies exist. Team, coach, squad and training CRUD is protected by manager/assigned-coach policies; fixtures grant no table-wide UPDATE privilege, with column-scoped schedule/status updates only. Result history and fixture audit are SELECT-only to authenticated clients.
+- Audited result RPC, coach roster RPC, immutable school-link triggers, fixture result guard and schedule audit triggers exist.
+- Active term-Demo helper, annual invoice preparation guard, invoice-settlement trigger and receipt-submission trigger exist.
+- No duplicate `schoolpro_sports_houses` catalogue was created; canonical `schoolpro_houses` and competition tables are reused.
+- Post-rollout counts: 3 schools, 150 students, 0 sports teams, 0 coaches, 0 sports roster rows, 0 training sessions, 0 fixtures, 0 sports result-history rows, 0 Demo requests, 3 existing subscription intents and 3 existing transfer submissions. No production business rows were inserted, updated or deleted by these migrations.
+
+Migration sequencing note:
+
+- PR #117's annual-upgrade migration is still absent from the production ledger. Production does not yet have `schoolpro_upgrade_requests` or `upgrade_request_id` on subscription intents.
+- Do not apply PR #117's original migration blindly after the later Finance receipt-resubmission migrations: its `private.review_school_subscription_transfer` definition predates those production corrections and may overwrite the audited receipt-resubmission behavior. Forward-port/reconcile the upgrade schema and Finance settlement RPC against the current production function before rollout.
+- No Render deployment was performed.

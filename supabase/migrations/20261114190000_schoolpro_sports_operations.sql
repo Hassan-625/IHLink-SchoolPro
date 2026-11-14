@@ -307,7 +307,7 @@ for each row execute function private.schoolpro_prevent_sports_school_reassignme
 
 create or replace function private.schoolpro_sports_fixture_write_guard()
 returns trigger language plpgsql set search_path = ''
-as $
+as $$
 begin
   if tg_op='INSERT' then
     if new.status<>'scheduled' or new.home_score is not null or new.away_score is not null or new.result_version<>0 then

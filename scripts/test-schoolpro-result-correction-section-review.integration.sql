@@ -7,6 +7,7 @@ create role anon nologin;
 create role authenticated nologin;
 create schema auth;
 create schema private;
+create table auth.users(id uuid primary key);
 
 create or replace function auth.uid()
 returns uuid language sql stable
@@ -171,6 +172,12 @@ insert into public.schoolpro_members(id,school_id,user_id,role) values
  ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','33333333-3333-4333-8333-333333333333','head_teacher'),
  ('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','44444444-4444-4444-8444-444444444444','head_teacher'),
  ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','exam_officer');
+insert into auth.users(id) values
+ ('11111111-1111-4111-8111-111111111111'),
+ ('22222222-2222-4222-8222-222222222222'),
+ ('33333333-3333-4333-8333-333333333333'),
+ ('44444444-4444-4444-8444-444444444444'),
+ ('55555555-5555-4555-8555-555555555555');
 
 insert into public.schoolpro_classes(id,school_id,level,form_teacher_id) values
  ('20000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','primary','10000000-0000-4000-8000-000000000002'),
@@ -203,11 +210,11 @@ select public.schoolpro_request_result_reopening(
 do $test$
 begin
  if (select status from public.schoolpro_result_correction_batches
-     where id=:'teacher_request') <> 'pending_section_review' then
+     where id=current_setting('test.teacher_request')::uuid) <> 'pending_section_review' then
    raise exception 'Teacher request skipped Section Head review';
  end if;
  if (select count(*) from public.schoolpro_result_correction_batches
-     where id=:'teacher_request') <> 1 then
+     where id=current_setting('test.teacher_request')::uuid) <> 1 then
    raise exception 'Requester cannot track their own correction request';
  end if;
 end
@@ -218,11 +225,11 @@ select set_config('request.jwt.claim.sub','44444444-4444-4444-8444-444444444444'
 do $test$
 begin
  if exists(select 1 from public.schoolpro_result_correction_batches
-   where id=:'teacher_request') then
+   where id=current_setting('test.teacher_request')::uuid) then
    raise exception 'Unassigned Section Head read another section correction request';
  end if;
  begin
-   perform public.schoolpro_review_result_reopening(:'teacher_request',true,null);
+   perform public.schoolpro_review_result_reopening(current_setting('test.teacher_request')::uuid,true,null);
    raise exception 'Unassigned Section Head unexpectedly reviewed request';
  exception when others then
    if sqlerrm not like '%Only the appointed Section Head%' then raise; end if;
@@ -235,16 +242,16 @@ select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333'
 do $test$
 begin
  if not exists(select 1 from public.schoolpro_result_correction_batches
-   where id=:'teacher_request' and status='pending_section_review') then
+   where id=current_setting('test.teacher_request')::uuid and status='pending_section_review') then
    raise exception 'Assigned Section Head cannot see its pending correction queue';
  end if;
 end
 $test$;
-select public.schoolpro_review_result_reopening(:'teacher_request',true,'Checked the section request') as forwarded;
+select public.schoolpro_review_result_reopening(current_setting('test.teacher_request')::uuid,true,'Checked the section request') as forwarded;
 do $test$
 begin
  if (select status from public.schoolpro_result_correction_batches
-     where id=:'teacher_request') <> 'pending_exam_officer' then
+     where id=current_setting('test.teacher_request')::uuid) <> 'pending_exam_officer' then
    raise exception 'Section Head did not forward request to Exam Officer';
  end if;
 end
@@ -255,7 +262,7 @@ select set_config('request.jwt.claim.sub','11111111-1111-4111-8111-111111111111'
 do $test$
 begin
  begin
-  perform public.schoolpro_decide_result_reopening(:'teacher_request',true,null);
+  perform public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,null);
   raise exception 'Requester unexpectedly authorized their own reopening';
  exception when others then
   if sqlerrm not like '%requester and Section Head reviewer%' then raise; end if;
@@ -266,7 +273,7 @@ select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333'
 do $test$
 begin
  begin
-  perform public.schoolpro_decide_result_reopening(:'teacher_request',true,null);
+  perform public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,null);
   raise exception 'Section Head reviewer unexpectedly authorized final reopening';
  exception when others then
   if sqlerrm not like '%requester and Section Head reviewer%' then raise; end if;
@@ -276,11 +283,11 @@ $test$;
 
 -- Independent Exam Officer authorizes reopening exactly the snapshotted row.
 select set_config('request.jwt.claim.sub','55555555-5555-4555-8555-555555555555',false);
-select public.schoolpro_decide_result_reopening(:'teacher_request',true,'Verified correction evidence') as reopened;
+select public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,'Verified correction evidence') as reopened;
 do $test$
 begin
  if (select status from public.schoolpro_result_correction_batches
-     where id=:'teacher_request') <> 'approved' then
+     where id=current_setting('test.teacher_request')::uuid) <> 'approved' then
    raise exception 'Exam Officer approval was not recorded';
  end if;
  if not exists(select 1 from public.schoolpro_results
@@ -308,18 +315,18 @@ select set_config('request.jwt.claim.sub','33333333-3333-4333-8333-333333333333'
 do $test$
 begin
  begin
-  perform public.schoolpro_review_result_reopening(:'form_master_request',false,'short');
+  perform public.schoolpro_review_result_reopening(current_setting('test.form_master_request')::uuid,false,'short');
   raise exception 'Section Head rejection without a reason unexpectedly succeeded';
  exception when others then
   if sqlerrm not like '%rejection reason of at least 10 characters%' then raise; end if;
  end;
 end
 $test$;
-select public.schoolpro_review_result_reopening(:'form_master_request',false,'Marks need source evidence') as rejected;
+select public.schoolpro_review_result_reopening(current_setting('test.form_master_request')::uuid,false,'Marks need source evidence') as rejected;
 do $test$
 begin
  if (select status from public.schoolpro_result_correction_batches
-     where id=:'form_master_request') <> 'rejected' then
+     where id=current_setting('test.form_master_request')::uuid) <> 'rejected' then
    raise exception 'Section Head rejection was not recorded';
  end if;
  if not exists(select 1 from public.schoolpro_results

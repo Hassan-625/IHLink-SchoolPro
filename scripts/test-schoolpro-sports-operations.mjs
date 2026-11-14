@@ -12,6 +12,7 @@ assert.match(app, /import \{ SchoolProSports \} from "@\/pages\/schoolpro\/Schoo
 assert.match(nav, /Sports Teams & Fixtures.*href:'\/schoolpro\/sports'/);
 assert.ok((nav.match(/Sports Teams & Fixtures/g)||[]).length>=2,'sports route must be reachable from manager and teacher navigation');
 assert.match(permissions, /'sports':'dashboard'/);
+assert.match(ui, /schoolpro_user_permissions/);
 assert.match(ui, /schoolpro_sports_teams/);
 assert.match(ui, /schoolpro_sports_team_coaches/);
 assert.match(ui, /schoolpro_sports_team_members/);

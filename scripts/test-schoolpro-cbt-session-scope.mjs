@@ -6,6 +6,7 @@ const manager=readFileSync('src/pages/schoolpro/SchoolProCBTManager.tsx','utf8')
 const bank=readFileSync('src/pages/schoolpro/SchoolProQuestionBank.tsx','utf8');
 
 assert.match(migration,/a\.ended_at is null/);
+assert.match(migration,/private\.schoolpro_valid_session\(btrim\(p_session\)\)/);
 assert.match(migration,/a\.session=btrim\(p_session\)/);
 assert.match(migration,/p_class is not null/);
 assert.match(migration,/p_subject is not null/);

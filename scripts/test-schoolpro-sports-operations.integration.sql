@@ -15,6 +15,9 @@ create table public.schoolpro_members(
  id uuid primary key,school_id uuid not null,user_id uuid not null,role public.school_member_role not null,
  status text not null,employment_status text not null,position_title text
 );
+create table public.schoolpro_member_responsibilities(
+ school_id uuid not null,member_id uuid not null,responsibility text not null,ended_at timestamptz
+);
 create table public.schoolpro_students(
  id uuid primary key,school_id uuid not null,status text not null,first_name text not null,
  middle_name text,last_name text not null,admission_number text,class_id uuid,class_name text

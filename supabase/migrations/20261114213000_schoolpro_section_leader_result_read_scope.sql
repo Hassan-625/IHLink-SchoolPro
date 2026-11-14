@@ -36,7 +36,30 @@ as $function$
         and (
           private.is_admin(array['super_admin']::public.user_role[])
           or s.owner_id = auth.uid()
-          or private.schoolpro_is_school_admin(s.id)
+          or private.schoolpro_member_has_responsibility(s.id, 'school_admin')
+          or exists (
+            select 1
+            from public.schoolpro_members m
+            where m.school_id = s.id
+              and m.user_id = auth.uid()
+              and m.status = 'active'
+              and m.role = 'proprietor'
+          )
+          or exists (
+            select 1
+            from public.schoolpro_members m
+            where m.school_id = s.id
+              and m.user_id = auth.uid()
+              and m.status = 'active'
+              and m.role = 'administrator'
+              and not (
+                regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'principal%'
+                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
+                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
+                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
+                or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+              )
+          )
           or private.schoolpro_is_exam_officer(s.id)
         )
       else

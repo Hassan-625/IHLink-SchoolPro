@@ -20,3 +20,13 @@ try{
  }
  console.log('PASS six school roles: billing controls, direct URL denial, own dashboards and customer-facing messages');
 }finally{await rm(target,{recursive:true,force:true});}
+
+const subscriptionSource = await (await import('node:fs/promises')).readFile(
+  new URL('../src/pages/schoolpro/SchoolProSubscription.tsx', import.meta.url),
+  'utf8',
+);
+assert.match(subscriptionSource, /if\s*\(isDemo\)\s*\{setMsg\(/, 'active term Demo blocks the billing handler');
+assert.match(subscriptionSource, /disabled=\{isDemo\|\|!valid/, 'annual plan buttons are disabled during Demo');
+assert.match(subscriptionSource, /isDemo\?"Available after Demo"/, 'Demo customers see a clear post-Demo billing label');
+assert.match(subscriptionSource, /Your term Demo is active/, 'Demo customers are told no payment is due during active access');
+console.log('PASS active term Demo billing controls are visibly unavailable until expiry');

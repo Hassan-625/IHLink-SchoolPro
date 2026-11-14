@@ -198,16 +198,16 @@ begin
     select m.school_id,m.role,m.status,m.employment_status
       into linked_school,linked_role,linked_status,linked_employment
     from public.schoolpro_members m where m.id=new.member_id;
-    if linked_school is distinct from new.school_id
-      or linked_role not in ('teacher'::public.school_member_role,'class_teacher'::public.school_member_role)
-      or linked_status<>'active' or linked_employment<>'active' then
+    if linked_school is distinct from new.school_id or (new.ended_at is null and (
+      linked_role not in ('teacher'::public.school_member_role,'class_teacher'::public.school_member_role)
+      or linked_status<>'active' or linked_employment<>'active')) then
       raise exception 'Coach must be active teaching staff in the selected school';
     end if;
     if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and t.is_active) then
       raise exception 'Coach team must be active and belong to the selected school';
     end if;
   elsif tg_table_name='schoolpro_sports_team_members' then
-    if not exists(select 1 from public.schoolpro_students s where s.id=new.student_id and s.school_id=new.school_id and s.status='active') then
+    if not exists(select 1 from public.schoolpro_students s where s.id=new.student_id and s.school_id=new.school_id and (new.ended_at is not null or s.status='active')) then
       raise exception 'Participant must be an active student in the selected school';
     end if;
     if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and t.is_active) then

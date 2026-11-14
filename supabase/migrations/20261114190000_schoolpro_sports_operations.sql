@@ -282,7 +282,7 @@ as $$
 begin
   if (new.home_score is distinct from old.home_score or new.away_score is distinct from old.away_score
       or new.result_notes is distinct from old.result_notes or new.result_version is distinct from old.result_version)
-    and current_setting('app.schoolpro_sports_result_rpc',true) is distinct from 'on' then
+    and current_user <> 'postgres' then
     raise exception 'Fixture results must be recorded through the audited result workflow';
   end if;
   if new.status is distinct from old.status then
@@ -338,7 +338,6 @@ begin
   next_status:=case when p_complete then 'completed' else 'in_progress' end;
   if f.status='completed' and not p_complete then raise exception 'A completed fixture cannot be reopened'; end if;
   next_version:=f.result_version+1;
-  perform set_config('app.schoolpro_sports_result_rpc','on',true);
   update public.schoolpro_sports_fixtures set
     home_score=p_home_score,away_score=p_away_score,result_notes=nullif(btrim(p_notes),''),
     status=next_status,result_version=next_version,updated_at=now()
@@ -349,7 +348,6 @@ begin
     p_school,p_fixture,next_version,p_home_score,p_away_score,next_status,nullif(btrim(p_notes),''),
     case when f.result_version=0 then 'recorded' else 'amended' end,auth.uid()
   );
-  perform set_config('app.schoolpro_sports_result_rpc','off',true);
   return next_version;
 end;
 $$;
@@ -365,7 +363,9 @@ alter table public.schoolpro_sports_fixture_result_history enable row level secu
 alter table public.schoolpro_sports_fixture_audit enable row level security;
 
 grant select,insert,update,delete on public.schoolpro_sports_teams,public.schoolpro_sports_team_coaches,
-  public.schoolpro_sports_team_members,public.schoolpro_sports_training_sessions,public.schoolpro_sports_fixtures to authenticated;
+  public.schoolpro_sports_team_members,public.schoolpro_sports_training_sessions to authenticated;
+grant select,insert,delete on public.schoolpro_sports_fixtures to authenticated;
+grant update(scheduled_at,venue,status,updated_at) on public.schoolpro_sports_fixtures to authenticated;
 grant select on public.schoolpro_sports_fixture_result_history,public.schoolpro_sports_fixture_audit to authenticated;
 
 create policy schoolpro_sports_teams_read on public.schoolpro_sports_teams for select to authenticated

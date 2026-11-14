@@ -66,6 +66,7 @@ function SchoolBillingWorkspace(){
   finally{setBusy("");}
  }
  async function pay(id:string){
+  if(isDemo){setMsg("Annual billing is unavailable while your term Demo is active. You can subscribe after the Demo end date shown above.");return;}
   if(!supabase||!ctx.schoolId||busy||loading)return;
   const school=ctx.schoolId;setBusy(id);setMsg("");
   try{
@@ -89,6 +90,7 @@ function SchoolBillingWorkspace(){
  ]}>
   {error&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm">{error}</div>}
   {msg&&<div role="status" className="rounded-xl border p-3 text-sm">{msg}</div>}
+  {isDemo&&<Card><p className="font-bold">Your term Demo is active</p><p className="mt-1 text-sm text-muted">Your school has free access until the Demo end date shown above. Annual subscription invoices and receipt submission become available after that date; no payment is due during the active Demo.</p></Card>}
   <Card><p className="font-bold">Annual subscription</p><p className="mt-1 text-sm text-muted">Paid yearly plans include 14 days after expiry to renew before access is paused. Complete any pending payment before choosing another plan.</p></Card>
   <div className="grid gap-4 md:grid-cols-3">{plans.map(p=>{
    const price=Number(p.annual_price||0),valid=Number.isFinite(price)&&price>0;
@@ -96,7 +98,7 @@ function SchoolBillingWorkspace(){
     tierRank[p.code]>tierRank[String(sub.tier||"").toLowerCase()]?
      <Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId||openUpgrade} onClick={()=>void requestUpgrade(p.id)}>{busy===p.id?"Submitting request…":openUpgrade?"Upgrade request pending":"Request upgrade"}</Button>:
      <p className="mt-4 rounded-lg border p-3 text-sm">{tierRank[p.code]===tierRank[String(sub.tier||"").toLowerCase()]?"Current plan":"Downgrade is not available here"}</p>
-   ):<Button className="mt-4" disabled={!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button>}</Card>;
+   ):<Button className="mt-4" disabled={isDemo||!valid||Boolean(busy)||loading||!ctx.schoolId} onClick={()=>void pay(p.id)}>{isDemo?"Available after Demo":busy===p.id?"Preparing payment…":"Subscribe / Renew"}</Button>}</Card>;
   })}{!loading&&!error&&!plans.length&&<Card><p className="text-sm text-muted">No SchoolPro subscription plan has been published by IHLink yet.</p></Card>}</div>
  {paidAnnual&&<Card><h3 className="font-bold">Annual plan upgrade</h3><p className="mt-1 text-sm text-muted">Choose a higher plan above to request an upgrade. IHLink reviews the request and, if approved, issues a bank-transfer invoice for the remaining difference after the unused-term credit. The current plan remains active until Finance verifies payment.</p></Card>}
   {upgrades.length>0&&<Card><h3 className="font-bold">Upgrade request history</h3><div className="mt-3 space-y-3">{upgrades.map(r=><div key={r.id} className="rounded-lg border p-3 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><b>{String(r.source_tier).toUpperCase()} → {String(r.target_tier).toUpperCase()}</b><span className="rounded-full border px-2 py-1">{r.status.replaceAll("_"," ")}</span></div><p className="mt-2">Unused-term credit: {money(Number(r.credit_amount))}</p><p>Amount due after approval: {money(Number(r.outstanding_amount))}</p>{r.review_note&&<p className="mt-1 text-muted">Review note: {r.review_note}</p>}{r.status==="pending_review"&&<Button className="mt-2" variant="secondary" disabled={Boolean(busy)} onClick={()=>void cancelUpgrade(r.id)}>Cancel request</Button>}</div>)}</div></Card>}

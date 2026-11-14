@@ -200,17 +200,32 @@ update public.schoolpro_subscriptions
 set status='suspended',renews_at=now()-interval '1 second'
 where school_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
 
-do $$
-declare v jsonb;
+-- Retire the pre-Demo pending instruction, then verify a fresh annual invoice can be created.
+update public.schoolpro_subscription_intents
+set status='cancelled'
+where school_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+  and status='pending';
+
+do $
+declare v jsonb; v_invoice uuid;
 begin
   v := public.prepare_schoolpro_bank_subscription(
     'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',
     'cccccccc-cccc-4ccc-8ccc-cccccccccccc'
   );
-  if v->>'status' <> 'pending' then
+  v_invoice := (v->>'id')::uuid;
+  if v->>'status' <> 'pending' or v_invoice is null then
     raise exception 'Billing did not resume after Demo expiry: %',v;
   end if;
-end;
-$$;
 
-select 'PASS: term Demo suppresses annual invoice creation, receipt submission and Finance settlement until expiry' as result;
+  insert into public.direct_transfer_submissions(user_id,platform_code,invoice_id)
+  values ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','schoolpro_subscription',v_invoice);
+
+  update public.schoolpro_subscription_intents set status='paid' where id=v_invoice;
+  if not exists(select 1 from public.schoolpro_subscription_intents where id=v_invoice and status='paid') then
+    raise exception 'Finance settlement did not resume after Demo expiry';
+  end if;
+end;
+$;
+
+select 'PASS: term Demo suppresses annual invoice creation, receipt submission and Finance settlement until expiry; billing resumes afterward' as result;

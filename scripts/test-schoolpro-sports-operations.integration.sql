@@ -202,7 +202,7 @@ update public.schoolpro_sports_teams set is_active=false where id='70000000-0000
 do $$ begin
  if (select count(*) from public.schoolpro_sports_team_coaches where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not end active coach appointments'; end if;
  if (select count(*) from public.schoolpro_sports_team_members where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not close active squad memberships'; end if;
-end $;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000005',false);
 set role authenticated;
@@ -214,6 +214,6 @@ do $$ begin
  exception when others then
   if sqlerrm='platform Super Admin reassigned a sports team across tenants' then raise; end if;
  end;
-end $;
+end $$;
 reset role;
 rollback;

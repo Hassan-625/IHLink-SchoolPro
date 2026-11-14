@@ -639,9 +639,9 @@ do $upgrade_finance_receipt_resubmission$
 declare
   v_owner uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
   v_finance uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
-  v_upgrade_school uuid := '11111111-1111-4111-8111-111111111111';
-  v_upgrade_subscription uuid := '22222222-2222-4222-8222-222222222222';
-  v_standard_school uuid := '33333333-3333-4333-8333-333333333333';
+  v_upgrade_school uuid := '77777777-7777-4777-8777-777777777777';
+  v_upgrade_subscription uuid := '88888888-8888-4888-8888-888888888888';
+  v_standard_school uuid := '99999999-9999-4999-8999-999999999999';
   v_catalog uuid := 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
   v_bank uuid := 'ffffffff-ffff-4fff-8fff-ffffffffffff';
   v_request jsonb;

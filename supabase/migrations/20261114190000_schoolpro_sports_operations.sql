@@ -188,14 +188,14 @@ grant execute on function private.schoolpro_sports_is_coach(uuid,uuid) to authen
 
 create or replace function private.schoolpro_prevent_sports_school_reassignment()
 returns trigger language plpgsql set search_path = ''
-as $
+as $$
 begin
   if old.school_id is distinct from new.school_id then
     raise exception 'Sports records cannot be reassigned to another school';
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function private.schoolpro_prevent_sports_school_reassignment() from public,anon,authenticated;
 
 create or replace function private.schoolpro_validate_sports_operation_links()
@@ -263,7 +263,7 @@ for each row execute function private.schoolpro_validate_sports_operation_links(
 
 create or replace function private.schoolpro_close_archived_team_assignments()
 returns trigger language plpgsql security definer set search_path = ''
-as $
+as $$
 begin
   if old.is_active and not new.is_active then
     update public.schoolpro_sports_team_coaches
@@ -275,7 +275,7 @@ begin
   end if;
   return new;
 end;
-$;
+$$;
 revoke all on function private.schoolpro_close_archived_team_assignments() from public,anon,authenticated;
 create trigger schoolpro_sports_close_archived_team_assignments after update of is_active on public.schoolpro_sports_teams
 for each row execute function private.schoolpro_close_archived_team_assignments();

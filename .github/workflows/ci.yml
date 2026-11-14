@@ -151,6 +151,34 @@ jobs:
       - name: Exercise the authoritative result import RPC against canonical and short secondary levels
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-import-rpc.integration.sql
 
+  result-correction-section-review-integration:
+    name: Result correction Section Head and Exam Officer workflow (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_result_correction_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_result_correction_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_result_correction_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Verify teacher/Form Master -> Section Head -> Exam Officer correction routing
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-correction-section-review.integration.sql
+
   receipt-storage-isolation:
     name: Receipt Storage isolation (local Supabase)
     runs-on: ubuntu-latest

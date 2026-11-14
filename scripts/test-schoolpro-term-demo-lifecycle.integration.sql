@@ -256,7 +256,7 @@ begin
   begin
     perform public.submit_schoolpro_term_demo(
       '33333333-3333-4333-8333-333333333333','starter',
-      d,d+interval '2 months',d+interval '1 month',d+interval '1 month',
+      d,(d+interval '2 months')::date,(d+interval '1 month')::date,(d+interval '1 month')::date,
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/calendar.pdf',
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/letter.pdf'
     );
@@ -270,7 +270,7 @@ begin
   begin
     perform public.submit_schoolpro_term_demo(
       '33333333-3333-4333-8333-333333333333','starter',
-      d,d+interval '3 months',d+interval '1 month',d+interval '4 months',
+      d,(d+interval '3 months')::date,(d+interval '1 month')::date,(d+interval '4 months')::date,
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/calendar.pdf',
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/letter.pdf'
     );
@@ -284,7 +284,7 @@ begin
   begin
     perform public.submit_schoolpro_term_demo(
       '33333333-3333-4333-8333-333333333333','starter',
-      d,d+interval '3 months',d+interval '1 month',d+interval '2 months',
+      d,(d+interval '3 months')::date,(d+interval '1 month')::date,(d+interval '2 months')::date,
       'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb/foreign.pdf',
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/letter.pdf'
     );
@@ -303,7 +303,7 @@ declare d date:=current_date; v jsonb; v_demo uuid;
 begin
   v:=public.submit_schoolpro_term_demo(
     '33333333-3333-4333-8333-333333333333','starter',
-    d,d+interval '3 months',d+interval '2 months',d+interval '3 months' - interval '1 day',
+    d,(d+interval '3 months')::date,(d+interval '2 months')::date,(d+interval '3 months' - interval '1 day')::date,
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/calendar.pdf',
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/33333333-3333-4333-8333-333333333333/letter.pdf'
   );
@@ -311,7 +311,7 @@ begin
   if v_demo is null or v->>'status'<>'awaiting_calendar_review' then
     raise exception 'Valid term Demo was not submitted for review: %',v;
   end if;
-  if not exists(select 1 from public.schoolpro_demo_requests where id=v_demo and term_start=d and term_end=d+interval '3 months' and status='new') then
+  if not exists(select 1 from public.schoolpro_demo_requests where id=v_demo and term_start=d and term_end=(d+interval '3 months')::date and status='new') then
     raise exception 'Validated term dates were not saved to the Demo request';
   end if;
 end;

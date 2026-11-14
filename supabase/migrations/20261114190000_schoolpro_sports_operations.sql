@@ -186,6 +186,18 @@ revoke all on function private.schoolpro_sports_is_coach(uuid,uuid) from public,
 grant execute on function private.schoolpro_sports_can_manage(uuid) to authenticated;
 grant execute on function private.schoolpro_sports_is_coach(uuid,uuid) to authenticated;
 
+create or replace function private.schoolpro_prevent_sports_school_reassignment()
+returns trigger language plpgsql set search_path = ''
+as $
+begin
+  if old.school_id is distinct from new.school_id then
+    raise exception 'Sports records cannot be reassigned to another school';
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.schoolpro_prevent_sports_school_reassignment() from public,anon,authenticated;
+
 create or replace function private.schoolpro_validate_sports_operation_links()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
@@ -276,6 +288,18 @@ create trigger schoolpro_sports_training_team_guard before insert or update on p
 for each row execute function private.schoolpro_validate_sports_operation_links();
 create trigger schoolpro_sports_fixture_links_guard before insert or update on public.schoolpro_sports_fixtures
 for each row execute function private.schoolpro_validate_sports_operation_links();
+
+create trigger schoolpro_sports_team_school_immutable before update of school_id on public.schoolpro_sports_teams
+for each row execute function private.schoolpro_prevent_sports_school_reassignment();
+create trigger schoolpro_sports_coach_school_immutable before update of school_id on public.schoolpro_sports_team_coaches
+for each row execute function private.schoolpro_prevent_sports_school_reassignment();
+create trigger schoolpro_sports_membership_school_immutable before update of school_id on public.schoolpro_sports_team_members
+for each row execute function private.schoolpro_prevent_sports_school_reassignment();
+create trigger schoolpro_sports_training_school_immutable before update of school_id on public.schoolpro_sports_training_sessions
+for each row execute function private.schoolpro_prevent_sports_school_reassignment();
+create trigger schoolpro_sports_fixture_school_immutable before update of school_id on public.schoolpro_sports_fixtures
+for each row execute function private.schoolpro_prevent_sports_school_reassignment();
+
 
 create or replace function private.schoolpro_sports_fixture_write_guard()
 returns trigger language plpgsql set search_path = ''

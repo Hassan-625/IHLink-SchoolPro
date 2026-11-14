@@ -88,6 +88,13 @@ insert into public.schoolpro_sports_fixtures(id,school_id,event_id,home_entry_id
 
 do $$ begin
   begin
+    insert into public.schoolpro_sports_fixtures(school_id,home_team_id,away_team_id,scheduled_at,status,home_score,away_score,result_version)
+    values('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000002',now()+interval '2 days','completed',2,1,1);
+    raise exception 'fixture inserted with an untracked completed result';
+  exception when others then
+    if sqlerrm='fixture inserted with an untracked completed result' then raise; end if;
+  end;
+  begin
     insert into public.schoolpro_sports_fixtures(school_id,home_team_id,away_team_id,scheduled_at)
     values('10000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000003',now()+interval '2 days');
     raise exception 'cross-school fixture team reference was accepted';

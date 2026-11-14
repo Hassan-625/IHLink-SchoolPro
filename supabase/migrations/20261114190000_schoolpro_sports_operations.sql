@@ -247,6 +247,26 @@ $$;
 revoke all on function private.schoolpro_validate_sports_operation_links() from public,anon,authenticated;
 create trigger schoolpro_sports_team_house_guard before insert or update on public.schoolpro_sports_teams
 for each row execute function private.schoolpro_validate_sports_operation_links();
+
+create or replace function private.schoolpro_close_archived_team_assignments()
+returns trigger language plpgsql security definer set search_path = ''
+as $
+begin
+  if old.is_active and not new.is_active then
+    update public.schoolpro_sports_team_coaches
+      set ended_at=now(),ended_by=auth.uid(),end_reason='Team archived'
+      where school_id=new.school_id and team_id=new.id and ended_at is null;
+    update public.schoolpro_sports_team_members
+      set ended_at=now(),end_reason='Team archived'
+      where school_id=new.school_id and team_id=new.id and ended_at is null;
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.schoolpro_close_archived_team_assignments() from public,anon,authenticated;
+create trigger schoolpro_sports_close_archived_team_assignments after update of is_active on public.schoolpro_sports_teams
+for each row execute function private.schoolpro_close_archived_team_assignments();
+
 create trigger schoolpro_sports_coach_guard before insert or update on public.schoolpro_sports_team_coaches
 for each row execute function private.schoolpro_validate_sports_operation_links();
 create trigger schoolpro_sports_team_member_guard before insert or update on public.schoolpro_sports_team_members

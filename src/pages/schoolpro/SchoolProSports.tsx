@@ -22,7 +22,7 @@ const localDate=(value:string)=>{if(!value)return '';const d=new Date(value);ret
 export function SchoolProSports(){
  const ctx=useSchoolProContext(),{user}=useAuth();
  const normalizedRole=ctx.role.toLowerCase().replaceAll(' ','_');
- const privilegedRole=['proprietor','administrator','super_admin','super_administrator'].includes(normalizedRole);
+ const privilegedRole=['proprietor','administrator','super_admin','super_administrator','game_master'].includes(normalizedRole);
  const [hasGamesPermission,setHasGamesPermission]=useState(false);
  const canManage=Boolean(ctx.schoolId)&&(privilegedRole||hasGamesPermission);
  const sections=['teacher','class_teacher'].includes(ctx.role.toLowerCase().replaceAll(' ','_'))?teacherSections:schoolSections;
@@ -41,14 +41,17 @@ export function SchoolProSports(){
  const [search,setSearch]=useState('');
  const [scheduleDrafts,setScheduleDrafts]=useState<Record<string,string>>({});
  useEffect(()=>{
-  if(!supabase||!ctx.schoolId){setHasGamesPermission(false);return;}
+  if(!supabase||!ctx.schoolId||!user?.id){setHasGamesPermission(false);return;}
   setHasGamesPermission(false);
   let current=true;
-  void supabase.rpc('schoolpro_user_permissions',{p_school:ctx.schoolId}).then(({data,error})=>{
-   if(current)setHasGamesPermission(!error&&Array.isArray(data)&&data.includes('games'));
-  });
+  void (async()=>{
+   const member=await supabase!.from('schoolpro_members').select('id').eq('school_id',ctx.schoolId).eq('user_id',user.id).eq('status','active').eq('employment_status','active').maybeSingle();
+   if(member.error||!member.data){if(current)setHasGamesPermission(false);return;}
+   const responsibility=await supabase!.from('schoolpro_member_responsibilities').select('member_id').eq('school_id',ctx.schoolId).eq('member_id',member.data.id).eq('responsibility','school_admin').is('ended_at',null).maybeSingle();
+   if(current)setHasGamesPermission(!responsibility.error&&Boolean(responsibility.data));
+  })();
   return()=>{current=false;};
- },[ctx.schoolId,normalizedRole]);
+ },[ctx.schoolId,normalizedRole,user?.id]);
  const load=useCallback(async()=>{
   if(!supabase||!ctx.schoolId)return;
   setError('');

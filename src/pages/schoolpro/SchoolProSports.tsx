@@ -42,6 +42,7 @@ export function SchoolProSports(){
  const [scheduleDrafts,setScheduleDrafts]=useState<Record<string,string>>({});
  useEffect(()=>{
   if(!supabase||!ctx.schoolId){setHasGamesPermission(false);return;}
+  setHasGamesPermission(false);
   let current=true;
   void supabase.rpc('schoolpro_user_permissions',{p_school:ctx.schoolId}).then(({data,error})=>{
    if(current)setHasGamesPermission(!error&&Array.isArray(data)&&data.includes('games'));

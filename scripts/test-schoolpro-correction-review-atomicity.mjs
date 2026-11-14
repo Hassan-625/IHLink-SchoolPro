@@ -20,6 +20,8 @@ assert.match(authority,/Class or section results reopened for correction/i);
 assert.match(authority,/revoke all on table public\.schoolpro_result_correction_requests/i);
 assert.match(broadsheet,/Pending class \/ section correction requests/i);
 assert.match(broadsheet,/schoolpro_decide_result_reopening/i);
+assert.match(broadsheet,/schoolpro_review_result_reopening/i);
+assert.match(broadsheet,/Forward to Exam Officer/i);
 assert.match(broadsheet,/schoolpro_request_result_reopening/i);
 assert.match(requesterPolicy,/using \(requested_by = auth\.uid\(\)\)/i, 'A requester must be able to read only their own correction request records.');
 assert.match(broadsheet,/My result correction requests/i, 'Staff must be able to track the status of correction requests they submitted.');

@@ -161,7 +161,7 @@ create or replace function private.schoolpro_member_leads_student_section(
 )
 returns boolean language sql stable security definer
 set search_path=''
-as $
+as $$
   select exists(
     select 1
     from public.schoolpro_members m
@@ -186,7 +186,7 @@ as $
         )
       )
   )
-$;
+$$;
 
 -- Apply the exact production forward migration under test.
 \ir ../supabase/migrations/20261114213000_schoolpro_section_leader_result_read_scope.sql
@@ -220,7 +220,7 @@ as $$
         )
       )
   )
-$;
+$$;
 
 create or replace function private.schoolpro_can_read_student(p_student uuid)
 returns boolean language sql stable security definer

@@ -32,7 +32,7 @@ assert.match(migration, /m\.role in \('teacher'::public\.school_member_role,'cla
 assert.match(migration, /m\.status='active' and m\.employment_status='active'/);
 assert.match(migration, /schoolpro_sports_can_manage/);
 assert.match(migration, /schoolpro_sports_is_coach/);
-assert.match(migration, /fixture opponent metadata/);
+assert.match(migration, /f\.home_team_id=schoolpro_sports_teams\.id/);
 assert.match(migration, /alter table public\.schoolpro_sports_fixtures enable row level security/);
 assert.match(migration, /schoolpro_sports_fixture_result_history/);
 assert.match(migration, /references public\.schoolpro_competition_entries\(school_id,id\)/);

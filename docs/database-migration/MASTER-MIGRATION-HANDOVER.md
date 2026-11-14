@@ -3659,3 +3659,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The helper retains access for platform Super Admin, school owner, active Proprietor, generic Administrator, explicit `school_admin`, and Exam Officer. Head Teacher, Vice Principal and Principal-designated Administrator position titles do not gain school-wide visibility solely from an Administrator role; they must have an active appointment covering the class. Form Masters are limited to their assigned class. Subject Teachers do not gain class-wide submission metadata access; their score access remains assignment-scoped.
 - Disposable PostgreSQL integration coverage verifies assigned/unassigned section leaders, Principal-title Administrator, Form Master, Subject Teacher, retained school-wide authorities, and cross-school isolation.
 - No production migration was applied and no production business rows were changed. No published results or score rows were modified. No Render deployment was performed.
+
+### Production rollout — class-result submission read scope (2026-11-14)
+
+- PR #188 merged as `7312e788ba777640dfb4ac13c67db303efab3138` after all four required workflows passed on final head `5b366f0b5cb4b3952c2cabff1aef9d0660e2c4da`.
+- Applied source migration `20261114220000_schoolpro_class_result_submission_scope.sql` to Supabase production project `lnqsroyiybutkfngbyge`. Production migration ledger version: `20261114220948`.
+- Pre-apply read-only inspection confirmed the old broad SELECT policy, absence of the new helper, and zero rows in `schoolpro_class_result_submissions`. All helper dependencies were present.
+- Post-apply read-only verification confirms `private.schoolpro_can_read_class_result_submission(uuid,uuid)` exists, the table's sole SELECT policy calls that helper, `authenticated` can execute it, `anon` cannot, and the table still has zero rows.
+- No production result, student, score, or submission data was inserted, updated, or deleted. No Render deployment was performed.
+- Supabase security advisors still report pre-existing broad project findings (including intentionally policy-less RPC-only tables and legacy SECURITY DEFINER grants); no new anonymous execute grant was introduced by this migration. The helper is in the private schema and explicitly denies anon execution.

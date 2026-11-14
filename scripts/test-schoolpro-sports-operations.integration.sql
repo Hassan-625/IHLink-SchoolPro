@@ -158,7 +158,7 @@ update public.schoolpro_sports_fixtures set scheduled_at=scheduled_at+interval '
 where id='80000000-0000-0000-0000-000000000001';
 update public.schoolpro_sports_fixtures set status='in_progress'
 where id='80000000-0000-0000-0000-000000000001';
-do $ begin
+do $$ begin
   begin
     update public.schoolpro_sports_fixtures set status='completed'
     where id='80000000-0000-0000-0000-000000000001';
@@ -166,9 +166,9 @@ do $ begin
   exception when others then
     if sqlerrm='direct fixture completion bypassed audited RPC' then raise; end if;
   end;
-end $;
+end $$;
 select public.schoolpro_record_sports_fixture_result('10000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000001',2,1,'First score',true);
-do $ begin
+do $$ begin
   begin
     update public.schoolpro_sports_fixtures set home_score=3
     where id='80000000-0000-0000-0000-000000000001';
@@ -176,7 +176,7 @@ do $ begin
   exception when others then
     if sqlerrm='direct fixture result update bypassed audited RPC' then raise; end if;
   end;
-end $;
+end $$;
 select public.schoolpro_record_sports_fixture_result('10000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000001',3,1,'Corrected score',true);
 do $$ begin
  if (select count(*) from public.schoolpro_sports_fixture_result_history where fixture_id='80000000-0000-0000-0000-000000000001')<>2 then raise exception 'result amendment history missing'; end if;

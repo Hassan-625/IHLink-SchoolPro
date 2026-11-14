@@ -220,15 +220,15 @@ begin
       or linked_status<>'active' or linked_employment<>'active')) then
       raise exception 'Coach must be active teaching staff in the selected school';
     end if;
-    if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and t.is_active) then
-      raise exception 'Coach team must be active and belong to the selected school';
+    if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and (new.ended_at is not null or t.is_active)) then
+      raise exception 'Coach team must belong to the selected school and be active for a new appointment';
     end if;
   elsif tg_table_name='schoolpro_sports_team_members' then
     if not exists(select 1 from public.schoolpro_students s where s.id=new.student_id and s.school_id=new.school_id and (new.ended_at is not null or s.status='active')) then
       raise exception 'Participant must be an active student in the selected school';
     end if;
-    if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and t.is_active) then
-      raise exception 'Participant team must be active and belong to the selected school';
+    if not exists(select 1 from public.schoolpro_sports_teams t where t.id=new.team_id and t.school_id=new.school_id and (new.ended_at is not null or t.is_active)) then
+      raise exception 'Participant team must belong to the selected school and be active for a new enrollment';
     end if;
     if new.ended_at is null then
       perform pg_advisory_xact_lock(hashtextextended(new.school_id::text||':'||new.student_id::text,0));

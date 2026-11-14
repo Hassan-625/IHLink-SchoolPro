@@ -12,7 +12,7 @@ assert.match(authority,/create table public\.schoolpro_result_correction_batch_i
 assert.match(authority,/public\.schoolpro_request_result_reopening/i);
 assert.match(authority,/public\.schoolpro_decide_result_reopening/i);
 assert.match(authority,/Only the Exam Officer can authorize a class or section result reopening/i);
-assert.match(correctionRouting,/public\\.schoolpro_review_result_reopening/i);
+assert.ok(correctionRouting.includes('public.schoolpro_review_result_reopening('), 'The migration must define the Section Head review RPC.');
 assert.match(correctionRouting,/pending_section_review/i);
 assert.match(correctionRouting,/pending_exam_officer/i);
 assert.match(correctionRouting,/section_reviewed_by=auth\\.uid\\(\\)/i);

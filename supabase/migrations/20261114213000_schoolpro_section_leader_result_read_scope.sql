@@ -116,10 +116,8 @@ to authenticated
 using (
   not private.schoolpro_is_section_leader_for_result(school_id)
   or private.is_admin(array['super_admin']::public.user_role[])
-  or exists (
-    select 1 from public.schoolpro_schools s
-    where s.id = schoolpro_results.school_id
-      and s.owner_id = auth.uid()
+  or private.has_school_access(
+    school_id, array['proprietor']::public.school_member_role[]
   )
   or private.schoolpro_member_has_responsibility(school_id, 'school_admin')
   or private.schoolpro_is_exam_officer(school_id)

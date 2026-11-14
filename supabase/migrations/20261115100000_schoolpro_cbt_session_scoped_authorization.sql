@@ -58,6 +58,26 @@ revoke all on function private.schoolpro_cbt_staff_scope(uuid,uuid,uuid,text)
 grant execute on function private.schoolpro_cbt_staff_scope(uuid,uuid,uuid,text)
   to authenticated;
 
+create or replace function private.schoolpro_cbt_management_access(p_school uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path=''
+as $function$
+  select
+    (select auth.uid()) is not null
+    and coalesce(private.is_active_account(),false)
+    and private.schoolpro_operationally_active(p_school)
+    and private.schoolpro_module_allowed(p_school,'cbt')
+    and public.schoolpro_can_manage_cbt(p_school);
+$function$;
+
+revoke all on function private.schoolpro_cbt_management_access(uuid)
+  from public, anon;
+grant execute on function private.schoolpro_cbt_management_access(uuid)
+  to authenticated;
+
 create or replace function private.schoolpro_cbt_can_author(
   p_school uuid,
   p_class uuid,
@@ -143,7 +163,7 @@ create policy "CBT staff update own assigned drafts"
 on public.schoolpro_cbt_tests
 for update to authenticated
 using (
-  public.schoolpro_can_manage_cbt(school_id)
+  private.schoolpro_cbt_management_access(school_id)
   or (
     status='draft'
     and created_by=(select auth.uid())
@@ -151,7 +171,7 @@ using (
   )
 )
 with check (
-  public.schoolpro_can_manage_cbt(school_id)
+  private.schoolpro_cbt_management_access(school_id)
   or (
     status='draft'
     and created_by=(select auth.uid())
@@ -163,7 +183,7 @@ create policy "CBT staff delete own assigned drafts"
 on public.schoolpro_cbt_tests
 for delete to authenticated
 using (
-  public.schoolpro_can_manage_cbt(school_id)
+  private.schoolpro_cbt_management_access(school_id)
   or (
     status='draft'
     and created_by=(select auth.uid())
@@ -181,15 +201,15 @@ create policy "Question bank assigned session access"
 on public.schoolpro_question_bank
 for all to authenticated
 using (
-  public.schoolpro_can_manage_cbt(school_id)
+  private.schoolpro_cbt_management_access(school_id)
   or private.schoolpro_cbt_staff_scope(school_id,class_id,subject_id,session)
 )
 with check (
   (
-    public.schoolpro_can_manage_cbt(school_id)
+    private.schoolpro_cbt_management_access(school_id)
     or private.schoolpro_cbt_staff_scope(school_id,class_id,subject_id,session)
   )
-  and (created_by=(select auth.uid()) or public.schoolpro_can_manage_cbt(school_id))
+  and (created_by=(select auth.uid()) or private.schoolpro_cbt_management_access(school_id))
 );
 
 -- Test-question links inherit the exact scope of their parent test. This also
@@ -216,7 +236,7 @@ with check (
     select 1 from public.schoolpro_cbt_tests t
     where t.id=test_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.status='draft'
           and t.created_by=(select auth.uid())
@@ -243,7 +263,7 @@ using (
     select 1 from public.schoolpro_cbt_tests t
     where t.id=test_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.status='draft'
           and t.created_by=(select auth.uid())
@@ -257,7 +277,7 @@ with check (
     select 1 from public.schoolpro_cbt_tests t
     where t.id=test_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.status='draft'
           and t.created_by=(select auth.uid())
@@ -284,7 +304,7 @@ using (
     select 1 from public.schoolpro_cbt_tests t
     where t.id=test_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.status='draft'
           and t.created_by=(select auth.uid())
@@ -306,7 +326,7 @@ using (
     where t.id=test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.created_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)
@@ -320,7 +340,7 @@ with check (
     where t.id=test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
-        public.schoolpro_can_manage_cbt(t.school_id)
+        private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.created_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)

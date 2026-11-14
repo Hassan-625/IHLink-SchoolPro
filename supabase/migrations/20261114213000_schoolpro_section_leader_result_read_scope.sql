@@ -74,3 +74,64 @@ grant execute on function private.schoolpro_cached_access_schools(text, text)
 
 comment on function private.schoolpro_cached_access_schools(text, text) is
   'Returns school-wide module/result-reader scopes. Section leaders are intentionally excluded from the result-leader school-wide shortcut and are authorized by active section-specific result policies.';
+
+-- Apply a restrictive SELECT policy so existing permissive policies cannot
+-- turn a section-leader membership/title into school-wide result visibility.
+create or replace function private.schoolpro_is_section_leader_for_result(
+  p_school uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select auth.uid() is not null
+    and private.is_active_account()
+    and exists (
+      select 1
+      from public.schoolpro_members m
+      where m.school_id = p_school
+        and m.user_id = auth.uid()
+        and m.status = 'active'
+        and (
+          m.role in ('head_teacher', 'vice_principal')
+          or (
+            m.role = 'administrator'
+            and (
+              regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'principal%'
+              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'vice principal%'
+              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'head teacher%'
+              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmaster%'
+              or regexp_replace(lower(trim(coalesce(m.position_title, ''))), '[^a-z]+', ' ', 'g') like 'headmistress%'
+            )
+          )
+        )
+    );
+$function$;
+
+revoke all on function private.schoolpro_is_section_leader_for_result(uuid)
+  from public, anon;
+grant execute on function private.schoolpro_is_section_leader_for_result(uuid)
+  to authenticated;
+
+drop policy if exists schoolpro_section_leader_result_scope on public.schoolpro_results;
+create policy schoolpro_section_leader_result_scope
+on public.schoolpro_results
+as restrictive
+for select
+to authenticated
+using (
+  not private.schoolpro_is_section_leader_for_result(school_id)
+  or private.is_admin(array['super_admin']::public.user_role[])
+  or exists (
+    select 1 from public.schoolpro_schools s
+    where s.id = schoolpro_results.school_id
+      and s.owner_id = auth.uid()
+  )
+  or private.schoolpro_member_has_responsibility(school_id, 'school_admin')
+  or private.schoolpro_is_exam_officer(school_id)
+  or private.schoolpro_member_leads_student_section(
+    school_id, student_id, session
+  )
+);

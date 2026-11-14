@@ -15,8 +15,8 @@ assert.match(authority,/Only the Exam Officer can authorize a class or section r
 assert.ok(correctionRouting.includes('public.schoolpro_review_result_reopening('), 'The migration must define the Section Head review RPC.');
 assert.match(correctionRouting,/pending_section_review/i);
 assert.match(correctionRouting,/pending_exam_officer/i);
-assert.match(correctionRouting,/section_reviewed_by=auth\\.uid\\(\\)/i);
-assert.match(correctionRouting,/request_row\\.section_reviewed_by=auth\\.uid\\(\\)/i);
+assert.ok(correctionRouting.includes('section_reviewed_by=auth.uid()'));
+assert.ok(correctionRouting.includes('request_row.section_reviewed_by=auth.uid()'));
 assert.match(correctionRouting,/The requester cannot review their own correction request/i);
 assert.match(correctionRouting,/The requester and Section Head reviewer cannot authorize the same correction request/i);
 assert.match(authority,/for update/i);

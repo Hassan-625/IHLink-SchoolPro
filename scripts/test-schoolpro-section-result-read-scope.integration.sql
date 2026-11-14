@@ -183,7 +183,7 @@ create or replace function private.schoolpro_member_leads_class(
 )
 returns boolean language sql stable security definer
 set search_path=''
-as $
+as $$
   select exists(
     select 1 from public.schoolpro_members m
     join public.schoolpro_section_leaders sl
@@ -193,12 +193,12 @@ as $
     where m.school_id=p_school and m.user_id=auth.uid()
       and m.status='active' and m.role in ('head_teacher','vice_principal')
   )
-$;
+$$;
 
 create or replace function private.schoolpro_can_read_student(p_student uuid)
 returns boolean language sql stable security definer
 set search_path=''
-as $
+as $$
   select exists(
     select 1 from public.schoolpro_students s
     where s.id=p_student and (
@@ -209,32 +209,32 @@ as $
       or private.schoolpro_member_leads_class(s.school_id,s.class_id)
     )
   )
-$;
+$$;
 
 create or replace function private.schoolpro_can_review_class(
   p_school uuid,p_class uuid
 )
 returns boolean language sql stable security definer
 set search_path=''
-as $
+as $$
   select private.schoolpro_is_school_admin(p_school)
     or private.schoolpro_is_exam_officer(p_school)
     or private.schoolpro_member_leads_class(p_school,p_class)
-$;
+$$;
 
 create or replace function private.schoolpro_can_read_result(
   p_school uuid,p_student uuid,p_subject uuid,p_session text
 )
 returns boolean language sql stable security definer
 set search_path=''
-as $
+as $$
   select private.schoolpro_can_read_student(p_student)
     and exists(
       select 1 from public.schoolpro_students s
       where s.id=p_student and s.school_id=p_school
         and private.schoolpro_can_review_class(p_school,s.class_id)
     )
-$;
+$$;
 
 create or replace function private.schoolpro_cached_result_reader_keys()
 returns jsonb language sql stable

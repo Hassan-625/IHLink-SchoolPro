@@ -285,6 +285,12 @@ begin
     and current_user <> 'postgres' then
     raise exception 'Fixture results must be recorded through the audited result workflow';
   end if;
+  if new.status='completed' and old.status<>'completed' and current_user<>'postgres' then
+    raise exception 'Fixture completion must use the audited result workflow';
+  end if;
+  if new.status='completed' and (new.home_score is null or new.away_score is null) then
+    raise exception 'A completed fixture requires both team scores';
+  end if;
   if new.status is distinct from old.status then
     if old.status='completed' or not (
       (old.status='scheduled' and new.status in ('in_progress','postponed','cancelled'))

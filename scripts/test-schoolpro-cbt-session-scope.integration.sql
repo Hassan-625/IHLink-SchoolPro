@@ -134,7 +134,7 @@ begin
     values('60000000-0000-0000-0000-000000000005','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Wrong subject','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000002','2026/2027','draft',auth.uid());
     raise exception 'FAIL: wrong-subject test was accepted';
   exception when insufficient_privilege then null; end;
-end $;
+end $$;
 insert into public.schoolpro_question_bank(id,school_id,subject_id,class_id,session,question_type,question_text,marks,created_by)
 values('70000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','2026/2027','theory','Explain the topic',5,auth.uid());
 do $$
@@ -164,14 +164,14 @@ reset role;
 -- A teacher allocated only in another school cannot create a test in this school.
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000007',true);
-do $
+do $$
 begin
   begin
     insert into public.schoolpro_cbt_tests(id,school_id,title,class_id,subject_id,session,status,created_by)
     values('60000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Cross-school test','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026/2027','draft',auth.uid());
     raise exception 'FAIL: cross-school teacher created test';
   exception when insufficient_privilege then null; end;
-end $;
+end $$;
 reset role;
 
 -- Unassigned, stale-session and ended-allocation teachers cannot read or write the scope.
@@ -220,7 +220,7 @@ insert into public.schoolpro_cbt_answers(id,attempt_id,question_id,answer) value
  ('a0000000-0000-0000-0000-000000000002','90000000-0000-0000-0000-000000000002','70000000-0000-0000-0000-000000000001','Other answer');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000001',true);
-do $
+do $$
 begin
   if (select count(*) from public.schoolpro_cbt_attempts)<>2 then
     raise exception 'FAIL: assigned teacher cannot read attempts for the allocated test';
@@ -228,13 +228,13 @@ begin
   if (select count(*) from public.schoolpro_cbt_answers)<>2 then
     raise exception 'FAIL: assigned teacher cannot read answers for the allocated test';
   end if;
-end $;
+end $$;
 select public.mark_schoolpro_theory_answer('a0000000-0000-0000-0000-000000000001',3,'Reviewed by assigned subject teacher');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000002',true);
-do $
+do $$
 begin
   if (select count(*) from public.schoolpro_cbt_attempts)<>0 then
     raise exception 'FAIL: unassigned teacher can read CBT attempts';
@@ -246,12 +246,12 @@ begin
     if sqlerrm='FAIL: unassigned teacher marked a theory answer' then raise; end if;
     if sqlerrm<>'Not authorized to mark this test' then raise; end if;
   end;
-end $;
+end $$;
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000006',true);
-do $
+do $$
 begin
   if (select count(*) from public.schoolpro_cbt_attempts)<>1 then
     raise exception 'FAIL: student attempt self-read boundary changed';

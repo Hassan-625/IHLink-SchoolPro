@@ -1,4 +1,4 @@
- \set ON_ERROR_STOP on
+\set ON_ERROR_STOP on
 
 -- Disposable PostgreSQL only. Exercises the existing term-Demo lifecycle and
 -- the exact paid-annual grace migration; never run against hosted Supabase.

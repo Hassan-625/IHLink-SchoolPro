@@ -208,10 +208,10 @@ end $$;
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000006',false);
 set role authenticated;
-do $ begin
+do $$ begin
  if not private.schoolpro_sports_can_manage('10000000-0000-0000-0000-000000000001') then raise exception 'explicit school_admin responsibility did not grant Games management'; end if;
  insert into public.schoolpro_sports_teams(school_id,name,sport) values('10000000-0000-0000-0000-000000000001','Leadership approved team','Football');
-end $;
+end $$;
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000001',false);
 set role authenticated;

@@ -7,11 +7,11 @@ const permissions = read('../src/lib/schoolPermissions.ts');
 const ui = read('../src/pages/schoolpro/SchoolProSports.tsx');
 const migration = read('../supabase/migrations/20261114190000_schoolpro_sports_operations.sql');
 
-assert.match(app, /path="\/schoolpro\/sports" element={<Guard permission="dashboard"><SchoolProSports\/><\/Guard>}/);
+assert.match(app, /path="\/schoolpro\/sports" element={<Guard permission="games"><SchoolProSports\/><\/Guard>}/);
 assert.match(app, /import \{ SchoolProSports \} from "@\/pages\/schoolpro\/SchoolProSports"/);
 assert.match(nav, /Sports Teams & Fixtures.*href:'\/schoolpro\/sports'/);
 assert.ok((nav.match(/Sports Teams & Fixtures/g)||[]).length>=2,'sports route must be reachable from manager and teacher navigation');
-assert.match(permissions, /'sports':'dashboard'/);
+assert.match(permissions, /'sports':'games'/);
 assert.match(ui, /schoolpro_member_responsibilities/);
 assert.match(ui, /game_master/);
 assert.match(ui, /schoolpro_sports_teams/);

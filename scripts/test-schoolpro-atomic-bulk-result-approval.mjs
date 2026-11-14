@@ -42,10 +42,10 @@ assert.match(selectedPublish,/count\(distinct x\.id\).*cardinality\(p_students\)
 
 const scopeHelper=authority.slice(
   authority.indexOf('function private.schoolpro_result_scope_mixed_state'),
-  authority.indexOf('$;',authority.indexOf('function private.schoolpro_result_scope_mixed_state'))+3
+  authority.indexOf('$'+';',authority.indexOf('function private.schoolpro_result_scope_mixed_state'))+3
 );
 assert.match(scopeHelper,/target_classes as/i,
-  'Whole-school completeness must derive its scope from every non-archived school class.');
+  'Whole-school completeness must derive its scope from the school's class catalogue.');
 assert.match(scopeHelper,/schoolpro_subject_assignments/i,
   'The expected result matrix must be based on active subject allocations.');
 assert.match(scopeHelper,/a\.ended_at is null/i,
@@ -62,7 +62,7 @@ assert.match(scopeHelper,/p_stage='exam'.*exam_approved/s,
   'Final approval and publication require Exam Officer state for every expected result.');
 
 const publishStart=authority.indexOf('function public.schoolpro_publish_school_results');
-const publishEnd=authority.indexOf('$;',publishStart);
+const publishEnd=authority.indexOf('$'+';',publishStart);
 assert.ok(publishStart>=0&&publishEnd>publishStart,'Whole-school publication RPC must exist.');
 const publish=authority.slice(publishStart,publishEnd);
 assert.ok(publish.indexOf('private.schoolpro_lock_result_scope')<publish.indexOf('private.schoolpro_result_scope_mixed_state'),

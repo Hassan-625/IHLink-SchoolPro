@@ -155,6 +155,7 @@ alter table public.schoolpro_result_correction_batch_items enable row level secu
 grant select on public.schoolpro_result_correction_batches,
   public.schoolpro_result_correction_batch_items,
   public.schoolpro_classes to authenticated;
+grant select on public.schoolpro_results,public.schoolpro_audit_logs to authenticated;
 
 create policy schoolpro_result_correction_batches_exam_officer_read
 on public.schoolpro_result_correction_batches for select to authenticated

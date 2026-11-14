@@ -27,7 +27,7 @@ create or replace function private.is_active_account() returns boolean language 
 create or replace function private.schoolpro_operationally_active(p_school uuid) returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_schools where id=p_school)
 $$;
-create or replace function private.is_admin(p_roles public.user_role[]) returns boolean language sql stable as $$ select false $$;
+create or replace function private.is_admin(p_roles public.user_role[]) returns boolean language sql stable as $ select auth.uid()='30000000-0000-0000-0000-000000000005'::uuid $;
 create or replace function public.schoolpro_user_permissions(p_school uuid) returns text[] language sql stable security definer set search_path='' as $$
  select case when exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.status='active' and m.employment_status='active' and m.role='game_master') then array['games']::text[] else array[]::text[] end
 $$;
@@ -199,6 +199,18 @@ update public.schoolpro_sports_teams set is_active=false where id='70000000-0000
 do $ begin
  if (select count(*) from public.schoolpro_sports_team_coaches where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not end active coach appointments'; end if;
  if (select count(*) from public.schoolpro_sports_team_members where team_id='70000000-0000-0000-0000-000000000001' and ended_at is null)<>0 then raise exception 'archiving team did not close active squad memberships'; end if;
+end $;
+reset role;
+select set_config('request.jwt.claim.sub','30000000-0000-0000-0000-000000000005',false);
+set role authenticated;
+do $ begin
+ begin
+  update public.schoolpro_sports_teams set school_id='10000000-0000-0000-0000-000000000002'
+  where id='70000000-0000-0000-0000-000000000004';
+  raise exception 'platform Super Admin reassigned a sports team across tenants';
+ exception when others then
+  if sqlerrm='platform Super Admin reassigned a sports team across tenants' then raise; end if;
+ end;
 end $;
 reset role;
 rollback;

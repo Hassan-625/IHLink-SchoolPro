@@ -11,6 +11,13 @@ begin
   from public.schoolpro_schools
   where lower(trim(name)) = 'ha academy';
 
+  -- The migration is intentionally school-specific. Disposable CI baselines
+  -- may not seed HA Academy; in that case this migration is a safe no-op.
+  if v_school_id is null then
+    raise notice 'HA Academy is absent from this database; skipping its subject catalogue seed.';
+    return;
+  end if;
+
   insert into public.schoolpro_subjects (school_id, name, code, class_name)
   select v_school_id, seed.name, seed.code, seed.class_name
   from (values

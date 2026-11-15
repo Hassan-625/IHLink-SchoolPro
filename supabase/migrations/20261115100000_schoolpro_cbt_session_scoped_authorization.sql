@@ -327,7 +327,7 @@ for all to authenticated
 using (
   exists (
     select 1 from public.schoolpro_cbt_tests t
-    where t.id=test_id
+    where t.id=schoolpro_cbt_eligibility.test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
         private.schoolpro_cbt_management_access(t.school_id)
@@ -335,13 +335,13 @@ using (
           t.created_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)
           and (
-            (student_id is null and class_id=t.class_id)
+            (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
             or (
-              student_id is not null
-              and class_id is null
+              schoolpro_cbt_eligibility.student_id is not null
+              and schoolpro_cbt_eligibility.class_id is null
               and exists (
                 select 1 from public.schoolpro_students s
-                where s.id=student_id
+                where s.id=schoolpro_cbt_eligibility.student_id
                   and s.school_id=t.school_id
                   and s.class_id=t.class_id
               )
@@ -354,22 +354,22 @@ using (
 with check (
   exists (
     select 1 from public.schoolpro_cbt_tests t
-    where t.id=test_id
+    where t.id=schoolpro_cbt_eligibility.test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
         private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.created_by=(select auth.uid())
-          and assigned_by=(select auth.uid())
+          and schoolpro_cbt_eligibility.assigned_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)
           and (
-            (student_id is null and class_id=t.class_id)
+            (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
             or (
-              student_id is not null
-              and class_id is null
+              schoolpro_cbt_eligibility.student_id is not null
+              and schoolpro_cbt_eligibility.class_id is null
               and exists (
                 select 1 from public.schoolpro_students s
-                where s.id=student_id
+                where s.id=schoolpro_cbt_eligibility.student_id
                   and s.school_id=t.school_id
                   and s.class_id=t.class_id
               )

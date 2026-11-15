@@ -3886,3 +3886,9 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Workbook inspection found the five Board rows use labels such as `Board Member 1` through `Board Member 5`. These are row identifiers, not valid governance titles accepted by `private.schoolpro_set_board_role`.
 - Updated the preview parser to normalize numbered Board Member labels to the supported designation `Board Member`; it also accepts only the existing supported titles (Chairperson, Director, Co-owner, Board Secretary, Board Member, Executive Director, Deputy Director). Unknown titles now block preview validation rather than failing later during appointment.
 - This correction does not create accounts or appointments and does not apply the Board Member migration. It preserves the workbook's names and email addresses and the separate `board_member` least-privilege membership role.
+
+### HA Academy Principal invitation designation correction — 2026-11-15
+
+- Follow-up review found the preview was converting Principal to the generic `administrator` role before invitation submission. The existing invitation Edge Function only writes `position_title='Principal'` when its incoming role is `principal`; sending `administrator` would therefore lose the Principal designation.
+- Corrected the preview model to retain the `principal` invitation role and display it as Principal. The existing Edge Function continues to store the actual membership as `administrator` with `position_title='Principal'`.
+- This is a repository-only correction. No account or membership was created or modified.

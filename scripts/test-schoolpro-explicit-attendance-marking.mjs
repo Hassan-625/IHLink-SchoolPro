@@ -13,4 +13,11 @@ assert.ok(source.includes('value={records[student.id]?.status||""}'), 'The statu
 assert.ok(source.includes('<option value="">Select status…</option>'), 'The operator must explicitly choose a status before saving.');
 assert.ok(!source.includes('status:records[student.id]?.status||"present"'), 'Saving must never silently convert an unmarked learner to present.');
 
-console.log('PASS: attendance requires an explicit status for every learner before saving.');
+assert.ok(source.includes('form_teacher_id?:string|null'), 'Attendance class rows must carry the assigned Form Master member id.');
+assert.ok(source.includes('.eq("status","active").maybeSingle()'), 'Only an active school membership may establish the current Form Master identity.');
+assert.ok(source.includes('row.form_teacher_id===activeMemberId'), 'Non-management attendance registers must be limited to classes assigned to the signed-in active Form Master membership.');
+assert.ok(source.includes('profile?.role==="super_admin"'), 'Platform Super Admin retains school-wide attendance oversight.');
+assert.ok(source.includes('Only the Form Master assigned to this class can record attendance.'), 'The save handler must independently reject a class outside the current Form Master assignment.');
+assert.ok(source.includes('No classes are assigned to you as Form Master.'), 'An unassigned teacher must receive an explicit empty-state explanation.');
+
+console.log('PASS: attendance requires an explicit status for every learner before saving and is limited to the assigned Form Master.');

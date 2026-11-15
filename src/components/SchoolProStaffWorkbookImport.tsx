@@ -57,7 +57,8 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
   const [busy, setBusy] = useState(false);
   const [workbookName, setWorkbookName] = useState("");
   async function preview() {
-    if (!file || busy) return;\n    if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before validating this HA-only workbook."]); return; }
+    if (!file || busy) return;
+    if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before validating this HA-only workbook."]); return; }
     setBusy(true); setRows([]); setIssues([]); setWorkbookName(file.name);
     try {
       const workbook = new ExcelJS.Workbook();

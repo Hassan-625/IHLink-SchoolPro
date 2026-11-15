@@ -64,7 +64,7 @@ for attempt in 1 2; do
   printf '%s\n' "--- session $attempt log ---"
   cat "/tmp/schoolpro-result-import-race-$attempt.log" 2>/dev/null || true
 done
-if [[ "$accepted" -eq 2 && "$rejected" -eq 0 && "$worker_wait_failures" -eq 0 ]]; then
+if [[ "$accepted" -eq 2 && "$rejected" -eq 0 && "$worker_wait_failures" -eq 0 && ( "$actual" == "$scheme_a:71" || "$actual" == "$scheme_b:82" ) ]]; then
   echo "REPRODUCED: both concurrent imports were accepted; final draft: $actual"
   exit 0
 fi

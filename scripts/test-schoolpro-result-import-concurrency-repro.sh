@@ -59,6 +59,7 @@ actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --
 insert_attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select last_value from public.schoolpro_result_import_race_insert_attempts" 2>&1)"
 printf 'Session outcomes: accepted=%s rejected=%s worker_wait_failures=%s\n' "$accepted" "$rejected" "$worker_wait_failures"
 printf 'Final draft: %s\n' "${actual:-<no row or query failed>}"
+printf 'Concurrent insert-trigger entries: %s\n' "${insert_attempts:-<query failed>}"
 for attempt in 1 2; do
   printf '%s\n' "--- session $attempt result ---"
   cat "/tmp/schoolpro-result-import-race-$attempt.result" 2>/dev/null || true

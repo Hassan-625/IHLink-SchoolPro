@@ -3871,3 +3871,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - User explicitly directed: use each workbook person's surname as their temporary initial password for now. Apply only to the 59 HA Academy staff/admin/Board accounts; preserve the first-login password-change challenge and do not display passwords in import logs or summaries.
 - Corrected a literal escaped newline in the workbook preview that would have prevented TypeScript parsing. Corrected Principal preview mapping to the existing `administrator` membership role with `position_title = 'Principal'`, matching the edge function's established storage behavior. The Proprietor / School Owner row remains `administrator` / School Administrator.
 - No production migration or account creation has been performed in this step. Board Member role migration and the bulk import/appointment path remain prerequisites before the batch can be safely provisioned.
+
+
+### Staff invitation role-constraint correction — 2026-11-15
+
+- Production schema inspection confirmed the current `school_member_role` enum already includes `discipline_master` and `game_master`, but the `schoolpro_access_invitations_role_check` constraint and `invite-school-staff` request allowlist did not include them. This would have rejected two of the HA Academy workbook staff categories.
+- Updated the feature branch invitation endpoint allowlist and the Board Member migration's invitation constraint to include both existing roles, alongside the new `board_member` role.
+- Confirmed the Board permission resolver's explicit fallback is limited to `dashboard` and `notifications`; it does not inherit administrator, teaching, score-entry, or finance permissions.
+- Confirmed the initial credential mechanism: the staff member enters their surname in the first-time password field; the server verifies its hash and requires them to choose a new password (minimum 10 characters) before activating normal sign-in. The surname itself is not stored as the Auth password. This implements the requested temporary surname-first-login flow with a mandatory change.
+- These were read-only production schema/function inspections plus feature-branch code changes. No production data, schema, accounts, or invitations were changed.

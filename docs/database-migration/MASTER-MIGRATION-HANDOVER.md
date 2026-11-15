@@ -1,3 +1,19 @@
+## PR #200 — Form Master attendance register UI scope (2026-11-15)
+
+**PR:** [#200 — limit attendance registers to assigned Form Masters](https://github.com/Hassan-625/IHLink-SchoolPro/pull/200)  
+**Branch:** `fix/schoolpro-form-master-attendance-register-ui`  
+**Exact tested head:** `b663f3582275edc7ca6f602823d3a2a6e3361b32`  
+**Squash merge:** `2650a79298baa10417568ba0fa5aa292c9e769bc`  
+**Render deployment:** `dep-dbsgkvdbedkc73c6odug` — build in progress at handover update.
+
+The attendance page now limits ordinary teaching staff to classes for which their active school membership is the appointed Form Master. Proprietor, Administrator and platform Super Admin retain school-wide oversight. The save handler independently rechecks the class appointment, and the empty state explains when no classes are assigned. The existing explicit-attendance regression script was extended.
+
+All four required workflows passed on the exact tested head: SchoolPro CI (including TypeScript typecheck, attendance scope and explicit-marking regressions, and production build), Stage C0 security/workflow regression, student-insert RETURNING RLS regression, and payment-page validation. The dedicated disposable-PostgreSQL Form Master attendance RLS integration also passed.
+
+This is a frontend-only correction. No migration was included, no Supabase production change was made, and no production business data was inserted, updated or deleted. The squash merge triggered Render's automatic deployment; its build was still in progress when checked. Follow up by confirming this deployment reaches `live`.
+
+---
+
 ## PR #199 — section appointment required for Results review UI (2026-11-15)
 
 **PR:** [#199 — require section appointment for Results review UI](https://github.com/Hassan-625/IHLink-SchoolPro/pull/199)  

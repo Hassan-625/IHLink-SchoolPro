@@ -44,7 +44,7 @@ const adminRole = (role: string) => {
   switch (key(role)) {
     case "proprietor / school owner":
     case "school administrator": return "administrator";
-    case "principal": return "administrator";
+    case "principal": return "principal";
     case "vice principal": return "vice_principal";
     default: return "";
   }
@@ -155,7 +155,7 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
         {[["Staff",counts.staff],["Administrators",counts.administrators],["Board",counts.board],["Form Masters",counts.formMasters],["Section Heads",counts.sectionHeads]].map(([label,value]) => <div key={label} className="rounded-lg bg-slate-50 p-3"><p className="text-xs text-muted">{label}</p><p className="text-xl font-bold tabular-nums">{value}</p></div>)}
       </div>
       <div className="max-h-72 overflow-auto rounded-lg border">
-        <table className="w-full text-left text-xs"><thead className="sticky top-0 bg-slate-50"><tr>{["Name","Email","Access role","Workbook responsibility"].map(x=><th key={x} className="p-2">{x}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.email} className="border-t"><td className="p-2">{r.firstName} {r.middleName} {r.surname}</td><td className="p-2">{r.email}</td><td className="p-2">{r.role === "administrator" ? "School Administrator" : r.role.replaceAll("_"," ")}</td><td className="p-2">{r.position}{r.assignedClass ? " · " + r.assignedClass : ""}{r.section && r.role === "head_teacher" ? " · " + r.section : ""}</td></tr>)}</tbody></table>
+        <table className="w-full text-left text-xs"><thead className="sticky top-0 bg-slate-50"><tr>{["Name","Email","Access role","Workbook responsibility"].map(x=><th key={x} className="p-2">{x}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.email} className="border-t"><td className="p-2">{r.firstName} {r.middleName} {r.surname}</td><td className="p-2">{r.email}</td><td className="p-2">{r.role === "administrator" ? "School Administrator" : r.role === "principal" ? "Principal" : r.role.replaceAll("_"," ")}</td><td className="p-2">{r.position}{r.assignedClass ? " · " + r.assignedClass : ""}{r.section && r.role === "head_teacher" ? " · " + r.section : ""}</td></tr>)}</tbody></table>
       </div>
       <p className="text-sm text-muted">Validated {rows.length} records. The Proprietor / School Owner workbook row is mapped to School Administrator, with no ownership transfer. The five Board records use the separate least-privilege Board Member role. Subject Teachers remain unallocated.</p>
       <p className="text-sm font-medium text-amber-800">Account creation and email sending are intentionally not triggered by this preview. The invitation delivery and post-acceptance appointment flow must be completed and verified before sending this batch.</p>

@@ -3711,3 +3711,16 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Updated CBT Test Builder and Question Bank forms to require class, subject and academic session, and filter question selection to the exact test scope.
 - Added static regression checks and a disposable PostgreSQL integration harness for assigned/unassigned teachers, wrong class/subject/session, ended allocations, cross-school denial, draft-only teacher authoring, management access, staff attempt/answer reads, theory marking, and student own-attempt/answer visibility. CI includes both checks.
 - This branch is pending CI and review. No production migration was applied, no production data was changed, and no Render deployment was initiated.
+
+
+### Production rollout — CBT class/subject/session authorization — PR #197 (2026-11-15)
+
+- PR #197 merged by squash as `2cd886f210de7782f9e3731fffc1c0e2fa8cb457` from final head `7c822df6ace752377abfc4a0b516b1989defedba`.
+- All four required workflows passed on that exact head: SchoolPro CI (including CBT disposable PostgreSQL integration), Stage C0 security/workflow regression, student-insert RETURNING RLS regression, and payment-page validation.
+- Applied migration source `20261115100000_schoolpro_cbt_session_scoped_authorization.sql` to production Supabase project `lnqsroyiybutkfngbyge`. Supabase assigned production ledger version `20261115004008` (`schoolpro_cbt_session_scoped_authorization`).
+- Post-apply verification confirms session columns on CBT tests and question-bank rows; the assigned-session test read, question-bank scope, attempt read and answer read policies; all five private authorization helpers; and removal of the obsolete `C0 CBT plan read` policy.
+- Privilege verification confirms `anon` cannot execute the theory-marking RPC, private staff-scope helper, or student CBT start RPC; `authenticated` retains execution where intended.
+- Existing student self-attempt/answer policies and the student CBT RPC flow were preserved by the migration. No production business rows were inserted, updated or deleted.
+- Supabase security advisors still report pre-existing project-wide findings (policy-less RPC-only tables, broad legacy SECURITY DEFINER execute grants, and leaked-password protection disabled). These are not introduced by this migration; no broad unrelated security changes were made here.
+- PR #105 remains open and unmerged. No production test workspace/account was created.
+

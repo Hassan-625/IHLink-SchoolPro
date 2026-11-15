@@ -1,4 +1,4 @@
-\\set ON_ERROR_STOP on
+\set ON_ERROR_STOP on
 -- Adds an isolated student and a second compatible-level scheme for the
 -- two-session race probe. The RPC's existing test helpers authorize writes.
 insert into public.schoolpro_students(id,school_id,admission_number,status,class_id)

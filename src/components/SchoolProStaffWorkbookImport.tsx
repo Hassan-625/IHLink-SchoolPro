@@ -109,7 +109,7 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
         // titles. Assign five distinct, least-privilege designations in sheet
         // order; explicit titles in a future workbook always take precedence.
         const numberedBoardTitle = sourceTitle.match(/^board member\\s+(\\d+)$/);
-        const defaultBoardTitles = ["Chairperson", "Co-owner", "Director", "Executive Director", "Board Secretary"];
+        const defaultBoardTitles = ["Owner", "Co-owner", "Director", "Executive Director", "Board Secretary"];
         const boardTitle = numberedBoardTitle
           ? defaultBoardTitles[Number(numberedBoardTitle[1]) - 1]
           : validBoardTitles.get(sourceTitle);

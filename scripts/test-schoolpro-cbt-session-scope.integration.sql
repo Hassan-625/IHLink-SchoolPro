@@ -95,7 +95,9 @@ insert into public.schoolpro_members values
  ('40000000-0000-0000-0000-000000000005','bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb','00000000-0000-0000-0000-000000000007','active','teacher'),
  ('40000000-0000-0000-0000-000000000006','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000009','active','teacher');
 insert into public.schoolpro_students(id,school_id,user_id,class_id,status,transferred_out_at)
-values('80000000-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000010','10000000-0000-0000-0000-000000000002','active',null);
+values
+ ('80000000-0000-0000-0000-000000000003','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000010','10000000-0000-0000-0000-000000000002','active',null),
+ ('80000000-0000-0000-0000-000000000004','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','00000000-0000-0000-0000-000000000011','10000000-0000-0000-0000-000000000001','active',null);
 insert into public.schoolpro_subject_assignments values
  ('50000000-0000-0000-0000-000000000001','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001','2026/2027',null),
  ('50000000-0000-0000-0000-000000000002','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000002','2025/2026',null),
@@ -156,6 +158,8 @@ insert into public.schoolpro_cbt_test_questions(test_id,question_id,position)
 values('60000000-0000-0000-0000-000000000001','70000000-0000-0000-0000-000000000001',1);
 insert into public.schoolpro_cbt_eligibility(school_id,test_id,student_id,class_id,eligible,assigned_by)
 values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','60000000-0000-0000-0000-000000000001',null,'10000000-0000-0000-0000-000000000001',true,auth.uid());
+insert into public.schoolpro_cbt_eligibility(school_id,test_id,student_id,class_id,eligible,assigned_by)
+values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','60000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000004',null,true,auth.uid());
 do $
 begin
   begin

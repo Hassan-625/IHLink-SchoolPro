@@ -1,3 +1,12 @@
+## PR #201 — staged result-correction review messaging (2026-11-15)
+
+- PR [#201](https://github.com/Hassan-625/IHLink-SchoolPro/pull/201) merged as `8a8547f2ca6c4d892b303f3c606cd72b6bc2a2fa` from tested head `8ad7830715e52ccb9512649c53548439ef5c433f`; all 26 CI jobs completed successfully.
+- Updated `SchoolProResults.tsx` so correction-request messaging accurately describes the staged route: appointed Section Head review when applicable, followed by independent final Exam Officer authorization. Updated the confirmation copy and added source-contract assertions in `scripts/test-result-workflow.mjs`.
+- Render production deployment `dep-dbsh4llbedkc73c78fq0` for the exact merge commit reached `live` at 2026-11-15 02:01:45 UTC.
+- Frontend and regression-test change only. No migration, Supabase production change, production business-data write, or published-result change was involved.
+
+---
+
 ## PR #200 — Form Master attendance register UI scope (2026-11-15)
 
 **PR:** [#200 — limit attendance registers to assigned Form Masters](https://github.com/Hassan-625/IHLink-SchoolPro/pull/200)  

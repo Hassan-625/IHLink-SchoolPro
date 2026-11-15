@@ -3763,3 +3763,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Supabase security advisors still report pre-existing project-wide findings (policy-less RPC-only tables, broad legacy SECURITY DEFINER execute grants, and leaked-password protection disabled). These are not introduced by this migration; no broad unrelated security changes were made here.
 - PR #105 remains open and unmerged. No production test workspace/account was created.
 
+
+
+### Live role-navigation acceptance — Super Admin and Exam Officer (2026-11-15)
+
+- The platform owner confirmed a live sign-in and navigation check against the Render-hosted SchoolPro application using existing accounts.
+- **Platform Super Admin — PASSED:** sign-in succeeded; the registered-school selector appeared; selecting HA Academy succeeded.
+- **Exam Officer — PASSED:** sign-in succeeded; the authorized examination modules were visible.
+- These checks close the live UI navigation/visibility blocker for these two roles. They do not by themselves certify the complete assessment/result lifecycle, every module action, all role combinations, or the full cross-school authorization matrix; those remain covered by the outstanding scoped acceptance and regression work in Issue #97.
+- The acceptance was recorded in Issue #97. No account, workspace, roster, score, published result, or other production business data was created or modified for this check.

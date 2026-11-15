@@ -99,15 +99,19 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
           ["chairperson", "Chairperson"],
           ["director", "Director"],
           ["co owner", "Co-owner"],
+          ["owner", "Owner"],
           ["board secretary", "Board Secretary"],
           ["board member", "Board Member"],
           ["executive director", "Executive Director"],
           ["deputy director", "Deputy Director"],
         ]);
-        // Workbook labels such as "Board Member 1" are row identifiers, not
-        // governance designations. Normalize them to the valid least-privilege title.
-        const boardTitle = /^board member(?:\s+\d+)?$/.test(sourceTitle)
-          ? "Board Member"
+        // The HA workbook uses numbered placeholders rather than governance
+        // titles. Assign five distinct, least-privilege designations in sheet
+        // order; explicit titles in a future workbook always take precedence.
+        const numberedBoardTitle = sourceTitle.match(/^board member\\s+(\\d+)$/);
+        const defaultBoardTitles = ["Chairperson", "Co-owner", "Director", "Executive Director", "Board Secretary"];
+        const boardTitle = numberedBoardTitle
+          ? defaultBoardTitles[Number(numberedBoardTitle[1]) - 1]
           : validBoardTitles.get(sourceTitle);
         if (!boardTitle) { errors.push("HA Board row " + n + ": unsupported Board designation '" + (r.position || "") + "'."); return null; }
         return { source: "Board", email: r.email.toLowerCase(), firstName: r["first name"], middleName: r["middle name"] || "", surname: r["last name"], phone: r.phone || "", role: "board_member", position: boardTitle, section: null, assignedClass: null };

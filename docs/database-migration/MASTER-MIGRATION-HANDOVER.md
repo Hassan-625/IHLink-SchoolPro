@@ -3809,3 +3809,30 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The class-results workbook exporter now rejects duplicate `subject_id` rows within a student's result set. Previously, the total could count both rows while the subject-column map retained only the last score, making the workbook internally inconsistent.
 - Added a regression to `scripts/test-class-results-export.mjs` requiring the duplicate-subject diagnostic. TypeScript validation, production build, source-contract checks and disposable PostgreSQL C0 regression all passed. The first C0 run was blocked only by a GitHub API rate limit while resolving the Supabase CLI release; retrying that failed job alone passed. The 29-check run had 28 successful checks and the tenant-acceptance job intentionally skipped.
 - No database migration, Supabase production change, or production business-data write was involved. Render auto-deployment was triggered by the merge; deployment `dep-dbsk4f7f3r2c73egnktg` was building when first checked. Confirm its final state separately; do not treat the merge itself as proof that the deployment is live.
+
+
+### HA Academy subject catalogue completion — 2026-11-15
+
+- Approved by the platform owner: use the HA Academy subject lists in the uploaded workbook as the intended curriculum; create a proposed Pre-Nursery foundation list because the workbook contains no Pre-Nursery subjects.
+- Added migration source `20261115180000_schoolpro_ha_academy_section_subject_catalogue.sql` on branch `feat/schoolpro-ha-academy-section-subject-catalogue`. It adds only missing section-level catalogue entries, uses section-scoped unique codes, checks normalized subject names to avoid duplicates, and preserves existing subject rows.
+- Existing Nursery equivalents are retained rather than duplicated: English Language represents Language & Literacy; Mathematics/Quantitative Studies represent Numeracy; Health Habit and Social Habit represent the workbook's corresponding habit subjects. The additional Nursery subjects are Basic Science, Creative Arts, Rhymes & Music, and Physical Development.
+- Existing Primary subjects are retained. Six workbook subjects are added: Basic Science & Technology, Computer Studies, Cultural & Creative Arts, National Values Education, Physical & Health Education, and Religious Studies.
+- Junior Secondary and Senior Secondary each receive the ten subjects listed in the HA Subjects workbook sheet.
+- Proposed Pre-Nursery foundation subjects: Early Language & Communication, Early Numeracy, Environmental Awareness, Creative Expression, Rhymes & Movement, Personal & Social Habits, and Health, Hygiene & Safety. The owner clarified that Pre-Nursery is part of the Nursery section, so all seven are stored under `class_name='Nursery'`. `Physical Development` is shared with the workbook's Nursery curriculum and is represented once; no separate Pre-Nursery subject group or class is created.
+- This change creates catalogue rows only. It does not create subject-teacher allocations, assessment schemes, scores, result rows, or published results. The workbook's fictional sample staff/student identities are not imported; existing production students remain untouched.
+- Production application is pending PR review and migration deployment. Verify the final inserted catalogue by section after deployment.
+
+
+### HA Academy subject catalogue — owner clarification and repository correction — 2026-11-15
+
+- The owner clarified that Pre-Nursery is part of the Nursery section. The migration stores the seven proposed Pre-Nursery foundation subjects under `class_name='Nursery'`; `Physical Development` is shared with the workbook's Nursery curriculum and is represented once.
+- Existing Pre-Nursery A/B classes remain Nursery-level classes. No separate academic section or class, class allocation, assessment scheme, score, result, or publication is created by this catalogue migration.
+- Process correction: an earlier update to the migration file was committed to `main` unintentionally as `c5b84dffb17e6bfc353c8d5a41e94cab409b86b1`. The production Supabase migration was not applied. The PR branch has now been synchronized explicitly with the corrected migration; review and CI remain required before any production migration action.
+- No production business rows were modified by this repository correction. Confirm the Render deployment state separately if needed; the migration source itself does not alter application runtime behavior.
+
+
+### HA Academy subject catalogue CI correction — 2026-11-15
+
+- The initial Stage C0 disposable-database run failed while applying the school-specific catalogue migration because the baseline fixture does not seed an `HA Academy` school row; the strict lookup raised `query returned no rows`. The first guard draft still used `INTO STRICT`; this was corrected to a non-strict lookup before considering the fix complete. TypeScript validation, production build, source contracts, SchoolPro CI and payment-page validation passed on the original PR head; the student INSERT/RETURNING RLS regression also passed.
+- Updated the PR migration to use a non-strict lookup, emit a notice, and safely return when HA Academy is absent from a disposable database. When HA Academy exists, the migration still inserts only its approved missing catalogue rows. This guard does not create a school or alter any other tenant.
+- The original Stage C0 failure remains recorded against the earlier PR head. The corrected head requires a fresh CI run; no production Supabase migration was applied.

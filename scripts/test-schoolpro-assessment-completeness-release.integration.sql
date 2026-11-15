@@ -83,6 +83,39 @@ begin
  end;
 end
 $test$;
+-- Out-of-range, negative, unknown-component and total-mismatch scores must also fail closed.
+insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score)
+values
+ ('60000000-0000-0000-0000-000000000015','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000015','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":31,"exam":50}'::jsonb,81),
+ ('60000000-0000-0000-0000-000000000016','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000016','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":-1,"exam":50}'::jsonb,49),
+ ('60000000-0000-0000-0000-000000000017','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000017','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50,"project":5}'::jsonb,65),
+ ('60000000-0000-0000-0000-000000000018','20000000-0000-0000-0000-000000000001','40000000-0000-0000-0000-000000000001',
+  '70000000-0000-0000-0000-000000000018','First Term','2026/2027','10000000-0000-0000-0000-000000000001','{"ca":10,"exam":50}'::jsonb,61);
+do $test$
+declare result_id uuid;
+begin
+ foreach result_id in array array[
+  '60000000-0000-0000-0000-000000000015'::uuid,
+  '60000000-0000-0000-0000-000000000016'::uuid,
+  '60000000-0000-0000-0000-000000000017'::uuid,
+  '60000000-0000-0000-0000-000000000018'::uuid
+ ] loop
+  begin
+   perform public.review_schoolpro_result(result_id,'approved',null);
+   raise exception 'Expected invalid assessment scores to fail for result %',result_id;
+  exception when others then
+   if sqlerrm not like 'Incomplete assessment:%' then raise;end if;
+  end;
+  if (select status from public.schoolpro_results where id=result_id)<>'draft' then
+   raise exception 'Invalid assessment result % crossed the approval boundary',result_id;
+  end if;
+ end loop;
+end
+$test$;
+
 -- Bulk approval must be all-or-nothing when one selected Draft is incomplete.
 insert into public.schoolpro_results(id,school_id,student_id,subject_id,term,session,assessment_scheme_id,assessment_scores,total_score)
 values

@@ -3772,3 +3772,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - **Exam Officer — PASSED:** sign-in succeeded; the authorized examination modules were visible.
 - These checks close the live UI navigation/visibility blocker for these two roles. They do not by themselves certify the complete assessment/result lifecycle, every module action, all role combinations, or the full cross-school authorization matrix; those remain covered by the outstanding scoped acceptance and regression work in Issue #97.
 - The acceptance was recorded in Issue #97. No account, workspace, roster, score, published result, or other production business data was created or modified for this check.
+
+
+### Used assessment-scheme immutability regression — PR #208 (2026-11-15)
+
+- PR #208 merged into `main` as `602a9e80157a825850ad830ec155725451b6be43` from corrected head `6f5c9ed4fbd63294e322393ac9e5295e5a8b7314`.
+- Test-only change to `scripts/test-schoolpro-assessment-completeness-release.integration.sql`: the disposable PostgreSQL suite now applies the existing `20261108103000_schoolpro_immutable_used_assessment_schemes.sql` migration and verifies that a referenced scheme can be renamed but cannot have its school level or component calculation rules changed, and cannot be deleted while result rows reference it.
+- The test also verifies rejected mutations leave the original calculation definition intact. The psql include path was corrected to a single backslash before the final run.
+- All three associated checks passed on the final PR head: SchoolPro CI (including the PostgreSQL integration job), Student INSERT/RETURNING RLS regression, and payment-page validation.
+- No application runtime code, new migration, production Supabase schema, migration ledger, or production business data changed. No Render deployment was required for this test-only change.

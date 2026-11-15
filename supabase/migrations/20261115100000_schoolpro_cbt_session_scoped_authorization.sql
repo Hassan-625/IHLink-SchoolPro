@@ -155,6 +155,7 @@ with check (
   and class_id is not null
   and subject_id is not null
   and nullif(btrim(session),'') is not null
+  and private.schoolpro_valid_session(btrim(session))
   and created_by=(select auth.uid())
   and private.schoolpro_cbt_can_author(school_id,class_id,subject_id,session)
 );
@@ -163,7 +164,8 @@ create policy "CBT staff update own assigned drafts"
 on public.schoolpro_cbt_tests
 for update to authenticated
 using (
-  private.schoolpro_cbt_management_access(school_id)
+  (private.schoolpro_cbt_management_access(school_id)
+    and (session is null or private.schoolpro_valid_session(btrim(session))))
   or (
     status='draft'
     and created_by=(select auth.uid())
@@ -206,7 +208,8 @@ using (
 )
 with check (
   (
-    private.schoolpro_cbt_management_access(school_id)
+    (private.schoolpro_cbt_management_access(school_id)
+      and (session is null or private.schoolpro_valid_session(btrim(session))))
     or private.schoolpro_cbt_staff_scope(school_id,class_id,subject_id,session)
   )
   and (created_by=(select auth.uid()) or private.schoolpro_cbt_management_access(school_id))

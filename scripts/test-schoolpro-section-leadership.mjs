@@ -114,6 +114,8 @@ assert.match(authorityMigration,/schoolpro_request_result_reopening/i);
 assert.match(authorityMigration,/schoolpro_decide_result_reopening/i);
 assert.match(authorityMigration,/p_scope='section'/i);
 assert.match(authorityMigration,/p_scope='class'/i);
+assert.match(resultsPage,/const canReview=\["proprietor","administrator","exam_officer"\]\.includes\(memberRole\)\|\|assignedSections\.length>0/i,'Head Teachers and Vice Principals need an active section appointment before the Results review UI is enabled');
+assert.doesNotMatch(resultsPage,/const canReview=\["proprietor","administrator","exam_officer","head_teacher","vice_principal"\]/i,'An unassigned Head Teacher or Vice Principal must not receive Results review controls');
 assert.match(resultsPage,/Only the subject teacher assigned to this class and subject can enter or update these scores/i);
 assert.match(resultsPage,/View only · subject teacher entry/i);
 assert.match(resultsPage,/const entrySubjects=teachingTargets\.length\?subjects\.filter/i);

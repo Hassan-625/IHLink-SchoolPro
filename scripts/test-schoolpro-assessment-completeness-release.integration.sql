@@ -16,7 +16,7 @@ create table public.schoolpro_results(
  total_score numeric not null default 0,status public.schoolpro_result_status not null default 'draft',
  locked boolean not null default false,approved_by uuid,approved_at timestamptz,published_at timestamptz
 );
-\\ir ../supabase/migrations/20261108103000_schoolpro_immutable_used_assessment_schemes.sql
+\ir ../supabase/migrations/20261108103000_schoolpro_immutable_used_assessment_schemes.sql
 
 create table public.schoolpro_result_approvals(
  id bigint generated always as identity primary key,school_id uuid not null,result_id uuid unique not null,

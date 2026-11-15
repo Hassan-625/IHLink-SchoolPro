@@ -11,10 +11,12 @@ values ('10000000-0000-0000-0000-000000000003',
         '20000000-0000-0000-0000-000000000001',
         'junior_secondary',
         '[{"key":"exam","label":"Examination","maxScore":100}]');
+create sequence public.schoolpro_result_import_race_insert_attempts start with 1 increment by 1;
 create function public.schoolpro_result_import_race_pause()
 returns trigger language plpgsql as $$
 begin
  if new.student_id='40000000-0000-0000-0000-000000000099'::uuid then
+  perform nextval('public.schoolpro_result_import_race_insert_attempts');
   perform pg_sleep(3);
  end if;
  return new;

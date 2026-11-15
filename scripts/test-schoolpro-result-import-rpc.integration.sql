@@ -33,6 +33,7 @@ create table public.schoolpro_results(
 );
 
 \ir ../supabase/migrations/20261108101000_schoolpro_harden_result_import_rpc.sql
+\ir ../supabase/migrations/20261115120000_schoolpro_serialize_result_import_scheme_conflicts.sql
 
 insert into public.schoolpro_classes(id,school_id,level) values
  ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','junior_secondary'),
@@ -66,6 +67,22 @@ begin
  end if;
 end
 $assert$;
+
+-- The same scheme may still replace an existing draft score on a sequential import.
+select public.import_schoolpro_results(
+ '20000000-0000-0000-0000-000000000001','First Term','2026/2027',
+ '[{"admission_number":"JSS-CANON","subject_code":"MATH","assessment_scheme_id":"10000000-0000-0000-0000-000000000001","assessment_scores":{"exam":81}}]'::jsonb
+);
+do $overwrite$
+begin
+ if (select assessment_scores->>'exam' from public.schoolpro_results
+     where student_id='40000000-0000-0000-0000-000000000001'
+       and subject_id='70000000-0000-0000-0000-000000000001'
+       and term='First Term' and session='2026/2027') <> '81' then
+  raise exception 'Sequential same-scheme draft import no longer updates scores';
+ end if;
+end
+$overwrite$;
 
 -- A genuinely incompatible scheme must still fail and must not persist a row.
 do $reject$

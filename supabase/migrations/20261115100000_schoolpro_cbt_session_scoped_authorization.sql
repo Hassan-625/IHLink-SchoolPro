@@ -173,7 +173,8 @@ using (
   )
 )
 with check (
-  private.schoolpro_cbt_management_access(school_id)
+  (private.schoolpro_cbt_management_access(school_id)
+    and (session is null or private.schoolpro_valid_session(btrim(session))))
   or (
     status='draft'
     and created_by=(select auth.uid())

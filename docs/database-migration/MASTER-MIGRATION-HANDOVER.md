@@ -3809,3 +3809,15 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The class-results workbook exporter now rejects duplicate `subject_id` rows within a student's result set. Previously, the total could count both rows while the subject-column map retained only the last score, making the workbook internally inconsistent.
 - Added a regression to `scripts/test-class-results-export.mjs` requiring the duplicate-subject diagnostic. TypeScript validation, production build, source-contract checks and disposable PostgreSQL C0 regression all passed. The first C0 run was blocked only by a GitHub API rate limit while resolving the Supabase CLI release; retrying that failed job alone passed. The 29-check run had 28 successful checks and the tenant-acceptance job intentionally skipped.
 - No database migration, Supabase production change, or production business-data write was involved. Render auto-deployment was triggered by the merge; deployment `dep-dbsk4f7f3r2c73egnktg` was building when first checked. Confirm its final state separately; do not treat the merge itself as proof that the deployment is live.
+
+
+### HA Academy subject catalogue completion — 2026-11-15
+
+- Approved by the platform owner: use the HA Academy subject lists in the uploaded workbook as the intended curriculum; create a proposed Pre-Nursery foundation list because the workbook contains no Pre-Nursery subjects.
+- Added migration source `20261115180000_schoolpro_ha_academy_section_subject_catalogue.sql` on branch `feat/schoolpro-ha-academy-section-subject-catalogue`. It adds only missing section-level catalogue entries, uses section-scoped unique codes, checks normalized subject names to avoid duplicates, and preserves existing subject rows.
+- Existing Nursery equivalents are retained rather than duplicated: English Language represents Language & Literacy; Mathematics/Quantitative Studies represent Numeracy; Health Habit and Social Habit represent the workbook's corresponding habit subjects. The additional Nursery subjects are Basic Science, Creative Arts, Rhymes & Music, and Physical Development.
+- Existing Primary subjects are retained. Six workbook subjects are added: Basic Science & Technology, Computer Studies, Cultural & Creative Arts, National Values Education, Physical & Health Education, and Religious Studies.
+- Junior Secondary and Senior Secondary each receive the ten subjects listed in the HA Subjects workbook sheet.
+- Proposed Pre-Nursery subjects: Early Language & Communication, Early Numeracy, Environmental Awareness, Creative Expression, Rhymes & Movement, Physical Development, Personal & Social Habits, and Health, Hygiene & Safety. These are explicitly a proposed early-years set, not workbook-derived.
+- This change creates catalogue rows only. It does not create subject-teacher allocations, assessment schemes, scores, result rows, or published results. The workbook's fictional sample staff/student identities are not imported; existing production students remain untouched.
+- Production application is pending PR review and migration deployment. Verify the final inserted catalogue by section after deployment.

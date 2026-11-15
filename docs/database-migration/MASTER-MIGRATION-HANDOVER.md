@@ -2,15 +2,19 @@
 
 **PR:** [#213 — guard concurrent result-import scheme conflicts](https://github.com/Hassan-625/IHLink-SchoolPro/pull/213)  
 **Branch:** `fix/schoolpro-result-import-concurrent-scheme-guard`  
-**Status:** Open; required CI pending. No merge, production Supabase migration, production data change, or Render deployment.
+**Tested head:** `38e0ec62981049a7cf0f93fb33703374b6834f30`  
+**Squash merge:** `934574798a5dcd0a51d65a69740fe0e1ec5e0997`  
+**CI:** all four PR workflows passed, including the disposable PostgreSQL result-import RPC job and the two-session incompatible-scheme race regression. Tenant acceptance was skipped; no production assessment fixture was created.  
+**Production Supabase migration:** `20261115055116` — `schoolpro_serialize_result_import_scheme_conflicts`, applied to project `lnqsroyiybutkfngbyge` after merge and CI success. The deployed `public.import_schoolpro_results(uuid,text,text,jsonb)` definition was read back and confirmed to contain the guarded `ON CONFLICT DO NOTHING` / re-read / `FOR UPDATE` path.  
+**Render:** deployment `dep-dbskgc2jnfac73cd3go0` for the exact merge commit reached `live`.
 
-A disposable PostgreSQL 16 two-session diagnostic on PR #212 reproduced a real race in `public.import_schoolpro_results`: both transactions could observe no existing result row, both imports were accepted, and the later upsert replaced the earlier draft's assessment scheme. The corrected diagnostic run read back the final row as scheme `10000000-0000-0000-0000-000000000003` with score 82, confirming the incompatible overwrite.
+A disposable PostgreSQL 16 two-session diagnostic reproduced a real race in `public.import_schoolpro_results`: both transactions could observe no existing result row, both imports were accepted, and the later upsert replaced the earlier draft's assessment scheme. The diagnostic read back the final row as scheme `10000000-0000-0000-0000-000000000003` with score 82, confirming the incompatible overwrite.
 
-The proposed forward migration `20261115120000_schoolpro_serialize_result_import_scheme_conflicts.sql` changes the missing-row path to `INSERT ... ON CONFLICT DO NOTHING`. When another transaction wins the unique key, the losing transaction re-reads the committed result under `FOR UPDATE`, re-applies the locked/status/scheme guards, and only updates scores if the existing scheme is compatible. Existing sequential same-scheme draft overwrite behavior is retained, and a previously-null scheme ID is filled without replacing a non-null scheme.
+The forward migration `20261115120000_schoolpro_serialize_result_import_scheme_conflicts.sql` changes the missing-row path to `INSERT ... ON CONFLICT DO NOTHING`. When another transaction wins the unique key, the losing transaction re-reads the committed result under `FOR UPDATE`, re-applies the locked/status/scheme guards, and only updates scores if the existing scheme is compatible. Existing sequential same-scheme draft overwrite behavior is retained, and a previously-null scheme ID is filled without replacing a non-null scheme.
 
 Regression coverage applies the original RPC migration and the new correction in disposable PostgreSQL, checks sequential same-scheme overwrite, preserves existing class-level/alias validation, and runs two incompatible imports concurrently. A non-transactional sequence proves both sessions reached the insert trigger; the test requires one accepted import, one scheme-conflict rejection, and a valid final scheme/score pair.
 
-**Production status:** The migration is proposed only. Do not apply it to the production Supabase project until PR #213 passes all required CI and is merged. No production business data was touched.
+**Production data safety:** Only the database function definition and migration history were changed. No production student, result, assessment, or other business rows were inserted, updated, or deleted. The migration did not trigger a Render build; the application deployment above was triggered by the merged repository commit.
 
 ---
 

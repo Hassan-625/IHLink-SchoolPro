@@ -3829,3 +3829,10 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Existing Pre-Nursery A/B classes remain Nursery-level classes. No separate academic section or class, class allocation, assessment scheme, score, result, or publication is created by this catalogue migration.
 - Process correction: an earlier update to the migration file was committed to `main` unintentionally as `c5b84dffb17e6bfc353c8d5a41e94cab409b86b1`. The production Supabase migration was not applied. The PR branch has now been synchronized explicitly with the corrected migration; review and CI remain required before any production migration action.
 - No production business rows were modified by this repository correction. Confirm the Render deployment state separately if needed; the migration source itself does not alter application runtime behavior.
+
+
+### HA Academy subject catalogue CI correction — 2026-11-15
+
+- The initial Stage C0 disposable-database run failed while applying the school-specific catalogue migration because the baseline fixture does not seed an `HA Academy` school row; the strict lookup therefore raised `query returned no rows`. TypeScript validation, production build, source contracts, SchoolPro CI and payment-page validation passed on the original PR head; the student INSERT/RETURNING RLS regression also passed.
+- Updated the PR migration to emit a notice and safely return when HA Academy is absent from a disposable database. When HA Academy exists, the migration still inserts only its approved missing catalogue rows. This guard does not create a school or alter any other tenant.
+- The original Stage C0 failure remains recorded against the earlier PR head. The corrected head requires a fresh CI run; no production Supabase migration was applied.

@@ -94,7 +94,23 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
       });
       readSheet("HA Board", (r, n) => {
         if (!r.email || !r["first name"] || !r["last name"]) { errors.push("HA Board row " + n + ": email, first name and surname are required."); return null; }
-        return { source: "Board", email: r.email.toLowerCase(), firstName: r["first name"], middleName: r["middle name"] || "", surname: r["last name"], phone: r.phone || "", role: "board_member", position: r.position || "Board Member", section: null, assignedClass: null };
+        const sourceTitle = key(r.position || "Board Member");
+        const validBoardTitles = new Map([
+          ["chairperson", "Chairperson"],
+          ["director", "Director"],
+          ["co owner", "Co-owner"],
+          ["board secretary", "Board Secretary"],
+          ["board member", "Board Member"],
+          ["executive director", "Executive Director"],
+          ["deputy director", "Deputy Director"],
+        ]);
+        // Workbook labels such as "Board Member 1" are row identifiers, not
+        // governance designations. Normalize them to the valid least-privilege title.
+        const boardTitle = /^board member(?:\s+\d+)?$/.test(sourceTitle)
+          ? "Board Member"
+          : validBoardTitles.get(sourceTitle);
+        if (!boardTitle) { errors.push("HA Board row " + n + ": unsupported Board designation '" + (r.position || "") + "'."); return null; }
+        return { source: "Board", email: r.email.toLowerCase(), firstName: r["first name"], middleName: r["middle name"] || "", surname: r["last name"], phone: r.phone || "", role: "board_member", position: boardTitle, section: null, assignedClass: null };
       });
       const seen = new Set<string>();
       for (const row of parsed) {

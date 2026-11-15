@@ -65,6 +65,10 @@ returns boolean language sql stable as $$ select true $$;
 do $test$
 declare
  school uuid := 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+ foreign_school uuid := 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+ foreign_owner_id uuid := '66666666-6666-4666-8666-666666666667';
+ foreign_class uuid := 'bbbbbbbb-0000-4000-8000-000000000001';
+ foreign_student uuid := 'bbbbbbbb-0000-4000-8000-000000000002';
  nursery_class uuid := '11111111-1111-4111-8111-111111111111';
  primary_class uuid := '22222222-2222-4222-8222-222222222222';
  jss_class uuid := '22222222-2222-4222-8222-222222222223';
@@ -83,8 +87,8 @@ declare
  principal_member uuid := '99999999-9999-4999-8999-999999999993';
  teacher_member uuid := '99999999-9999-4999-8999-999999999994';
 begin
- insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(teacher_id);
- insert into public.schoolpro_schools values(school,owner_id);
+ insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(teacher_id),(foreign_owner_id);
+ insert into public.schoolpro_schools values(school,owner_id),(foreign_school,foreign_owner_id);
  insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
   (head_member,school,head_id,'head_teacher',null),
@@ -92,16 +96,19 @@ begin
   (principal_member,school,principal_id,'administrator','Principal'),
   (teacher_member,school,teacher_id,'teacher',null);
  insert into public.schoolpro_classes values
+  (foreign_class,foreign_school,'Primary 4','primary',null),
   (nursery_class,school,'Nursery 2','nursery',null),
   (primary_class,school,'Primary 4','primary',null),
   (jss_class,school,'JSS 2','junior_secondary',null),
   (ss_class,school,'SS 2','senior_secondary',null);
  insert into public.schoolpro_students values
+  (foreign_student,foreign_school,foreign_class,null,'active'),
   (student_n,school,nursery_class,null,'active'),
   (student_p,school,primary_class,null,'active'),
   (student_jss,school,jss_class,null,'active'),
   (student_ss,school,ss_class,null,'active');
  insert into public.schoolpro_enrollment_history(school_id,student_id,session,class_id) values
+  (foreign_school,foreign_student,'2025/2026',foreign_class),
   (school,student_n,'2025/2026',nursery_class),
   (school,student_p,'2025/2026',primary_class),
   (school,student_jss,'2025/2026',jss_class),
@@ -127,6 +134,13 @@ begin
  if not private.schoolpro_can_read_student(student_p)
     or not private.schoolpro_can_read_class(primary_class) then
    raise exception 'Head Teacher must read students and classes in assigned sections';
+ end if;
+ if private.schoolpro_member_leads_student_section(foreign_school,foreign_student,'2025/2026') then
+   raise exception 'A section leader must not lead a student in another school';
+ end if;
+ if private.schoolpro_can_read_student(foreign_student)
+    or private.schoolpro_can_read_class(foreign_class) then
+   raise exception 'A section leader must not read another school student or class';
  end if;
 
  perform set_config('request.jwt.claim.sub',vice_id::text,true);

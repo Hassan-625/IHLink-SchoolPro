@@ -7,7 +7,7 @@ do $$
 declare
   v_school_id uuid;
 begin
-  select id into strict v_school_id
+  select id into v_school_id
   from public.schoolpro_schools
   where lower(trim(name)) = 'ha academy';
 

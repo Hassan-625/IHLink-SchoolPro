@@ -160,7 +160,7 @@ insert into public.schoolpro_cbt_eligibility(school_id,test_id,student_id,class_
 values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','60000000-0000-0000-0000-000000000001',null,'10000000-0000-0000-0000-000000000001',true,auth.uid());
 insert into public.schoolpro_cbt_eligibility(school_id,test_id,student_id,class_id,eligible,assigned_by)
 values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','60000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000004',null,true,auth.uid());
-do $
+do $$
 begin
   begin
     insert into public.schoolpro_cbt_eligibility(school_id,test_id,student_id,class_id,eligible,assigned_by)
@@ -172,7 +172,7 @@ begin
     values('aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','60000000-0000-0000-0000-000000000001','80000000-0000-0000-0000-000000000003',null,true,auth.uid());
     raise exception 'FAIL: teacher assigned an out-of-class student';
   exception when insufficient_privilege then null; end;
-end $;
+end $$;
 do $$
 begin
   begin

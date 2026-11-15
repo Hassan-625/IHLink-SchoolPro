@@ -3,7 +3,7 @@ import {Card} from '@/components/ui/Card';
 import {Button} from '@/components/ui/Button';
 import {supabase} from '@/lib/supabase';
 import {customerMessage} from '@/lib/customerMessage';
-export const boardTitles=['Chairperson','Director','Co-owner','Board Secretary','Board Member','Executive Director','Deputy Director'];
+export const boardTitles=['Chairperson','Owner','Co-owner','Director','Executive Director','Deputy Director','Board Secretary','Board Member'];
 type Member={id:string;role:string;status?:'active'|'suspended';profile:{email:string;first_name:string|null;last_name:string|null}|null};
 export function SchoolGovernanceCard({schoolId,members,canAppoint,onSaved}:{schoolId:string;members:Member[];canAppoint:boolean;onSaved:()=>Promise<void>}){
  const [rows,setRows]=useState<{member_id:string;title:string;ended_at?:string|null}[]>([]),[ownerTitle,setOwnerTitle]=useState('Proprietor'),[member,setMember]=useState(''),[title,setTitle]=useState('Director'),[busy,setBusy]=useState(false),[message,setMessage]=useState('');

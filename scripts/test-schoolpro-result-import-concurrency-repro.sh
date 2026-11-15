@@ -51,7 +51,7 @@ for attempt in 1 2; do
   fi
 done
 actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "
-  select assessment_scheme_id::text || ':' || assessment_scores->>'exam'
+  select assessment_scheme_id::text || ':' || (assessment_scores::jsonb->>'exam')
   from public.schoolpro_results
   where student_id='40000000-0000-0000-0000-000000000099'
     and subject_id='70000000-0000-0000-0000-000000000001'

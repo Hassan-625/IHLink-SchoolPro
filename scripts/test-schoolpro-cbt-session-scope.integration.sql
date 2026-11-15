@@ -205,6 +205,19 @@ reset role;
 -- Management retains school-wide control, including publishing a draft.
 set local role authenticated;
 select set_config('request.jwt.claim.sub','00000000-0000-0000-0000-000000000005',true);
+do $
+begin
+  begin
+    insert into public.schoolpro_cbt_tests(id,school_id,title,class_id,subject_id,session,status,created_by)
+    values('60000000-0000-0000-0000-000000000008','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','Invalid session','10000000-0000-0000-0000-000000000001','30000000-0000-0000-0000-000000000001','2026/2028','draft',auth.uid());
+    raise exception 'FAIL: manager created CBT with invalid session';
+  exception when insufficient_privilege then null; end;
+  begin
+    insert into public.schoolpro_question_bank(id,school_id,subject_id,class_id,session,question_type,question_text,marks,created_by)
+    values('70000000-0000-0000-0000-000000000008','aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa','30000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','2026/2028','theory','Invalid session question',5,auth.uid());
+    raise exception 'FAIL: manager created question with invalid session';
+  exception when insufficient_privilege then null; end;
+end $;
 update public.schoolpro_cbt_tests set status='published' where id='60000000-0000-0000-0000-000000000001';
 reset role;
 

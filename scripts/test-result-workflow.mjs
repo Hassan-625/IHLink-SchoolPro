@@ -7,6 +7,10 @@ const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_
 const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 
+assert.match(results,/appointed Section Head reviews this request first when required/i,
+  'Correction request UI must explain the Section Head review stage before Exam Officer authorization.');
+assert.match(results,/submitted to the review workflow\. It will pass through the required Section Head review when applicable, followed by final Exam Officer authorization/i,
+  'Correction request confirmation must describe the staged review route without implying direct Exam Officer-only routing.');
 assert.match(results,/const entrySubjects=teachingTargets\.length\?subjects\.filter/i,
   'Subject teachers must be restricted to their own allocated subjects.');
 assert.match(results,/View only · subject teacher entry/i,

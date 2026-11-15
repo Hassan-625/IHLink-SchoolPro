@@ -321,6 +321,35 @@ using (
 -- Eligibility management is restricted to management or the author of a test
 -- with a still-active allocation. Student own-rule reads remain intact.
 drop policy if exists "cbt eligibility managers" on public.schoolpro_cbt_eligibility;
+create or replace function private.schoolpro_cbt_student_in_class(
+  p_student uuid,
+  p_school uuid,
+  p_class uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path=''
+as $function$
+  select p_student is not null
+    and p_school is not null
+    and p_class is not null
+    and exists (
+      select 1 from public.schoolpro_students s
+      where s.id=p_student
+        and s.school_id=p_school
+        and s.class_id=p_class
+        and s.status='active'
+        and s.transferred_out_at is null
+    );
+$function$;
+
+revoke all on function private.schoolpro_cbt_student_in_class(uuid,uuid,uuid)
+  from public, anon;
+grant execute on function private.schoolpro_cbt_student_in_class(uuid,uuid,uuid)
+  to authenticated;
+
 create policy "CBT management or assigned author eligibility"
 on public.schoolpro_cbt_eligibility
 for all to authenticated
@@ -330,23 +359,21 @@ using (
     where t.id=schoolpro_cbt_eligibility.test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
+        (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
+        or private.schoolpro_cbt_student_in_class(
+          schoolpro_cbt_eligibility.student_id,t.school_id,t.class_id
+        )
+        or (
+          private.schoolpro_cbt_management_access(t.school_id)
+          and schoolpro_cbt_eligibility.student_id is null
+          and schoolpro_cbt_eligibility.class_id is null
+        )
+      )
+      and (
         private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.created_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)
-          and (
-            (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
-            or (
-              schoolpro_cbt_eligibility.student_id is not null
-              and schoolpro_cbt_eligibility.class_id is null
-              and exists (
-                select 1 from public.schoolpro_students s
-                where s.id=schoolpro_cbt_eligibility.student_id
-                  and s.school_id=t.school_id
-                  and s.class_id=t.class_id
-              )
-            )
-          )
         )
       )
   )
@@ -357,24 +384,22 @@ with check (
     where t.id=schoolpro_cbt_eligibility.test_id
       and t.school_id=schoolpro_cbt_eligibility.school_id
       and (
+        (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
+        or private.schoolpro_cbt_student_in_class(
+          schoolpro_cbt_eligibility.student_id,t.school_id,t.class_id
+        )
+        or (
+          private.schoolpro_cbt_management_access(t.school_id)
+          and schoolpro_cbt_eligibility.student_id is null
+          and schoolpro_cbt_eligibility.class_id is null
+        )
+      )
+      and (
         private.schoolpro_cbt_management_access(t.school_id)
         or (
           t.created_by=(select auth.uid())
           and schoolpro_cbt_eligibility.assigned_by=(select auth.uid())
           and private.schoolpro_cbt_staff_scope(t.school_id,t.class_id,t.subject_id,t.session)
-          and (
-            (schoolpro_cbt_eligibility.student_id is null and schoolpro_cbt_eligibility.class_id=t.class_id)
-            or (
-              schoolpro_cbt_eligibility.student_id is not null
-              and schoolpro_cbt_eligibility.class_id is null
-              and exists (
-                select 1 from public.schoolpro_students s
-                where s.id=schoolpro_cbt_eligibility.student_id
-                  and s.school_id=t.school_id
-                  and s.class_id=t.class_id
-              )
-            )
-          )
         )
       )
   )

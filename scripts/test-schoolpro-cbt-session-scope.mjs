@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const migration=readFileSync('supabase/migrations/20261115100000_schoolpro_cbt_session_scoped_authorization.sql','utf8').replace(/\s+/g,' ').toLowerCase();
+const manager=readFileSync('src/pages/schoolpro/SchoolProCBTManager.tsx','utf8');
+const bank=readFileSync('src/pages/schoolpro/SchoolProQuestionBank.tsx','utf8');
+
+assert.match(migration,/a\.ended_at is null/);
+assert.match(migration,/private\.schoolpro_valid_session\(btrim\(p_session\)\)/);
+assert.match(migration,/a\.session=btrim\(p_session\)/);
+assert.match(migration,/p_class is not null/);
+assert.match(migration,/p_subject is not null/);
+assert.match(migration,/nullif\(btrim\(p_session\), ''\) is not null/);
+assert.match(migration,/drop policy if exists "c0 cbt plan read"/);
+assert.match(migration,/drop policy if exists "schoolpro_plan_access" on public\.schoolpro_question_bank/);
+assert.match(migration,/drop policy if exists "schoolpro_plan_attempts"/);
+assert.match(migration,/drop policy if exists "schoolpro_plan_answers"/);
+assert.match(migration,/create policy "cbt assigned staff read attempts"/);
+assert.match(migration,/create policy "cbt assigned staff read answers"/);
+assert.match(migration,/drop policy if exists "test question authors write"/);
+assert.match(migration,/q\.session is not distinct from t\.session/);
+assert.match(migration,/q\.subject_id is not distinct from t\.subject_id/);
+assert.match(migration,/private\.schoolpro_cbt_student_in_class/);
+assert.match(migration,/schoolpro_cbt_eligibility\.class_id=t\.class_id/);
+assert.match(migration,/private\.schoolpro_cbt_management_access/);
+assert.match(migration,/public\.schoolpro_can_manage_cbt/);
+assert.match(migration,/private\.schoolpro_cbt_can_author\( test_row\.school_id,test_row\.class_id,test_row\.subject_id,test_row\.session\s*\)/);
+assert.match(manager,/class_id:classId,subject_id:subjectId,session:session\.trim\(\)/);
+assert.match(manager,/q\.session===test\?\.session/);
+assert.match(bank,/session:session\.trim\(\)/);
+assert.match(bank,/academic session \(e\.g\. 2026\/2027\)/i);
+console.log('PASS: CBT authoring, question-bank scope and legacy plan-policy bypass guards are present.');

@@ -103,7 +103,11 @@ begin
     raise exception 'Competition judge validator does not require active membership';
   end if;
   select pg_get_functiondef('public.mark_schoolpro_theory_answer(uuid,numeric,text)'::regprocedure) into def;
-  if position('has_school_access' in def)=0 then raise exception 'CBT theory marking RPC bypasses active membership'; end if;
+  if position('is_active_account' in def)=0
+    or position('schoolpro_cbt_can_author' in def)=0
+    or position('schoolpro_module_allowed' in def)=0 then
+    raise exception 'CBT theory marking RPC must enforce active-account, CBT entitlement and exact assigned scope';
+  end if;
   select pg_get_functiondef('public.queue_schoolpro_email(uuid,text,text,text,text,jsonb)'::regprocedure) into def;
   if position('has_school_access' in def)=0 then raise exception 'Email queue RPC bypasses active membership'; end if;
   select pg_get_functiondef('public.create_schoolpro_portal_invite(uuid,text,text)'::regprocedure) into def;

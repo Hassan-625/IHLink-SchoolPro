@@ -108,7 +108,7 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
         // The HA workbook uses numbered placeholders rather than governance
         // titles. Assign five distinct, least-privilege designations in sheet
         // order; explicit titles in a future workbook always take precedence.
-        const numberedBoardTitle = sourceTitle.match(/^board member\\s+(\\d+)$/);
+        const numberedBoardTitle = sourceTitle.match(/^board member\s+(\d+)$/);
         const defaultBoardTitles = ["Owner", "Co-owner", "Director", "Executive Director", "Board Secretary"];
         const boardTitle = numberedBoardTitle
           ? defaultBoardTitles[Number(numberedBoardTitle[1]) - 1]

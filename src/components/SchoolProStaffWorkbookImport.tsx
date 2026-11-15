@@ -44,7 +44,7 @@ const adminRole = (role: string) => {
   switch (key(role)) {
     case "proprietor / school owner":
     case "school administrator": return "administrator";
-    case "principal": return "principal";
+    case "principal": return "administrator";
     case "vice principal": return "vice_principal";
     default: return "";
   }
@@ -89,7 +89,7 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
         const role = adminRole(r.role || "");
         if (!role) { errors.push("HA Admins row " + n + ": unsupported role '" + (r.role || "") + "'."); return null; }
         const proprietorLabel = key(r.role) === "proprietor / school owner";
-        return { source: "Admins", email: (r.email || "").toLowerCase(), firstName: r["first name"] || "", middleName: r["middle name"] || "", surname: r["last name"] || "", phone: r.phone || "", role, position: proprietorLabel ? "School Administrator" : (r.role === "School Administrator" ? "School Administrator" : r.role), section: null, assignedClass: null };
+        return { source: "Admins", email: (r.email || "").toLowerCase(), firstName: r["first name"] || "", middleName: r["middle name"] || "", surname: r["last name"] || "", phone: r.phone || "", role, position: proprietorLabel || key(r.role) === "school administrator" ? "School Administrator" : r.role, section: null, assignedClass: null };
       });
       readSheet("HA Board", (r, n) => {
         if (!r.email || !r["first name"] || !r["last name"]) { errors.push("HA Board row " + n + ": email, first name and surname are required."); return null; }

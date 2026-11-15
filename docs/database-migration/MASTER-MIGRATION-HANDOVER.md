@@ -3818,6 +3818,14 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Existing Nursery equivalents are retained rather than duplicated: English Language represents Language & Literacy; Mathematics/Quantitative Studies represent Numeracy; Health Habit and Social Habit represent the workbook's corresponding habit subjects. The additional Nursery subjects are Basic Science, Creative Arts, Rhymes & Music, and Physical Development.
 - Existing Primary subjects are retained. Six workbook subjects are added: Basic Science & Technology, Computer Studies, Cultural & Creative Arts, National Values Education, Physical & Health Education, and Religious Studies.
 - Junior Secondary and Senior Secondary each receive the ten subjects listed in the HA Subjects workbook sheet.
-- Proposed Pre-Nursery subjects: Early Language & Communication, Early Numeracy, Environmental Awareness, Creative Expression, Rhymes & Movement, Physical Development, Personal & Social Habits, and Health, Hygiene & Safety. These are explicitly a proposed early-years set, not workbook-derived.
+- Proposed Pre-Nursery foundation subjects: Early Language & Communication, Early Numeracy, Environmental Awareness, Creative Expression, Rhymes & Movement, Personal & Social Habits, and Health, Hygiene & Safety. The owner clarified that Pre-Nursery is part of the Nursery section, so all seven are stored under `class_name='Nursery'`. `Physical Development` is shared with the workbook's Nursery curriculum and is represented once; no separate Pre-Nursery subject group or class is created.
 - This change creates catalogue rows only. It does not create subject-teacher allocations, assessment schemes, scores, result rows, or published results. The workbook's fictional sample staff/student identities are not imported; existing production students remain untouched.
 - Production application is pending PR review and migration deployment. Verify the final inserted catalogue by section after deployment.
+
+
+### HA Academy subject catalogue — owner clarification and repository correction — 2026-11-15
+
+- The owner clarified that Pre-Nursery is part of the Nursery section. The migration stores the seven proposed Pre-Nursery foundation subjects under `class_name='Nursery'`; `Physical Development` is shared with the workbook's Nursery curriculum and is represented once.
+- Existing Pre-Nursery A/B classes remain Nursery-level classes. No separate academic section or class, class allocation, assessment scheme, score, result, or publication is created by this catalogue migration.
+- Process correction: an earlier update to the migration file was committed to `main` unintentionally as `c5b84dffb17e6bfc353c8d5a41e94cab409b86b1`. The production Supabase migration was not applied. The PR branch has now been synchronized explicitly with the corrected migration; review and CI remain required before any production migration action.
+- No production business rows were modified by this repository correction. Confirm the Render deployment state separately if needed; the migration source itself does not alter application runtime behavior.

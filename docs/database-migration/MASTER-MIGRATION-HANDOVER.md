@@ -1,3 +1,19 @@
+## PR #201 — staged result-correction review UI copy (2026-11-15)
+
+**PR:** [#201 — clarify staged result correction review](https://github.com/Hassan-625/IHLink-SchoolPro/pull/201)  
+**Branch:** `fix/schoolpro-correction-request-review-messaging`  
+**Exact tested head:** `8ad7830715e52ccb9512649c53548439ef5c433f`  
+**Squash merge:** `8a8547f2ca6c4d892b303f3c606cd72b6bc2a2fa`  
+**Render deployment:** `dep-dbsh4llbedkc73c78fq0` — `live`.
+
+Corrected the Results page dialog and confirmation copy so it reflects the deployed staged correction workflow: appointed Section Head review where applicable, followed by final Exam Officer authorization. This removes the misleading implication that every correction request is sent directly to the Exam Officer. Added source-contract assertions for the review routing and confirmation copy.
+
+All 26 SchoolPro CI jobs completed successfully on the exact tested head, including the main validation job. The student-insert RETURNING RLS regression, Stage C0 security/workflow regression, and payment-page validation workflows also passed on that head. The PR was squash-merged only after the required checks passed.
+
+Frontend copy and regression assertions only. No schema, migration, RLS, RPC, production Supabase change, production business-data write, published-result change, or correction-request change was required. Render automatically deployed the merge commit; deployment `dep-dbsh4llbedkc73c78fq0` was verified `live`.
+
+---
+
 ## PR #200 — Form Master attendance register UI scope (2026-11-15)
 
 **PR:** [#200 — limit attendance registers to assigned Form Masters](https://github.com/Hassan-625/IHLink-SchoolPro/pull/200)  

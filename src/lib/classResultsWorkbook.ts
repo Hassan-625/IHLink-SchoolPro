@@ -15,6 +15,8 @@ export function buildClassResultsWorkbook({schoolName,term,session,reports,subje
  summary.addRow(['Admission number','Student','Class','Total','Average (%)','Subjects',...subjectLabels,'Class position','Class average (%)']);
  for(const [index,report] of reports.entries()){
   const s=report.student;
+  const resultSubjectIds=report.results.map(r=>r.subject_id);
+  if(new Set(resultSubjectIds).size!==resultSubjectIds.length)throw new Error(`Duplicate subject result for ${s.admission_number||s.first_name}`);
   const totals=report.results.map(r=>Number(r.total_score));
   if(!totals.length||totals.some(n=>!Number.isFinite(n)||n<0||n>100))throw new Error('Invalid result scores');
   const total=totals.reduce((sum,n)=>sum+n,0),average=total/totals.length;

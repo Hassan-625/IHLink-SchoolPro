@@ -8,14 +8,16 @@ create function auth.uid() returns uuid language sql stable as $$
 $$;
 create type public.schoolpro_result_status as enum ('draft','approved','published');
 create table public.schoolpro_assessment_schemes(
- id uuid primary key,school_id uuid not null,components jsonb not null
+ id uuid primary key,school_id uuid not null,name text not null default 'Test scheme',school_level text not null default 'nursery_primary',components jsonb not null,is_default boolean not null default false
 );
 create table public.schoolpro_results(
  id uuid primary key,school_id uuid not null,student_id uuid not null,subject_id uuid not null,
- term text not null,session text not null,assessment_scheme_id uuid,assessment_scores jsonb,
+ term text not null,session text not null,assessment_scheme_id uuid references public.schoolpro_assessment_schemes(id) on delete restrict,assessment_scores jsonb,
  total_score numeric not null default 0,status public.schoolpro_result_status not null default 'draft',
  locked boolean not null default false,approved_by uuid,approved_at timestamptz,published_at timestamptz
 );
+\\ir ../supabase/migrations/20261108103000_schoolpro_immutable_used_assessment_schemes.sql
+
 create table public.schoolpro_result_approvals(
  id bigint generated always as identity primary key,school_id uuid not null,result_id uuid unique not null,
  status text not null,reviewed_by uuid,reviewed_at timestamptz,notes text
@@ -353,3 +355,45 @@ begin
  end;
 end
 $test$;
+
+
+-- Used assessment schemes must retain their calculation rules; harmless renames remain allowed.
+do $test$
+begin
+ update public.schoolpro_assessment_schemes
+ set name='Renamed standard scheme'
+ where id='10000000-0000-0000-0000-000000000001';
+ if not exists(select 1 from public.schoolpro_assessment_schemes
+  where id='10000000-0000-0000-0000-000000000001' and name='Renamed standard scheme') then
+  raise exception 'A harmless assessment scheme rename was unexpectedly rejected';
+ end if;
+ begin
+  update public.schoolpro_assessment_schemes set school_level='secondary'
+  where id='10000000-0000-0000-0000-000000000001';
+  raise exception 'Expected used assessment scheme level change to fail';
+ exception when others then
+  if sqlerrm not like '%already used by saved results%' then raise; end if;
+ end;
+ begin
+  update public.schoolpro_assessment_schemes
+  set components='[{"key":"ca","label":"Continuous Assessment","maxScore":20},{"key":"exam","label":"Examination","maxScore":80}]'::jsonb
+  where id='10000000-0000-0000-0000-000000000001';
+  raise exception 'Expected used assessment scheme component change to fail';
+ exception when others then
+  if sqlerrm not like '%already used by saved results%' then raise; end if;
+ end;
+ begin
+  delete from public.schoolpro_assessment_schemes
+  where id='10000000-0000-0000-0000-000000000001';
+  raise exception 'Expected referenced assessment scheme deletion to fail';
+ exception when foreign_key_violation then null;
+ end;
+ if not exists(select 1 from public.schoolpro_assessment_schemes
+  where id='10000000-0000-0000-0000-000000000001'
+   and school_level='nursery_primary'
+   and components='[{"key":"ca","label":"Continuous Assessment","maxScore":30},{"key":"exam","label":"Examination","maxScore":70}]'::jsonb) then
+  raise exception 'Rejected scheme mutation changed the saved calculation rules';
+ end if;
+end
+$test$;
+select 'PASS: used assessment schemes reject level/component changes and deletion while allowing harmless rename.' as result;

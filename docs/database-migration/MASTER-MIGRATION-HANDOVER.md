@@ -3781,3 +3781,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The test also verifies rejected mutations leave the original calculation definition intact. The psql include path was corrected to a single backslash before the final run.
 - All three associated checks passed on the final PR head: SchoolPro CI (including the PostgreSQL integration job), Student INSERT/RETURNING RLS regression, and payment-page validation.
 - No application runtime code, new migration, production Supabase schema, migration ledger, or production business data changed. No Render deployment was required for this test-only change.
+
+
+### Class-results workbook duplicate-subject integrity — PR #210 (2026-11-15)
+
+- PR [#210](https://github.com/Hassan-625/IHLink-SchoolPro/pull/210) merged as `c4c0550eb2ba96f62a106f441fbdce7931b692b4` from tested head `019c32902c2c9ae0f5a72f87ab57b07c4e552eb0`.
+- The class-results workbook exporter now rejects duplicate `subject_id` rows within a student's result set. Previously, the total could count both rows while the subject-column map retained only the last score, making the workbook internally inconsistent.
+- Added a regression to `scripts/test-class-results-export.mjs` requiring the duplicate-subject diagnostic. TypeScript validation, production build, source-contract checks and disposable PostgreSQL C0 regression all passed. The first C0 run was blocked only by a GitHub API rate limit while resolving the Supabase CLI release; retrying that failed job alone passed. The 29-check run had 28 successful checks and the tenant-acceptance job intentionally skipped.
+- No database migration, Supabase production change, or production business-data write was involved. Render auto-deployment was triggered by the merge; deployment `dep-dbsk4f7f3r2c73egnktg` was building when first checked. Confirm its final state separately; do not treat the merge itself as proof that the deployment is live.

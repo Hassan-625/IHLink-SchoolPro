@@ -1,3 +1,14 @@
+## HA Academy subject catalogue — merged and applied to production (2026-11-15)
+
+- PR [#216](https://github.com/Hassan-625/IHLink-SchoolPro/pull/216) merged successfully by squash. Merge commit: `0aec28cdae976b8253021f0e91de5764353fa8af`.
+- All four required workflows passed on tested head `1470c53b86b72f3299cf29742ea4c66632c0035e`; the tenant-acceptance job was skipped. The PR was mergeable and open immediately before merge.
+- Applied the merged catalogue migration to production Supabase project `lnqsroyiybutkfngbyge`. Supabase ledger version: `20261115065411`, migration name `schoolpro_ha_academy_section_subject_catalogue`.
+- Post-apply verification: HA Academy now has 17 Nursery subjects, 15 Primary subjects, 10 Junior Secondary subjects, and 10 Senior Secondary subjects (52 total). Existing subject entries were retained; normalized duplicate checks prevented duplicate concepts. The seven proposed Pre-Nursery foundation subjects are included under Nursery, not a separate section.
+- Active subject assignments remain at zero. This migration did not create assignments, assessment schemes, marks, result rows, submissions, or publications. It did not import fictional workbook staff/student identities or modify existing student records.
+- Scope was limited to HA Academy subject catalogue rows and the migration ledger. No other school was seeded. No manual Render deployment was triggered; Render may auto-deploy the merged repository commit under its configured main-branch behavior.
+
+---
+
 ## PR #213 — concurrent result-import assessment-scheme guard (2026-11-15)
 
 **PR:** [#213 — guard concurrent result-import scheme conflicts](https://github.com/Hassan-625/IHLink-SchoolPro/pull/213)  

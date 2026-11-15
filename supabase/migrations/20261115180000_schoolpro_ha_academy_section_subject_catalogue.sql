@@ -14,15 +14,15 @@ begin
   insert into public.schoolpro_subjects (school_id, name, code, class_name)
   select v_school_id, seed.name, seed.code, seed.class_name
   from (values
-    -- Pre-Nursery: proposed foundational early-years subjects (not in workbook).
-    ('Early Language & Communication', 'PNEL', 'Pre-Nursery'),
-    ('Early Numeracy', 'PNEN', 'Pre-Nursery'),
-    ('Environmental Awareness', 'PNEA', 'Pre-Nursery'),
-    ('Creative Expression', 'PNCE', 'Pre-Nursery'),
-    ('Rhymes & Movement', 'PNRM', 'Pre-Nursery'),
-    ('Physical Development', 'PNPD', 'Pre-Nursery'),
-    ('Personal & Social Habits', 'PNPS', 'Pre-Nursery'),
-    ('Health, Hygiene & Safety', 'PNHS', 'Pre-Nursery'),
+    -- Pre-Nursery is part of the Nursery section, so these foundation subjects
+    -- share the Nursery catalogue and are not stored in a separate section.
+    ('Early Language & Communication', 'NREL', 'Nursery'),
+    ('Early Numeracy', 'NREN', 'Nursery'),
+    ('Environmental Awareness', 'NREA', 'Nursery'),
+    ('Creative Expression', 'NRCE', 'Nursery'),
+    ('Rhymes & Movement', 'NRRM', 'Nursery'),
+    ('Personal & Social Habits', 'NRPS', 'Nursery'),
+    ('Health, Hygiene & Safety', 'NRHS', 'Nursery'),
 
     -- Nursery workbook subjects not already represented by the current catalogue.
     ('Basic Science', 'NBSC', 'Nursery'),

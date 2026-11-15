@@ -50,14 +50,14 @@ const adminRole = (role: string) => {
   }
 };
 
-export function SchoolProStaffWorkbookImport() {
+export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [issues, setIssues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [workbookName, setWorkbookName] = useState("");
   async function preview() {
-    if (!file || busy) return;
+    if (!file || busy) return;\n    if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before validating this HA-only workbook."]); return; }
     setBusy(true); setRows([]); setIssues([]); setWorkbookName(file.name);
     try {
       const workbook = new ExcelJS.Workbook();
@@ -126,7 +126,7 @@ export function SchoolProStaffWorkbookImport() {
   };
   return <section className="rounded-xl border border-border p-4">
     <h3 className="font-bold">Import HA Academy staff, administrators & Board</h3>
-    <p className="mt-1 text-sm text-muted">Select the corrected three-school workbook. This preview reads only HA Staff, HA Admins and HA Board; it does not import students or create accounts.</p>
+    <p className="mt-1 text-sm text-muted">Select the corrected three-school workbook while the HA ACADEMY workspace is active. This preview reads only HA Staff, HA Admins and HA Board; it does not import students or create accounts.</p>
     <div className="mt-3 flex flex-wrap items-center gap-3">
       <input type="file" accept=".xlsx,.xlsm" onChange={onFile} disabled={busy} className="min-w-0 max-w-full text-sm"/>
       <Button variant="secondary" disabled={!file || busy} onClick={() => void preview()}>{busy ? "Reading workbook…" : "Validate account workbook"}</Button>

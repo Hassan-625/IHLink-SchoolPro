@@ -56,6 +56,7 @@ actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --
   where student_id='40000000-0000-0000-0000-000000000099'
     and subject_id='70000000-0000-0000-0000-000000000001'
     and term='First Term' and session='2026/2027'" 2>&1)"
+insert_attempts="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select last_value from public.schoolpro_result_import_race_insert_attempts" 2>&1)"
 printf 'Session outcomes: accepted=%s rejected=%s worker_wait_failures=%s\n' "$accepted" "$rejected" "$worker_wait_failures"
 printf 'Final draft: %s\n' "${actual:-<no row or query failed>}"
 for attempt in 1 2; do
@@ -64,7 +65,7 @@ for attempt in 1 2; do
   printf '%s\n' "--- session $attempt log ---"
   cat "/tmp/schoolpro-result-import-race-$attempt.log" 2>/dev/null || true
 done
-if [[ "$accepted" -eq 1 && "$rejected" -eq 1 && "$worker_wait_failures" -eq 0 && ( "$actual" == "$scheme_a:71" || "$actual" == "$scheme_b:82" ) ]]; then
+if [[ "$accepted" -eq 1 && "$rejected" -eq 1 && "$worker_wait_failures" -eq 0 && "$insert_attempts" == "2" && ( "$actual" == "$scheme_a:71" || "$actual" == "$scheme_b:82" ) ]]; then
   echo "PASS: concurrent incompatible-scheme import was rejected after rechecking the winning draft; final draft: $actual"
   exit 0
 fi

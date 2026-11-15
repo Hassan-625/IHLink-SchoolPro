@@ -1,3 +1,19 @@
+## PR #213 — concurrent result-import assessment-scheme guard (2026-11-15)
+
+**PR:** [#213 — guard concurrent result-import scheme conflicts](https://github.com/Hassan-625/IHLink-SchoolPro/pull/213)  
+**Branch:** `fix/schoolpro-result-import-concurrent-scheme-guard`  
+**Status:** Open; required CI pending. No merge, production Supabase migration, production data change, or Render deployment.
+
+A disposable PostgreSQL 16 two-session diagnostic on PR #212 reproduced a real race in `public.import_schoolpro_results`: both transactions could observe no existing result row, both imports were accepted, and the later upsert replaced the earlier draft's assessment scheme. The corrected diagnostic run read back the final row as scheme `10000000-0000-0000-0000-000000000003` with score 82, confirming the incompatible overwrite.
+
+The proposed forward migration `20261115120000_schoolpro_serialize_result_import_scheme_conflicts.sql` changes the missing-row path to `INSERT ... ON CONFLICT DO NOTHING`. When another transaction wins the unique key, the losing transaction re-reads the committed result under `FOR UPDATE`, re-applies the locked/status/scheme guards, and only updates scores if the existing scheme is compatible. Existing sequential same-scheme draft overwrite behavior is retained, and a previously-null scheme ID is filled without replacing a non-null scheme.
+
+Regression coverage applies the original RPC migration and the new correction in disposable PostgreSQL, checks sequential same-scheme overwrite, preserves existing class-level/alias validation, and runs two incompatible imports concurrently. A non-transactional sequence proves both sessions reached the insert trigger; the test requires one accepted import, one scheme-conflict rejection, and a valid final scheme/score pair.
+
+**Production status:** The migration is proposed only. Do not apply it to the production Supabase project until PR #213 passes all required CI and is merged. No production business data was touched.
+
+---
+
 ## PR #201 — staged result-correction review messaging (2026-11-15)
 
 - PR [#201](https://github.com/Hassan-625/IHLink-SchoolPro/pull/201) merged as `8a8547f2ca6c4d892b303f3c606cd72b6bc2a2fa` from tested head `8ad7830715e52ccb9512649c53548439ef5c433f`; all 26 CI jobs completed successfully.

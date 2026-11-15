@@ -20,6 +20,8 @@ assert.match(migration,/create policy "cbt assigned staff read answers"/);
 assert.match(migration,/drop policy if exists "test question authors write"/);
 assert.match(migration,/q\.session is not distinct from t\.session/);
 assert.match(migration,/q\.subject_id is not distinct from t\.subject_id/);
+assert.match(migration,/private\.schoolpro_cbt_student_in_class/);
+assert.match(migration,/schoolpro_cbt_eligibility\.class_id=t\.class_id/);
 assert.match(migration,/private\.schoolpro_cbt_management_access/);
 assert.match(migration,/public\.schoolpro_can_manage_cbt/);
 assert.match(migration,/private\.schoolpro_cbt_can_author\( test_row\.school_id,test_row\.class_id,test_row\.subject_id,test_row\.session\s*\)/);

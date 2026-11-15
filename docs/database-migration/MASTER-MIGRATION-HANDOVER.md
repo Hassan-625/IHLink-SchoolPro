@@ -3880,3 +3880,9 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Confirmed the Board permission resolver's explicit fallback is limited to `dashboard` and `notifications`; it does not inherit administrator, teaching, score-entry, or finance permissions.
 - Confirmed the initial credential mechanism: the staff member enters their surname in the first-time password field; the server verifies its hash and requires them to choose a new password (minimum 10 characters) before activating normal sign-in. The surname itself is not stored as the Auth password. This implements the requested temporary surname-first-login flow with a mandatory change.
 - These were read-only production schema/function inspections plus feature-branch code changes. No production data, schema, accounts, or invitations were changed.
+
+### HA Academy Board workbook designation normalization — 2026-11-15
+
+- Workbook inspection found the five Board rows use labels such as `Board Member 1` through `Board Member 5`. These are row identifiers, not valid governance titles accepted by `private.schoolpro_set_board_role`.
+- Updated the preview parser to normalize numbered Board Member labels to the supported designation `Board Member`; it also accepts only the existing supported titles (Chairperson, Director, Co-owner, Board Secretary, Board Member, Executive Director, Deputy Director). Unknown titles now block preview validation rather than failing later during appointment.
+- This correction does not create accounts or appointments and does not apply the Board Member migration. It preserves the workbook's names and email addresses and the separate `board_member` least-privilege membership role.

@@ -13,7 +13,7 @@ alter table public.schoolpro_access_invitations
   check (role = any (array[
     'administrator','teacher','class_teacher','head_teacher','vice_principal',
     'bursar','accountant','registrar','admissions_officer','exam_officer',
-    'librarian','counsellor','nurse','hostel_manager','transport_manager',
+    'librarian','counsellor','nurse','discipline_master','game_master','hostel_manager','transport_manager',
     'inventory_officer','hr_officer','receptionist','it_admin','board_member',
     'parent'
   ]::text[]));

@@ -3892,3 +3892,10 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Follow-up review found the preview was converting Principal to the generic `administrator` role before invitation submission. The existing invitation Edge Function only writes `position_title='Principal'` when its incoming role is `principal`; sending `administrator` would therefore lose the Principal designation.
 - Corrected the preview model to retain the `principal` invitation role and display it as Principal. The existing Edge Function continues to store the actual membership as `administrator` with `position_title='Principal'`.
 - This is a repository-only correction. No account or membership was created or modified.
+
+
+## PR #217 — assign distinct HA Academy Board designations (2026-11-15)
+
+- The five HA Academy workbook rows no longer collapse to the generic `Board Member` title. Their sheet-order designations are now **Owner**, **Co-owner**, **Director**, **Executive Director**, and **Board Secretary**. Explicit supported titles in a future workbook take precedence over the numbered placeholder convention.
+- Added forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` so the Board appointment RPC accepts `Owner` alongside the existing supported titles. The designation is metadata only: it does not change `schoolpro_schools.owner_id`, grant administrator permissions, elevate the member role, or transfer ownership.
+- These are proposed governance titles assigned by workbook row order because the source workbook contained only numbered placeholders. They remain in the preview/import branch; no Board appointment, account creation, invitation, production migration, or production data write has occurred.

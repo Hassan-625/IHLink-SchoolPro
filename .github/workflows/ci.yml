@@ -151,6 +151,10 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Exercise the authoritative result import RPC against canonical and short secondary levels
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-import-rpc.integration.sql
+      - name: Reject incompatible concurrent draft result-import schemes
+        run: |
+          psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-result-import-concurrency.setup.sql
+          bash scripts/test-schoolpro-result-import-concurrency-repro.sh
 
   result-correction-section-review-integration:
     name: Result correction Section Head and Exam Officer workflow (disposable PostgreSQL)

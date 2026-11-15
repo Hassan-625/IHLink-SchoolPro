@@ -3856,3 +3856,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Feature branch: `fix/schoolpro-ha-academy-staff-board-import`. Migration file: `20261115173000_schoolpro_board_member_least_privilege_role.sql`.
 - This is repository work only. The migration has not been applied to production; no HA Academy accounts, invitations, board appointments, class appointments, or section appointments have been created. The 150 existing students and current Exam Officer account remain untouched.
 - Remaining work: implement authenticated bulk workbook import with idempotent duplicate handling; add a real email-delivery path rather than treating joining codes as sent email; map the workbook's 30 Form Masters and four Section Heads; appoint five Board Members with generated Muslim names; and add module-leadership responsibilities without inventing subject/class assignments. CI and PR review are required before production migration or account writes.
+
+### HA Academy staff workbook validation preview — 2026-11-15
+
+- Added `SchoolProStaffWorkbookImport` to the Staff & Access page for authorized school managers. It reads only the `HA Staff`, `HA Admins`, and `HA Board` worksheets from the selected workbook.
+- The preview validates the expected 59 records (50 staff, four administrators, five Board Members), email format and uniqueness, names, 30 explicit Form Master class assignments, and four section-head assignments.
+- Role mapping is explicit: Section Head → `head_teacher`; Form Master → `class_teacher`; Subject Teacher → `teacher` with no subject allocation; support roles retain their dedicated roles; the workbook's Proprietor / School Owner row → `administrator`; Principal → `principal`; Vice Principal → `vice_principal`; Board → `board_member`.
+- The preview deliberately performs no Auth, membership, invitation, student, class, section, subject, or board writes. It does not reimport the 150 students or touch the existing Exam Officer account.
+- Actual bulk provisioning and genuine invitation email delivery remain unimplemented. The existing single-account function creates/activates accounts using a surname first-password flow and returns joining codes; it does not send invitation emails. Do not use it for this batch until a secure email-confirmation and post-acceptance appointment flow is implemented and verified.

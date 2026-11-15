@@ -121,9 +121,12 @@ begin
   if exists(select 1 from pg_policy p join pg_class c on c.oid=p.polrelid
     where c.relname='schoolpro_cbt_tests' and p.polname='schoolpro_plan_access' and p.polcmd='*')
     then raise exception 'Broad CBT plan ALL policy remains'; end if;
+  if exists(select 1 from pg_policy p join pg_class c on c.oid=p.polrelid
+    where c.relname='schoolpro_cbt_tests' and p.polname='C0 CBT plan read')
+    then raise exception 'Obsolete school-wide CBT plan read policy remains'; end if;
   if not exists(select 1 from pg_policy p join pg_class c on c.oid=p.polrelid
-    where c.relname='schoolpro_cbt_tests' and p.polname='C0 CBT plan read' and p.polcmd='r')
-    then raise exception 'CBT plan read policy missing'; end if;
+    where c.relname='schoolpro_cbt_tests' and p.polname='CBT staff read assigned session tests' and p.polcmd='r')
+    then raise exception 'Session-scoped CBT test read policy missing'; end if;
   if exists(select 1 from pg_policy where polname='C0 leave own pending update')
     then raise exception 'Direct own leave updates must use the audited reason-update RPC'; end if;
   if not has_function_privilege('authenticated','public.schoolpro_update_own_leave_reason(uuid,text)','EXECUTE')

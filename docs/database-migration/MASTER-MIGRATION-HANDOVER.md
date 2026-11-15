@@ -1,3 +1,17 @@
+## PR #199 — section appointment required for Results review UI (2026-11-15)
+
+**PR:** [#199 — require section appointment for Results review UI](https://github.com/Hassan-625/IHLink-SchoolPro/pull/199)  
+**Branch:** `fix/schoolpro-unassigned-section-leader-results-ui`  
+**Tested head:** `05e5ba2a0c1dab35ffc9e673ae3520f1312e4acc`  
+**Merge commit:** `5fbff66ac6f44ce903999d64f284e0bf66f723b1`  
+**Render deployment:** `dep-dbsg2dlbedkc73c679dg` — `live`.
+
+Removed unconditional `head_teacher` and `vice_principal` role access from the Results review UI. Those roles now receive review controls only when they have at least one active section appointment. Existing school-wide review access remains for proprietor, administrator, Exam Officer, explicit `exam_officer` / `school_admin` responsibilities, and platform Super Admin. Added a regression assertion to the section-leadership test.
+
+All four required workflows passed on the exact tested head: SchoolPro CI, Stage C0 security/workflow regression, student-insert RETURNING RLS regression, and payment-page validation. No database migration, Supabase production change, production business-data write, or published-result change was required. Render auto-deployed the merge from `main`; deployment reached `live`.
+
+---
+
 ## PR #137 — age validation and Pre-Nursery arms reconciled to current main (2026-11-12)
 
 **Branch:** `integration/schoolpro-age-prenursery-current-main`  

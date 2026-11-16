@@ -26,14 +26,22 @@ assert.match(combinedLeadershipMigration,/target\.role <> 'head_teacher'/i,'Nurs
 assert.match(combinedLeadershipMigration,/target\.role <> 'administrator'/i,'Overall Secondary Principal must be a Principal designation');
 assert.match(combinedLeadershipMigration,/lower\(coalesce\(target\.position_title,''\)\) <> 'principal'/i,'Secondary combined appointment must not be inferred from generic administrator role');
 assert.match(combinedLeadershipMigration,/for update/i,'Combined appointment must lock the target membership');
-assert.match(combinedLeadershipMigration,/create table public\\.schoolpro_combined_leadership_appointments/i);
+assert.match(combinedLeadershipMigration,/create table public\.schoolpro_combined_leadership_appointments/i);
 assert.match(combinedLeadershipMigration,/force row level security/i);
 assert.match(combinedLeadershipMigration,/enable row level security/i);
 assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_admin_or_self_read/i);
-assert.match(combinedLeadershipMigration,/on conflict \(school_id,member_id,section\) do update/i,'Combined section assignments must be idempotent');
+assert.match(combinedLeadershipMigration,/create unique index schoolpro_combined_leadership_one_active_idx/i,'Each combined leadership appointment must have a single active holder per school');
+assert.match(combinedLeadershipMigration,/where ended_at is null/i,'Only active combined appointments participate in the single-holder constraint');
+assert.match(combinedLeadershipMigration,/another staff member already holds this overall leadership appointment/i,'A second overall appointee must be rejected, not silently replace the current appointee');
+assert.match(combinedLeadershipMigration,/appoint this Principal to their normal JSS or SSS section before assigning overall secondary oversight/i,'Overall Secondary Principal must already be a section Principal');
 assert.match(combinedLeadershipMigration,/Combined school leadership appointment updated/i,'Combined appointment must create an audit event');
 assert.match(combinedLeadershipMigration,/revoke all on function private\.schoolpro_set_combined_leadership/i);
 assert.match(combinedLeadershipMigration,/grant execute on function public\.schoolpro_set_combined_leadership/i);
+assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_appointments ca/i,'Combined appointment scopes must participate in section-level and class-level result authorization');
+assert.match(combinedLeadershipMigration,/schoolpro_enrollment_reader_keys/i,'Combined appointment scopes must participate in historical enrollment reads');
+assert.match(staff,/schoolpro_combined_leadership_appointments/i,'Staff & Access must read explicit combined appointment records');
+assert.match(staff,/appointment_key==="nursery_primary_headteacher"/i);
+assert.match(staff,/appointment_key==="overall_secondary_principal"/i);
 
 assert.match(migration,/unique \(school_id, member_id, section\)/i);
 assert.match(migration,/force row level security/i);

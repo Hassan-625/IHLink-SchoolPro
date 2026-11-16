@@ -3909,3 +3909,13 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Existing members in the selected school are skipped. Existing global accounts without school membership follow the existing invitation/acceptance path; the UI distinguishes created, invitation-required, already-member and failed outcomes and supports visible partial progress. It does not display or log plaintext passwords.
 - The batch does not send email (the current Edge Function has no email-delivery implementation), reimport students, modify the current Exam Officer account, or transfer school ownership. It does not yet write Form Master class appointments, Section Head assignments, or Board appointments; those remain the next implementation slice and must be separately verified against the existing authorized RPCs.
 - No account-creation action was executed during development. No Supabase migration, production data write, Render deployment, or merge was performed.
+
+
+### HA Academy workbook appointments implementation — 2026-11-16
+
+- Extended the workbook action so that, after account processing, it resolves each workbook email to an actual profile and active-school membership before attempting appointments.
+- Form Masters are assigned through the existing `schoolpro_set_form_master` RPC, using an exact active-class match against class name / arm. Missing or ambiguous class matches are reported without guessing.
+- Section Heads are assigned through `schoolpro_set_section_leader` after mapping the workbook section to the canonical section key. Unsupported values are reported rather than coerced.
+- Board designations are assigned through the existing `schoolpro_set_board_role` RPC. Added migration `20261116100000_schoolpro_board_owner_designation.sql` to accept the explicit `Owner` Board designation as a governance label only; it does not transfer school ownership or elevate membership permissions.
+- The UI reports per-record appointment success/failure separately from account provisioning. Existing members are still eligible for their workbook appointments; pending invitations that have not become memberships are not falsely reported as appointed.
+- CI has not yet validated this follow-on commit. No production accounts were created, no migration was applied to Supabase, and no Render deployment or merge was performed.

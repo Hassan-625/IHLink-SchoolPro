@@ -16,12 +16,12 @@ export function useSchoolProContext():SchoolContext{
  const ownerPortal=pathname==='/schoolpro/proprietor-dashboard'||pathname==='/schoolpro/admin-dashboard';
  const portalScope=studentPortal?'student':parentPortal?'parent':staffPortal?'staff':ownerPortal?'owner':rememberedPortal==='owner'?'owner':'general';const requested=new URLSearchParams(search).get('school_id');
  const valid=requested&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested)?requested:null;
- const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const selected=profile?.role==='super_admin'?valid:(valid||(user?localStorage.getItem(storageKey):null));
+ const storageKey='ihlink_schoolpro_workspace_'+(user?.id||'');const adminSchoolKey='ihlink_schoolpro_admin_school_'+(user?.id||'');const rememberedAdminSchool=user&&profile?.role==='super_admin'?localStorage.getItem(adminSchoolKey):null;const selected=profile?.role==='super_admin'?(valid||rememberedAdminSchool):(valid||(user?localStorage.getItem(storageKey):null));
  const key=(user?.id||'')+':'+(selected||'')+':'+portalScope;const [revision,setRevision]=useState(0);
  const [state,setState]=useState<SchoolContext&{key:string}>(()=>{const cached=cachedSchoolAccess<SchoolContext>('context:'+key,true);return cached?{...cached,key}:{...empty,key:'',loading:true}});
  useEffect(()=>{const refresh=()=>setRevision(v=>v+1);window.addEventListener('ihlink:school-refresh',refresh);return()=>window.removeEventListener('ihlink:school-refresh',refresh);},[]);
  useEffect(()=>{
-  let current=true;setState(previous=>!authLoading&&user&&previous.key===key&&previous.schoolId?previous:{...empty,key,loading:authLoading||Boolean(user&&supabase)});
+  let current=true;if(profile?.role==='super_admin'&&user&&valid)localStorage.setItem('ihlink_schoolpro_admin_school_'+user.id,valid);setState(previous=>!authLoading&&user&&previous.key===key&&previous.schoolId?previous:{...empty,key,loading:authLoading||Boolean(user&&supabase)});
   if(authLoading||!supabase||!user)return()=>{current=false};
   const db=supabase;const uid=user.id;
   const commit=(value:SchoolContext)=>{if(!current)return;if(value.schoolId){localStorage.setItem(storageKey,value.schoolId);if(portalScope!=='general')localStorage.setItem('ihlink_schoolpro_portal_'+uid,portalScope);saveSchoolAccess('context:'+uid+':'+value.schoolId+':'+portalScope,value);}saveSchoolAccess('context:'+key,value);setState({...value,key});};

@@ -258,14 +258,14 @@ with leaders as materialized (
         where g.school_id=e.school_id and g.student_id=e.student_id
           and g.guardian_user_id=auth.uid() and g.status='active')
       or exists(select 1 from public.schoolpro_members m
-        where m.school_id=e.school_id and m.user_id=auth.uid()
+        where m.school_id=e.school_id and m.user_id=auth.uid() and m.status='active'
           and m.role in('teacher','class_teacher')
           and (
             exists(select 1 from public.schoolpro_classes c
               where c.school_id=e.school_id and c.id=e.class_id and c.form_teacher_id=m.id)
             or exists(select 1 from public.schoolpro_subject_assignments a
               where a.school_id=e.school_id and a.class_id=e.class_id
-                and a.session=e.session and a.teacher_member_id=m.id)
+                and a.session=e.session and a.teacher_member_id=m.id and a.ended_at is null)
           ))
       or exists(select 1 from public.schoolpro_members m
         join public.schoolpro_section_leaders sl

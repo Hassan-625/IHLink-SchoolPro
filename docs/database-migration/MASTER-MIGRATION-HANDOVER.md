@@ -3919,3 +3919,13 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Board designations are assigned through the existing `schoolpro_set_board_role` RPC. The existing forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` already enables the explicit `Owner` designation; no additional migration is required. A duplicate follow-on migration was removed to avoid re-defining the function and accidentally narrowing the supported owner-title path.
 - The UI reports per-record appointment success/failure separately from account provisioning. Existing members are still eligible for their workbook appointments; pending invitations that have not become memberships are not falsely reported as appointed.
 - CI has not yet validated this follow-on commit. No production accounts were created, no migration was applied to Supabase, and no Render deployment or merge was performed.
+
+
+### HA Academy failed-account provisioning recovery — 2026-11-16
+
+- User explicitly approved production recovery after the initial HA Academy batch reported 52 created, seven failed, and five Board appointments pending.
+- Applied the merged PR #217 migrations to the production Supabase project `lnqsroyiybutkfngbyge`: `schoolpro_board_member_least_privilege_role` (adds the least-privilege `board_member` enum value and permits `discipline_master`, `game_master`, and `board_member` invitation roles) and `schoolpro_allow_owner_board_designation` (permits the explicit Owner governance title without changing school ownership or member permissions).
+- Deployed `invite-school-staff` as Edge Function version 21, synchronizing the repository's role allowlist with the production function. JWT verification remains enabled; the existing leader authorization, rate limit, surname-hash initial credential, mandatory first-login password change, and rollback behavior remain intact.
+- Production verification confirmed the new migration entries, the `board_member` / `discipline_master` / `game_master` enum values, the Owner designation in the board appointment RPC, and Edge Function version 21.
+- At verification time, the seven failed email addresses still had no Auth users. No successful account, student, or appointment rows were modified by the recovery deployment. The seven-account retry and five board appointments remain pending an authenticated HA Academy workspace action; this integration session cannot reuse the user's browser sign-in token.
+- Exact retry scope: `staff_46@ha.school`, `staff_47@ha.school`, `board_01@ha.school` through `board_05@ha.school`. Board designations remain Owner, Co-owner, Director, Executive Director, and Board Secretary. Do not rerun or recreate the 52 successful accounts.

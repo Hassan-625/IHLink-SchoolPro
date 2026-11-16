@@ -22,7 +22,7 @@ begin
     raise exception 'Only authorized school administration can set a section leadership title';
   end if;
   if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other')
-     or p_display_title not in ('Headmaster','Headmistress') then
+     or coalesce(p_display_title,'') not in ('Headmaster','Headmistress') then
     raise exception 'Choose a valid section and Headmaster or Headmistress title';
   end if;
   select * into v_assignment

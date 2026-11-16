@@ -336,8 +336,13 @@ begin
   if target.id is null or target.status<>'active' then
     raise exception 'Active school staff member not found';
   end if;
-  if coalesce(p_assigned,false) and target.role = 'teacher' then
-    raise exception 'Head Teacher appointment cannot be assigned to an ordinary Subject Teacher';
+  if coalesce(p_assigned,false) and not (
+    (target.role='head_teacher' and p_section in ('nursery','primary'))
+    or (target.role='vice_principal' and p_section in ('junior_secondary','senior_secondary'))
+    or (target.role='administrator' and lower(coalesce(target.position_title,''))='principal'
+        and p_section in ('junior_secondary','senior_secondary'))
+  ) then
+    raise exception 'Nursery and Primary require a Head Teacher; Junior and Senior Secondary require a Vice Principal or Principal';
   end if;
 
   if not coalesce(p_assigned,false)

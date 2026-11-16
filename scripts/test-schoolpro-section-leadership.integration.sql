@@ -72,6 +72,7 @@ returns boolean language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 \ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
 \ir ../supabase/migrations/20261116130000_schoolpro_combined_leadership_appointments.sql
+\ir ../supabase/migrations/20261116140000_schoolpro_section_leadership_display_titles.sql
 
 do $test$
 declare
@@ -136,6 +137,30 @@ begin
  if (select count(*) from public.schoolpro_section_leaders where school_id=school and ended_at is null)<>4 then
    raise exception 'Section leader assignments were not persisted';
  end if;
+
+ -- Display titles are explicit metadata and do not grant leadership authority.
+ perform public.schoolpro_set_section_leader_title(school,head_member,'nursery','Headmistress');
+ if (select display_title from public.schoolpro_section_leaders
+     where school_id=school and member_id=head_member and section='nursery' and ended_at is null)
+    <> 'Headmistress' then
+   raise exception 'Explicit Headmistress title was not stored on the section appointment';
+ end if;
+ begin
+   perform public.schoolpro_set_section_leader_title(school,head_member,'primary','Principal');
+   raise exception 'ASSERT: unsupported section leadership display title was accepted';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('Choose a valid section and Headmaster or Headmistress title' in sqlerrm)=0 then raise; end if;
+ end;
+ perform set_config('request.jwt.claim.sub',head_id::text,true);
+ begin
+   perform public.schoolpro_set_section_leader_title(school,head_member,'nursery','Headmaster');
+   raise exception 'ASSERT: a section leader changed their own display title';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('Only authorized school administration' in sqlerrm)=0 then raise; end if;
+ end;
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
 
  perform set_config('request.jwt.claim.sub',head_id::text,true);
  if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026')

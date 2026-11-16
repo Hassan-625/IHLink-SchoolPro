@@ -144,16 +144,22 @@ begin
   end if;
   select pg_get_functiondef('private.schoolpro_member_leads_class(uuid,uuid)'::regprocedure) into def;
   if position('m.role <> ''teacher''' in def)=0
-     or position('principal_sl.section=sl.section' in def)=0
-     or position('principal_m.role=''administrator''' in def)=0
+     or position('psl.section=c.level' in def)=0
+     or position('pm.role=''administrator''' in def)=0
+     or position('pm.status=''active''' in def)=0
+     or position('ca.appointment_key=''overall_secondary_principal''' in def)=0
+     or position('ca.ended_at is null' in def)=0
      or position('position_title' in def)=0 then
-    raise exception 'Section class authority must exclude Subject Teachers and enforce Principal precedence';
+    raise exception 'Section class authority must exclude Subject Teachers and enforce active section/combined Principal precedence';
   end if;
   select pg_get_functiondef('private.schoolpro_member_leads_student_section(uuid,uuid,text)'::regprocedure) into def;
-  if position('principal_sl.section=sl.section' in def)=0
-     or position('principal_m.role=''administrator''' in def)=0
+  if position('psl.section=c.level' in def)=0
+     or position('pm.role=''administrator''' in def)=0
+     or position('pm.status=''active''' in def)=0
+     or position('ca.appointment_key=''overall_secondary_principal''' in def)=0
+     or position('ca.ended_at is null' in def)=0
      or position('position_title' in def)=0 then
-    raise exception 'Historical section student access must enforce Principal precedence';
+    raise exception 'Historical section student access must enforce active section/combined Principal precedence';
   end if;
   select pg_get_functiondef('private.schoolpro_validate_house_master()'::regprocedure) into def;
   if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'House Master assignment validator allows inactive staff'; end if;

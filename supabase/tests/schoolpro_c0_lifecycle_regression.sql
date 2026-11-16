@@ -137,23 +137,33 @@ begin
   -- Verify the final Stage C authority migration, not only the earlier
   -- role-specific appointment migrations, is present in the complete schema.
   select pg_get_functiondef('private.schoolpro_set_section_leader(uuid,uuid,text,boolean)'::regprocedure) into def;
-  if position('target.role = ''teacher''' in def)=0
+  if position('target.role=''head_teacher''' in def)=0
+     or position('p_section in (''nursery'',''primary'')' in def)=0
+     or position('target.role=''vice_principal''' in def)=0
+     or position('target.role=''administrator''' in def)=0
+     or position('position_title' in def)=0
      or position('target.status<>''active''' in def)=0
      or position('schoolpro_member_has_responsibility(p_school,''school_admin'')' in def)=0 then
-    raise exception 'Final section appointment RPC must allow active staff except ordinary Subject Teachers and require authorized administration';
+    raise exception 'Final section appointment RPC must enforce role-specific section eligibility, active staff and authorized administration';
   end if;
   select pg_get_functiondef('private.schoolpro_member_leads_class(uuid,uuid)'::regprocedure) into def;
   if position('m.role <> ''teacher''' in def)=0
-     or position('principal_sl.section=sl.section' in def)=0
-     or position('principal_m.role=''administrator''' in def)=0
+     or position('psl.section=c.level' in def)=0
+     or position('pm.role=''administrator''' in def)=0
+     or position('pm.status=''active''' in def)=0
+     or position('ca.appointment_key=''overall_secondary_principal''' in def)=0
+     or position('ca.ended_at is null' in def)=0
      or position('position_title' in def)=0 then
-    raise exception 'Section class authority must exclude Subject Teachers and enforce Principal precedence';
+    raise exception 'Section class authority must exclude Subject Teachers and enforce active section/combined Principal precedence';
   end if;
   select pg_get_functiondef('private.schoolpro_member_leads_student_section(uuid,uuid,text)'::regprocedure) into def;
-  if position('principal_sl.section=sl.section' in def)=0
-     or position('principal_m.role=''administrator''' in def)=0
+  if position('psl.section=c.level' in def)=0
+     or position('pm.role=''administrator''' in def)=0
+     or position('pm.status=''active''' in def)=0
+     or position('ca.appointment_key=''overall_secondary_principal''' in def)=0
+     or position('ca.ended_at is null' in def)=0
      or position('position_title' in def)=0 then
-    raise exception 'Historical section student access must enforce Principal precedence';
+    raise exception 'Historical section student access must enforce active section/combined Principal precedence';
   end if;
   select pg_get_functiondef('private.schoolpro_validate_house_master()'::regprocedure) into def;
   if position('m.status' in def)=0 or position('active' in def)=0 then raise exception 'House Master assignment validator allows inactive staff'; end if;

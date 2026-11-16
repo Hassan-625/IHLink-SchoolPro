@@ -1,3 +1,19 @@
+## Combined leadership appointments — implementation branch opened (2026-11-16)
+
+- Branch: `feat/schoolpro-combined-leadership-appointments-2026-11-16`.
+- Added migration source `20261116130000_schoolpro_combined_leadership_appointments.sql`. It introduces a dedicated, RLS-protected combined-appointment table with one active holder per school and appointment type. An authenticated, admin-only RPC atomically assigns/retires the combined appointment and writes one audit-log event; it does not mutate individual section-head rows.
+- Supported appointment keys and exact scope:
+  - `nursery_primary_headteacher`: requires the member's existing `head_teacher` authorization role and assigns Nursery + Primary.
+  - `overall_secondary_principal`: requires the existing Principal designation (`administrator` membership plus `position_title='Principal'`) and assigns JSS + SSS.
+- Individual section-head appointments remain in `schoolpro_section_leaders`; combined appointments are stored separately and are incorporated into the section/class leadership authorization helpers and historical-enrollment read helper. The Overall Secondary Principal must already hold a normal JSS or SSS Principal appointment. An Overall Secondary Principal takes precedence over Vice Principals for review scope. The migration does not grant Exam Officer rights, change staff roles or position titles, change existing appointments, or modify result data.
+- Added Staff & Access controls for both combined appointments, backed by explicit active appointment rows. The combined controls invoke the atomic RPC; the existing per-section controls remain available for section-specific appointments. The secondary appointment requires both the Principal authorization designation and an existing section Principal appointment; title text alone cannot create the combined appointment. The RPC enforces one active overall appointee per school/group, preserves the member's normal Principal appointment, and retires combined appointments if the member is suspended or their authorization role/designation becomes ineligible.
+- Extended `scripts/test-schoolpro-section-leadership.mjs` with source-contract assertions and expanded `scripts/test-schoolpro-section-leadership.integration.sql` to apply the new migration in disposable PostgreSQL. The integration scenarios exercise both combined scopes, Principal-over-Vice-Principal precedence, single-holder rejection, preservation of the normal Principal appointment, and automatic retirement after an eligibility-changing role update.
+- PR [#220](https://github.com/Hassan-625/IHLink-SchoolPro/pull/220) is open as a draft. The disposable PostgreSQL fixture now applies the new migration and exercises the combined appointment lifecycle; exact-head CI is required to execute it.
+- Status: repository changes are on the feature branch only. CI/disposable PostgreSQL execution is pending; no Supabase migration has been applied; no production appointment, account, score, result, or other business row has been changed; no Render deployment has been triggered.
+- Release gates: complete the focused section-leadership test and all required workflows against the exact latest head; validate SQL and RLS behavior in disposable PostgreSQL; review the final PR diff before marking ready. Production migration and Render release remain separate approval gates.
+
+---
+
 ## HA Academy workbook board-title constraint correction — 2026-11-16
 
 - Workbook appointment run reported 38 assigned and one needing attention. The 4 Section Head appointments, 30 Form Master appointments, and 4 of 5 board appointments were assigned; only `Board · Owner — board_01@ha.school` failed.
@@ -3939,3 +3955,14 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Production verification confirmed the new migration entries, the `board_member` / `discipline_master` / `game_master` enum values, the Owner designation in the board appointment RPC, and Edge Function version 21.
 - At verification time, the seven failed email addresses still had no Auth users. No successful account, student, or appointment rows were modified by the recovery deployment. The seven-account retry and five board appointments remain pending an authenticated HA Academy workspace action; this integration session cannot reuse the user's browser sign-in token.
 - Exact retry scope: `staff_46@ha.school`, `staff_47@ha.school`, `board_01@ha.school` through `board_05@ha.school`. Board designations remain Owner, Co-owner, Director, Executive Director, and Board Secretary. Do not rerun or recreate the 52 successful accounts.
+
+
+### PR #220 — explicit section leadership display titles — 2026-11-16
+
+- Added `display_title` to each normal section leadership appointment, constrained to the explicit values `Headmaster` or `Headmistress`. Existing appointments remain unset until an authorized administrator chooses the appropriate title; no gender is inferred from a staff name or profile.
+- Added the school-scoped `schoolpro_set_section_leader_title` RPC. It requires active account and school state, verifies the active section appointment, limits execution to authorized school administration, and writes an audit event. Display title metadata does not alter member roles, section scopes, result-review authority, or publication permissions.
+- Updated Staff & Access to show a title selector for each active section appointment and persist the selected value through the RPC. Combined appointments continue to display Headteacher and Overall Secondary Principal separately.
+- Repository-only change on PR #220. No production migration, appointment/title update, business-data write, or Render deployment has occurred.
+
+
+- Follow-up test hardening — 2026-11-16: the disposable PostgreSQL leadership fixture now directly exercises `private.schoolpro_member_leads_class`, the class-level authorization helper used by the result approval trigger. It asserts that the combined Nursery–Primary Headteacher is authorized for both Nursery and Primary classes, the Overall Secondary Principal is authorized for both JSS and SSS classes, and the combined Principal's precedence blocks the section Vice Principal at the class-approval boundary. This adds no production data or migration behavior.

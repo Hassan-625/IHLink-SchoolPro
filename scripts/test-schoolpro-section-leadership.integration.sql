@@ -230,6 +230,19 @@ begin
  if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
    raise exception 'Overall Secondary Principal must take precedence over the section Vice Principal';
  end if;
+ -- Combined Secondary oversight must not suppress Nursery/Primary section leaders.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,vice_member,'primary',true);
+ perform set_config('request.jwt.claim.sub',vice_id::text,true);
+ if not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
+   raise exception 'Overall Secondary Principal must not suppress an unrelated Primary section leader';
+ end if;
+ if private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_jss::text||'|2025/2026') then
+   raise exception 'A section Vice Principal must not retain Secondary enrollment-history access under combined Principal precedence';
+ end if;
+ if not (private.schoolpro_enrollment_reader_keys() ? (school::text||'|'||student_p::text||'|2025/2026')) then
+   raise exception 'Combined Secondary Principal must not suppress Primary enrollment-history access';
+ end if;
 
  -- A second active overall Secondary Principal is rejected.
  perform set_config('request.jwt.claim.sub',owner_id::text,true);

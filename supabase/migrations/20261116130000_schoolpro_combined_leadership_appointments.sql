@@ -376,7 +376,7 @@ begin
 
   if found then
     insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
-    values(new.school_id,auth.uid(),'Combined leadership appointment ended after eligibility change',
+    values(new.school_id,coalesce(auth.uid(),new.user_id),'Combined leadership appointment ended after eligibility change',
       'member',new.id,jsonb_build_object('role',new.role,'position_title',new.position_title,'status',new.status));
   end if;
   return new;

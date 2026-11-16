@@ -152,6 +152,14 @@ as $$
                 where psl.school_id=p_school and psl.section=c.level and psl.ended_at is null
                   and pm.status='active' and pm.role='administrator'
                   and lower(coalesce(pm.position_title,''))='principal'
+              and not exists(
+                select 1 from public.schoolpro_combined_leadership_appointments ca
+                join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
+                where ca.school_id=p_school and ca.ended_at is null
+                  and ca.appointment_key='overall_secondary_principal'
+                  and cm.status='active' and cm.role='administrator'
+                  and lower(coalesce(cm.position_title,''))='principal'
+              )
               )
             )
         )
@@ -193,6 +201,14 @@ as $$
                 where psl.school_id=p_school and psl.section=c.level and psl.ended_at is null
                   and pm.status='active' and pm.role='administrator'
                   and lower(coalesce(pm.position_title,''))='principal'
+              and not exists(
+                select 1 from public.schoolpro_combined_leadership_appointments ca
+                join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
+                where ca.school_id=p_school and ca.ended_at is null
+                  and ca.appointment_key='overall_secondary_principal'
+                  and cm.status='active' and cm.role='administrator'
+                  and lower(coalesce(cm.position_title,''))='principal'
+              )
               )
             )
         )

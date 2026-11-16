@@ -25,7 +25,11 @@ assert.match(combinedLeadershipMigration,/array\['junior_secondary','senior_seco
 assert.match(combinedLeadershipMigration,/target\.role <> 'head_teacher'/i,'Nursery–Primary combined appointment requires the Head Teacher authorization role');
 assert.match(combinedLeadershipMigration,/target\.role <> 'administrator'/i,'Overall Secondary Principal must be a Principal designation');
 assert.match(combinedLeadershipMigration,/lower\(coalesce\(target\.position_title,''\)\) <> 'principal'/i,'Secondary combined appointment must not be inferred from generic administrator role');
-assert.match(combinedLeadershipMigration,/for update/i,'Combined appointment must lock the target membership while changing both section rows');
+assert.match(combinedLeadershipMigration,/for update/i,'Combined appointment must lock the target membership');
+assert.match(combinedLeadershipMigration,/create table public\\.schoolpro_combined_leadership_appointments/i);
+assert.match(combinedLeadershipMigration,/force row level security/i);
+assert.match(combinedLeadershipMigration,/enable row level security/i);
+assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_admin_or_self_read/i);
 assert.match(combinedLeadershipMigration,/on conflict \(school_id,member_id,section\) do update/i,'Combined section assignments must be idempotent');
 assert.match(combinedLeadershipMigration,/Combined school leadership appointment updated/i,'Combined appointment must create an audit event');
 assert.match(combinedLeadershipMigration,/revoke all on function private\.schoolpro_set_combined_leadership/i);

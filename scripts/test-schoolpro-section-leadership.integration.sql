@@ -292,8 +292,24 @@ begin
    raise exception 'ASSERT: An ordinary subject teacher must not be appointed as section head';
  exception when others then
    if sqlerrm like 'ASSERT:%' then raise; end if;
-   if position('Head Teacher' in sqlerrm)=0 then raise; end if;
+   if position('require a Head Teacher' in sqlerrm)=0 then raise; end if;
  end;
+ begin
+   perform public.schoolpro_set_section_leader(school,head_member,'junior_secondary',true);
+   raise exception 'ASSERT: A Head Teacher must not be appointed to a Secondary section';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('require a Head Teacher' in sqlerrm)=0 then raise; end if;
+ end;
+ update public.schoolpro_members set role='parent' where id=teacher_member;
+ begin
+   perform public.schoolpro_set_section_leader(school,teacher_member,'primary',true);
+   raise exception 'ASSERT: A parent account must not be appointed as section head';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('require a Head Teacher' in sqlerrm)=0 then raise; end if;
+ end;
+ update public.schoolpro_members set role='teacher' where id=teacher_member;
 
  perform public.schoolpro_set_section_leader(school,head_member,'nursery',false);
  if exists(select 1 from public.schoolpro_section_leaders

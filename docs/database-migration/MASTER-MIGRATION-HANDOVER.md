@@ -3955,3 +3955,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Production verification confirmed the new migration entries, the `board_member` / `discipline_master` / `game_master` enum values, the Owner designation in the board appointment RPC, and Edge Function version 21.
 - At verification time, the seven failed email addresses still had no Auth users. No successful account, student, or appointment rows were modified by the recovery deployment. The seven-account retry and five board appointments remain pending an authenticated HA Academy workspace action; this integration session cannot reuse the user's browser sign-in token.
 - Exact retry scope: `staff_46@ha.school`, `staff_47@ha.school`, `board_01@ha.school` through `board_05@ha.school`. Board designations remain Owner, Co-owner, Director, Executive Director, and Board Secretary. Do not rerun or recreate the 52 successful accounts.
+
+
+### PR #220 — explicit section leadership display titles — 2026-11-16
+
+- Added `display_title` to each normal section leadership appointment, constrained to the explicit values `Headmaster` or `Headmistress`. Existing appointments remain unset until an authorized administrator chooses the appropriate title; no gender is inferred from a staff name or profile.
+- Added the school-scoped `schoolpro_set_section_leader_title` RPC. It requires active account and school state, verifies the active section appointment, limits execution to authorized school administration, and writes an audit event. Display title metadata does not alter member roles, section scopes, result-review authority, or publication permissions.
+- Updated Staff & Access to show a title selector for each active section appointment and persist the selected value through the RPC. Combined appointments continue to display Headteacher and Overall Secondary Principal separately.
+- Repository-only change on PR #220. No production migration, appointment/title update, business-data write, or Render deployment has occurred.

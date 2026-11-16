@@ -298,3 +298,92 @@ alter policy "Authorized school enrollment history"
 on public.schoolpro_enrollment_history
 using ((select private.schoolpro_enrollment_reader_keys())
   ? (school_id::text||'|'||student_id::text||'|'||session));
+
+
+-- Keep the underlying section Principal appointment intact while the combined
+-- secondary appointment is active. The owner must first retire the combined
+-- appointment before removing the member's final normal section appointment.
+create or replace function private.schoolpro_set_section_leader(
+  p_school uuid,p_member uuid,p_section text,p_assigned boolean
+) returns void language plpgsql security definer set search_path=''
+as $$
+declare target public.schoolpro_members; v_section_count integer;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_operationally_active(p_school)
+     or not (
+       private.is_admin(array['super_admin']::public.user_role[])
+       or private.has_school_access(p_school,array['proprietor','administrator']::public.school_member_role[])
+       or private.schoolpro_member_has_responsibility(p_school,'school_admin')
+     ) then
+    raise exception 'Only authorized school administration can manage section appointments';
+  end if;
+  if p_section not in ('nursery','primary','junior_secondary','senior_secondary','other') then
+    raise exception 'Choose a valid school section';
+  end if;
+  select * into target from public.schoolpro_members
+   where id=p_member and school_id=p_school and status='active' for update;
+  if target.id is null then raise exception 'Active school staff member not found'; end if;
+
+  if not coalesce(p_assigned,false)
+     and p_section in ('junior_secondary','senior_secondary')
+     and exists(select 1 from public.schoolpro_combined_leadership_appointments ca
+       where ca.school_id=p_school and ca.member_id=p_member
+         and ca.appointment_key='overall_secondary_principal' and ca.ended_at is null) then
+    select count(*) into v_section_count
+    from public.schoolpro_section_leaders sl
+    where sl.school_id=p_school and sl.member_id=p_member
+      and sl.section in ('junior_secondary','senior_secondary') and sl.ended_at is null;
+    if v_section_count <= 1 then
+      raise exception 'Retire the Overall Secondary Principal appointment before removing this Principal’s final section appointment';
+    end if;
+  end if;
+
+  if coalesce(p_assigned,false) then
+    insert into public.schoolpro_section_leaders(school_id,member_id,section,assigned_by,assigned_at,ended_at)
+    values(p_school,p_member,p_section,auth.uid(),now(),null)
+    on conflict(school_id,member_id,section) do update
+      set assigned_by=excluded.assigned_by,assigned_at=now(),ended_at=null;
+  else
+    update public.schoolpro_section_leaders set ended_at=now()
+     where school_id=p_school and member_id=p_member and section=p_section and ended_at is null;
+  end if;
+
+  insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
+  values(p_school,auth.uid(),'Section leadership assignment updated','member',p_member,
+    jsonb_build_object('section',p_section,'assigned',coalesce(p_assigned,false)));
+end
+$$;
+revoke all on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean)
+  from public,anon,authenticated;
+grant execute on function private.schoolpro_set_section_leader(uuid,uuid,text,boolean)
+  to authenticated;
+
+create or replace function private.schoolpro_end_invalid_combined_leadership()
+returns trigger language plpgsql security definer set search_path=''
+as $$
+begin
+  update public.schoolpro_combined_leadership_appointments ca
+  set ended_at=now()
+  where ca.school_id=new.school_id and ca.member_id=new.id and ca.ended_at is null
+    and (
+      new.status <> 'active'
+      or (ca.appointment_key='nursery_primary_headteacher' and new.role <> 'head_teacher')
+      or (ca.appointment_key='overall_secondary_principal'
+        and (new.role <> 'administrator'
+          or lower(coalesce(new.position_title,'')) <> 'principal'))
+    );
+
+  if found then
+    insert into public.schoolpro_audit_logs(school_id,actor_id,action,entity_type,entity_id,metadata)
+    values(new.school_id,auth.uid(),'Combined leadership appointment ended after eligibility change',
+      'member',new.id,jsonb_build_object('role',new.role,'position_title',new.position_title,'status',new.status));
+  end if;
+  return new;
+end
+$$;
+revoke all on function private.schoolpro_end_invalid_combined_leadership() from public,anon,authenticated;
+drop trigger if exists schoolpro_end_invalid_combined_leadership on public.schoolpro_members;
+create trigger schoolpro_end_invalid_combined_leadership
+after update of role,position_title,status on public.schoolpro_members
+for each row execute function private.schoolpro_end_invalid_combined_leadership();

@@ -48,7 +48,7 @@ assert.match(combinedLeadershipMigration,/revoke all on function public\.schoolp
 assert.match(combinedLeadershipMigration,/grant execute on function public\.schoolpro_set_combined_leadership/i);
 assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_appointments ca/i,'Combined appointment scopes must participate in section-level and class-level result authorization');
 assert.match(combinedLeadershipMigration,/schoolpro_enrollment_reader_keys/i,'Combined appointment scopes must participate in historical enrollment reads');
-assert.match(combinedLeadershipMigration,/m\.school_id=e\.school_id and m\.user_id=auth\.uid\(\) and m\.status='active'[\\s\\S]*?m\.role in\('teacher','class_teacher'\)/i,'Historical enrollment access through teaching assignments must require active membership');
+assert.match(combinedLeadershipMigration,/m\.school_id=e\.school_id and m\.user_id=auth\.uid\(\) and m\.status='active'[\s\S]*?m\.role in\('teacher','class_teacher'\)/i,'Historical enrollment access through teaching assignments must require active membership');
 assert.match(combinedLeadershipMigration,/a\.session=e\.session and a\.teacher_member_id=m\.id and a\.ended_at is null/i,'Historical enrollment access must exclude ended subject assignments');
 assert.match(combinedLeadershipMigration,/ca\.appointment_key='overall_secondary_principal'/i,'Overall Secondary Principal must take precedence over section Vice Principals');
 assert.match(combinedLeadershipMigration,/schoolpro_set_section_leader/i,'Individual section appointment management must preserve the normal Principal appointment');

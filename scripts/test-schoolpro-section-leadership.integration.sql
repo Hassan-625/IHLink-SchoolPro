@@ -106,7 +106,7 @@ begin
   (principal_member,school,principal_id,'administrator','Principal'),
   (teacher_member,school,teacher_id,'teacher',null),
   (other_principal_member,school,other_principal_id,'administrator','Principal');
- insert into public.schoolpro_classes values
+ insert into public.schoolpro_classes(id,school_id,name,level,form_teacher_id) values
   (foreign_class,foreign_school,'Primary 4','primary',null),
   (nursery_class,school,'Nursery 2','nursery',null),
   (primary_class,school,'Primary 4','primary',null),

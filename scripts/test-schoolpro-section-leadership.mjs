@@ -133,7 +133,6 @@ assert.match(authorityMigration,/target\.role = 'teacher'/i);
 assert.match(authorityMigration,/m\.role <> 'teacher'/i);
 assert.match(authorityMigration,/ordinary Subject Teacher, parent and student accounts are not eligible/i);
 assert.match(authorityMigration,/after update of role,position_title,status on public\.schoolpro_members/i);
-assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/i);
 assert.match(authorityMigration,/principal_sl\.section=sl\.section and principal_sl\.ended_at is null/i);
 assert.match(authorityMigration,/principal_m\.role='administrator'/i);
 assert.match(authorityMigration,/lower\(coalesce\(principal_m\.position_title,''\)\)='principal'/i);

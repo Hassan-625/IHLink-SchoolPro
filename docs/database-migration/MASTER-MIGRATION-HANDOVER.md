@@ -3899,3 +3899,13 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The five HA Academy workbook rows no longer collapse to the generic `Board Member` title. Their sheet-order designations are now **Owner**, **Co-owner**, **Director**, **Executive Director**, and **Board Secretary**. Explicit supported titles in a future workbook take precedence over the numbered placeholder convention.
 - Added forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` so the Board appointment RPC accepts `Owner` alongside the existing supported titles. The designation is metadata only: it does not change `schoolpro_schools.owner_id`, grant administrator permissions, elevate the member role, or transfer ownership.
 - These are proposed governance titles assigned by workbook row order because the source workbook contained only numbered placeholders. They remain in the preview/import branch; no Board appointment, account creation, invitation, production migration, or production data write has occurred.
+
+
+### HA Academy workbook provisioning implementation — 2026-11-16
+
+- Started a follow-on implementation branch from PR #217: `feat/schoolpro-ha-academy-workbook-provisioning`.
+- Replaced the read-only preview's permanent stop with an explicit, confirmation-gated **Create / link 59 staff accounts** action. It provisions only after the HA Academy workbook validates and the active workspace is HA Academy.
+- The client processes records sequentially through the existing authenticated `invite-school-staff` Edge Function, preserving its school-leader authorization, rate limiting, email uniqueness checks, surname-hash initial credential flow, first-login password-change challenge, and rollback of incomplete new-user provisioning.
+- Existing members in the selected school are skipped. Existing global accounts without school membership follow the existing invitation/acceptance path; the UI distinguishes created, invitation-required, already-member and failed outcomes and supports visible partial progress. It does not display or log plaintext passwords.
+- The batch does not send email (the current Edge Function has no email-delivery implementation), reimport students, modify the current Exam Officer account, or transfer school ownership. It does not yet write Form Master class appointments, Section Head assignments, or Board appointments; those remain the next implementation slice and must be separately verified against the existing authorized RPCs.
+- No account-creation action was executed during development. No Supabase migration, production data write, Render deployment, or merge was performed.

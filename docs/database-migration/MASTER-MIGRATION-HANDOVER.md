@@ -1,3 +1,18 @@
+## Combined leadership appointments — implementation branch opened (2026-11-16)
+
+- Branch: `feat/schoolpro-combined-leadership-appointments-2026-11-16`.
+- Added migration source `20261116130000_schoolpro_combined_leadership_appointments.sql`. It introduces an authenticated, admin-only RPC that atomically creates or retires both existing `schoolpro_section_leaders` rows for one combined appointment and writes one audit-log event.
+- Supported appointment keys and exact scope:
+  - `nursery_primary_headteacher`: requires the member's existing `head_teacher` authorization role and assigns Nursery + Primary.
+  - `overall_secondary_principal`: requires the existing Principal designation (`administrator` membership plus `position_title='Principal'`) and assigns JSS + SSS.
+- The existing section-leader rows remain the source used by the established RLS and result-approval helpers. The migration does not grant Exam Officer rights, change staff roles or position titles, change existing appointments, or modify result data.
+- Added Staff & Access controls for both combined appointments. The combined controls invoke the atomic RPC; the existing per-section controls remain available for section-specific appointments. Combined designation is not inferred from a job title alone.
+- Extended `scripts/test-schoolpro-section-leadership.mjs` with source-contract assertions for exact scopes, eligibility, atomic/idempotent assignment, audit logging and RPC grants.
+- Status: repository changes are on the feature branch only. No CI run has been executed yet; no PR has been opened; no Supabase migration has been applied; no production appointment, account, score, result, or other business row has been changed; no Render deployment has been triggered.
+- Release gates: run the focused section-leadership test and all required SchoolPro workflows against the exact branch head; review SQL against disposable PostgreSQL and RLS integration coverage; then review a PR diff before any merge. Production migration and Render release remain separate approval gates.
+
+---
+
 ## HA Academy workbook board-title constraint correction — 2026-11-16
 
 - Workbook appointment run reported 38 assigned and one needing attention. The 4 Section Head appointments, 30 Form Master appointments, and 4 of 5 board appointments were assigned; only `Board · Owner — board_01@ha.school` failed.

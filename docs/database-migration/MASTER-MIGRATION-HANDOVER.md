@@ -3847,3 +3847,55 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The initial Stage C0 disposable-database run failed while applying the school-specific catalogue migration because the baseline fixture does not seed an `HA Academy` school row; the strict lookup raised `query returned no rows`. The first guard draft still used `INTO STRICT`; this was corrected to a non-strict lookup before considering the fix complete. TypeScript validation, production build, source contracts, SchoolPro CI and payment-page validation passed on the original PR head; the student INSERT/RETURNING RLS regression also passed.
 - Updated the PR migration to use a non-strict lookup, emit a notice, and safely return when HA Academy is absent from a disposable database. When HA Academy exists, the migration still inserts only its approved missing catalogue rows. This guard does not create a school or alter any other tenant.
 - The original Stage C0 failure remains recorded against the earlier PR head. The corrected head requires a fresh CI run; no production Supabase migration was applied.
+
+### HA Academy workbook import — Board Member least-privilege foundation — 2026-11-15
+
+- User decision: the workbook row labelled "Proprietor / School Owner" is to be provisioned as a School Administrator; do not transfer school ownership or grant Proprietor membership. The user also authorized inventing missing Board/module-leadership names using Muslim names consistent with the workbook pattern.
+- Added a dedicated `board_member` school membership role to the invitation role allow-list and invitation-table role constraint. The central permission resolver's default branch gives this role dashboard/notification access only; it does not inherit teacher, finance, result-entry, or administrator permissions. Explicit module grants remain separately controlled by existing module-grant/RLS rules.
+- Added Board Member to the staff role catalogue and leadership filter. Board appointments remain in the existing `schoolpro_board_members` table; no parallel governance table was created. Updated the governance-card copy so it no longer claims Board appointments confer full school-level access.
+- Feature branch: `fix/schoolpro-ha-academy-staff-board-import`. Migration file: `20261115173000_schoolpro_board_member_least_privilege_role.sql`.
+- This is repository work only. The migration has not been applied to production; no HA Academy accounts, invitations, board appointments, class appointments, or section appointments have been created. The 150 existing students and current Exam Officer account remain untouched.
+- Remaining work: implement authenticated bulk workbook import with idempotent duplicate handling; add a real email-delivery path rather than treating joining codes as sent email; map the workbook's 30 Form Masters and four Section Heads; appoint five Board Members with generated Muslim names; and add module-leadership responsibilities without inventing subject/class assignments. CI and PR review are required before production migration or account writes.
+
+### HA Academy staff workbook validation preview — 2026-11-15
+
+- Added `SchoolProStaffWorkbookImport` to the Staff & Access page for authorized school managers. It reads only the `HA Staff`, `HA Admins`, and `HA Board` worksheets from the selected workbook.
+- The preview validates the expected 59 records (50 staff, four administrators, five Board Members), email format and uniqueness, names, 30 explicit Form Master class assignments, and four section-head assignments.
+- Role mapping is explicit: Section Head → `head_teacher`; Form Master → `class_teacher`; Subject Teacher → `teacher` with no subject allocation; support roles retain their dedicated roles; the workbook's Proprietor / School Owner row → `administrator`; Principal → `principal`; Vice Principal → `vice_principal`; Board → `board_member`.
+- The preview deliberately performs no Auth, membership, invitation, student, class, section, subject, or board writes. It does not reimport the 150 students or touch the existing Exam Officer account.
+- Actual bulk provisioning remains unimplemented. User's latest credential decision (2026-11-15): use each person's workbook surname as the temporary initial password for this batch. The existing single-account edge function already provisions this surname-based initial credential and marks the account for the initial-login challenge; do not substitute random inaccessible credentials or email-invite-only flow. Do not expose or log plaintext passwords in bulk-import summaries. Continue to require the first-login password-change challenge. The preview remains read-only until the bulk provisioning UI and appointment writes are implemented.
+
+
+### HA Academy surname initial-password decision and preview correction — 2026-11-15
+
+- User explicitly directed: use each workbook person's surname as their temporary initial password for now. Apply only to the 59 HA Academy staff/admin/Board accounts; preserve the first-login password-change challenge and do not display passwords in import logs or summaries.
+- Corrected a literal escaped newline in the workbook preview that would have prevented TypeScript parsing. Corrected Principal preview mapping to the existing `administrator` membership role with `position_title = 'Principal'`, matching the edge function's established storage behavior. The Proprietor / School Owner row remains `administrator` / School Administrator.
+- No production migration or account creation has been performed in this step. Board Member role migration and the bulk import/appointment path remain prerequisites before the batch can be safely provisioned.
+
+
+### Staff invitation role-constraint correction — 2026-11-15
+
+- Production schema inspection confirmed the current `school_member_role` enum already includes `discipline_master` and `game_master`, but the `schoolpro_access_invitations_role_check` constraint and `invite-school-staff` request allowlist did not include them. This would have rejected two of the HA Academy workbook staff categories.
+- Updated the feature branch invitation endpoint allowlist and the Board Member migration's invitation constraint to include both existing roles, alongside the new `board_member` role.
+- Confirmed the Board permission resolver's explicit fallback is limited to `dashboard` and `notifications`; it does not inherit administrator, teaching, score-entry, or finance permissions.
+- Confirmed the initial credential mechanism: the staff member enters their surname in the first-time password field; the server verifies its hash and requires them to choose a new password (minimum 10 characters) before activating normal sign-in. The surname itself is not stored as the Auth password. This implements the requested temporary surname-first-login flow with a mandatory change.
+- These were read-only production schema/function inspections plus feature-branch code changes. No production data, schema, accounts, or invitations were changed.
+
+### HA Academy Board workbook designation normalization — 2026-11-15
+
+- Workbook inspection found the five Board rows use labels such as `Board Member 1` through `Board Member 5`. These are row identifiers, not valid governance titles accepted by `private.schoolpro_set_board_role`.
+- Updated the preview parser to normalize numbered Board Member labels to the supported designation `Board Member`; it also accepts only the existing supported titles (Chairperson, Director, Co-owner, Board Secretary, Board Member, Executive Director, Deputy Director). Unknown titles now block preview validation rather than failing later during appointment.
+- This correction does not create accounts or appointments and does not apply the Board Member migration. It preserves the workbook's names and email addresses and the separate `board_member` least-privilege membership role.
+
+### HA Academy Principal invitation designation correction — 2026-11-15
+
+- Follow-up review found the preview was converting Principal to the generic `administrator` role before invitation submission. The existing invitation Edge Function only writes `position_title='Principal'` when its incoming role is `principal`; sending `administrator` would therefore lose the Principal designation.
+- Corrected the preview model to retain the `principal` invitation role and display it as Principal. The existing Edge Function continues to store the actual membership as `administrator` with `position_title='Principal'`.
+- This is a repository-only correction. No account or membership was created or modified.
+
+
+## PR #217 — assign distinct HA Academy Board designations (2026-11-15)
+
+- The five HA Academy workbook rows no longer collapse to the generic `Board Member` title. Their sheet-order designations are now **Owner**, **Co-owner**, **Director**, **Executive Director**, and **Board Secretary**. Explicit supported titles in a future workbook take precedence over the numbered placeholder convention.
+- Added forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` so the Board appointment RPC accepts `Owner` alongside the existing supported titles. The designation is metadata only: it does not change `schoolpro_schools.owner_id`, grant administrator permissions, elevate the member role, or transfer ownership.
+- These are proposed governance titles assigned by workbook row order because the source workbook contained only numbered placeholders. They remain in the preview/import branch; no Board appointment, account creation, invitation, production migration, or production data write has occurred.

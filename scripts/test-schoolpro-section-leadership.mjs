@@ -98,10 +98,13 @@ assert.match(principalMigration,/public\.schoolpro_section_leaders\.member_id/i)
 assert.match(principalMigration,/private\.is_admin\(array\['super_admin'::public\.user_role\]\)/i);
 assert.match(staff,/schoolpro_set_section_leader/i);
 assert.match(staff,/member\.status==="active"/i,'Section-head appointment controls must be shown only for active staff');
-assert.match(staff,/!\["teacher","parent","student"\]\.includes\(member\.role\)/i,'Every active staff role except ordinary Subject Teacher is eligible for appointment controls');
-assert.match(staff,/Any active school staff role except ordinary Subject Teacher may be formally appointed/i);
-assert.doesNotMatch(staff,/member\.role==="head_teacher"&&\["nursery","primary"\]\.includes\(key\)/i,'The UI must not restrict section appointments by legacy role-to-section mapping');
-assert.doesNotMatch(staff,/member\.role==="vice_principal"\|\|isPrincipal/i,'Principal/VP must not be the only eligible secondary-section roles');
+assert.match(staff,/member\.role==="head_teacher"/i,'Nursery and Primary appointments require Head Teacher role');
+assert.match(staff,/member\.role==="vice_principal"/i,'Secondary appointments allow Vice Principals');
+assert.match(staff,/member\.position_title\?\.toLowerCase\(\)==="principal"/i,'Secondary appointments allow designated Principals');
+assert.match(staff,/Nursery and Primary require a Head Teacher/i,'UI explains section-specific eligibility');
+assert.match(combinedLeadershipMigration,/target\.role='head_teacher' and p_section in \('nursery','primary'\)/i,'Backend enforces Head Teacher eligibility for Nursery and Primary');
+assert.match(combinedLeadershipMigration,/target\.role='vice_principal' and p_section in \('junior_secondary','senior_secondary'\)/i,'Backend enforces Vice Principal eligibility for Secondary');
+assert.match(combinedLeadershipMigration,/target\.role='administrator' and lower\(coalesce\(target\.position_title,''\)\)='principal'/i,'Backend enforces Principal eligibility for Secondary');
 assert.match(principalMigration,/p_section in \('nursery','primary'\)/i);
 assert.match(principalMigration,/p_section in \('junior_secondary','senior_secondary'\)/i);
 assert.match(principalMigration,/Only the appointed section Head Teacher, Vice Principal or Principal can approve or publish/i);

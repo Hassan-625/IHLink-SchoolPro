@@ -158,6 +158,7 @@ as $$
                 join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
                 where ca.school_id=p_school and ca.ended_at is null
                   and ca.appointment_key='overall_secondary_principal'
+                  and c.level in ('junior_secondary','senior_secondary')
                   and cm.status='active' and cm.role='administrator'
                   and lower(coalesce(cm.position_title,''))='principal'
               )
@@ -208,6 +209,7 @@ as $$
                 join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
                 where ca.school_id=p_school and ca.ended_at is null
                   and ca.appointment_key='overall_secondary_principal'
+                  and c.level in ('junior_secondary','senior_secondary')
                   and cm.status='active' and cm.role='administrator'
                   and lower(coalesce(cm.position_title,''))='principal'
               )
@@ -272,7 +274,15 @@ with leaders as materialized (
           on sl.school_id=m.school_id and sl.member_id=m.id and sl.ended_at is null
         join public.schoolpro_classes c
           on c.school_id=e.school_id and c.id=e.class_id and c.level=sl.section
-        where m.school_id=e.school_id and m.user_id=auth.uid() and m.status='active')
+        where m.school_id=e.school_id and m.user_id=auth.uid() and m.status='active'
+          and (c.level not in ('junior_secondary','senior_secondary') or not exists(
+            select 1 from public.schoolpro_combined_leadership_appointments ca
+            join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
+            where ca.school_id=e.school_id and ca.ended_at is null
+              and ca.appointment_key='overall_secondary_principal'
+              and cm.status='active' and cm.role='administrator'
+              and lower(coalesce(cm.position_title,''))='principal'
+          )))
       or exists(select 1 from public.schoolpro_members m
         join public.schoolpro_combined_leadership_appointments ca
           on ca.school_id=m.school_id and ca.member_id=m.id and ca.ended_at is null

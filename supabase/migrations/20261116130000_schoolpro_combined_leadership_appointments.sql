@@ -146,12 +146,13 @@ as $$
             and m.role <> 'teacher'
             and (
               (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
-              or not exists(
+              or (not exists(
                 select 1 from public.schoolpro_section_leaders psl
                 join public.schoolpro_members pm on pm.id=psl.member_id and pm.school_id=psl.school_id
                 where psl.school_id=p_school and psl.section=c.level and psl.ended_at is null
                   and pm.status='active' and pm.role='administrator'
                   and lower(coalesce(pm.position_title,''))='principal'
+              )
               and not exists(
                 select 1 from public.schoolpro_combined_leadership_appointments ca
                 join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id
@@ -195,12 +196,13 @@ as $$
             and sl.ended_at is null and sl.section=c.level and m.role <> 'teacher'
             and (
               (m.role='administrator' and lower(coalesce(m.position_title,''))='principal')
-              or not exists(
+              or (not exists(
                 select 1 from public.schoolpro_section_leaders psl
                 join public.schoolpro_members pm on pm.id=psl.member_id and pm.school_id=psl.school_id
                 where psl.school_id=p_school and psl.section=c.level and psl.ended_at is null
                   and pm.status='active' and pm.role='administrator'
                   and lower(coalesce(pm.position_title,''))='principal'
+              )
               and not exists(
                 select 1 from public.schoolpro_combined_leadership_appointments ca
                 join public.schoolpro_members cm on cm.id=ca.member_id and cm.school_id=ca.school_id

@@ -299,7 +299,7 @@ begin
    if sqlerrm like 'ASSERT:%' then raise; end if;
    if position('require a Head Teacher' in sqlerrm)=0 then raise; end if;
  end;
- update public.schoolpro_members set role='parent' where id=teacher_member;
+ update public.schoolpro_members set role='class_teacher' where id=teacher_member;
  begin
    perform public.schoolpro_set_section_leader(school,teacher_member,'primary',true);
    raise exception 'ASSERT: A parent account must not be appointed as section head';

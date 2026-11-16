@@ -1,3 +1,13 @@
+## HA Academy workbook board-title constraint correction — 2026-11-16
+
+- Workbook appointment run reported 38 assigned and one needing attention. The 4 Section Head appointments, 30 Form Master appointments, and 4 of 5 board appointments were assigned; only `Board · Owner — board_01@ha.school` failed.
+- Root cause: production `public.schoolpro_board_members_title_check` allowed Chairperson, Director, Co-owner, Board Secretary, Board Member, Executive Director and Deputy Director, but omitted the requested `Owner` designation. The board-role RPC had already been updated to accept Owner, so the table constraint was the remaining blocker.
+- Applied production migration `schoolpro_allow_owner_board_member_title` to Supabase project `lnqsroyiybutkfngbyge`. It adds `Owner` to the existing title allowlist and documents that this is a governance designation only; it does not grant school ownership or elevated membership permissions.
+- Verified the active board records include Co-owner, Director, Executive Director and Board Secretary. The Owner appointment remains pending the user's next retry in the authenticated Staff & Access workbook flow; no account or appointment is claimed as created by this migration.
+- No staff, student, or other business rows were inserted, updated or deleted by this constraint correction.
+
+---
+
 ## HA Academy subject catalogue — merged and applied to production (2026-11-15)
 
 - PR [#216](https://github.com/Hassan-625/IHLink-SchoolPro/pull/216) merged successfully by squash. Merge commit: `0aec28cdae976b8253021f0e91de5764353fa8af`.

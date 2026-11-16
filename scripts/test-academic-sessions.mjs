@@ -25,7 +25,7 @@ assert.ok(sessionBar.includes('does not promote students'),'Changing the working
 
 const workingSessionHook=readFileSync('src/hooks/useSchoolSession.ts','utf8');
 assert.ok(workingSessionHook.includes("schoolpro_current_academic_period"),'The shared working session must bootstrap from the school calendar when no prior choice exists.');
-assert.ok(workingSessionHook.includes("if(selected){setSession(selected);return;}"),'Calendar bootstrap must never overwrite a previously selected historical working session.');
+assert.ok(workingSessionHook.includes("const selected=localStorage.getItem(key)||'';\n    if(selected){setStored({key,value:selected});return;}"),'Calendar bootstrap must preserve an explicitly selected historical working session for the current user and school.');
 assert.ok(workingSessionHook.includes("localStorage.setItem(key,current)"),'A calendar-derived default must persist per user and school.');
 
 const studentPage=readFileSync('src/pages/schoolpro/SchoolProStudents.tsx','utf8');

@@ -7,6 +7,7 @@ const principalMigration=readFileSync('supabase/migrations/20261108118000_school
 const workflowMigration=readFileSync('supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql','utf8');
 const authorityMigration=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
 const combinedLeadershipMigration=readFileSync('supabase/migrations/20261116130000_schoolpro_combined_leadership_appointments.sql','utf8');
+const leadershipTitlesMigration=readFileSync('supabase/migrations/20261116140000_schoolpro_section_leadership_display_titles.sql','utf8');
 const resultsPage=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 const staff=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
@@ -55,6 +56,16 @@ assert.match(combinedLeadershipMigration,/schoolpro_set_section_leader/i,'Indivi
 assert.match(combinedLeadershipMigration,/retire the Overall Secondary Principal appointment before removing this Principal/i,'A Principal cannot lose their final normal section appointment while the overall appointment is active');
 assert.match(combinedLeadershipMigration,/schoolpro_end_invalid_combined_leadership/i,'Invalid or suspended members must have combined appointments retired');
 assert.match(combinedLeadershipMigration,/after update of role,position_title,status on public\.schoolpro_members/i,'Combined appointment eligibility must be enforced after membership changes');
+assert.match(leadershipTitlesMigration,/add column if not exists display_title text/i,'Section-head title must be stored with its appointment');
+assert.match(leadershipTitlesMigration,/Headmaster','Headmistress/i,'Only explicit Headmaster or Headmistress titles may be stored');
+assert.match(leadershipTitlesMigration,/schoolpro_set_section_leader_title/i,'Title changes must use an authorized server-side RPC');
+assert.match(leadershipTitlesMigration,/schoolpro_operationally_active\(p_school\)/i,'Title RPC must be scoped to an active school');
+assert.match(leadershipTitlesMigration,/Only authorized school administration can set a section leadership title/i);
+assert.match(leadershipTitlesMigration,/Section leadership display title updated/i,'Title changes must be audited');
+assert.match(staff,/schoolpro_set_section_leader_title/i,'Staff UI must persist the explicit section leadership title');
+assert.match(staff,/Headmaster/i);
+assert.match(staff,/Headmistress/i);
+assert.match(staff,/appointment\.display_title/i,'The selected title must be read from the active section appointment');
 assert.match(staff,/schoolpro_combined_leadership_appointments/i,'Staff & Access must read explicit combined appointment records');
 assert.match(staff,/appointment_key==="nursery_primary_headteacher"/i);
 assert.match(staff,/appointment_key==="overall_secondary_principal"/i);

@@ -20,8 +20,8 @@ assert.match(integration,/An ordinary subject teacher must not be appointed as s
 assert.match(migration,/create table public\.schoolpro_section_leaders/i);
 assert.match(combinedLeadershipMigration,/nursery_primary_headteacher/i);
 assert.match(combinedLeadershipMigration,/overall_secondary_principal/i);
-assert.match(combinedLeadershipMigration,/array\['nursery','primary'\]/i,'Overall Headteacher must be scoped to Nursery and Primary only');
-assert.match(combinedLeadershipMigration,/array\['junior_secondary','senior_secondary'\]/i,'Overall Secondary Principal must be scoped to JSS and SSS only');
+assert.match(combinedLeadershipMigration,/c\.level in \('nursery','primary'\)/i,'Overall Headteacher must be scoped to Nursery and Primary only');
+assert.match(combinedLeadershipMigration,/c\.level in \('junior_secondary','senior_secondary'\)/i,'Overall Secondary Principal must be scoped to JSS and SSS only');
 assert.match(combinedLeadershipMigration,/target\.role <> 'head_teacher'/i,'Nursery–Primary combined appointment requires the Head Teacher authorization role');
 assert.match(combinedLeadershipMigration,/target\.role <> 'administrator'/i,'Overall Secondary Principal must be a Principal designation');
 assert.match(combinedLeadershipMigration,/lower\(coalesce\(target\.position_title,''\)\) <> 'principal'/i,'Secondary combined appointment must not be inferred from generic administrator role');
@@ -39,6 +39,7 @@ assert.match(combinedLeadershipMigration,/revoke all on function private\.school
 assert.match(combinedLeadershipMigration,/grant execute on function public\.schoolpro_set_combined_leadership/i);
 assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_appointments ca/i,'Combined appointment scopes must participate in section-level and class-level result authorization');
 assert.match(combinedLeadershipMigration,/schoolpro_enrollment_reader_keys/i,'Combined appointment scopes must participate in historical enrollment reads');
+assert.match(combinedLeadershipMigration,/ca\.appointment_key='overall_secondary_principal'/i,'Overall Secondary Principal must take precedence over section Vice Principals');
 assert.match(staff,/schoolpro_combined_leadership_appointments/i,'Staff & Access must read explicit combined appointment records');
 assert.match(staff,/appointment_key==="nursery_primary_headteacher"/i);
 assert.match(staff,/appointment_key==="overall_secondary_principal"/i);

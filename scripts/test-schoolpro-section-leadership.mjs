@@ -44,7 +44,7 @@ assert.match(combinedLeadershipMigration,/where ended_at is null/i,'Only active 
 assert.match(combinedLeadershipMigration,/another staff member already holds this overall leadership appointment/i,'A second overall appointee must be rejected, not silently replace the current appointee');
 assert.match(combinedLeadershipMigration,/appoint this Principal to their normal JSS or SSS section before assigning overall secondary oversight/i,'Overall Secondary Principal must already be a section Principal');
 assert.match(combinedLeadershipMigration,/Combined school leadership appointment updated/i,'Combined appointment must create an audit event');
-assert.match(combinedLeadershipMigration,/revoke all on function private\.schoolpro_set_combined_leadership/i);
+assert.match(combinedLeadershipMigration,/revoke all on function public\.schoolpro_set_combined_leadership/i);
 assert.match(combinedLeadershipMigration,/grant execute on function public\.schoolpro_set_combined_leadership/i);
 assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_appointments ca/i,'Combined appointment scopes must participate in section-level and class-level result authorization');
 assert.match(combinedLeadershipMigration,/schoolpro_enrollment_reader_keys/i,'Combined appointment scopes must participate in historical enrollment reads');

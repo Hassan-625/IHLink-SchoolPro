@@ -31,7 +31,10 @@ alter table public.schoolpro_enrollment_history enable row level security;
 create policy "Authorized school enrollment history" on public.schoolpro_enrollment_history for select to authenticated using(true);
 create table public.schoolpro_subjects(id uuid primary key, school_id uuid not null);
 create table public.schoolpro_guardian_links(school_id uuid,student_id uuid,guardian_user_id uuid,status text);
-create table public.schoolpro_subject_assignments(school_id uuid,class_id uuid,teacher_member_id uuid,subject_id uuid,session text);
+create table public.schoolpro_subject_assignments(
+ school_id uuid,class_id uuid,teacher_member_id uuid,subject_id uuid,session text,
+ ended_at timestamptz,ended_by uuid,end_reason text
+);
 create table public.schoolpro_audit_logs(
  school_id uuid, actor_id uuid, action text, entity_type text, entity_id uuid, metadata jsonb
 );

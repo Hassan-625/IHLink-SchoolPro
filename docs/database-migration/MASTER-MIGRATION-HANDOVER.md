@@ -3899,3 +3899,23 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The five HA Academy workbook rows no longer collapse to the generic `Board Member` title. Their sheet-order designations are now **Owner**, **Co-owner**, **Director**, **Executive Director**, and **Board Secretary**. Explicit supported titles in a future workbook take precedence over the numbered placeholder convention.
 - Added forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` so the Board appointment RPC accepts `Owner` alongside the existing supported titles. The designation is metadata only: it does not change `schoolpro_schools.owner_id`, grant administrator permissions, elevate the member role, or transfer ownership.
 - These are proposed governance titles assigned by workbook row order because the source workbook contained only numbered placeholders. They remain in the preview/import branch; no Board appointment, account creation, invitation, production migration, or production data write has occurred.
+
+
+### HA Academy workbook provisioning implementation — 2026-11-16
+
+- Started a follow-on implementation branch from PR #217: `feat/schoolpro-ha-academy-workbook-provisioning`.
+- Replaced the read-only preview's permanent stop with an explicit, confirmation-gated **Create / link 59 staff accounts** action. It provisions only after the HA Academy workbook validates and the active workspace is HA Academy.
+- The client processes records sequentially through the existing authenticated `invite-school-staff` Edge Function, preserving its school-leader authorization, rate limiting, email uniqueness checks, surname-hash initial credential flow, first-login password-change challenge, and rollback of incomplete new-user provisioning.
+- Existing members in the selected school are skipped. Existing global accounts without school membership follow the existing invitation/acceptance path; the UI distinguishes created, invitation-required, already-member and failed outcomes and supports visible partial progress. It does not display or log plaintext passwords.
+- The batch does not send email (the current Edge Function has no email-delivery implementation), reimport students, modify the current Exam Officer account, or transfer school ownership. Form Master, Section Head and Board appointments are implemented in the follow-on slice below.
+- No account-creation action was executed during development. No Supabase migration, production data write, Render deployment, or merge was performed.
+
+
+### HA Academy workbook appointments implementation — 2026-11-16
+
+- Extended the workbook action so that, after account processing, it resolves each workbook email to an actual profile and active-school membership before attempting appointments.
+- Form Masters are assigned through the existing `schoolpro_set_form_master` RPC, using an exact active-class match against class name / arm. Missing or ambiguous class matches are reported without guessing.
+- Section Heads are assigned through `schoolpro_set_section_leader` after mapping the workbook section to the canonical section key. Unsupported values are reported rather than coerced.
+- Board designations are assigned through the existing `schoolpro_set_board_role` RPC. The existing forward migration `20261115180000_schoolpro_allow_owner_board_designation.sql` already enables the explicit `Owner` designation; no additional migration is required. A duplicate follow-on migration was removed to avoid re-defining the function and accidentally narrowing the supported owner-title path.
+- The UI reports per-record appointment success/failure separately from account provisioning. Existing members are still eligible for their workbook appointments; pending invitations that have not become memberships are not falsely reported as appointed.
+- CI has not yet validated this follow-on commit. No production accounts were created, no migration was applied to Supabase, and no Render deployment or merge was performed.

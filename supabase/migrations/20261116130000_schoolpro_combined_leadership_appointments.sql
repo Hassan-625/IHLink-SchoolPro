@@ -322,8 +322,13 @@ begin
     raise exception 'Choose a valid school section';
   end if;
   select * into target from public.schoolpro_members
-   where id=p_member and school_id=p_school and status='active' for update;
-  if target.id is null then raise exception 'Active school staff member not found'; end if;
+   where id=p_member and school_id=p_school for update;
+  if target.id is null or target.status<>'active' then
+    raise exception 'Active school staff member not found';
+  end if;
+  if coalesce(p_assigned,false) and target.role = 'teacher' then
+    raise exception 'Head Teacher appointment cannot be assigned to an ordinary Subject Teacher';
+  end if;
 
   if not coalesce(p_assigned,false)
      and p_section in ('junior_secondary','senior_secondary')

@@ -1,6 +1,7 @@
 import ExcelJS from "exceljs";
 import { useState, type ChangeEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { supabase } from "@/lib/supabase";
 
 type ImportRow = {
   source: string;
@@ -50,12 +51,15 @@ const adminRole = (role: string) => {
   }
 };
 
-export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: string }) {
+export function SchoolProStaffWorkbookImport({ schoolName, schoolId }: { schoolName: string; schoolId: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [issues, setIssues] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
   const [workbookName, setWorkbookName] = useState("");
+  const [provisioning, setProvisioning] = useState(false);
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
+  const [provisionResults, setProvisionResults] = useState<{ email: string; status: "created" | "invited" | "already_member" | "failed"; message?: string }[]>([]);
   async function preview() {
     if (!file || busy) return;
     if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before validating this HA-only workbook."]); return; }
@@ -134,6 +138,46 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
       setIssues([error instanceof Error ? error.message : "The workbook could not be read."]);
     } finally { setBusy(false); }
   }
+  async function provisionAccounts() {
+    if (!supabase || !schoolId || !rows.length || provisioning) return;
+    if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before provisioning this HA-only workbook."]); return; }
+    const confirmed = window.confirm(`Create or link the ${rows.length} validated HA Academy staff, administrator and Board accounts? New accounts receive the surname-based temporary first-login credential and must change it immediately. Existing students and the current Exam Officer account are not reimported.`);
+    if (!confirmed) return;
+    setProvisioning(true);
+    setProvisionResults([]);
+    setProgress({ done: 0, total: rows.length });
+    const results: { email: string; status: "created" | "invited" | "already_member" | "failed"; message?: string }[] = [];
+    try {
+      for (const row of rows) {
+        try {
+          const { data: existingProfile, error: profileError } = await supabase.from("profiles").select("id").ilike("email", row.email).maybeSingle();
+          if (profileError) throw profileError;
+          if (existingProfile?.id) {
+            const { data: existingMember, error: memberError } = await supabase.from("schoolpro_members").select("id").eq("school_id", schoolId).eq("user_id", existingProfile.id).maybeSingle();
+            if (memberError) throw memberError;
+            if (existingMember?.id) {
+              results.push({ email: row.email, status: "already_member" });
+              setProvisionResults([...results]);
+              setProgress({ done: results.length, total: rows.length });
+              continue;
+            }
+          }
+          const { data, error } = await supabase.functions.invoke("invite-school-staff", {
+            body: { schoolId, email: row.email, role: row.role, firstName: row.firstName, middleName: row.middleName, surname: row.surname, phone: row.phone || null }
+          });
+          if (error) throw error;
+          if (data?.error) throw new Error(String(data.error));
+          results.push({ email: row.email, status: data?.created ? "created" : "invited", message: data?.created ? undefined : "Existing account requires invitation acceptance." });
+        } catch (error) {
+          results.push({ email: row.email, status: "failed", message: error instanceof Error ? error.message : "Provisioning failed." });
+        }
+        setProvisionResults([...results]);
+        setProgress({ done: results.length, total: rows.length });
+      }
+    } finally {
+      setProvisioning(false);
+    }
+  }
   function onFile(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0] || null;
     setFile(selected); setRows([]); setIssues([]);
@@ -162,7 +206,16 @@ export function SchoolProStaffWorkbookImport({ schoolName }: { schoolName: strin
         <table className="w-full text-left text-xs"><thead className="sticky top-0 bg-slate-50"><tr>{["Name","Email","Access role","Workbook responsibility"].map(x=><th key={x} className="p-2">{x}</th>)}</tr></thead><tbody>{rows.map((r,i)=><tr key={r.email} className="border-t"><td className="p-2">{r.firstName} {r.middleName} {r.surname}</td><td className="p-2">{r.email}</td><td className="p-2">{r.role === "administrator" ? "School Administrator" : r.role === "principal" ? "Principal" : r.role.replaceAll("_"," ")}</td><td className="p-2">{r.position}{r.assignedClass ? " · " + r.assignedClass : ""}{r.section && r.role === "head_teacher" ? " · " + r.section : ""}</td></tr>)}</tbody></table>
       </div>
       <p className="text-sm text-muted">Validated {rows.length} records. The Proprietor / School Owner workbook row is mapped to School Administrator, with no ownership transfer. The five Board records use the separate least-privilege Board Member role. Subject Teachers remain unallocated.</p>
-      <p className="text-sm font-medium text-amber-800">Account creation and email sending are intentionally not triggered by this preview. The invitation delivery and post-acceptance appointment flow must be completed and verified before sending this batch.</p>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button disabled={provisioning || !schoolId || rows.length !== 59} onClick={() => void provisionAccounts()}>{provisioning ? `Provisioning ${progress.done}/${progress.total}…` : "Create / link 59 staff accounts"}</Button>
+        <p className="text-xs text-muted">New accounts use the approved surname-first-login challenge; passwords are never displayed here.</p>
+      </div>
+      {!!provisionResults.length && <div className="rounded-lg border p-3 text-sm" role="status">
+        <p className="font-semibold">Provisioning progress: {progress.done}/{progress.total}</p>
+        <p className="mt-1">Created: {provisionResults.filter(x=>x.status==="created").length} · Invitation required: {provisionResults.filter(x=>x.status==="invited").length} · Already members: {provisionResults.filter(x=>x.status==="already_member").length} · Failed: {provisionResults.filter(x=>x.status==="failed").length}</p>
+        {provisionResults.some(x=>x.status==="failed") && <ul className="mt-2 list-disc pl-5">{provisionResults.filter(x=>x.status==="failed").map(x=><li key={x.email}>{x.email}: {x.message}</li>)}</ul>}
+      </div>}
+      <p className="text-sm font-medium text-amber-800">This action provisions accounts only. It does not send email and does not yet assign the 30 Form Master classes, four Section Head sections or five Board appointments. Those assignments are a separate implementation step.</p>
     </div>}
   </section>;
 }

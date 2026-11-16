@@ -211,6 +211,10 @@ begin
     or not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
    raise exception 'Overall Headteacher must oversee Nursery and Primary';
  end if;
+ if not private.schoolpro_member_leads_class(school,nursery_class)
+    or not private.schoolpro_member_leads_class(school,primary_class) then
+   raise exception 'Overall Headteacher must pass the class-level approval authorization for Nursery and Primary';
+ end if;
  if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
    raise exception 'Overall Headteacher must not oversee Secondary';
  end if;
@@ -223,12 +227,19 @@ begin
     or not private.schoolpro_member_leads_student_section(school,student_ss,'2025/2026') then
    raise exception 'Overall Secondary Principal must oversee both JSS and SSS';
  end if;
+ if not private.schoolpro_member_leads_class(school,jss_class)
+    or not private.schoolpro_member_leads_class(school,ss_class) then
+   raise exception 'Overall Secondary Principal must pass the class-level approval authorization for JSS and SSS';
+ end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Overall Secondary Principal must not oversee Nursery';
  end if;
  perform set_config('request.jwt.claim.sub',vice_id::text,true);
  if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
    raise exception 'Overall Secondary Principal must take precedence over the section Vice Principal';
+ end if;
+ if private.schoolpro_member_leads_class(school,jss_class) then
+   raise exception 'Overall Secondary Principal must block the section Vice Principal at the class-level approval authorization';
  end if;
  -- Combined Secondary oversight must not suppress the independently appointed Nursery/Primary Headteacher.
  perform set_config('request.jwt.claim.sub',head_id::text,true);

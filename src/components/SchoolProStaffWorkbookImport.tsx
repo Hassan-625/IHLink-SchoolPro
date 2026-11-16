@@ -60,6 +60,7 @@ export function SchoolProStaffWorkbookImport({ schoolName, schoolId }: { schoolN
   const [provisioning, setProvisioning] = useState(false);
   const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [provisionResults, setProvisionResults] = useState<{ email: string; status: "created" | "invited" | "already_member" | "failed"; message?: string }[]>([]);
+  const [appointmentResults, setAppointmentResults] = useState<{ email: string; assignment: string; status: "assigned" | "failed"; message?: string }[]>([]);
   async function preview() {
     if (!file || busy) return;
     if (key(schoolName) !== "ha academy") { setIssues(["Select the HA ACADEMY workspace before validating this HA-only workbook."]); return; }
@@ -174,6 +175,56 @@ export function SchoolProStaffWorkbookImport({ schoolName, schoolId }: { schoolN
         setProvisionResults([...results]);
         setProgress({ done: results.length, total: rows.length });
       }
+      // Apply workbook responsibilities only after account processing. Resolve
+      // members by exact email within this school; never guess a class or user.
+      const emails = rows.map(row => row.email);
+      const { data: profiles, error: profilesError } = await supabase.from("profiles").select("id,email").in("email", emails);
+      if (profilesError) throw profilesError;
+      const userIds = (profiles || []).map(profile => profile.id);
+      const { data: members, error: membersError } = await supabase.from("schoolpro_members").select("id,user_id,role").eq("school_id", schoolId).in("user_id", userIds);
+      if (membersError) throw membersError;
+      const profileByEmail = new Map((profiles || []).map(profile => [key(profile.email || ""), profile.id]));
+      const memberByUser = new Map((members || []).map(member => [member.user_id, member]));
+      const { data: classes, error: classesError } = await supabase.from("schoolpro_classes").select("id,name,arm").eq("school_id", schoolId).is("archived_at", null);
+      if (classesError) throw classesError;
+      const classKey = (name: string, arm?: string | null) => key([name, arm].filter(Boolean).join(" "));
+      const appointmentOutcomes: { email: string; assignment: string; status: "assigned" | "failed"; message?: string }[] = [];
+      for (const row of rows) {
+        const userId = profileByEmail.get(key(row.email));
+        const member = userId ? memberByUser.get(userId) : null;
+        if (!member) {
+          if (row.role === "board_member" || row.role === "head_teacher" || row.role === "class_teacher") {
+            appointmentOutcomes.push({ email: row.email, assignment: row.position, status: "failed", message: "Account is not yet a member of this school; resolve provisioning first." });
+          }
+          continue;
+        }
+        if (row.role === "class_teacher" && row.assignedClass && key(row.assignedClass) !== "to be allocated") {
+          const matches = (classes || []).filter(item => classKey(item.name, item.arm) === key(row.assignedClass!) || key(item.name) === key(row.assignedClass!));
+          if (matches.length !== 1) {
+            appointmentOutcomes.push({ email: row.email, assignment: "Form Master · " + row.assignedClass, status: "failed", message: matches.length ? "Class name is ambiguous; no assignment was made." : "No exact active class match; no assignment was made." });
+          } else {
+            const { error } = await supabase.rpc("schoolpro_set_form_master", { p_class: matches[0].id, p_member: member.id });
+            appointmentOutcomes.push({ email: row.email, assignment: "Form Master · " + row.assignedClass, status: error ? "failed" : "assigned", message: error?.message });
+          }
+        }
+        if (row.role === "head_teacher" && row.section) {
+          const sectionKey = key(row.section).replace(/ section$/, "");
+          const section = ({ nursery: "nursery", primary: "primary", "junior secondary": "junior_secondary", "senior secondary": "senior_secondary", other: "other" } as Record<string, string>)[sectionKey];
+          if (!section) {
+            appointmentOutcomes.push({ email: row.email, assignment: "Section Head · " + row.section, status: "failed", message: "Workbook section does not match a supported school section." });
+          } else {
+            const { error } = await supabase.rpc("schoolpro_set_section_leader", { p_school: schoolId, p_member: member.id, p_section: section, p_assigned: true });
+            appointmentOutcomes.push({ email: row.email, assignment: "Section Head · " + row.section, status: error ? "failed" : "assigned", message: error?.message });
+          }
+        }
+        if (row.role === "board_member" && row.position) {
+          const { error } = await supabase.rpc("schoolpro_set_board_role", { p_school: schoolId, p_member: member.id, p_title: row.position });
+          appointmentOutcomes.push({ email: row.email, assignment: "Board · " + row.position, status: error ? "failed" : "assigned", message: error?.message });
+        }
+      }
+      setAppointmentResults(appointmentOutcomes);
+    } catch (error) {
+      setIssues([error instanceof Error ? error.message : "Account provisioning or workbook appointments could not be completed."]);
     } finally {
       setProvisioning(false);
     }
@@ -215,7 +266,11 @@ export function SchoolProStaffWorkbookImport({ schoolName, schoolId }: { schoolN
         <p className="mt-1">Created: {provisionResults.filter(x=>x.status==="created").length} · Invitation required: {provisionResults.filter(x=>x.status==="invited").length} · Already members: {provisionResults.filter(x=>x.status==="already_member").length} · Failed: {provisionResults.filter(x=>x.status==="failed").length}</p>
         {provisionResults.some(x=>x.status==="failed") && <ul className="mt-2 list-disc pl-5">{provisionResults.filter(x=>x.status==="failed").map(x=><li key={x.email}>{x.email}: {x.message}</li>)}</ul>}
       </div>}
-      <p className="text-sm font-medium text-amber-800">This action provisions accounts only. It does not send email and does not yet assign the 30 Form Master classes, four Section Head sections or five Board appointments. Those assignments are a separate implementation step.</p>
+      {!!appointmentResults.length && <div className="rounded-lg border p-3 text-sm" role="status">
+        <p className="font-semibold">Workbook appointments: {appointmentResults.filter(x=>x.status==="assigned").length} assigned · {appointmentResults.filter(x=>x.status==="failed").length} need attention</p>
+        <ul className="mt-2 space-y-1">{appointmentResults.map((item,i)=><li key={item.email+"-"+item.assignment+"-"+i} className="flex flex-wrap gap-2"><span className={item.status==="assigned"?"text-emerald-700":"text-rose-700"}>{item.status==="assigned"?"Assigned":"Not assigned"}</span><span>{item.assignment} — {item.email}</span>{item.message&&<span className="text-muted">({item.message})</span>}</li>)}</ul>
+      </div>}
+      <p className="text-sm font-medium text-amber-800">Email delivery is not part of this workflow. Unmatched classes or unsupported sections are reported and never guessed. Board appointments use the existing least-privilege governance RPC.</p>
     </div>}
   </section>;
 }

@@ -53,13 +53,13 @@ returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role=any(p_roles))
 $$;
 create or replace function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $fn$ select false $fn$;
-create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $ select false $;
+create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.schoolpro_member_has_responsibility(p_school uuid,p_responsibility text)
-returns boolean language sql stable as $ select false $;
+returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.schoolpro_is_school_admin(p_school uuid)
-returns boolean language sql stable as $ select false $;
+returns boolean language sql stable as $fn$ select false $fn$;
 create or replace function private.schoolpro_is_exam_officer(p_school uuid)
-returns boolean language sql stable as $ select false $;
+returns boolean language sql stable as $fn$ select false $fn$;
 
 create or replace function private.schoolpro_result_access(uuid,text,text)
 returns table(allowed boolean) language sql stable as $$ select true $$;

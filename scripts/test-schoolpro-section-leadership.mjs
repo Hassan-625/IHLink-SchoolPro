@@ -21,6 +21,9 @@ assert.match(integration,/20261116130000_schoolpro_combined_leadership_appointme
 assert.match(integration,/Overall Headteacher must oversee Nursery and Primary/i);
 assert.match(integration,/Overall Headteacher must not oversee Secondary/i);
 assert.match(integration,/Overall Secondary Principal must oversee both JSS and SSS/i);
+assert.match(integration,/Overall Headteacher must pass the class-level approval authorization/i);
+assert.match(integration,/Overall Secondary Principal must pass the class-level approval authorization/i);
+assert.match(integration,/Overall Secondary Principal must block the section Vice Principal at the class-level approval authorization/i);
 assert.match(integration,/Overall Secondary Principal must take precedence over the section Vice Principal/i);
 assert.match(integration,/A school must not have two Overall Secondary Principals/i);
 assert.match(integration,/Retiring the combined appointment must preserve the normal section Principal appointment/i);

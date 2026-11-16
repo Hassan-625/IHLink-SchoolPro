@@ -17,7 +17,7 @@ create table public.schoolpro_members(
 create table public.schoolpro_classes(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
  name text not null, level text not null check(level in ('nursery','primary','junior_secondary','senior_secondary','other')),
- form_teacher_id uuid references public.schoolpro_members(id)
+ form_teacher_id uuid references public.schoolpro_members(id), archived_at timestamptz
 );
 create table public.schoolpro_students(
  id uuid primary key, school_id uuid not null references public.schoolpro_schools(id),
@@ -53,7 +53,14 @@ returns boolean language sql stable as $$
  select exists(select 1 from public.schoolpro_members m where m.school_id=p_school and m.user_id=auth.uid() and m.role=any(p_roles))
 $$;
 create or replace function public.schoolpro_member_can_manage(uuid) returns boolean language sql stable as $fn$ select false $fn$;
-create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $$ select false $$;
+create or replace function private.schoolpro_can_issue_transcript(uuid) returns boolean language sql stable as $ select false $;
+create or replace function private.schoolpro_member_has_responsibility(p_school uuid,p_responsibility text)
+returns boolean language sql stable as $ select false $;
+create or replace function private.schoolpro_is_school_admin(p_school uuid)
+returns boolean language sql stable as $ select false $;
+create or replace function private.schoolpro_is_exam_officer(p_school uuid)
+returns boolean language sql stable as $ select false $;
+
 create or replace function private.schoolpro_result_access(uuid,text,text)
 returns table(allowed boolean) language sql stable as $$ select true $$;
 create or replace function private.schoolpro_result_assessment_complete(uuid)
@@ -61,6 +68,7 @@ returns boolean language sql stable as $$ select true $$;
 \ir ../supabase/migrations/20261103120000_schoolpro_section_leadership_scope.sql
 \ir ../supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql
 \ir ../supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql
+\ir ../supabase/migrations/20261116130000_schoolpro_combined_leadership_appointments.sql
 
 do $test$
 declare
@@ -82,19 +90,22 @@ declare
  vice_id uuid := '88888888-8888-4888-8888-888888888888';
  principal_id uuid := '88888888-8888-4888-8888-888888888889';
  teacher_id uuid := '88888888-8888-4888-8888-888888888890';
+ other_principal_id uuid := '88888888-8888-4888-8888-888888888891';
  head_member uuid := '99999999-9999-4999-8999-999999999991';
  vice_member uuid := '99999999-9999-4999-8999-999999999992';
  principal_member uuid := '99999999-9999-4999-8999-999999999993';
  teacher_member uuid := '99999999-9999-4999-8999-999999999994';
+ other_principal_member uuid := '99999999-9999-4999-8999-999999999995';
 begin
- insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(teacher_id),(foreign_owner_id);
+ insert into auth.users values(owner_id),(head_id),(vice_id),(principal_id),(teacher_id),(other_principal_id),(foreign_owner_id);
  insert into public.schoolpro_schools values(school,owner_id),(foreign_school,foreign_owner_id);
  insert into public.schoolpro_members(id,school_id,user_id,role,position_title) values
   ('aaaaaaaa-0000-4000-8000-000000000001',school,owner_id,'proprietor',null),
   (head_member,school,head_id,'head_teacher',null),
   (vice_member,school,vice_id,'vice_principal',null),
   (principal_member,school,principal_id,'administrator','Principal'),
-  (teacher_member,school,teacher_id,'teacher',null);
+  (teacher_member,school,teacher_id,'teacher',null),
+  (other_principal_member,school,other_principal_id,'administrator','Principal');
  insert into public.schoolpro_classes values
   (foreign_class,foreign_school,'Primary 4','primary',null),
   (nursery_class,school,'Nursery 2','nursery',null),
@@ -157,6 +168,81 @@ begin
  end if;
  if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
    raise exception 'Principal must not lead an unassigned Nursery section';
+ end if;
+
+ -- Combined Headteacher appointment is explicit, single-holder and limited to Nursery + Primary.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_combined_leadership(school,head_member,'nursery_primary_headteacher',true);
+ if not exists(select 1 from public.schoolpro_combined_leadership_appointments
+   where school_id=school and member_id=head_member
+     and appointment_key='nursery_primary_headteacher' and ended_at is null) then
+   raise exception 'Overall Headteacher appointment was not persisted';
+ end if;
+ perform set_config('request.jwt.claim.sub',head_id::text,true);
+ if not private.schoolpro_member_leads_student_section(school,student_n,'2025/2026')
+    or not private.schoolpro_member_leads_student_section(school,student_p,'2025/2026') then
+   raise exception 'Overall Headteacher must oversee Nursery and Primary';
+ end if;
+ if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
+   raise exception 'Overall Headteacher must not oversee Secondary';
+ end if;
+
+ -- A section Principal can additionally receive the combined JSS + SSS appointment.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_combined_leadership(school,principal_member,'overall_secondary_principal',true);
+ perform set_config('request.jwt.claim.sub',principal_id::text,true);
+ if not private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026')
+    or not private.schoolpro_member_leads_student_section(school,student_ss,'2025/2026') then
+   raise exception 'Overall Secondary Principal must oversee both JSS and SSS';
+ end if;
+ if private.schoolpro_member_leads_student_section(school,student_n,'2025/2026') then
+   raise exception 'Overall Secondary Principal must not oversee Nursery';
+ end if;
+ perform set_config('request.jwt.claim.sub',vice_id::text,true);
+ if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026') then
+   raise exception 'Overall Secondary Principal must take precedence over the section Vice Principal';
+ end if;
+
+ -- A second active overall Secondary Principal is rejected.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_section_leader(school,other_principal_member,'junior_secondary',true);
+ begin
+   perform public.schoolpro_set_combined_leadership(school,other_principal_member,'overall_secondary_principal',true);
+   raise exception 'ASSERT: A school must not have two Overall Secondary Principals';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('already holds this overall leadership appointment' in sqlerrm)=0 then raise; end if;
+ end;
+
+ -- The combined appointment cannot remove the member's last normal Principal appointment.
+ begin
+   perform public.schoolpro_set_section_leader(school,principal_member,'senior_secondary',false);
+   raise exception 'ASSERT: Overall Secondary Principal must retain a normal section Principal appointment';
+ exception when others then
+   if sqlerrm like 'ASSERT:%' then raise; end if;
+   if position('final section appointment' in sqlerrm)=0 then raise; end if;
+ end;
+
+ -- Retiring the combined appointment preserves the normal section appointment.
+ perform public.schoolpro_set_combined_leadership(school,principal_member,'overall_secondary_principal',false);
+ if not exists(select 1 from public.schoolpro_section_leaders
+   where school_id=school and member_id=principal_member and section='senior_secondary' and ended_at is null) then
+   raise exception 'Retiring the combined appointment must preserve the normal section Principal appointment';
+ end if;
+ perform set_config('request.jwt.claim.sub',principal_id::text,true);
+ if private.schoolpro_member_leads_student_section(school,student_jss,'2025/2026')
+    or not private.schoolpro_member_leads_student_section(school,student_ss,'2025/2026') then
+   raise exception 'Retiring combined oversight must retain only the Principal’s normal section scope';
+ end if;
+
+ -- A role change automatically retires the now-ineligible combined appointment.
+ perform set_config('request.jwt.claim.sub',owner_id::text,true);
+ perform public.schoolpro_set_combined_leadership(school,head_member,'nursery_primary_headteacher',true);
+ update public.schoolpro_members set role='administrator',position_title=null where id=head_member;
+ if exists(select 1 from public.schoolpro_combined_leadership_appointments
+   where school_id=school and member_id=head_member
+     and appointment_key='nursery_primary_headteacher' and ended_at is null) then
+   raise exception 'Changing the Head Teacher authorization role must retire the combined appointment';
  end if;
 
  perform set_config('request.jwt.claim.sub',owner_id::text,true);

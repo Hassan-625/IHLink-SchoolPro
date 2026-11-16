@@ -40,6 +40,10 @@ assert.match(combinedLeadershipMigration,/grant execute on function public\.scho
 assert.match(combinedLeadershipMigration,/schoolpro_combined_leadership_appointments ca/i,'Combined appointment scopes must participate in section-level and class-level result authorization');
 assert.match(combinedLeadershipMigration,/schoolpro_enrollment_reader_keys/i,'Combined appointment scopes must participate in historical enrollment reads');
 assert.match(combinedLeadershipMigration,/ca\.appointment_key='overall_secondary_principal'/i,'Overall Secondary Principal must take precedence over section Vice Principals');
+assert.match(combinedLeadershipMigration,/schoolpro_set_section_leader/i,'Individual section appointment management must preserve the normal Principal appointment');
+assert.match(combinedLeadershipMigration,/retire the Overall Secondary Principal appointment before removing this Principal/i,'A Principal cannot lose their final normal section appointment while the overall appointment is active');
+assert.match(combinedLeadershipMigration,/schoolpro_end_invalid_combined_leadership/i,'Invalid or suspended members must have combined appointments retired');
+assert.match(combinedLeadershipMigration,/after update of role,position_title,status on public\.schoolpro_members/i,'Combined appointment eligibility must be enforced after membership changes');
 assert.match(staff,/schoolpro_combined_leadership_appointments/i,'Staff & Access must read explicit combined appointment records');
 assert.match(staff,/appointment_key==="nursery_primary_headteacher"/i);
 assert.match(staff,/appointment_key==="overall_secondary_principal"/i);

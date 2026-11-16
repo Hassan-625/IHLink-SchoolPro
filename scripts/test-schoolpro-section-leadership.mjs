@@ -16,6 +16,15 @@ assert.match(integration,/Head Teacher must not lead Junior Secondary without an
 assert.match(integration,/Vice Principal must lead explicitly assigned Junior Secondary section/i);
 assert.match(integration,/Principal must lead explicitly assigned Senior Secondary section/i);
 assert.match(integration,/Changing staff role must clear obsolete section assignments/i);
+assert.match(integration,/20261116130000_schoolpro_combined_leadership_appointments\.sql/i);
+assert.match(integration,/Overall Headteacher must oversee Nursery and Primary/i);
+assert.match(integration,/Overall Headteacher must not oversee Secondary/i);
+assert.match(integration,/Overall Secondary Principal must oversee both JSS and SSS/i);
+assert.match(integration,/Overall Secondary Principal must take precedence over the section Vice Principal/i);
+assert.match(integration,/A school must not have two Overall Secondary Principals/i);
+assert.match(integration,/Retiring the combined appointment must preserve the normal section Principal appointment/i);
+assert.match(integration,/Changing the Head Teacher authorization role must retire the combined appointment/i);
+
 assert.match(integration,/An ordinary subject teacher must not be appointed as section head/i);
 assert.match(migration,/create table public\.schoolpro_section_leaders/i);
 assert.match(combinedLeadershipMigration,/nursery_primary_headteacher/i);

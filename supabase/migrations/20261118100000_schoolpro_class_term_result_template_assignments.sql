@@ -71,6 +71,13 @@ begin
     raise exception 'Choose a saved result workbook belonging to this school';
   end if;
 
+  if not exists(
+    select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.id=p_class and c.archived_at is null
+  ) then
+    raise exception 'Choose an active class in the selected school';
+  end if;
+
   select m.id into v_member
   from public.schoolpro_members m
   where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'

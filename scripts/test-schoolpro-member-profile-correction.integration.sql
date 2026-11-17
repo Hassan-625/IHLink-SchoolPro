@@ -103,7 +103,7 @@ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests
       WHERE target_user_id='10000000-0000-0000-0000-000000000002' AND status='cancelled') <> 1
     THEN RAISE EXCEPTION 'superseded pending email request was not cancelled'; END IF;
-END $;
+END $$;
 UPDATE public.schoolpro_member_email_change_requests
 SET status='verification_sent'
 WHERE target_user_id='10000000-0000-0000-0000-000000000002'
@@ -123,7 +123,7 @@ BEGIN
       WHERE target_user_id='10000000-0000-0000-0000-000000000002'
         AND requested_email='replacement.staff@example.test') <> 'verification_sent'
     THEN RAISE EXCEPTION 'in-flight verification request was modified'; END IF;
-END $;
+END $$;
 UPDATE auth.users SET email='replacement.staff@example.test'
 WHERE id='10000000-0000-0000-0000-000000000002';
 
@@ -147,7 +147,7 @@ END $$;
 -- Suspended target relationships cannot authorize profile or email changes.
 UPDATE public.schoolpro_members SET status='suspended'
 WHERE user_id='10000000-0000-0000-0000-000000000002';
-DO $ BEGIN
+DO $$ BEGIN
   BEGIN
     PERFORM public.schoolpro_correct_member_profile_atomic(
       '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
@@ -156,12 +156,12 @@ DO $ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM='suspended staff membership unexpectedly authorized correction' THEN RAISE; END IF;
   END;
-END $;
+END $$;
 UPDATE public.schoolpro_members SET status='active'
 WHERE user_id='10000000-0000-0000-0000-000000000002';
 UPDATE public.schoolpro_guardian_links SET status='suspended'
 WHERE guardian_user_id='10000000-0000-0000-0000-000000000003';
-DO $ BEGIN
+DO $$ BEGIN
   BEGIN
     PERFORM public.schoolpro_request_member_email_change_atomic(
       '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
@@ -170,14 +170,14 @@ DO $ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM='suspended guardian link unexpectedly authorized email change' THEN RAISE; END IF;
   END;
-END $;
+END $$;
 UPDATE public.schoolpro_guardian_links SET status='active'
 WHERE guardian_user_id='10000000-0000-0000-0000-000000000003';
 
 -- An inactive global profile cannot be corrected even if the school link remains active.
 UPDATE public.profiles SET status='suspended'
 WHERE id='10000000-0000-0000-0000-000000000002';
-DO $ BEGIN
+DO $$ BEGIN
   BEGIN
     PERFORM public.schoolpro_correct_member_profile_atomic(
       '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
@@ -186,7 +186,7 @@ DO $ BEGIN
   EXCEPTION WHEN OTHERS THEN
     IF SQLERRM='inactive target account unexpectedly authorized correction' THEN RAISE; END IF;
   END;
-END $;
+END $$;
 UPDATE public.profiles SET status='active'
 WHERE id='10000000-0000-0000-0000-000000000002';
 

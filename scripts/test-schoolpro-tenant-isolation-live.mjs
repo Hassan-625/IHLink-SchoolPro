@@ -244,7 +244,7 @@ async function main() {
   const storageBaseUrl = process.env.SUPABASE_URL.endsWith('/') ? process.env.SUPABASE_URL.slice(0, -1) : process.env.SUPABASE_URL;
   for (const foreignAccount of accounts.filter((account) => account.key !== templateFixture.owner.key)) {
     const foreignResponse = await fetch(
-      process.env.SUPABASE_URL.replace(/\\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
+      storageBaseUrl + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
       {method: 'GET', headers: {
         apikey: process.env.SUPABASE_ANON_KEY,
         Authorization: 'Bearer ' + foreignAccount.accessToken,

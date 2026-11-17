@@ -14,6 +14,7 @@ $$ SELECT nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 CREATE OR REPLACE FUNCTION auth.role() RETURNS text LANGUAGE sql STABLE AS
 $$ SELECT nullif(current_setting('request.jwt.claim.role',true),'') $$;
 
+CREATE TABLE auth.users(id uuid primary key,email text);
 CREATE TABLE public.profiles(
   id uuid primary key, email text, first_name text, middle_name text, last_name text,
   phone text, role text, status text
@@ -39,6 +40,11 @@ AS $$
   )
 $$;
 
+INSERT INTO auth.users VALUES
+('10000000-0000-0000-0000-000000000001','admin@example.test'),
+('10000000-0000-0000-0000-000000000002','staff@example.test'),
+('10000000-0000-0000-0000-000000000003','guardian@example.test'),
+('10000000-0000-0000-0000-000000000004','outsider@example.test');
 INSERT INTO public.schoolpro_schools VALUES
 ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001');
 INSERT INTO public.profiles(id,email,first_name,middle_name,last_name,phone,role,status) VALUES
@@ -64,12 +70,51 @@ SELECT public.schoolpro_correct_member_profile_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
  '10000000-0000-0000-0000-000000000001','Guardian','Middle','Corrected','08012345678'
 );
-DO $$
+DO $
 BEGIN
   IF (SELECT first_name||'|'||middle_name||'|'||last_name||'|'||phone||'|'||email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002')
      <> 'Staff|Middle|Corrected|+2348012345678|staff@example.test' THEN RAISE EXCEPTION 'staff correction/email preservation failed'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 2 THEN RAISE EXCEPTION 'expected two atomic audit rows'; END IF;
-END $$;
+END $;
+
+-- School administrators may request a new sign-in email, but the live Auth
+-- identity and profile email must not change until the account owner verifies.
+SELECT public.schoolpro_request_member_email_change_atomic(
+ '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+ '10000000-0000-0000-0000-000000000001','new.staff@example.test'
+);
+DO $
+BEGIN
+  IF (SELECT email FROM auth.users WHERE id='10000000-0000-0000-0000-000000000002') <> 'staff@example.test'
+    THEN RAISE EXCEPTION 'email changed before verification'; END IF;
+  IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'staff@example.test'
+    THEN RAISE EXCEPTION 'profile email changed before verification'; END IF;
+  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'pending'
+    THEN RAISE EXCEPTION 'email request was not left pending'; END IF;
+END $;
+
+UPDATE public.schoolpro_member_email_change_requests
+SET status='verification_sent'
+WHERE target_user_id='10000000-0000-0000-0000-000000000002';
+UPDATE auth.users SET email='new.staff@example.test'
+WHERE id='10000000-0000-0000-0000-000000000002';
+
+DO $
+BEGIN
+  IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'new.staff@example.test'
+    THEN RAISE EXCEPTION 'verified Auth email was not synced to IHLink profile'; END IF;
+  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'confirmed'
+    THEN RAISE EXCEPTION 'email change request was not marked confirmed'; END IF;
+  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
+    THEN RAISE EXCEPTION 'verified email change was not audited'; END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM public.schoolpro_profile_change_audit
+    WHERE target_user_id='10000000-0000-0000-0000-000000000002'
+      AND changed_fields = ARRAY['email']::text[]
+      AND before_values->>'email'='staff@example.test'
+      AND after_values->>'email'='new.staff@example.test'
+  ) THEN RAISE EXCEPTION 'email change audit values are incorrect'; END IF;
+END $;
 
 -- Unauthorized and inactive actors must not modify either profile or audit.
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
@@ -119,7 +164,7 @@ DO $$
 BEGIN
   IF (SELECT first_name FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'Staff'
     THEN RAISE EXCEPTION 'profile update was not rolled back after audit failure'; END IF;
-  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 2
+  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'audit row count changed after rollback'; END IF;
 END $$;
 
@@ -143,4 +188,4 @@ DO $$ BEGIN
     THEN RAISE EXCEPTION 'authenticated users can forge audit rows'; END IF;
 END $$;
 
-SELECT 'PASS: member profile corrections, guardian linkage, authorization, audit visibility, email isolation and rollback.' AS result;
+SELECT 'PASS: staff/guardian corrections, verified sign-in email change, authorization, audit visibility and rollback.' AS result;

@@ -62,7 +62,7 @@ Deno.serve(async(req:Request)=>{
      const parts=guardian.name.split(/\s+/).filter(Boolean);
      const surname=parts.length?parts[parts.length-1]:'';
      if(!surname){results.push({email:guardian.email,status:'needs-attention',children:guardian.studentIds.length,detail:'Guardian surname is missing from the imported contact name.'});continue;}
-     const {data:existing,error:profileError}=await admin.from('profiles').select('id,first_name,middle_name,last_name,phone').ilike('email',guardian.email).maybeSingle();
+     const {data:existing,error:profileError}=await admin.from('profiles').select('id,first_name,middle_name,last_name,phone').eq('email',guardian.email).maybeSingle();
      if(profileError)throw profileError;
      if(existing){
       const {data:links,error:linksError}=await admin.from('schoolpro_guardian_links').select('student_id,status').eq('school_id',schoolId).eq('guardian_user_id',existing.id).in('student_id',guardian.studentIds);

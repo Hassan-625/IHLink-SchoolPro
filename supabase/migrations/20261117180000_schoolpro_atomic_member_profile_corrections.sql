@@ -220,6 +220,10 @@ create unique index if not exists schoolpro_member_email_change_one_open_idx
   on public.schoolpro_member_email_change_requests(target_user_id)
   where status in ('pending', 'verification_sent');
 
+create unique index if not exists schoolpro_member_email_change_one_open_email_idx
+  on public.schoolpro_member_email_change_requests(lower(requested_email))
+  where status in ('pending', 'verification_sent');
+
 create index if not exists schoolpro_member_email_change_school_idx
   on public.schoolpro_member_email_change_requests(school_id, target_user_id, created_at desc);
 
@@ -289,6 +293,7 @@ declare
   target_member_id uuid;
   target_guardian_link_id uuid;
   current_email text;
+  target_profile_status text;
   normalized_email text;
   request_id uuid;
 begin
@@ -346,6 +351,8 @@ begin
 
   select u.email into current_email from auth.users u where u.id = p_target_user_id for key share;
   if current_email is null then raise exception 'Target sign-in account not found'; end if;
+  select p.status::text into target_profile_status from public.profiles p where p.id = p_target_user_id for key share;
+  if target_profile_status is distinct from 'active' then raise exception 'Target account is not active'; end if;
   if lower(current_email) = normalized_email then
     raise exception 'The requested email is already the current sign-in email';
   end if;

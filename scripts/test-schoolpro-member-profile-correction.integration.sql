@@ -193,13 +193,6 @@ UPDATE public.profiles SET status='active'
 WHERE id='10000000-0000-0000-0000-000000000002';
 
 -- Unauthorized and inactive actors must not modify either profile or audit.
-SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
-DO $$ BEGIN
-  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
-    THEN RAISE EXCEPTION 'global Super Admin cannot read school audit history'; END IF;
-  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 2
-    THEN RAISE EXCEPTION 'global Super Admin cannot read email change request history'; END IF;
-END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
 DO $$ BEGIN
   BEGIN
@@ -254,13 +247,20 @@ END $$;
 -- Only the authorized school administrator can read this school's audit rows.
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON public.schoolpro_profile_change_audit TO authenticated;
-GRANT SELECT ON public.schoolpro_schools, public.schoolpro_members, public.schoolpro_member_responsibilities TO authenticated;
+GRANT SELECT ON public.profiles, public.schoolpro_schools, public.schoolpro_members, public.schoolpro_member_responsibilities TO authenticated;
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
-DO $$ BEGIN
+DO $ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'school admin cannot read audit history'; END IF;
-END $$;
+END $;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
+DO $ BEGIN
+  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
+    THEN RAISE EXCEPTION 'global Super Admin cannot read school audit history'; END IF;
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 2
+    THEN RAISE EXCEPTION 'global Super Admin cannot read email change request history'; END IF;
+END $;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
 DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 0

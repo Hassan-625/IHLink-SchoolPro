@@ -85,7 +85,7 @@ SELECT public.schoolpro_request_member_email_change_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
  '10000000-0000-0000-0000-000000000001','new.staff@example.test'
 );
-DO $
+DO $$
 BEGIN
   IF (SELECT email FROM auth.users WHERE id='10000000-0000-0000-0000-000000000002') <> 'staff@example.test'
     THEN RAISE EXCEPTION 'email changed before verification'; END IF;
@@ -98,7 +98,7 @@ END $$;
 -- A pending request (no Auth verification sent yet) can be replaced.
 SELECT public.schoolpro_request_member_email_change_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
- '10000000-0000-0000-0000-000000000001','replacement.staff@example.test'
+ '10000000-0000-0000-0000-000000000001','new.staff@example.test'
 );
 DO $$
 BEGIN

@@ -10,6 +10,7 @@ SELECT id FROM public.schoolpro_members
  WHERE school_id='20000000-0000-0000-0000-000000000001'
    AND user_id='10000000-0000-0000-0000-000000000002'
  FOR UPDATE;
+SELECT set_config('application_name','schoolpro_member_lock_held',false);
 SELECT pg_sleep(2);
 DELETE FROM public.schoolpro_members
  WHERE school_id='20000000-0000-0000-0000-000000000001'
@@ -17,7 +18,23 @@ DELETE FROM public.schoolpro_members
 COMMIT;
 SQL
 locker=$!
-sleep 0.25
+for attempt in $(seq 1 200); do
+  if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select 1 from pg_stat_activity where application_name='schoolpro_member_lock_held' and state='active' limit 1" | grep -q 1; then
+    break
+  fi
+  if ! kill -0 "$locker" 2>/dev/null; then
+    wait "$locker"
+    echo "FAIL: membership lock transaction exited before acquiring its lock."
+    exit 1
+  fi
+  sleep 0.05
+done
+if ! psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select 1 from pg_stat_activity where application_name='schoolpro_member_lock_held' and state='active' limit 1" | grep -q 1; then
+  kill "$locker" 2>/dev/null || true
+  wait "$locker" || true
+  echo "FAIL: timed out waiting for membership row lock."
+  exit 1
+fi
 if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL'
 SELECT set_config('request.jwt.claim.role','service_role',false);
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
@@ -42,6 +59,7 @@ SELECT id FROM public.schoolpro_guardian_links
  WHERE school_id='20000000-0000-0000-0000-000000000001'
    AND guardian_user_id='10000000-0000-0000-0000-000000000003'
  FOR UPDATE;
+SELECT set_config('application_name','schoolpro_guardian_lock_held',false);
 SELECT pg_sleep(2);
 DELETE FROM public.schoolpro_guardian_links
  WHERE school_id='20000000-0000-0000-0000-000000000001'
@@ -49,7 +67,23 @@ DELETE FROM public.schoolpro_guardian_links
 COMMIT;
 SQL
 locker=$!
-sleep 0.25
+for attempt in $(seq 1 200); do
+  if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select 1 from pg_stat_activity where application_name='schoolpro_guardian_lock_held' and state='active' limit 1" | grep -q 1; then
+    break
+  fi
+  if ! kill -0 "$locker" 2>/dev/null; then
+    wait "$locker"
+    echo "FAIL: guardian-link lock transaction exited before acquiring its lock."
+    exit 1
+  fi
+  sleep 0.05
+done
+if ! psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select 1 from pg_stat_activity where application_name='schoolpro_guardian_lock_held' and state='active' limit 1" | grep -q 1; then
+  kill "$locker" 2>/dev/null || true
+  wait "$locker" || true
+  echo "FAIL: timed out waiting for guardian-link row lock."
+  exit 1
+fi
 if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL'
 SELECT set_config('request.jwt.claim.role','service_role',false);
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);

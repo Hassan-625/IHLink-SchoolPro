@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 const broadsheet=readFileSync('src/pages/schoolpro/SchoolProBroadsheet.tsx','utf8');
 const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+const overrideMigration=readFileSync('supabase/migrations/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses.sql','utf8');
 const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 const correctionIntegration=readFileSync('scripts/test-schoolpro-result-correction-section-review.integration.sql','utf8');
@@ -18,7 +19,7 @@ assert.match(results,/Assessment readiness/,'Results page must expose a read-onl
 assert.match(results,/form_teacher_id/,'Readiness must detect missing class Form Master appointments.');
 assert.match(results,/unassignedSubjectCount/,'Readiness must distinguish allocated subjects without an assigned teacher.');
 assert.match(results,/hasScheme/,'Readiness must check for an assessment scheme compatible with each class level.');
-assert.match(results,/View only · subject teacher entry/i,
+assert.match(results,/View only.*subject teacher entry/i,
   'Non-assigned subject marks must remain read-only.');
 assert.match(broadsheet,/activePrincipalSections/, 'Active Principal appointments must be loaded for each section.');
 assert.match(broadsheet,/const isPrincipal=memberRole==='administrator'&&memberPositionTitle\.trim\(\)\.toLowerCase\(\)==='principal'/, 'Only the appointed Principal retains section review controls when a Principal is active in that section.');
@@ -88,16 +89,28 @@ assert.match(authority,/private\.schoolpro_is_exam_officer\(c\.school_id\)/i);
 assert.match(authority,/private\.schoolpro_is_school_admin\(s\.school_id\)/i);
 assert.match(profile,/eq\('session',session\)/,
   'The account page must show only current-session subject allocations.');
-assert.match(broadsheet,/const canPublishAll=memberRole==='exam_officer'\|\|additionalResponsibilities\.includes\('exam_officer'\)/,
-  'Final approval, publication and correction reopening UI must require an active Exam Officer role or responsibility.');
-assert.doesNotMatch(broadsheet,/const canPublishAll=.*super administrator|const canPublishAll=.*super_admin/i,
-  'Super Admin must not receive Exam Officer publication authority from the global platform role.');
-assert.match(broadsheet,/const canManageSchoolView=.*super administrator/,
+assert.match(broadsheet,/const canPublishAll=.*super administrator.*memberRole==='exam_officer'/i,
+  'Super Admin and appointed Exam Officers must have final approval, publication and correction controls.');assert.match(broadsheet,/const canManageSchoolView=.*super administrator/,
   'Super Admin retains school administration/view access independently of Exam Officer authority.');
+assert.match(correctionIntegration,/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses\.sql/,'The database fixture must load the actual Super Admin bypass-removal migration.');
 assert.match(correctionIntegration,/create or replace function private\.is_admin\(p_roles public\.user_role\[\]\)/,
   'The correction integration fixture must model a global Super Admin independently of school membership.');
 assert.match(correctionIntegration,/Super Admin inherited Exam Officer authority without appointment/,
-  'A global Super Admin without an Exam Officer appointment must be denied correction authorization.');
-assert.match(correctionIntegration,/Only the Exam Officer can authorize a class or section result reopening/,
-  'Correction reopening must remain exclusive to an appointed Exam Officer.');
+  'A global Super Admin must remain distinct from an appointed Exam Officer.');
+assert.match(correctionIntegration,/Authorized Super Admin correction override/,
+  'The integration test must exercise an authorized Super Admin correction override.');
+assert.match(correctionIntegration,/authorization_role.*super_admin_override/s,
+  'The Super Admin correction override must be audited.');
+assert.match(correctionIntegration,/rollback;/i,
+  'The temporary Super Admin override must roll back before the Exam Officer test.');
+
+const examOfficerHelper=overrideMigration.match(/create or replace function private\.schoolpro_is_exam_officer\b[\s\S]*?(?=create or replace function|$)/i)?.[0]??'';
+assert.ok(examOfficerHelper && !/super_admin/i.test(examOfficerHelper),
+  'Super Admin must not inherit appointed Exam Officer status.');
+assert.ok((overrideMigration.match(/if not \(private\.schoolpro_is_exam_officer\(p_school\) or private\.is_admin\(array\['super_admin'\]::public\.user_role\[\]\)\) then/gi)||[]).length>=2,
+  'Both final approval and whole-school publication RPCs must explicitly authorize Super Admin.');
+assert.match(overrideMigration,/Only the eligible appointed section head can approve this class/i,
+  'Super Admin must not bypass the appointed Section Head approval gate.');
+assert.match(overrideMigration,/super_admin_override/i,
+  'Super Admin result actions must record their override status in audit metadata.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');

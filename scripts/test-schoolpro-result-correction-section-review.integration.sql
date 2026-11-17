@@ -206,6 +206,7 @@ insert into public.schoolpro_results(id,school_id,student_id,term,session,status
  ('40000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000001','Second Term','2025/2026','published',true);
 
 \ir ../supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql
+\ir ../supabase/migrations/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses.sql
 
 set role authenticated;
 
@@ -292,7 +293,9 @@ begin
 end
 $test$;
 
--- A global Super Admin remains a school administrator but is not an Exam Officer.
+-- A global Super Admin is not an appointed Exam Officer, but may
+-- authorize a forwarded correction request as an audited override.
+begin;
 select set_config('request.jwt.claim.sub','66666666-6666-4666-8666-666666666666',false);
 do $test$
 begin
@@ -302,15 +305,38 @@ begin
  if private.schoolpro_is_exam_officer('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
    raise exception 'Super Admin inherited Exam Officer authority without appointment';
  end if;
- begin
-  perform public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,'Unauthorized global override');
-  raise exception 'Super Admin unexpectedly authorized result reopening';
- exception when others then
-  if sqlerrm not like '%Only the Exam Officer%' then raise; end if;
- end;
+
+ perform public.schoolpro_decide_result_reopening(
+   current_setting('test.teacher_request')::uuid,
+   true,
+   'Authorized Super Admin correction override'
+ );
+
+ if (select status from public.schoolpro_result_correction_batches
+     where id=current_setting('test.teacher_request')::uuid) <> 'approved' then
+   raise exception 'Super Admin correction override was not recorded';
+ end if;
+
+ if not exists(
+   select 1 from public.schoolpro_results
+   where id='40000000-0000-4000-8000-000000000001'
+     and status='draft' and not locked
+ ) then
+   raise exception 'Super Admin correction override did not reopen the result';
+ end if;
+
+ if not exists(
+   select 1 from public.schoolpro_audit_logs
+   where action='Class or section results reopened for correction'
+     and actor_id='66666666-6666-4666-8666-666666666666'
+     and metadata->>'authorization_role'='super_admin_override'
+     and metadata->>'super_admin_override'='true'
+ ) then
+   raise exception 'Super Admin correction override was not fully audited';
+ end if;
 end
 $test$;
-
+rollback;
 -- Independent Exam Officer authorizes reopening exactly the snapshotted row.
 select set_config('request.jwt.claim.sub','55555555-5555-4555-8555-555555555555',false);
 select public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,'Verified correction evidence') as reopened;

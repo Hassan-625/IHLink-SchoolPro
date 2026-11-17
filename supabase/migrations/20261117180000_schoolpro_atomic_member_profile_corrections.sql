@@ -22,6 +22,7 @@ alter table public.schoolpro_profile_change_audit enable row level security;
 revoke all on public.schoolpro_profile_change_audit from anon, public;
 grant select on public.schoolpro_profile_change_audit to authenticated;
 grant usage on schema private to authenticated;
+grant execute on function private.has_school_access(uuid, public.school_member_role[]) to authenticated;
 
 drop policy if exists schoolpro_profile_change_audit_school_admin_read
   on public.schoolpro_profile_change_audit;
@@ -197,8 +198,6 @@ revoke all on function public.schoolpro_correct_member_profile_atomic(uuid, uuid
   from public, anon, authenticated;
 grant execute on function public.schoolpro_correct_member_profile_atomic(uuid, uuid, uuid, text, text, text, text)
   to service_role;
-
-commit;
 
 
 -- Sign-in email changes are administrator-requested but user-confirmed through
@@ -420,3 +419,5 @@ drop trigger if exists schoolpro_sync_verified_auth_email on auth.users;
 create trigger schoolpro_sync_verified_auth_email
 after update of email on auth.users
 for each row execute function private.schoolpro_sync_verified_auth_email();
+
+commit;

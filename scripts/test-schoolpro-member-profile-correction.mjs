@@ -51,11 +51,13 @@ assert.doesNotMatch(edge, /profiles'\)\.update/i, 'all profile writes must pass 
 assert.match(staff, /profile:profiles!schoolpro_members_user_id_fkey\([^)]*phone/);
 assert.match(staff, /schoolpro-profile-correction/);
 assert.match(staff, /schoolpro-request-member-email-change/);
+assert.match(staff, /Staff sign-in email/);
 assert.match(staff, /Edit profile/);
 assert.match(staff, /visible in every school linked to that same account/);
 assert.match(parents, /profile:profiles!schoolpro_guardian_links_guardian_user_id_fkey\([^)]*middle_name[^)]*phone/);
 assert.match(parents, /schoolpro-profile-correction/);
 assert.match(parents, /schoolpro-request-member-email-change/);
+assert.match(parents, /guardian sign-in email/);
 assert.match(parents, /Edit profile/);
 assert.match(parents, /visible in every school linked to that account/);
 

@@ -146,6 +146,22 @@ END $;
 UPDATE public.schoolpro_guardian_links SET status='active'
 WHERE guardian_user_id='10000000-0000-0000-0000-000000000003';
 
+-- An inactive global profile cannot be corrected even if the school link remains active.
+UPDATE public.profiles SET status='suspended'
+WHERE id='10000000-0000-0000-0000-000000000002';
+DO $ BEGIN
+  BEGIN
+    PERFORM public.schoolpro_correct_member_profile_atomic(
+      '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001','Inactive','Staff','Denied',null);
+    RAISE EXCEPTION 'inactive target account unexpectedly authorized correction';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='inactive target account unexpectedly authorized correction' THEN RAISE; END IF;
+  END;
+END $;
+UPDATE public.profiles SET status='active'
+WHERE id='10000000-0000-0000-0000-000000000002';
+
 -- Unauthorized and inactive actors must not modify either profile or audit.
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
 DO $$ BEGIN

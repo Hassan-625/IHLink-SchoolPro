@@ -12,6 +12,7 @@ export function SchoolProParents(){const {user,profile}=useAuth();const ctx=useS
  const middle=window.prompt('Parent / guardian middle name (optional)',p.middle_name||'');if(middle===null)return;
  const last=window.prompt('Parent / guardian surname',p.last_name||'');if(last===null)return;
  const phone=window.prompt('Parent / guardian phone number',p.phone||'');if(phone===null)return;
+ const email=window.prompt('Parent / guardian sign-in email (verification required)',p.email||'');if(email===null)return;
  const {data,error}=await supabase.functions.invoke('schoolpro-profile-correction',{body:{schoolId,targetUserId:link.guardian_user_id,firstName:first,middleName:middle,lastName:last,phone}});
  if(error||data?.error){setNotice({error:true,text:data?.error||'Parent / guardian profile could not be updated. Please try again.'});return;}
  setNotice({text:data?.changed===false?'No profile details changed.':'Parent / guardian name and phone corrected. This IHLink identity update is visible in every school linked to the same account. The change was audited.'});

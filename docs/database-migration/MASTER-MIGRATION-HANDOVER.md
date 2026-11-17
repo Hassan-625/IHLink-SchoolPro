@@ -1,3 +1,13 @@
+## Optional gender preference for leadership display-title suggestions — implementation branch (2026-11-16)
+
+- Branch: `feat/schoolpro-gender-aware-leadership-titles`.
+- Adds nullable `profiles.gender` with the allowlist `male`, `female`, and `unspecified`. Existing rows remain NULL; no existing staff member is assigned a gender by inference.
+- Staff members can self-declare or leave the field unspecified in My Account. Staff & Access reads this field only to display a suggested section-head title: male → Headmaster, female → Headmistress, unspecified → no suggestion.
+- The section-title dropdown remains an explicit administrator choice; no title is silently assigned or overwritten. Gender is not consulted by any authorization, role, section appointment, or result workflow logic.
+- No production data changes, Supabase migration application, or Render deployment are included in this branch. Migration and rollout remain separate approval gates.
+
+---
+
 ## Combined leadership appointments — implementation branch opened (2026-11-16)
 
 - Branch: `feat/schoolpro-combined-leadership-appointments-2026-11-16`.

@@ -8,6 +8,7 @@ const workflowMigration=readFileSync('supabase/migrations/20261108119000_schoolp
 const authorityMigration=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
 const combinedLeadershipMigration=readFileSync('supabase/migrations/20261116130000_schoolpro_combined_leadership_appointments.sql','utf8');
 const leadershipTitlesMigration=readFileSync('supabase/migrations/20261116140000_schoolpro_section_leadership_display_titles.sql','utf8');
+const genderMigration=readFileSync('supabase/migrations/20261116170000_schoolpro_staff_profile_gender.sql','utf8');
 const resultsPage=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 const staff=readFileSync('src/pages/schoolpro/SchoolProStaff.tsx','utf8');
@@ -198,4 +199,16 @@ assert.match(authorityMigration,/an appointed Principal takes precedence over a 
 
 assert.match(workflowMigration,/Approved or published results must be reopened through the correction workflow/i);
 assert.doesNotMatch(migration,/private\.schoolpro_member_can_manage/i);
+
+assert.match(genderMigration,/add column if not exists gender text/i,'Staff gender must be an optional profile field');
+assert.match(genderMigration,/male','female','unspecified/i,'Gender must use the supported explicit values');
+assert.match(genderMigration,/never for authorization/i,'Gender must be documented as display metadata only');
+assert.match(profile,/select\('gender'\)/i,'Staff must be able to load their self-declared gender');
+assert.match(profile,/gender\}\)\.eq\('id',user\.id\)/i,'Staff must be able to save their own gender preference');
+assert.match(profile,/Gender \(optional\)/i,'My Account must expose an optional gender field');
+assert.match(staff,/last_name,gender\)/i,'Staff & Access must read gender only as profile metadata');
+assert.match(staff,/gender==='male'\?'Headmaster':member\.profile\?\.gender==='female'\?'Headmistress'/i,'Gender may only derive a suggested display title');
+assert.match(staff,/Suggested: \{suggestedTitle\}/i,'The suggested title must be visible to the administrator');
+assert.match(staff,/Select title/i,'The suggested title must not be silently persisted as an appointment title');
+
 console.log('PASS: section leadership uses explicit school-scoped assignments for write and review authorization.');

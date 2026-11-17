@@ -144,3 +144,185 @@ end;
 $$;
 revoke all on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb) from public,anon;
 grant execute on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb) to authenticated;
+
+
+-- A school owns a library of independently configured workbooks. The legacy
+-- one-row schoolpro_result_templates record remains the inbuilt/sample design;
+-- it is not the production source when a school has mapped custom templates.
+create table public.schoolpro_result_template_library (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
+  name text not null check (char_length(trim(name)) between 1 and 120),
+  storage_path text not null,
+  sheet_name text not null,
+  template_config jsonb not null check (jsonb_typeof(template_config)='object'),
+  is_active boolean not null default true,
+  created_by uuid not null references public.profiles(id),
+  updated_by uuid not null references public.profiles(id),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (school_id,id),
+  unique (school_id,storage_path),
+  check (storage_path like school_id::text||'/%'),
+  check (position('..' in storage_path)=0),
+  check (octet_length(template_config::text)<=100000)
+);
+create index schoolpro_result_template_library_school_idx
+  on public.schoolpro_result_template_library(school_id,is_active,updated_at desc);
+alter table public.schoolpro_result_template_library enable row level security;
+create policy schoolpro_result_template_library_read
+  on public.schoolpro_result_template_library for select to authenticated
+  using (private.has_school_access(school_id));
+create policy schoolpro_result_template_library_insert
+  on public.schoolpro_result_template_library for insert to authenticated
+  with check (private.schoolpro_is_school_admin(school_id) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
+create policy schoolpro_result_template_library_update
+  on public.schoolpro_result_template_library for update to authenticated
+  using (private.schoolpro_is_school_admin(school_id))
+  with check (private.schoolpro_is_school_admin(school_id) and updated_by=(select auth.uid()));
+create policy schoolpro_result_template_library_delete
+  on public.schoolpro_result_template_library for delete to authenticated
+  using (private.schoolpro_is_school_admin(school_id));
+grant select,insert,update,delete on public.schoolpro_result_template_library to authenticated;
+
+create table public.schoolpro_result_template_section_mappings (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
+  template_id uuid not null,
+  section_key text not null check (section_key in ('nursery','primary','junior_secondary','senior_secondary')),
+  mapped_by uuid not null references public.profiles(id),
+  mapped_at timestamptz not null default now(),
+  unique (school_id,template_id,section_key),
+  foreign key (school_id,template_id)
+    references public.schoolpro_result_template_library(school_id,id) on delete cascade
+);
+create index schoolpro_result_template_section_mappings_section_idx
+  on public.schoolpro_result_template_section_mappings(school_id,section_key);
+alter table public.schoolpro_result_template_section_mappings enable row level security;
+create policy schoolpro_result_template_section_mappings_read
+  on public.schoolpro_result_template_section_mappings for select to authenticated
+  using (private.has_school_access(school_id));
+create policy schoolpro_result_template_section_mappings_insert
+  on public.schoolpro_result_template_section_mappings for insert to authenticated
+  with check (private.schoolpro_is_school_admin(school_id) and mapped_by=(select auth.uid()));
+create policy schoolpro_result_template_section_mappings_delete
+  on public.schoolpro_result_template_section_mappings for delete to authenticated
+  using (private.schoolpro_is_school_admin(school_id));
+grant select,insert,delete on public.schoolpro_result_template_section_mappings to authenticated;
+
+alter table public.schoolpro_result_template_assignments
+  add column template_id uuid;
+alter table public.schoolpro_result_template_assignments
+  add constraint schoolpro_result_template_assignments_library_fk
+  foreign key (school_id,template_id)
+  references public.schoolpro_result_template_library(school_id,id);
+
+-- Keep the workbook snapshot for reproducible historical output, but require
+-- that it originates from a custom template mapped to this class's section.
+create or replace function public.schoolpro_set_class_result_template(
+  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb
+) returns uuid
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_member uuid;
+  v_old_name text;
+  v_new_name text;
+  v_assignment uuid;
+  v_is_form_master boolean := false;
+  v_template_id uuid;
+  v_section text;
+begin
+  if auth.uid() is null or not private.is_active_account() then
+    raise exception 'An active signed-in account is required';
+  end if;
+  if p_term not in ('First Term','Second Term','Third Term')
+     or char_length(trim(coalesce(p_session,''))) not between 4 and 20 then
+    raise exception 'Choose a valid term and academic session';
+  end if;
+  if jsonb_typeof(p_template_config) <> 'object'
+     or nullif(trim(p_template_config->>'name'),'') is null
+     or nullif(trim(p_template_config->>'storage_path'),'') is null
+     or nullif(trim(p_template_config->>'sheet_name'),'') is null
+     or (p_template_config->>'storage_path') not like p_school::text||'/%'
+     or position('..' in p_template_config->>'storage_path')>0
+     or octet_length(p_template_config::text)>100000 then
+    raise exception 'Choose a saved custom result workbook belonging to this school';
+  end if;
+  if not exists(select 1 from storage.objects o
+    where o.bucket_id='school-result-templates'
+      and o.name=p_template_config->>'storage_path') then
+    raise exception 'The selected result workbook is no longer available in this school';
+  end if;
+  if nullif(p_template_config->>'logo_storage_path','') is not null and (
+    (p_template_config->>'logo_storage_path') not like p_school::text||'/%'
+    or position('..' in p_template_config->>'logo_storage_path')>0
+    or not exists(select 1 from storage.objects o where o.bucket_id='school-result-templates'
+      and o.name=p_template_config->>'logo_storage_path')
+  ) then
+    raise exception 'The selected school logo is not available in this school';
+  end if;
+
+  select case
+    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(nursery|kindergarten|preprimary|pre_primary|kg)(_|$)' then 'nursery'
+    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(junior_secondary|junior|jss)(_|$)' then 'junior_secondary'
+    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(senior_secondary|senior|sss)(_|$)' then 'senior_secondary'
+    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(primary|basic)(_|$)' then 'primary'
+    else null end
+  into v_section
+  from public.schoolpro_classes c
+  where c.school_id=p_school and c.id=p_class and c.archived_at is null;
+  if v_section is null then
+    raise exception 'Choose an active class in a supported school section';
+  end if;
+
+  select l.id into v_template_id
+  from public.schoolpro_result_template_library l
+  join public.schoolpro_result_template_section_mappings sm
+    on sm.school_id=l.school_id and sm.template_id=l.id
+  where l.school_id=p_school and l.is_active
+    and l.storage_path=p_template_config->>'storage_path'
+    and sm.section_key=v_section
+  limit 1;
+  if v_template_id is null then
+    raise exception 'This custom template has not been mapped to the selected class section';
+  end if;
+
+  select m.id into v_member
+  from public.schoolpro_members m
+  where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+  limit 1;
+  select exists(select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.id=p_class and c.archived_at is null
+      and c.form_teacher_id=v_member) into v_is_form_master;
+  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)
+      or private.schoolpro_is_exam_officer(p_school)) then
+    raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  end if;
+
+  select template_name into v_old_name
+  from public.schoolpro_result_template_assignments
+  where school_id=p_school and class_id=p_class
+    and term=trim(p_term) and session=trim(p_session)
+  for update;
+  v_new_name:=left(trim(p_template_config->>'name'),120);
+  insert into public.schoolpro_result_template_assignments(
+    school_id,class_id,term,session,template_name,template_config,updated_by,template_id
+  ) values (
+    p_school,p_class,trim(p_term),trim(p_session),v_new_name,p_template_config,auth.uid(),v_template_id
+  )
+  on conflict(school_id,class_id,term,session) do update
+    set template_name=excluded.template_name,
+        template_config=excluded.template_config,
+        updated_by=excluded.updated_by,
+        template_id=excluded.template_id,
+        updated_at=now()
+  returning id into v_assignment;
+  insert into public.schoolpro_result_template_assignment_audit(
+    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by
+  ) values (p_school,p_class,trim(p_term),trim(p_session),
+    case when v_old_name is null then 'assigned' else 'reassigned' end,
+    v_old_name,v_new_name,auth.uid());
+  return v_assignment;
+end;
+$$;

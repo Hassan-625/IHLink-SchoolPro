@@ -32,17 +32,19 @@ export function SchoolProProfile(){
     const {error:markError}=await supabase.from('schoolpro_member_email_change_requests').update({status:'verification_sent'}).eq('id',pendingEmail.id).eq('status','pending');
     if(markError){setMsg('The email verification request could not be prepared. Please refresh and try again.');return;}
    }
-   const {error}=await supabase.auth.updateUser(
-    {email:pendingEmail.requested_email},
-    {emailRedirectTo:`${window.location.origin}/verify-email?email_change=1`}
-   );
+   const {error}=pendingEmail.status==='verification_sent'
+    ? await supabase.auth.resend({type:'email_change',email:user.email||''})
+    : await supabase.auth.updateUser(
+      {email:pendingEmail.requested_email},
+      {emailRedirectTo:`${window.location.origin}/verify-email?email_change=1`}
+     );
    if(error){
     if(pendingEmail.status==='pending')await supabase.from('schoolpro_member_email_change_requests').update({status:'pending'}).eq('id',pendingEmail.id).eq('status','verification_sent');
     setMsg('Supabase Auth could not send the email-change verification. Your current sign-in email remains unchanged. Please try again or contact the school administrator.');
     return;
    }
    setPendingEmail({...pendingEmail,status:'verification_sent'});
-   setMsg('Verification requested. Supabase Auth will send confirmation messages according to the project Secure Email Change setting. Your current sign-in email remains active until verification is completed.');
+   setMsg('Verification requested. Supabase Auth will send verification messages. With Secure Email Change enabled, both your current and new email addresses must be confirmed. Your current sign-in email remains active until verification is completed.');
   }catch{
    setMsg('The email verification request failed. Your current sign-in email remains unchanged.');
   }finally{setEmailBusy(false);}

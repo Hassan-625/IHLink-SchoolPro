@@ -229,12 +229,12 @@ create policy schoolpro_member_email_change_target_mark_sent
   on public.schoolpro_member_email_change_requests for update to authenticated
   using (
     target_user_id = (select auth.uid())
-    and status = 'pending'
+    and status in ('pending', 'verification_sent')
     and expires_at > now()
   )
   with check (
     target_user_id = (select auth.uid())
-    and status = 'verification_sent'
+    and status in ('pending', 'verification_sent')
     and expires_at > now()
   );
 

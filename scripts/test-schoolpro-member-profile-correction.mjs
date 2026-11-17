@@ -16,6 +16,7 @@ assert.match(migration, /actor_role in \('proprietor', 'administrator'\)/);
 assert.match(migration, /r\.responsibility = 'school_admin'/);
 assert.match(migration, /actor_global_role = 'super_admin'/);
 assert.match(migration, /target_profile_status is distinct from 'active'/);
+assert.match(migration, /target_profile_status is distinct from 'active'/);
 assert.match(migration, /m\.status = 'active'/);
 assert.match(migration, /g\.status = 'active'/);
 assert.match(migration, /for key share/i);

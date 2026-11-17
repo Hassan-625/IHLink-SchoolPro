@@ -116,6 +116,36 @@ BEGIN
   ) THEN RAISE EXCEPTION 'email change audit values are incorrect'; END IF;
 END $$;
 
+-- Suspended target relationships cannot authorize profile or email changes.
+UPDATE public.schoolpro_members SET status='suspended'
+WHERE user_id='10000000-0000-0000-0000-000000000002';
+DO $ BEGIN
+  BEGIN
+    PERFORM public.schoolpro_correct_member_profile_atomic(
+      '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001','Suspended','Staff','Denied',null);
+    RAISE EXCEPTION 'suspended staff membership unexpectedly authorized correction';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='suspended staff membership unexpectedly authorized correction' THEN RAISE; END IF;
+  END;
+END $;
+UPDATE public.schoolpro_members SET status='active'
+WHERE user_id='10000000-0000-0000-0000-000000000002';
+UPDATE public.schoolpro_guardian_links SET status='suspended'
+WHERE guardian_user_id='10000000-0000-0000-0000-000000000003';
+DO $ BEGIN
+  BEGIN
+    PERFORM public.schoolpro_request_member_email_change_atomic(
+      '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+      '10000000-0000-0000-0000-000000000001','guardian.new@example.test');
+    RAISE EXCEPTION 'suspended guardian link unexpectedly authorized email change';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='suspended guardian link unexpectedly authorized email change' THEN RAISE; END IF;
+  END;
+END $;
+UPDATE public.schoolpro_guardian_links SET status='active'
+WHERE guardian_user_id='10000000-0000-0000-0000-000000000003';
+
 -- Unauthorized and inactive actors must not modify either profile or audit.
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
 DO $$ BEGIN

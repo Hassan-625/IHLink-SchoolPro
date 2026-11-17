@@ -13,6 +13,10 @@ assert.match(results,/submitted to the review workflow\. It will pass through th
   'Correction request confirmation must describe the staged review route without implying direct Exam Officer-only routing.');
 assert.match(results,/const entrySubjects=teachingTargets\.length\?subjects\.filter/i,
   'Subject teachers must be restricted to their own allocated subjects.');
+assert.match(results,/Assessment readiness/,'Results page must expose a read-only assessment readiness panel.');
+assert.match(results,/form_teacher_id/,'Readiness must detect missing class Form Master appointments.');
+assert.match(results,/unassignedSubjectCount/,'Readiness must distinguish allocated subjects without an assigned teacher.');
+assert.match(results,/hasScheme/,'Readiness must check for an assessment scheme compatible with each class level.');
 assert.match(results,/View only · subject teacher entry/i,
   'Non-assigned subject marks must remain read-only.');
 assert.match(broadsheet,/activePrincipalSections/, 'Active Principal appointments must be loaded for each section.');

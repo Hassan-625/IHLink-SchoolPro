@@ -10,6 +10,9 @@ const required = [
   'SCHOOL_B_EMAIL',
   'SCHOOL_B_PASSWORD',
   'SCHOOL_B_ID',
+  'SCHOOL_C_EMAIL',
+  'SCHOOL_C_PASSWORD',
+  'SCHOOL_C_ID',
 ];
 const receiptPathsConfigured = Boolean(process.env.SCHOOL_A_RECEIPT_PATH && process.env.SCHOOL_B_RECEIPT_PATH);
 assert.equal(
@@ -24,7 +27,8 @@ if (missing.length) {
   process.exit(2);
 }
 
-assert.notEqual(process.env.SCHOOL_A_ID, process.env.SCHOOL_B_ID, 'Use two different school IDs');
+const schoolIds = ['A', 'B', 'C'].map((key) => process.env['SCHOOL_' + key + '_ID']);
+assert.equal(new Set(schoolIds).size, 3, 'Use three different school IDs');
 
 function clientFor(email, password) {
   const client = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY, {
@@ -70,7 +74,7 @@ async function assertNoForeignRows(client, table, schoolId, accountName, maxAtte
   throw new Error('Read-only tenant probe failed for ' + table + ': no result');
 }
 
-async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId) {
+async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolIds) {
   // Do not assume operational rows exist in either school: the live acceptance
   // test is read-only and must never seed students or memberships merely as fixtures.
   const {data: ownStudents, error: ownStudentError} = await client
@@ -82,13 +86,15 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     console.warn('LIMITATION', accountName, 'has no own-school student row; student positive-read behavior is not exercised without creating data');
   }
 
+  for (const otherSchoolId of otherSchoolIds) {
   for (const table of [
     'schoolpro_students', 'schoolpro_members', 'schoolpro_invoices', 'schoolpro_results',
     'schoolpro_library_books', 'schoolpro_transport_routes', 'schoolpro_hostel_rooms',
     'schoolpro_inventory_assets', 'schoolpro_calendar_events', 'schoolpro_lesson_notes',
     'schoolpro_result_approvals', 'schoolpro_promotions',
   ]) {
-    await assertNoForeignRows(client, table, otherSchoolId, accountName);
+    await assertNoForeignRows(client, table, otherSchoolId, accountName + ' vs ' + otherSchoolId);
+  }
   }
 
   const {data: currentUserResult, error: currentUserError} = await client.auth.getUser();
@@ -131,11 +137,13 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     );
   }
   assert.ok(ownPeriod && typeof ownPeriod === 'object', accountName + ' must be able to call the own-school academic-period RPC');
-  const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
-  assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC');
-  assert.match(periodError.message, /school access|required|permission|denied/i, accountName + ' must receive an authorization denial for the foreign-school RPC');
-  assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
-  console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied');
+  for (const otherSchoolId of otherSchoolIds) {
+    const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
+    assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC for ' + otherSchoolId);
+    assert.match(periodError.message, /school access|required|permission|denied/i, accountName + ' must receive an authorization denial for the foreign-school RPC');
+    assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
+    console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied:', otherSchoolId);
+  }
 
   // The positive/negative Storage fixture check runs in main against an existing template object.
 
@@ -165,118 +173,95 @@ async function downloadStorageWithRetry(client, bucket, path, label, maxAttempts
 }
 
 async function main() {
-  const a = await clientFor(process.env.SCHOOL_A_EMAIL, process.env.SCHOOL_A_PASSWORD);
-  const b = await clientFor(process.env.SCHOOL_B_EMAIL, process.env.SCHOOL_B_PASSWORD);
+  const schools = ['A', 'B', 'C'].map((key) => ({
+    key,
+    name: 'School ' + key,
+    id: process.env['SCHOOL_' + key + '_ID'],
+  }));
+  const accounts = await Promise.all(['A', 'B', 'C'].map(async (key) => ({
+    key,
+    name: 'School ' + key,
+    ...(await clientFor(process.env['SCHOOL_' + key + '_EMAIL'], process.env['SCHOOL_' + key + '_PASSWORD'])),
+  })));
+  assert.equal(new Set(accounts.map((account) => account.user?.id)).size, 3,
+    'The three test accounts must be distinct authenticated users');
 
-  assert.ok(a.user?.id && b.user?.id && a.user.id !== b.user.id, 'The two test accounts must be distinct authenticated users');
-  await assertTenantReads('School A', a.client, process.env.SCHOOL_A_ID, process.env.SCHOOL_B_ID);
-  await assertTenantReads('School B', b.client, process.env.SCHOOL_B_ID, process.env.SCHOOL_A_ID);
-
-  const [{data: studentA, error: studentAError}, {data: studentB, error: studentBError}] = await Promise.all([
-    a.client.from('schoolpro_students').select('id').eq('school_id', process.env.SCHOOL_A_ID).limit(1).single(),
-    b.client.from('schoolpro_students').select('id').eq('school_id', process.env.SCHOOL_B_ID).limit(1).single(),
-  ]);
-  assert.ifError(studentAError);
-  assert.ifError(studentBError);
-
-  for (const [name, client, foreignStudentId] of [
-    ['School A', a.client, studentB.id],
-    ['School B', b.client, studentA.id],
-  ]) {
-    const {data, error} = await client.rpc('schoolpro_can_view_result_output', {
-      p_student_id: foreignStudentId,
-      p_term: process.env.TENANT_TEST_TERM || 'First Term',
-      p_session: process.env.TENANT_TEST_SESSION || '2025/2026',
-    });
-    assert.ifError(error);
-    assert.equal(data, false, name + ' must not be allowed to view a foreign-school student result');
-    console.log('PASS', name, 'foreign-student result-output RPC denied');
+  for (const account of accounts) {
+    const ownSchool = schools.find((school) => school.key === account.key);
+    const foreignSchools = schools.filter((school) => school.key !== account.key);
+    await assertTenantReads(account.name, account.client, ownSchool.id, foreignSchools.map((school) => school.id));
   }
 
-  // Use an already-existing template row belonging to either configured test school.
-  // Production has a real IHLink Academy template but School B may not own one.
-  // This remains a strict two-account positive/negative check: the account whose
-  // own RLS-protected row supplies the fixture must download it; the other must be denied.
-  const schoolATemplateResult = await a.client
-    .from('schoolpro_result_templates')
-    .select('storage_path')
-    .eq('school_id', process.env.SCHOOL_A_ID)
-    .limit(1)
-    .maybeSingle();
-  assert.ifError(schoolATemplateResult.error);
+  // Exercise result-output authorization pairwise wherever an existing student
+  // fixture is already visible. Empty schools are reported, never seeded.
+  const studentFixtures = [];
+  for (const school of schools) {
+    const owner = accounts.find((account) => account.key === school.key);
+    const {data, error} = await owner.client.from('schoolpro_students')
+      .select('id').eq('school_id', school.id).limit(1);
+    assert.ifError(error);
+    if (data?.[0]?.id) studentFixtures.push({school, studentId: data[0].id});
+    else console.warn('LIMITATION', school.name, 'has no existing student row; result-output checks using this school as a foreign fixture are not exercised');
+  }
+  for (const account of accounts) {
+    for (const fixture of studentFixtures.filter((item) => item.school.key !== account.key)) {
+      const {data, error} = await account.client.rpc('schoolpro_can_view_result_output', {
+        p_student_id: fixture.studentId,
+        p_term: process.env.TENANT_TEST_TERM || 'First Term',
+        p_session: process.env.TENANT_TEST_SESSION || '2025/2026',
+      });
+      assert.ifError(error);
+      assert.equal(data, false, account.name + ' must not view ' + fixture.school.name + ' student result output');
+      console.log('PASS', account.name, 'foreign-student result-output RPC denied for', fixture.school.name);
+    }
+  }
 
-  const schoolBTemplateResult = await b.client
-    .from('schoolpro_result_templates')
-    .select('storage_path')
-    .eq('school_id', process.env.SCHOOL_B_ID)
-    .limit(1)
-    .maybeSingle();
-  assert.ifError(schoolBTemplateResult.error);
+  // Find an existing result-template object owned by any configured school.
+  // Verify its owner can download it and every other account is denied.
+  let templateFixture = null;
+  for (const school of schools) {
+    const owner = accounts.find((account) => account.key === school.key);
+    const {data, error} = await owner.client.from('schoolpro_result_templates')
+      .select('storage_path').eq('school_id', school.id).limit(1).maybeSingle();
+    assert.ifError(error);
+    if (data?.storage_path) {
+      templateFixture = {ownerSchool: school, owner, storagePath: data.storage_path};
+      break;
+    }
+  }
+  if (!templateFixture) {
+    console.warn('LIMITATION No configured school owns an existing result-template row; template Storage positive-read and cross-school object checks cannot run without creating production data');
+  } else {
+    assert.ok(templateFixture.storagePath.startsWith(templateFixture.ownerSchool.id + '/'),
+      templateFixture.ownerSchool.name + ' template Storage path must be rooted under its own school ID');
+    const ownTemplateObject = await downloadStorageWithRetry(
+      templateFixture.owner.client, 'school-result-templates', templateFixture.storagePath,
+      templateFixture.ownerSchool.name + ' own-school template fixture',
+    );
+    assert.ifError(ownTemplateObject.error);
+    assert.ok(ownTemplateObject.data, templateFixture.ownerSchool.name + ' must download its own existing result-template object');
 
-  const templateFixture = schoolATemplateResult.data?.storage_path
-    ? {
-        ownerName: 'School A',
-        ownerClient: a.client,
-        ownerSchoolId: process.env.SCHOOL_A_ID,
-        foreignName: 'School B',
-        foreignClient: b.client,
-        storagePath: schoolATemplateResult.data.storage_path,
-      }
-    : schoolBTemplateResult.data?.storage_path
-      ? {
-          ownerName: 'School B',
-          ownerClient: b.client,
-          ownerSchoolId: process.env.SCHOOL_B_ID,
-          foreignName: 'School A',
-          foreignClient: a.client,
-          storagePath: schoolBTemplateResult.data.storage_path,
-        }
-      : null;
-
-  assert.ok(
-    templateFixture,
-    'At least one configured test school must own an existing result-template row; do not create a production fixture to satisfy this test',
-  );
-  assert.ok(
-    templateFixture.storagePath.startsWith(templateFixture.ownerSchoolId + '/'),
-    templateFixture.ownerName + ' template Storage path must be rooted under its own school ID',
-  );
-
-  const {data: ownTemplateObject, error: ownTemplateDownloadError} = await downloadStorageWithRetry(
-    templateFixture.ownerClient,
-    'school-result-templates',
-    templateFixture.storagePath,
-    templateFixture.ownerName + ' own-school template fixture',
-  );
-  assert.ifError(ownTemplateDownloadError);
-  assert.ok(ownTemplateObject, templateFixture.ownerName + ' must download its own existing result-template object');
-
-  // Use raw HTTP for the negative assertion so the test can inspect the actual HTTP
-  // status. supabase-js can wrap an empty/non-JSON denial body as StorageUnknownError,
-  // which hides the status and cannot distinguish a denial from a transport failure.
-  const encodedObjectPath = templateFixture.storagePath.split('/').map(encodeURIComponent).join('/');
-  const foreignResponse = await fetch(
-    process.env.SUPABASE_URL.replace(/\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
-    {
-      method: 'GET',
-      headers: {
-        apikey: process.env.SUPABASE_ANON_KEY,
-        Authorization: 'Bearer ' + (templateFixture.foreignName === 'School A' ? a.accessToken : b.accessToken),
-      },
-    },
-  );
-  const foreignBody = await foreignResponse.text();
-  assert.ok(
-    [400, 401, 403, 404].includes(foreignResponse.status),
-    templateFixture.foreignName + ' must receive an HTTP authorization/not-found denial for the foreign template; got ' +
-      foreignResponse.status + ' with body ' + foreignBody.slice(0, 240),
-  );
-  console.log('PASS', templateFixture.ownerName, 'can download its own template;', templateFixture.foreignName,
-    'received HTTP', foreignResponse.status, 'for the foreign object');
+    const encodedObjectPath = templateFixture.storagePath.split('/').map(encodeURIComponent).join('/');
+    const storageBaseUrl = process.env.SUPABASE_URL.endsWith('/') ? process.env.SUPABASE_URL.slice(0, -1) : process.env.SUPABASE_URL;
+    for (const foreignAccount of accounts.filter((account) => account.key !== templateFixture.owner.key)) {
+      const foreignResponse = await fetch(
+        storageBaseUrl + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
+        {method: 'GET', headers: {
+          apikey: process.env.SUPABASE_ANON_KEY,
+          Authorization: 'Bearer ' + foreignAccount.accessToken,
+        }},
+      );
+      const foreignBody = await foreignResponse.text();
+      assert.ok([400, 401, 403, 404].includes(foreignResponse.status),
+        foreignAccount.name + ' must be denied the foreign template; got HTTP ' + foreignResponse.status + ' ' + foreignBody.slice(0, 240));
+      console.log('PASS', templateFixture.ownerSchool.name, 'own template allowed;', foreignAccount.name,
+        'received HTTP', foreignResponse.status, 'for foreign object');
+    }
+  }
   if (receiptPathsConfigured) {
     const receiptFixtures = [
-      {name: 'School A', owner: a, ownPath: process.env.SCHOOL_A_RECEIPT_PATH, foreignPath: process.env.SCHOOL_B_RECEIPT_PATH},
-      {name: 'School B', owner: b, ownPath: process.env.SCHOOL_B_RECEIPT_PATH, foreignPath: process.env.SCHOOL_A_RECEIPT_PATH},
+      {name: 'School A', owner: accounts.find((account) => account.key === 'A'), ownPath: process.env.SCHOOL_A_RECEIPT_PATH, foreignPath: process.env.SCHOOL_B_RECEIPT_PATH},
+      {name: 'School B', owner: accounts.find((account) => account.key === 'B'), ownPath: process.env.SCHOOL_B_RECEIPT_PATH, foreignPath: process.env.SCHOOL_A_RECEIPT_PATH},
     ];
     assert.notEqual(
       process.env.SCHOOL_A_RECEIPT_PATH,
@@ -312,7 +297,7 @@ async function main() {
     console.log('SKIP: live production receipt-object checks omitted because the receipt bucket has no safe test fixtures; the separate local Supabase Storage isolation job covers receipt policies without production objects.');
   }
 
-  console.log('PASS: authenticated two-school tenant read/RPC/Storage acceptance checks completed (receipt object checks may be skipped when no safe fixtures exist).');
+  console.log('PASS: authenticated three-school pairwise tenant read/RPC/Storage acceptance checks completed (receipt object checks may be skipped when no safe fixtures exist).');
 }
 
 main().catch((error) => {

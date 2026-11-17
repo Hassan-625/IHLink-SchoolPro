@@ -28,7 +28,7 @@ CREATE TABLE public.schoolpro_member_responsibilities(
   id uuid primary key, school_id uuid, member_id uuid, responsibility text, ended_at timestamptz
 );
 CREATE TABLE public.schoolpro_guardian_links(
-  id uuid primary key, school_id uuid, student_id uuid, guardian_user_id uuid
+  id uuid primary key, school_id uuid, student_id uuid, guardian_user_id uuid, status text default 'active'
 );
 CREATE OR REPLACE FUNCTION private.has_school_access(p_school uuid,p_roles public.school_member_role[])
 RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path=''

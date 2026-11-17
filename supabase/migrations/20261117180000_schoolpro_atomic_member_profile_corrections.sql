@@ -60,9 +60,7 @@ declare
   after_profile jsonb;
   fields text[];
 begin
-  if auth.role() <> 'service_role' then
-    raise exception 'Service role required';
-  end if;
+  -- EXECUTE is revoked from PUBLIC/anon/authenticated and granted only to service_role.
   if p_actor_id is null or p_target_user_id is null or p_actor_id = p_target_user_id then
     raise exception 'Invalid actor or target';
   end if;

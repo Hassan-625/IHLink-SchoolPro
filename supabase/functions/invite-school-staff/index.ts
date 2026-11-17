@@ -62,17 +62,25 @@ Deno.serve(async(req:Request)=>{
      const parts=guardian.name.split(/\s+/).filter(Boolean);
      const surname=parts.length?parts[parts.length-1]:'';
      if(!surname){results.push({email:guardian.email,status:'needs-attention',children:guardian.studentIds.length,detail:'Guardian surname is missing from the imported contact name.'});continue;}
-     const {data:existing,error:profileError}=await admin.from('profiles').select('id,first_name,middle_name,last_name,phone').eq('email',guardian.email).maybeSingle();
+     const {data:existing,error:profileError}=await admin.from('profiles').select('id,status,first_name,middle_name,last_name,phone').eq('email',guardian.email).maybeSingle();
      if(profileError)throw profileError;
      if(existing){
+      if(existing.status!=='active'){results.push({email:guardian.email,status:'inactive-account',children:guardian.studentIds.length,detail:'The existing IHLink account is inactive. A school administrator must restore the account before linking children.'});continue;}
       const {data:links,error:linksError}=await admin.from('schoolpro_guardian_links').select('student_id,status').eq('school_id',schoolId).eq('guardian_user_id',existing.id).in('student_id',guardian.studentIds);
       if(linksError)throw linksError;
       const linkedIds=new Set((links||[]).map((link:any)=>link.student_id));
       const missing=guardian.studentIds.filter(id=>!linkedIds.has(id));
       if(!missing.length){results.push({email:guardian.email,status:'already-linked',children:guardian.studentIds.length});continue;}
-      const {data:pending,error:pendingError}=await admin.from('schoolpro_access_invitations').select('id').eq('school_id',schoolId).eq('email',guardian.email).eq('role','parent').is('accepted_at',null).gt('expires_at',new Date().toISOString()).limit(1);
+      const {data:pending,error:pendingError}=await admin.from('schoolpro_access_invitations').select('id,student_ids').eq('school_id',schoolId).eq('email',guardian.email).eq('role','parent').is('accepted_at',null).gt('expires_at',new Date().toISOString()).order('expires_at',{ascending:false}).limit(1);
       if(pendingError)throw pendingError;
-      if(pending?.length){results.push({email:guardian.email,status:'invitation-already-pending',children:missing.length});continue;}
+      if(pending?.length){
+       const pendingIds=Array.isArray(pending[0].student_ids)?pending[0].student_ids:[];
+       const mergedIds=Array.from(new Set([...pendingIds,...missing]));
+       const {error:updatePendingError}=await admin.from('schoolpro_access_invitations').update({student_ids:mergedIds,expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('id',pending[0].id).is('accepted_at',null);
+       if(updatePendingError)throw updatePendingError;
+       results.push({email:guardian.email,status:'invitation-already-pending',children:mergedIds.length});
+       continue;
+      }
       const invitationCode=crypto.randomUUID()+crypto.randomUUID();
       const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:missing,relationship:'guardian',token_hash:await hash(invitationCode),expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id});
       if(inviteError)throw inviteError;

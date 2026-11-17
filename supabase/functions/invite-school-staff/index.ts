@@ -42,6 +42,61 @@ Deno.serve(async(req:Request)=>{
    if(error)throw error;if(!data)return respond({error:'This invitation is no longer waiting for acceptance. Refresh the staff list.'},400);
    return respond({ok:true,schoolCode:school.code,joiningCode:code,email:data.email,role:data.position_title==='Principal'?'principal':data.role,positionTitle:data.position_title});
   }
+  if(body.action==='bulk-provision-guardians'){
+   const {data:students,error:studentError}=await admin.from('schoolpro_students').select('id,guardian_name,guardian_phone,guardian_email').eq('school_id',schoolId).eq('status','active').not('guardian_email','is',null);
+   if(studentError)throw studentError;
+   const groups=new Map<string,{email:string;name:string;phone:string;studentIds:string[]}>();
+   for(const student of students||[]){
+    const email=String(student.guardian_email||'').trim().toLowerCase();
+    if(!/^\S+@\S+\.\S+$/.test(email)||email.length>254)continue;
+    const group=groups.get(email)||{email,name:String(student.guardian_name||'').trim(),phone:String(student.guardian_phone||'').trim(),studentIds:[]};
+    if(!group.name&&student.guardian_name)group.name=String(student.guardian_name).trim();
+    if(!group.phone&&student.guardian_phone)group.phone=String(student.guardian_phone).trim();
+    if(!group.studentIds.includes(student.id))group.studentIds.push(student.id);
+    groups.set(email,group);
+   }
+   const results:{email:string;status:string;children:number;detail?:string}[]=[];
+   for(const guardian of groups.values()){
+    let createdUserId:string|null=null;
+    try{
+     const parts=guardian.name.split(/\s+/).filter(Boolean);
+     const surname=parts.length?parts[parts.length-1]:'';
+     if(!surname){results.push({email:guardian.email,status:'needs-attention',children:guardian.studentIds.length,detail:'Guardian surname is missing from the imported contact name.'});continue;}
+     const {data:existing,error:profileError}=await admin.from('profiles').select('id,first_name,middle_name,last_name,phone').ilike('email',guardian.email).maybeSingle();
+     if(profileError)throw profileError;
+     if(existing){
+      const {data:links,error:linksError}=await admin.from('schoolpro_guardian_links').select('student_id,status').eq('school_id',schoolId).eq('guardian_user_id',existing.id).in('student_id',guardian.studentIds);
+      if(linksError)throw linksError;
+      const linkedIds=new Set((links||[]).map((link:any)=>link.student_id));
+      const missing=guardian.studentIds.filter(id=>!linkedIds.has(id));
+      if(!missing.length){results.push({email:guardian.email,status:'already-linked',children:guardian.studentIds.length});continue;}
+      const invitationCode=crypto.randomUUID()+crypto.randomUUID();
+      const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:missing,relationship:'guardian',token_hash:await hash(invitationCode),expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id});
+      if(inviteError)throw inviteError;
+      results.push({email:guardian.email,status:'existing-account-pending',children:missing.length});
+      continue;
+     }
+     const firstName=parts[0]||surname,middleName=parts.length>2?parts.slice(1,-1).join(' '):null;
+     const {data:created,error:createError}=await admin.auth.admin.createUser({email:guardian.email,password:crypto.randomUUID()+crypto.randomUUID(),email_confirm:true,ban_duration:'876000h',app_metadata:{schoolpro_initial_login:true},user_metadata:{requested_service:'schoolpro',first_name:firstName,middle_name:middleName,last_name:surname}});
+     if(createError||!created.user)throw createError||new Error('Guardian account could not be created.');
+     createdUserId=created.user.id;
+     const {error:updateProfileError}=await admin.from('profiles').update({first_name:firstName,middle_name:middleName,last_name:surname,phone:guardian.phone||null}).eq('id',createdUserId);
+     if(updateProfileError)throw updateProfileError;
+     const {error:credentialError}=await admin.rpc('schoolpro_set_initial_credential',{p_user:createdUserId,p_school:schoolId,p_surname:surname});
+     if(credentialError)throw credentialError;
+     const invitationCode=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(invitationCode);
+     const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:guardian.studentIds,relationship:'guardian',token_hash:tokenHash,created_by:user.id});
+     if(inviteError)throw inviteError;
+     const {data:accepted,error:acceptError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:createdUserId,p_hash:tokenHash});
+     if(acceptError||!accepted)throw acceptError||new Error('Guardian invitation could not be linked.');
+     results.push({email:guardian.email,status:'created-and-linked',children:guardian.studentIds.length});
+    }catch(error){
+     if(createdUserId)await admin.auth.admin.deleteUser(createdUserId);
+     results.push({email:guardian.email,status:'failed',children:guardian.studentIds.length,detail:error instanceof Error?error.message:'Provisioning failed.'});
+    }
+   }
+   return respond({ok:true,schoolCode:school.code,processed:results.length,results});
+  }
   if(!schoolId||!/^\S+@\S+\.\S+$/.test(normalized)||normalized.length>254||!['teacher', 'class_teacher', 'head_teacher', 'vice_principal', 'administrator', 'principal', 'bursar', 'accountant', 'registrar', 'admissions_officer', 'exam_officer', 'librarian', 'counsellor', 'nurse', 'discipline_master', 'game_master', 'hostel_manager', 'transport_manager', 'inventory_officer', 'hr_officer', 'receptionist', 'it_admin', 'board_member', 'parent'].includes(role)||(role!=='parent'&&(!firstName||!middleName||!surname||[firstName,middleName,surname].some(x=>x.length>100))))return respond({error:'Enter first name, middle name, surname, valid email and school role.'},400);
   const studentIds=Array.from(new Set(Array.isArray(body.studentIds)?body.studentIds:body.studentId?[body.studentId]:[])) as string[];
   if(role==='parent'){

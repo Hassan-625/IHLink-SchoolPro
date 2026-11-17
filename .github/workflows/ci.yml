@@ -63,6 +63,7 @@ jobs:
       - run: node scripts/test-app-idle-lock.mjs
       - run: node scripts/school-billing-visibility-test.mjs
       - run: node scripts/schoolpro-account-access-test.mjs
+      - run: node scripts/test-schoolpro-member-profile-correction.mjs
       - run: node scripts/test-auth-profile-race.mjs
       - run: node --check scripts/test-schoolpro-tenant-isolation-live.mjs
       - run: node scripts/test-schoolpro-family-report-media-policy.mjs
@@ -718,6 +719,36 @@ jobs:
           sudo apt-get install --yes postgresql-client
       - name: Apply sports operations migration and test tenant, role, roster and result boundaries
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-sports-operations.integration.sql
+
+  member-profile-correction-integration:
+    name: Audited staff and guardian profile correction (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_member_profile_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_member_profile_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_member_profile_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Test atomic updates, role boundaries, audit visibility and rollback
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-member-profile-correction.integration.sql
+      - name: Reject profile correction racing with school-membership removal
+        run: bash scripts/test-schoolpro-member-profile-correction-race.sh
 
   term-demo-billing-integration:
     name: Term Demo billing suppression (disposable PostgreSQL)

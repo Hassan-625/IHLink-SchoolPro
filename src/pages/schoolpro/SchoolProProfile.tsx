@@ -2,7 +2,7 @@ import {SchoolCodeCard} from '@/components/SchoolCodeCard';
 import {NativeAppSecurity} from '@/components/NativeAppSecurity';
 import {Link,useNavigate} from 'react-router-dom';
 import {Browser} from '@capacitor/browser';
-import {isNativeApp} from '@/lib/nativeAuth';
+import {isNativeApp,nativeAuthRedirect,publicAppOrigin,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import {useEffect,useState} from 'react';
 import {ModulePage} from '@/components/ModulePage';
 import {Card} from '@/components/ui/Card';
@@ -18,9 +18,37 @@ export function SchoolProProfile(){
  const [appearance,setAppearance]=useState(()=>localStorage.getItem('ihlink-appearance')||'light');
  const [responsibilities,setResponsibilities]=useState<{key:string;label:string;description:string;path:string}[]>([]);
  const [responsibilityLoading,setResponsibilityLoading]=useState(false);
+ const [pendingEmail,setPendingEmail]=useState<{id:string;requested_email:string;status:'pending'|'verification_sent';expires_at:string}|null>(null);
+ const [emailBusy,setEmailBusy]=useState(false);
  useEffect(()=>{setFirst(profile?.first_name||'');setLast(profile?.last_name||'');setMsg('');},[user?.id,profile?.first_name,profile?.last_name]);
  useEffect(()=>{let active=true;if(!supabase||!user?.id)return;void supabase.from('profiles').select('gender').eq('id',user.id).maybeSingle().then(({data})=>{if(active)setGender(data?.gender||'unspecified');});return()=>{active=false};},[user?.id]);
  useEffect(()=>{let active=true;setResponsibilities([]);if(!supabase||!user?.id||!ctx.schoolId)return;setResponsibilityLoading(true);void(async()=>{try{const member=await supabase.from('schoolpro_members').select('id,role,position_title').eq('school_id',ctx.schoolId).eq('user_id',user.id).eq('status','active').maybeSingle();if(!active||member.error||!member.data)return;const [classes,assignments,leaders,extra]=await Promise.all([supabase.from('schoolpro_classes').select('id,name,level').eq('school_id',ctx.schoolId).eq('form_teacher_id',member.data.id).is('archived_at',null),supabase.from('schoolpro_subject_assignments').select('id').eq('school_id',ctx.schoolId).eq('teacher_member_id',member.data.id).eq('session',session).is('ended_at',null),supabase.from('schoolpro_section_leaders').select('section').eq('school_id',ctx.schoolId).eq('member_id',member.data.id).is('ended_at',null),supabase.from('schoolpro_member_responsibilities').select('responsibility').eq('school_id',ctx.schoolId).eq('member_id',member.data.id).is('ended_at',null)]);if(!active)return;const items:{key:string;label:string;description:string;path:string}[]=[];if(['teacher','class_teacher'].includes(member.data.role)&&assignments.data?.length)items.push({key:'subject-teacher',label:'Subject Teacher',description:'Enter and update scores only for your allocated subjects.',path:'/schoolpro/results'});if(classes.data?.length)items.push({key:'form-master',label:'Form Master / Class Teacher',description:'Review your class roster, teacher entries and result completeness.',path:'/schoolpro/broadsheet'});if(leaders.data?.length)items.push({key:'section-head',label:'Section Head',description:'Review classes and results within your appointed section.',path:'/schoolpro/broadsheet'});if(member.data.role==='exam_officer'||extra.data?.some(x=>x.responsibility==='exam_officer'))items.push({key:'exam-officer',label:'Exam Officer',description:'Perform final result review, authorize class or section corrections and publish school results.',path:'/schoolpro/broadsheet'});if(['proprietor','administrator'].includes(member.data.role)||extra.data?.some(x=>x.responsibility==='school_admin'))items.push({key:'school-admin',label:member.data.position_title==='Principal'?'Principal / School Leadership':'School Administration',description:'View school-wide results and access permitted administration modules.',path:'/schoolpro/operations'});if(active)setResponsibilities(items);}finally{if(active)setResponsibilityLoading(false);}})();return()=>{active=false}},[user?.id,ctx.schoolId,session]);
+ useEffect(()=>{let active=true;setPendingEmail(null);if(!supabase||!user?.id)return;void supabase.from('schoolpro_member_email_change_requests').select('id,requested_email,status,expires_at').eq('target_user_id',user.id).in('status',['pending','verification_sent']).gt('expires_at',new Date().toISOString()).order('created_at',{ascending:false}).limit(1).maybeSingle().then(({data})=>{if(active&&data)setPendingEmail(data as {id:string;requested_email:string;status:'pending'|'verification_sent';expires_at:string});});return()=>{active=false};},[user?.id,user?.email]);
+ async function sendPendingEmailVerification(){
+  if(!supabase||!user||!pendingEmail||emailBusy)return;
+  setEmailBusy(true);setMsg('');
+  try{
+   if(pendingEmail.status==='pending'){
+    const {error:markError}=await supabase.from('schoolpro_member_email_change_requests').update({status:'verification_sent'}).eq('id',pendingEmail.id).eq('status','pending');
+    if(markError){setMsg('The email verification request could not be prepared. Please refresh and try again.');return;}
+   }
+   const {error}=pendingEmail.status==='verification_sent'
+    ? await supabase.auth.resend({type:'email_change',email:user.email||''})
+    : await supabase.auth.updateUser(
+      {email:pendingEmail.requested_email},
+      {emailRedirectTo:isNativeApp()&&nativeOAuthEnabled?nativeAuthRedirect:`${isNativeApp()?publicAppOrigin:window.location.origin}/verify-email?email_change=1`}
+     );
+   if(error){
+    if(pendingEmail.status==='pending')await supabase.from('schoolpro_member_email_change_requests').update({status:'pending'}).eq('id',pendingEmail.id).eq('status','verification_sent');
+    setMsg('Supabase Auth could not send the email-change verification. Your current sign-in email remains unchanged. Please try again or contact the school administrator.');
+    return;
+   }
+   setPendingEmail({...pendingEmail,status:'verification_sent'});
+   setMsg('Verification requested. Supabase Auth will send verification messages. With Secure Email Change enabled, both your current and new email addresses must be confirmed. Your current sign-in email remains active until verification is completed.');
+  }catch{
+   setMsg('The email verification request failed. Your current sign-in email remains unchanged.');
+  }finally{setEmailBusy(false);}
+ }
  function exploreResponsibility(path:string){if(user?.id)localStorage.setItem('ihlink_schoolpro_portal_'+user.id,'staff');navigate(path);window.dispatchEvent(new Event('ihlink:school-refresh'));}
  function theme(value:string){setAppearance(value);localStorage.setItem('ihlink-appearance',value);document.documentElement.dataset.appearance=value;}
  async function save(){if(!supabase||!user||busy)return;setBusy(true);try{const {error}=await supabase.from('profiles').update({first_name:first,last_name:last,gender}).eq('id',user.id);setMsg(error?'Your profile could not be saved. Please try again.':'Profile updated.');}catch{setMsg('Your profile could not be saved. Please try again.');}finally{setBusy(false);}}
@@ -29,6 +57,7 @@ export function SchoolProProfile(){
   {ctx.schoolId&&<SchoolCodeCard schoolId={ctx.schoolId}/>}
   <Card><div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-semibold">First name<input autoComplete="given-name" className="mt-1 w-full rounded-lg border p-2.5 font-normal" value={first} onChange={e=>setFirst(e.target.value)}/></label><label className="text-sm font-semibold">Last name<input autoComplete="family-name" className="mt-1 w-full rounded-lg border p-2.5 font-normal" value={last} onChange={e=>setLast(e.target.value)}/></label><label className="text-sm font-semibold">Gender (optional)<select className="mt-1 w-full rounded-lg border p-2.5 font-normal" value={gender} onChange={e=>setGender(e.target.value)}><option value="unspecified">Prefer not to say / Unspecified</option><option value="female">Female</option><option value="male">Male</option></select></label><label className="text-sm font-semibold">{user?.email?.endsWith('@students.ihlink.invalid')?'Sign-in method':'Email'}<input disabled className="mt-1 w-full rounded-lg border bg-slate-50 p-2.5 font-normal" value={user?.email?.endsWith('@students.ihlink.invalid')?'School code and admission number':user?.email||''}/></label><label className="text-sm font-semibold">School role<input disabled className="mt-1 w-full rounded-lg border bg-slate-50 p-2.5 font-normal" value={ctx.role}/></label></div><Button disabled={busy} className="mt-5" onClick={()=>void save()}>Save profile</Button></Card>
   <Card><h2 className="font-bold">My School Responsibilities</h2><p className="mt-2 text-sm text-muted">Your school appointments and teaching allocations can give you more than one responsibility. Choose the workspace you want to explore; this does not grant additional permissions.</p>{responsibilityLoading?<p className="mt-3 text-sm text-muted">Loading your responsibilities…</p>:responsibilities.length?<div className="mt-4 grid gap-3 sm:grid-cols-2">{responsibilities.map(item=><div key={item.key} className="rounded-xl border p-3"><h3 className="font-semibold">{item.label}</h3><p className="mt-1 text-sm text-muted">{item.description}</p><Button className="mt-3" size="sm" variant="secondary" onClick={()=>exploreResponsibility(item.path)}>Open workspace</Button></div>)}</div>:<p className="mt-3 text-sm text-muted">No additional teaching or leadership appointments were found for this school account.</p>}</Card>
+  {pendingEmail&&<Card><h2 className="font-bold">Requested sign-in email change</h2><p className="mt-2 text-sm text-muted">Your school administrator requested that your IHLink sign-in email be changed to <strong>{pendingEmail.requested_email}</strong>. Your current email remains your login until the new address is verified.</p><p className="mt-2 text-xs text-muted">Request expires {new Date(pendingEmail.expires_at).toLocaleString()}.</p><Button disabled={emailBusy} className="mt-4" onClick={()=>void sendPendingEmailVerification()}>{emailBusy?'Requesting verification…':pendingEmail.status==='verification_sent'?'Resend verification email':'Send verification email'}</Button><p className="mt-2 text-xs text-muted">The email-change process is handled by IHLink authentication. Do not share verification links or codes with anyone.</p></Card>}
   <Card><h2 className="font-bold">Password</h2><p className="mt-2 text-sm text-muted">Choose a new password for your account.</p><Link to="/auth/update-password" className="mt-4 inline-flex min-h-11 items-center rounded-xl border px-4 font-semibold">Change password</Link></Card>
   <NativeAppSecurity/>
   <Card><h2 className="font-bold">Appearance</h2><div className="mt-4 flex gap-3">{['light','dark'].map(value=><button type="button" key={value} aria-pressed={appearance===value} className="min-h-12 rounded-xl border px-5 font-semibold capitalize" onClick={()=>theme(value)}>{value}</button>)}</div></Card>

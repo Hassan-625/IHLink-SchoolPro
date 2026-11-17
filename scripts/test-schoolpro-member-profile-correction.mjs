@@ -6,6 +6,7 @@ const migration = read('../supabase/migrations/20261117180000_schoolpro_atomic_m
 const edge = read('../supabase/functions/schoolpro-profile-correction/index.ts');
 const emailEdge = read('../supabase/functions/schoolpro-request-member-email-change/index.ts');
 const profilePage = read('../src/pages/schoolpro/SchoolProProfile.tsx');
+const verifyEmailPage = read('../src/pages/auth/VerifyEmailPage.tsx');
 const staff = read('../src/pages/schoolpro/SchoolProStaff.tsx');
 const parents = read('../src/pages/schoolpro/SchoolProParents.tsx');
 
@@ -43,14 +44,18 @@ assert.doesNotMatch(emailEdge, /updateUserById|email_confirm\s*:\s*true/i, 'admi
 assert.match(profilePage, /supabase\.auth\.updateUser/);
 assert.match(profilePage, /supabase\.auth\.resend\(\{type:'email_change'/);
 assert.match(profilePage, /current sign-in email remains active until verification/);
+assert.match(verifyEmailPage, /email_change/);
+assert.match(verifyEmailPage, /Confirm your new sign-in email/);
 assert.doesNotMatch(edge, /profiles'\)\.update/i, 'all profile writes must pass through the atomic database RPC');
 
 assert.match(staff, /profile:profiles!schoolpro_members_user_id_fkey\([^)]*phone/);
 assert.match(staff, /schoolpro-profile-correction/);
+assert.match(staff, /schoolpro-request-member-email-change/);
 assert.match(staff, /Edit profile/);
 assert.match(staff, /visible in every school linked to that same account/);
 assert.match(parents, /profile:profiles!schoolpro_guardian_links_guardian_user_id_fkey\([^)]*middle_name[^)]*phone/);
 assert.match(parents, /schoolpro-profile-correction/);
+assert.match(parents, /schoolpro-request-member-email-change/);
 assert.match(parents, /Edit profile/);
 assert.match(parents, /visible in every school linked to that account/);
 

@@ -98,9 +98,9 @@ Deno.serve(async(req:Request)=>{
      const invitationCode=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(invitationCode);
      const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:guardian.studentIds,relationship:'guardian',token_hash:tokenHash,created_by:user.id});
      if(inviteError)throw inviteError;
-     const {data:accepted,error:acceptError}=await admin.rpc('schoolpro_accept_access_invitation',{p_user:createdUserId,p_hash:tokenHash});
-     if(acceptError||!accepted)throw acceptError||new Error('Guardian invitation could not be linked.');
-     results.push({email:guardian.email,status:'created-and-linked',children:guardian.studentIds.length});
+     const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:guardian.studentIds,relationship:'guardian',token_hash:tokenHash,expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id});
+     if(inviteError)throw inviteError;
+     results.push({email:guardian.email,status:'created-awaiting-first-login',children:guardian.studentIds.length});
     }catch(error){
      if(createdUserId)await admin.auth.admin.deleteUser(createdUserId);
      results.push({email:guardian.email,status:'failed',children:guardian.studentIds.length,detail:error instanceof Error?error.message:'Provisioning failed.'});

@@ -58,7 +58,7 @@ INSERT INTO public.schoolpro_members VALUES
 INSERT INTO public.schoolpro_guardian_links VALUES
 ('40000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','50000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003');
 
-\i supabase/migrations/20261117180000_schoolpro_atomic_member_profile_corrections.sql
+\i supabase/migrations/20261117230000_schoolpro_atomic_member_profile_corrections.sql
 
 SELECT set_config('request.jwt.claim.role','service_role',false);
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);

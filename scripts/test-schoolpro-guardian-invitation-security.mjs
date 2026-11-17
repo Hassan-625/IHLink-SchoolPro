@@ -16,7 +16,8 @@ assert.match(bulk, /schoolpro_access_invitations/, "Existing IHLink accounts mus
 assert.match(bulk, /schoolpro_set_initial_credential/, "New guardian accounts must use the established first-login credential setup RPC.");
 assert.match(bulk, /p_surname:surname/, "The imported guardian surname must be the initial password.");
 assert.match(bulk, /ban_duration:'876000h'/, "New guardian accounts must remain blocked until first-login password change.");
-assert.match(bulk, /schoolpro_accept_access_invitation/, "New accounts must be linked through the existing invitation acceptance RPC.");
+assert.match(bulk, /expires_at:new Date\(Date.now\(\)\+7\*86400000\)/, "New guardian invitations must remain pending until verified first login and school-code acceptance.");
+assert.doesNotMatch(bulk, /schoolpro_accept_access_invitation/, "The administrator must not accept a guardian invitation on the guardian's behalf.");
 assert.match(bulk, /invitation-already-pending/, "Repeated bulk runs must not create duplicate pending invitations.");
 assert.match(bulk, /createdUserId\)await admin\.auth\.admin\.deleteUser/, "A failed new-account setup must roll back the newly created Auth user.");
 

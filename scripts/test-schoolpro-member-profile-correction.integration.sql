@@ -100,7 +100,7 @@ SELECT public.schoolpro_request_member_email_change_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
  '10000000-0000-0000-0000-000000000001','replacement.staff@example.test'
 );
-DO $
+DO $$
 BEGIN
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests
       WHERE target_user_id='10000000-0000-0000-0000-000000000002' AND status='cancelled') <> 1
@@ -110,7 +110,7 @@ UPDATE public.schoolpro_member_email_change_requests
 SET status='verification_sent'
 WHERE target_user_id='10000000-0000-0000-0000-000000000002'
   AND requested_email='replacement.staff@example.test';
-DO $
+DO $$
 BEGIN
   BEGIN
     PERFORM public.schoolpro_request_member_email_change_atomic(
@@ -250,17 +250,17 @@ GRANT SELECT ON public.schoolpro_profile_change_audit TO authenticated;
 GRANT SELECT ON public.profiles, public.schoolpro_schools, public.schoolpro_members, public.schoolpro_member_responsibilities TO authenticated;
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
-DO $ BEGIN
+DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'school admin cannot read audit history'; END IF;
-END $;
+END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
-DO $ BEGIN
+DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'global Super Admin cannot read school audit history'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 2
     THEN RAISE EXCEPTION 'global Super Admin cannot read email change request history'; END IF;
-END $;
+END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
 DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 0

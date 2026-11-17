@@ -23,11 +23,11 @@ export function BulkGuardianAccountProvisioner({schoolId,onComplete}:Props){
    }
    const rows=Array.isArray(data?.results)?data.results as GuardianResult[]:[];
    setResults(rows);setSchoolCode(String(data?.schoolCode||''));
-   const created=rows.filter(row=>row.status==='created-and-linked').length;
+   const created=rows.filter(row=>row.status==='created-awaiting-first-login').length;
    const existing=rows.filter(row=>row.status==='existing-account-pending'||row.status==='invitation-already-pending').length;
    const linked=rows.filter(row=>row.status==='already-linked').length;
    const attention=rows.filter(row=>row.status==='needs-attention'||row.status==='inactive-account'||row.status==='failed').length;
-   setMessage(`Processed ${rows.length} unique guardian email(s): ${created} new account(s) created and linked, ${existing} existing account(s) awaiting guardian sign-in, ${linked} already linked, and ${attention} needing attention.`);
+   setMessage(`Processed ${rows.length} unique guardian email(s): ${created} new account(s) created; awaiting first login and verified school-code acceptance, ${existing} existing account(s) awaiting guardian sign-in, ${linked} already linked, and ${attention} needing attention.`);
    await onComplete();
   }catch{
    setMessage('Guardian accounts could not be processed. Please try again.');
@@ -41,7 +41,7 @@ export function BulkGuardianAccountProvisioner({schoolId,onComplete}:Props){
    </div>
    <Button disabled={busy||!schoolId} onClick={()=>void provision()}>{busy?'Processing guardians…':'Create & Link Accounts'}</Button>
   </div>
-  <p className="mt-2 text-xs text-muted">New accounts use the imported guardian surname as the first-login password and must change it before accessing children’s records. Existing IHLink accounts keep their current passwords and must sign in to this school using the school code to accept pending child links.</p>
+  <p className="mt-2 text-xs text-muted">New accounts use the imported guardian surname as the first-login password. They must change it and complete verified school-code acceptance before accessing children’s records. Existing IHLink accounts keep their current passwords and must sign in to this school using the school code to accept pending child links.</p>
   {message&&<p role="status" className="mt-3 rounded-lg bg-purple-50 p-3 text-sm">{message}</p>}
   {schoolCode&&<p className="mt-2 text-sm">School code for guardians with existing accounts: <strong>{schoolCode}</strong></p>}
   {!!results.length&&<div className="mt-3 max-h-72 overflow-auto rounded-lg border">

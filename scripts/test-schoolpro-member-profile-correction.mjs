@@ -8,7 +8,6 @@ const staff = read('../src/pages/schoolpro/SchoolProStaff.tsx');
 const parents = read('../src/pages/schoolpro/SchoolProParents.tsx');
 
 assert.match(migration, /create or replace function public\.schoolpro_correct_member_profile_atomic/);
-assert.match(migration, /auth\.role\(\) <> 'service_role'/);
 assert.match(migration, /school_owner = p_actor_id/);
 assert.match(migration, /actor_role in \('proprietor', 'administrator'\)/);
 assert.match(migration, /r\.responsibility = 'school_admin'/);

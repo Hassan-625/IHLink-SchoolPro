@@ -103,6 +103,9 @@ create table public.schoolpro_audit_logs (
   metadata jsonb not null default '{}'::jsonb
 );
 
+create or replace function private.is_admin(p_roles public.user_role[])
+returns boolean language sql stable
+as $ select auth.uid()='66666666-6666-4666-8666-666666666666'::uuid $;
 create or replace function private.is_active_account()
 returns boolean language sql stable
 as $$ select auth.uid() is not null $$;
@@ -175,13 +178,15 @@ insert into public.schoolpro_members(id,school_id,user_id,role) values
  ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-2222-4222-8222-222222222222','class_teacher'),
  ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','33333333-3333-4333-8333-333333333333','head_teacher'),
  ('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','44444444-4444-4444-8444-444444444444','head_teacher'),
- ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','exam_officer');
+ ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','exam_officer'),
+ ('10000000-0000-4000-8000-000000000006','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','66666666-6666-4666-8666-666666666666','administrator');
 insert into auth.users(id) values
  ('11111111-1111-4111-8111-111111111111'),
  ('22222222-2222-4222-8222-222222222222'),
  ('33333333-3333-4333-8333-333333333333'),
  ('44444444-4444-4444-8444-444444444444'),
- ('55555555-5555-4555-8555-555555555555');
+ ('55555555-5555-4555-8555-555555555555'),
+ ('66666666-6666-4666-8666-666666666666');
 
 insert into public.schoolpro_classes(id,school_id,level,form_teacher_id) values
  ('20000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','primary','10000000-0000-4000-8000-000000000002'),
@@ -282,6 +287,25 @@ begin
   raise exception 'Section Head reviewer unexpectedly authorized final reopening';
  exception when others then
   if sqlerrm not like '%requester and Section Head reviewer%' then raise; end if;
+ end;
+end
+$test$;
+
+-- A global Super Admin remains a school administrator but is not an Exam Officer.
+select set_config('request.jwt.claim.sub','66666666-6666-4666-8666-666666666666',false);
+do $test$
+begin
+ if private.is_admin(array['super_admin']::public.user_role[]) is not true then
+   raise exception 'Super Admin fixture is not recognized as a global administrator';
+ end if;
+ if private.schoolpro_is_exam_officer('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+   raise exception 'Super Admin inherited Exam Officer authority without appointment';
+ end if;
+ begin
+  perform public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,'Unauthorized global override');
+  raise exception 'Super Admin unexpectedly authorized result reopening';
+ exception when others then
+  if sqlerrm not like '%Only the Exam Officer%' then raise; end if;
  end;
 end
 $test$;

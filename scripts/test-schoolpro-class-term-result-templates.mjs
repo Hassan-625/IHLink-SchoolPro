@@ -40,4 +40,5 @@ assert.match(page,/A custom result template mapped to this section must be assig
 assert.match(page,/templateLibrary\.length/);
 assert.match(page,/draftMappedSections/);
 assert.match(page,/schoolpro_result_template_library/);
-console.log('PASS: Form Master class/term/session template assignments are school-scoped, authorized, audited and reused by result generation.');
+assert.match(page,/if\(!matchingAssignment\)/,'Production generation must require an explicit class/term/session template assignment.');
+console.log('PASS: school custom workbook library, four-section mappings, authorized class/term/session assignments, audit history and no-default production fallback.');

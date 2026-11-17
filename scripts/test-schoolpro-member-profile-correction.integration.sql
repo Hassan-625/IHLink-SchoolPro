@@ -81,7 +81,7 @@ END $$;
 -- identity and profile email must not change until the account owner verifies.
 SELECT public.schoolpro_request_member_email_change_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
- '10000000-0000-0000-0000-000000000001','new.staff@example.test'
+ '10000000-0000-0000-0000-000000000001','replacement.staff@example.test'
 );
 DO $$
 BEGIN
@@ -93,15 +93,43 @@ BEGIN
     THEN RAISE EXCEPTION 'email request was not left pending'; END IF;
 END $$;
 
+-- A pending request (no Auth verification sent yet) can be replaced.
+SELECT public.schoolpro_request_member_email_change_atomic(
+ '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+ '10000000-0000-0000-0000-000000000001','replacement.staff@example.test'
+);
+DO $
+BEGIN
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests
+      WHERE target_user_id='10000000-0000-0000-0000-000000000002' AND status='cancelled') <> 1
+    THEN RAISE EXCEPTION 'superseded pending email request was not cancelled'; END IF;
+END $;
 UPDATE public.schoolpro_member_email_change_requests
 SET status='verification_sent'
-WHERE target_user_id='10000000-0000-0000-0000-000000000002';
-UPDATE auth.users SET email='new.staff@example.test'
+WHERE target_user_id='10000000-0000-0000-0000-000000000002'
+  AND requested_email='replacement.staff@example.test';
+DO $
+BEGIN
+  BEGIN
+    PERFORM public.schoolpro_request_member_email_change_atomic(
+      '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+      '10000000-0000-0000-0000-000000000001','third.staff@example.test');
+    RAISE EXCEPTION 'in-flight verification was unexpectedly replaced';
+  EXCEPTION WHEN OTHERS THEN
+    IF SQLERRM='in-flight verification was unexpectedly replaced' THEN RAISE; END IF;
+    IF SQLERRM NOT LIKE '%verification is already in progress%' THEN RAISE; END IF;
+  END;
+  IF (SELECT status FROM public.schoolpro_member_email_change_requests
+      WHERE target_user_id='10000000-0000-0000-0000-000000000002'
+        AND requested_email='replacement.staff@example.test') <> 'verification_sent'
+    THEN RAISE EXCEPTION 'in-flight verification request was modified'; END IF;
+END $;
+UPDATE auth.users SET email='replacement.staff@example.test'
 WHERE id='10000000-0000-0000-0000-000000000002';
 
 DO $$
 BEGIN
-  IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'new.staff@example.test'
+  IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'replacement.staff@example.test'
     THEN RAISE EXCEPTION 'verified Auth email was not synced to IHLink profile'; END IF;
   IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'confirmed'
     THEN RAISE EXCEPTION 'email change request was not marked confirmed'; END IF;
@@ -112,7 +140,7 @@ BEGIN
     WHERE target_user_id='10000000-0000-0000-0000-000000000002'
       AND changed_fields = ARRAY['email']::text[]
       AND before_values->>'email'='staff@example.test'
-      AND after_values->>'email'='new.staff@example.test'
+      AND after_values->>'email'='replacement.staff@example.test'
   ) THEN RAISE EXCEPTION 'email change audit values are incorrect'; END IF;
 END $$;
 

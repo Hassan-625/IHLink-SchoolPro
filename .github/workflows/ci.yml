@@ -229,9 +229,8 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-houses-and-allocation.integration.sql
 
   tenant-acceptance:
-    # Live tenant-account checks are manual-only; normal PR/push CI must not sign in
-    # to configured school accounts or require test-school fixtures.
-    if: ${{ github.event_name == 'workflow_dispatch' && vars.RUN_LIVE_TENANT_ACCEPTANCE == 'true' }}
+    # Required read-only two-school acceptance on every PR, push and manual run.
+    # Uses existing dedicated School A/B acceptance accounts; never seeds or mutates rows.
     runs-on: ubuntu-latest
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

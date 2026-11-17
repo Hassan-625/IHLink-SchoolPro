@@ -171,6 +171,7 @@ END $$;
 -- Only the authorized school administrator can read this school's audit rows.
 GRANT USAGE ON SCHEMA public TO authenticated;
 GRANT SELECT ON public.schoolpro_profile_change_audit TO authenticated;
+GRANT SELECT ON public.schoolpro_schools, public.schoolpro_members, public.schoolpro_member_responsibilities TO authenticated;
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
 DO $$ BEGIN
@@ -178,10 +179,17 @@ DO $$ BEGIN
     THEN RAISE EXCEPTION 'school admin cannot read audit history'; END IF;
 END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
-DO $$ BEGIN
+DO $ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 0
     THEN RAISE EXCEPTION 'unrelated user can read audit history'; END IF;
-END $$;
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 0
+    THEN RAISE EXCEPTION 'unrelated user can read email change requests'; END IF;
+END $;
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
+DO $ BEGIN
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 1
+    THEN RAISE EXCEPTION 'target account cannot read its own email change request'; END IF;
+END $;
 RESET ROLE;
 DO $$ BEGIN
   IF has_table_privilege('authenticated','public.schoolpro_profile_change_audit','INSERT')

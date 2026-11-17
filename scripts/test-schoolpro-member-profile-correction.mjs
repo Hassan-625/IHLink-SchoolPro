@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
 const migration = read('../supabase/migrations/20261117180000_schoolpro_atomic_member_profile_corrections.sql');
 const edge = read('../supabase/functions/schoolpro-profile-correction/index.ts');
+const emailEdge = read('../supabase/functions/schoolpro-request-member-email-change/index.ts');
+const profilePage = read('../src/pages/schoolpro/SchoolProProfile.tsx');
 const staff = read('../src/pages/schoolpro/SchoolProStaff.tsx');
 const parents = read('../src/pages/schoolpro/SchoolProParents.tsx');
 
@@ -41,4 +43,4 @@ assert.match(parents, /schoolpro-profile-correction/);
 assert.match(parents, /Edit profile/);
 assert.match(parents, /visible in every school linked to that account/);
 
-console.log('PASS: staff/guardian profile correction is school-authorized, identity-aware, email-isolated, membership-locked and atomically audited.');
+console.log('PASS: staff/guardian profile corrections and verified sign-in email change requests are school-authorized, membership-locked and audited.');

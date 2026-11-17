@@ -1,3 +1,14 @@
+## Stage C — assessment readiness panel implementation — 2026-11-17
+
+- Branch: `feat/schoolpro-assessment-readiness`.
+- Adds a read-only readiness panel to Results & Broadsheets for the selected school and academic session.
+- Checks each configured class for an assigned Form Master, active subject allocations, subject allocations with an assigned teacher, and an assessment scheme compatible with the class level.
+- The panel does not create or change sessions, classes, staff appointments, subject allocations, schemes, scores, submissions, approvals, or published results. It reports missing configuration and requires a selected session before showing session-scoped readiness.
+- Adds source-contract assertions for Form Master, teacher allocation, and class-level scheme checks.
+- Production Supabase and Render are not changed by this branch. Merge, any database migration, and Render rollout remain separate approval gates.
+
+---
+
 ## Optional gender preference for leadership display-title suggestions — implementation branch (2026-11-16)
 
 - Branch: `feat/schoolpro-gender-aware-leadership-titles`.

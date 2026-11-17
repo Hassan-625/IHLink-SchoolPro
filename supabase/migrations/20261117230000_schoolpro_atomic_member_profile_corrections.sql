@@ -34,6 +34,12 @@ create policy schoolpro_profile_change_audit_school_admin_read
       array['proprietor'::public.school_member_role, 'administrator'::public.school_member_role]
     )
     or exists (
+      select 1 from public.profiles global_admin
+      where global_admin.id = (select auth.uid())
+        and global_admin.role = 'super_admin'
+        and global_admin.status = 'active'
+    )
+    or exists (
       select 1 from public.schoolpro_schools owner_school
       where owner_school.id = schoolpro_profile_change_audit.school_id and owner_school.owner_id = (select auth.uid())
     )
@@ -253,6 +259,12 @@ create policy schoolpro_member_email_change_read
       array['proprietor'::public.school_member_role, 'administrator'::public.school_member_role]
     )
     or exists (
+      select 1 from public.profiles global_admin
+      where global_admin.id = (select auth.uid())
+        and global_admin.role = 'super_admin'
+        and global_admin.status = 'active'
+    )
+    or exists (
       select 1 from public.schoolpro_schools owner_school
       where owner_school.id = schoolpro_member_email_change_requests.school_id and owner_school.owner_id = (select auth.uid())
     )
@@ -364,7 +376,7 @@ begin
 
   select u.email into current_email from auth.users u where u.id = p_target_user_id for key share;
   if current_email is null then raise exception 'Target sign-in account not found'; end if;
-  select p.status::text into target_profile_status from public.profiles p where p.id = p_target_user_id for key share;
+  select p.status::text into target_profile_status from public.profiles p where p.id = p_target_user_id for update;
   if target_profile_status is distinct from 'active' then raise exception 'Target account is not active'; end if;
   if lower(current_email) = normalized_email then
     raise exception 'The requested email is already the current sign-in email';
@@ -373,9 +385,28 @@ begin
     raise exception 'That email address is already used by another IHLink account';
   end if;
 
+  -- Expired Auth confirmations can no longer be used; close them before
+  -- considering a replacement. The profile FOR UPDATE lock serializes requests
+  -- for this account so concurrent administrators cannot bypass this guard.
+  update public.schoolpro_member_email_change_requests
+  set status = 'expired'
+  where target_user_id = p_target_user_id
+    and status in ('pending', 'verification_sent')
+    and expires_at <= now();
+
+  if exists (
+    select 1 from public.schoolpro_member_email_change_requests r
+    where r.target_user_id = p_target_user_id
+      and r.status = 'verification_sent'
+      and r.expires_at > now()
+    for update
+  ) then
+    raise exception 'An email verification is already in progress; complete it or wait for it to expire';
+  end if;
+
   update public.schoolpro_member_email_change_requests
   set status = 'cancelled'
-  where target_user_id = p_target_user_id and status in ('pending', 'verification_sent');
+  where target_user_id = p_target_user_id and status = 'pending';
 
   insert into public.schoolpro_member_email_change_requests(
     school_id, target_user_id, requested_by, requested_email

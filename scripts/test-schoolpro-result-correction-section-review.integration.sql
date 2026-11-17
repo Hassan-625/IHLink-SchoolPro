@@ -106,7 +106,7 @@ create table public.schoolpro_audit_logs (
 
 create or replace function private.is_admin(p_roles public.user_role[])
 returns boolean language sql stable
-as $ select auth.uid()='66666666-6666-4666-8666-666666666666'::uuid $;
+as $$ select auth.uid()='66666666-6666-4666-8666-666666666666'::uuid $$;
 create or replace function private.is_active_account()
 returns boolean language sql stable
 as $$ select auth.uid() is not null $$;

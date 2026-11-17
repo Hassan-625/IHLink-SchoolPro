@@ -96,8 +96,6 @@ Deno.serve(async(req:Request)=>{
      const {error:credentialError}=await admin.rpc('schoolpro_set_initial_credential',{p_user:createdUserId,p_school:schoolId,p_surname:surname});
      if(credentialError)throw credentialError;
      const invitationCode=crypto.randomUUID()+crypto.randomUUID(),tokenHash=await hash(invitationCode);
-     const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:guardian.studentIds,relationship:'guardian',token_hash:tokenHash,created_by:user.id});
-     if(inviteError)throw inviteError;
      const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:guardian.studentIds,relationship:'guardian',token_hash:tokenHash,expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id});
      if(inviteError)throw inviteError;
      results.push({email:guardian.email,status:'created-awaiting-first-login',children:guardian.studentIds.length});

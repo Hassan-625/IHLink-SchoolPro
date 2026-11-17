@@ -175,7 +175,7 @@ GRANT SELECT ON public.schoolpro_schools, public.schoolpro_members, public.schoo
 SET ROLE authenticated;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
 DO $$ BEGIN
-  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 2
+  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'school admin cannot read audit history'; END IF;
 END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);

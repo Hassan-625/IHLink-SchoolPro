@@ -211,7 +211,7 @@ create policy schoolpro_result_template_section_mappings_delete
 grant select,insert,delete on public.schoolpro_result_template_section_mappings to authenticated;
 
 alter table public.schoolpro_result_template_assignments
-  add column template_id uuid;
+  add column template_id uuid not null;
 alter table public.schoolpro_result_template_assignments
   add constraint schoolpro_result_template_assignments_library_fk
   foreign key (school_id,template_id)

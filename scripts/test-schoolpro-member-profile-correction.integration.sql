@@ -70,7 +70,7 @@ SELECT public.schoolpro_correct_member_profile_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
  '10000000-0000-0000-0000-000000000001','Guardian','Middle','Corrected','08012345678'
 );
-DO $
+DO $$
 BEGIN
   IF (SELECT first_name||'|'||middle_name||'|'||last_name||'|'||phone||'|'||email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002')
      <> 'Staff|Middle|Corrected|+2348012345678|staff@example.test' THEN RAISE EXCEPTION 'staff correction/email preservation failed'; END IF;
@@ -83,7 +83,7 @@ SELECT public.schoolpro_request_member_email_change_atomic(
  '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
  '10000000-0000-0000-0000-000000000001','new.staff@example.test'
 );
-DO $
+DO $$
 BEGIN
   IF (SELECT email FROM auth.users WHERE id='10000000-0000-0000-0000-000000000002') <> 'staff@example.test'
     THEN RAISE EXCEPTION 'email changed before verification'; END IF;
@@ -99,7 +99,7 @@ WHERE target_user_id='10000000-0000-0000-0000-000000000002';
 UPDATE auth.users SET email='new.staff@example.test'
 WHERE id='10000000-0000-0000-0000-000000000002';
 
-DO $
+DO $$
 BEGIN
   IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'new.staff@example.test'
     THEN RAISE EXCEPTION 'verified Auth email was not synced to IHLink profile'; END IF;

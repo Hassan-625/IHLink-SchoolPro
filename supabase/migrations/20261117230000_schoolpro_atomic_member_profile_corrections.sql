@@ -133,6 +133,7 @@ begin
   select m.id into target_member_id
   from public.schoolpro_members m
   where m.school_id = p_school_id and m.user_id = p_target_user_id
+    and m.status = 'active'
   order by m.id
   limit 1
   for key share;
@@ -140,6 +141,7 @@ begin
   select g.id into target_guardian_link_id
   from public.schoolpro_guardian_links g
   where g.school_id = p_school_id and g.guardian_user_id = p_target_user_id
+    and g.status = 'active'
   order by g.id
   limit 1
   for key share;
@@ -338,11 +340,13 @@ begin
   select m.id into target_member_id
   from public.schoolpro_members m
   where m.school_id = p_school_id and m.user_id = p_target_user_id
+    and m.status = 'active'
   order by m.id limit 1 for key share;
 
   select g.id into target_guardian_link_id
   from public.schoolpro_guardian_links g
   where g.school_id = p_school_id and g.guardian_user_id = p_target_user_id
+    and g.status = 'active'
   order by g.id limit 1 for key share;
 
   if target_member_id is null and target_guardian_link_id is null then

@@ -1,3 +1,13 @@
+## Tenant acceptance — three-school pairwise coverage — 2026-11-17
+
+- Extends the required live tenant acceptance job to use existing School A, B and C accounts and school IDs; GitHub Actions requires `SCHOOL_C_EMAIL`, `SCHOOL_C_PASSWORD` and `SCHOOL_C_ID` alongside the existing A/B secrets.
+- Each authenticated school account is checked against both other school IDs for foreign-row isolation across the protected operational tables and for foreign academic-period RPC denial.
+- Result-output RPC and Storage object isolation are tested pairwise when a suitable existing student/template fixture is available. Empty schools are reported as limitations; no production fixture rows or objects are created.
+- Acceptance remains read-only and is mandatory on every PR, push and manual CI run. Never skip tenant acceptance or interpret missing fixture coverage as a pass for that specific positive-read path.
+- Production school IDs confirmed: IHLINK Academy `eb601205-cffd-420d-97d0-7d5ca081628a`; HA ACADEMY `ac7ac8a8-5035-4e39-8868-cad54add84a6`; LINK INTERNATIONAL ACADEMY `1aa03d93-3fd4-4298-8408-ce9c2299d546`.
+
+---
+
 ## Stage C — assessment readiness panel implementation — 2026-11-17
 
 - Branch: `feat/schoolpro-assessment-readiness`.

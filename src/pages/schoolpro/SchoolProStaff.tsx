@@ -30,9 +30,14 @@ export function SchoolProStaff(){
   const middle=window.prompt('Staff middle name (optional)',p.middle_name||'');if(middle===null)return;
   const last=window.prompt('Staff surname',p.last_name||'');if(last===null)return;
   const phone=window.prompt('Staff phone number',p.phone||'');if(phone===null)return;
+  const email=window.prompt('Staff sign-in email (verification required)',p.email||'');if(email===null)return;
   const {data,error}=await supabase.functions.invoke('schoolpro-profile-correction',{body:{schoolId,targetUserId:member.user_id,firstName:first,middleName:middle,lastName:last,phone}});
   if(error||data?.error){setError(data?.error||'Staff profile could not be updated. Please try again.');return;}
-  setMessage(data?.changed===false?'No profile details changed.':'Staff name and phone corrected. This IHLink identity update is visible in every school linked to the same account. The change was audited.');
+  if(email.trim().toLowerCase()!==(p.email||'').trim().toLowerCase()){
+   const requested=await supabase.functions.invoke('schoolpro-request-member-email-change',{body:{schoolId,targetUserId:member.user_id,newEmail:email}});
+   if(requested.error||requested.data?.error){setError(requested.data?.error||'Name and phone were saved, but the email change request could not be created.');await loadMembers();return;}
+  }
+  setMessage((data?.changed===false?'No name or phone details changed.':'Staff name and phone corrected. ')+(email.trim().toLowerCase()!==(p.email||'').trim().toLowerCase()?'A sign-in email change is pending: the staff member must sign in and request verification. Their current login remains active until verification. ':'')+'Shared IHLink identity updates are visible in every linked school.');
   await loadMembers();
  }
  async function toggleSection(member:Member,section:string,assigned:boolean){if(!supabase||!canManage)return;setError(null);const {error}=await supabase.rpc("schoolpro_set_section_leader",{p_school:schoolId,p_member:member.id,p_section:section,p_assigned:assigned});if(error)setError("Section leadership assignment could not be updated. Please try again.");else{setMessage("Section leadership assignment updated.");await loadMembers();}}

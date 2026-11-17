@@ -10,7 +10,7 @@ const bulk = edge.slice(bulkStart, bulkEnd);
 assert.match(bulk, /schoolpro_students/);
 assert.match(bulk, /eq\('school_id',schoolId\)/, "Bulk provisioning must read only the active workspace's students.");
 assert.match(bulk, /new Map<string,\{email:string;name:string;phone:string;studentIds:string\[\]\}>\(\)/, "Repeated guardian emails must be grouped into one account.");
-assert.match(bulk, /guardian\.studentIds\.push\(student\.id\)/, "All children for a shared guardian must be collected.");
+assert.match(bulk, /group\.studentIds\.push\(student\.id\)/, "All children for a shared guardian must be collected.");
 assert.match(bulk, /schoolpro_guardian_links/, "Existing guardian links must be detected before creating new ones.");
 assert.match(bulk, /schoolpro_access_invitations/, "Existing IHLink accounts must receive school-scoped pending invitations.");
 assert.match(bulk, /schoolpro_initial_credentials/, "New guardian accounts must use the established first-login credential mechanism.");

@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+: "${DATABASE_URL:?DATABASE_URL is required}"
+
+# Hold the target membership row while the correction transaction attempts to
+# acquire FOR KEY SHARE. Delete the membership before releasing the lock.
+psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL' &
+BEGIN;
+SELECT id FROM public.schoolpro_members
+ WHERE school_id='20000000-0000-0000-0000-000000000001'
+   AND user_id='10000000-0000-0000-0000-000000000002'
+ FOR UPDATE;
+SELECT pg_sleep(2);
+DELETE FROM public.schoolpro_members
+ WHERE school_id='20000000-0000-0000-0000-000000000001'
+   AND user_id='10000000-0000-0000-0000-000000000002';
+COMMIT;
+SQL
+locker=$!
+sleep 0.25
+if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL'
+SELECT set_config('request.jwt.claim.role','service_role',false);
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
+SELECT public.schoolpro_correct_member_profile_atomic(
+ '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
+ '10000000-0000-0000-0000-000000000001','Race','Must','Reject',null);
+SQL
+then
+  wait "$locker"
+  echo "FAIL: correction succeeded after concurrent membership removal."
+  exit 1
+fi
+wait "$locker"
+actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select first_name || ':' || count from public.profiles cross join (select count(*) from public.schoolpro_profile_change_audit where target_user_id='10000000-0000-0000-0000-000000000002') a(count) where id='10000000-0000-0000-0000-000000000002'")"
+test "$actual" = "Staff:1"
+echo "PASS: concurrent membership removal prevents profile correction and creates no audit row."

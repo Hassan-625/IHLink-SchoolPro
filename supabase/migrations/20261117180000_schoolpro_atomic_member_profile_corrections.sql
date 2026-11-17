@@ -32,6 +32,22 @@ create policy schoolpro_profile_change_audit_school_admin_read
       school_id,
       array['proprietor'::public.school_member_role, 'administrator'::public.school_member_role]
     )
+    or exists (
+      select 1 from public.schoolpro_schools owner_school
+      where owner_school.id = school_id and owner_school.owner_id = (select auth.uid())
+    )
+    or exists (
+      select 1
+      from public.schoolpro_members admin_member
+      join public.schoolpro_member_responsibilities responsibility
+        on responsibility.school_id = admin_member.school_id
+       and responsibility.member_id = admin_member.id
+      where admin_member.school_id = school_id
+        and admin_member.user_id = (select auth.uid())
+        and admin_member.status = 'active'
+        and responsibility.responsibility = 'school_admin'
+        and responsibility.ended_at is null
+    )
   );
 
 create or replace function public.schoolpro_correct_member_profile_atomic(
@@ -221,6 +237,22 @@ create policy schoolpro_member_email_change_read
     or private.has_school_access(
       school_id,
       array['proprietor'::public.school_member_role, 'administrator'::public.school_member_role]
+    )
+    or exists (
+      select 1 from public.schoolpro_schools owner_school
+      where owner_school.id = school_id and owner_school.owner_id = (select auth.uid())
+    )
+    or exists (
+      select 1
+      from public.schoolpro_members admin_member
+      join public.schoolpro_member_responsibilities responsibility
+        on responsibility.school_id = admin_member.school_id
+       and responsibility.member_id = admin_member.id
+      where admin_member.school_id = school_id
+        and admin_member.user_id = (select auth.uid())
+        and admin_member.status = 'active'
+        and responsibility.responsibility = 'school_admin'
+        and responsibility.ended_at is null
     )
   );
 

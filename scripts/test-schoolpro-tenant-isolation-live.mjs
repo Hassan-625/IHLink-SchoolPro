@@ -137,11 +137,13 @@ async function assertTenantReads(accountName, client, ownSchoolId, otherSchoolId
     );
   }
   assert.ok(ownPeriod && typeof ownPeriod === 'object', accountName + ' must be able to call the own-school academic-period RPC');
-  const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
-  assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC');
-  assert.match(periodError.message, /school access|required|permission|denied/i, accountName + ' must receive an authorization denial for the foreign-school RPC');
-  assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
-  console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied');
+  for (const otherSchoolId of otherSchoolIds) {
+    const {data: foreignPeriod, error: periodError} = await client.rpc('schoolpro_current_academic_period', {p_school: otherSchoolId});
+    assert.ok(periodError, accountName + ' must be denied the foreign-school academic-period RPC for ' + otherSchoolId);
+    assert.match(periodError.message, /school access|required|permission|denied/i, accountName + ' must receive an authorization denial for the foreign-school RPC');
+    assert.equal(foreignPeriod, null, accountName + ' must not receive foreign-school academic-period data');
+    console.log('PASS', accountName, 'own-school academic-period allowed; foreign-school RPC denied:', otherSchoolId);
+  }
 
   // The positive/negative Storage fixture check runs in main against an existing template object.
 
@@ -239,6 +241,7 @@ async function main() {
   assert.ok(ownTemplateObject.data, templateFixture.ownerSchool.name + ' must download its own existing result-template object');
 
   const encodedObjectPath = templateFixture.storagePath.split('/').map(encodeURIComponent).join('/');
+  const storageBaseUrl = process.env.SUPABASE_URL.endsWith('/') ? process.env.SUPABASE_URL.slice(0, -1) : process.env.SUPABASE_URL;
   for (const foreignAccount of accounts.filter((account) => account.key !== templateFixture.owner.key)) {
     const foreignResponse = await fetch(
       process.env.SUPABASE_URL.replace(/\\/$/, '') + '/storage/v1/object/authenticated/school-result-templates/' + encodedObjectPath,
@@ -255,8 +258,8 @@ async function main() {
   }
   if (receiptPathsConfigured) {
     const receiptFixtures = [
-      {name: 'School A', owner: a, ownPath: process.env.SCHOOL_A_RECEIPT_PATH, foreignPath: process.env.SCHOOL_B_RECEIPT_PATH},
-      {name: 'School B', owner: b, ownPath: process.env.SCHOOL_B_RECEIPT_PATH, foreignPath: process.env.SCHOOL_A_RECEIPT_PATH},
+      {name: 'School A', owner: accounts.find((account) => account.key === 'A'), ownPath: process.env.SCHOOL_A_RECEIPT_PATH, foreignPath: process.env.SCHOOL_B_RECEIPT_PATH},
+      {name: 'School B', owner: accounts.find((account) => account.key === 'B'), ownPath: process.env.SCHOOL_B_RECEIPT_PATH, foreignPath: process.env.SCHOOL_A_RECEIPT_PATH},
     ];
     assert.notEqual(
       process.env.SCHOOL_A_RECEIPT_PATH,

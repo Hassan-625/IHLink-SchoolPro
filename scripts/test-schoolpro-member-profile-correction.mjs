@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
 const read = path => readFileSync(new URL(path, import.meta.url), 'utf8');
-const migration = read('../supabase/migrations/20261117180000_schoolpro_atomic_member_profile_corrections.sql');
+const migration = read('../supabase/migrations/20261117230000_schoolpro_atomic_member_profile_corrections.sql');
 const edge = read('../supabase/functions/schoolpro-profile-correction/index.ts');
 const emailEdge = read('../supabase/functions/schoolpro-request-member-email-change/index.ts');
 const profilePage = read('../src/pages/schoolpro/SchoolProProfile.tsx');

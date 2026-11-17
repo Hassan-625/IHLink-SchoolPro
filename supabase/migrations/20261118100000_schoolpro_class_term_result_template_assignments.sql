@@ -119,7 +119,7 @@ begin
     and term=trim(p_term) and session=trim(p_session)
   for update;
 
-  v_new_name:=left(trim(p_template_config->>'name'),120);
+  v_new_name:=left(trim(v_template_config->>'name'),120);
   insert into public.schoolpro_result_template_assignments(
     school_id,class_id,term,session,template_name,template_config,updated_by
   ) values (
@@ -231,6 +231,7 @@ declare
   v_assignment uuid;
   v_is_form_master boolean := false;
   v_template_id uuid;
+  v_template_config jsonb;
   v_section text;
 begin
   if auth.uid() is null or not private.is_active_account() then
@@ -287,6 +288,13 @@ begin
   if v_template_id is null then
     raise exception 'This custom template has not been mapped to the selected class section';
   end if;
+  select l.template_config into v_template_config
+  from public.schoolpro_result_template_library l
+  where l.school_id=p_school and l.id=v_template_id and l.is_active;
+  if v_template_config is null
+     or v_template_config->>'storage_path' is distinct from p_template_config->>'storage_path' then
+    raise exception 'The selected custom result template is no longer available';
+  end if;
 
   select m.id into v_member
   from public.schoolpro_members m
@@ -309,7 +317,7 @@ begin
   insert into public.schoolpro_result_template_assignments(
     school_id,class_id,term,session,template_name,template_config,updated_by,template_id
   ) values (
-    p_school,p_class,trim(p_term),trim(p_session),v_new_name,p_template_config,auth.uid(),v_template_id
+    p_school,p_class,trim(p_term),trim(p_session),v_new_name,v_template_config,auth.uid(),v_template_id
   )
   on conflict(school_id,class_id,term,session) do update
     set template_name=excluded.template_name,
@@ -326,3 +334,45 @@ begin
   return v_assignment;
 end;
 $$;
+
+
+-- Replace all section mappings in one transaction; a failed mapping update
+-- cannot leave a template partially unmapped.
+create or replace function public.schoolpro_set_result_template_sections(
+  p_school uuid,p_template_id uuid,p_section_keys text[]
+) returns integer
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_count integer;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_is_school_admin(p_school) then
+    raise exception 'Only an active authorized school administrator can map result templates';
+  end if;
+  if p_section_keys is null then
+    raise exception 'Choose the sections for this result template';
+  end if;
+  if exists(select 1 from unnest(p_section_keys) k
+    where k not in ('nursery','primary','junior_secondary','senior_secondary')) then
+    raise exception 'One or more selected school sections are invalid';
+  end if;
+  perform 1 from public.schoolpro_result_template_library l
+  where l.school_id=p_school and l.id=p_template_id and l.is_active
+  for update;
+  if not found then
+    raise exception 'The selected custom result template is unavailable';
+  end if;
+  delete from public.schoolpro_result_template_section_mappings
+  where school_id=p_school and template_id=p_template_id;
+  insert into public.schoolpro_result_template_section_mappings(
+    school_id,template_id,section_key,mapped_by
+  )
+  select p_school,p_template_id,k,auth.uid()
+  from (select distinct unnest(p_section_keys) as k) selected;
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+revoke all on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) from public,anon;
+grant execute on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) to authenticated;

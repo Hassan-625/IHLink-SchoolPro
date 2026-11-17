@@ -6,6 +6,7 @@ const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
 const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
+const correctionIntegration=readFileSync('scripts/test-schoolpro-result-correction-section-review.integration.sql','utf8');
 
 assert.match(results,/appointed Section Head reviews this request first when required/i,
   'Correction request UI must explain the Section Head review stage before Exam Officer authorization.');
@@ -93,4 +94,10 @@ assert.doesNotMatch(broadsheet,/const canPublishAll=.*super administrator|const 
   'Super Admin must not receive Exam Officer publication authority from the global platform role.');
 assert.match(broadsheet,/const canManageSchoolView=.*super administrator/,
   'Super Admin retains school administration/view access independently of Exam Officer authority.');
+assert.match(correctionIntegration,/create or replace function private\.is_admin\(p_roles public\.user_role\[\]\)/,
+  'The correction integration fixture must model a global Super Admin independently of school membership.');
+assert.match(correctionIntegration,/Super Admin inherited Exam Officer authority without appointment/,
+  'A global Super Admin without an Exam Officer appointment must be denied correction authorization.');
+assert.match(correctionIntegration,/Only the Exam Officer can authorize a class or section result reopening/,
+  'Correction reopening must remain exclusive to an appointed Exam Officer.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');

@@ -75,7 +75,7 @@ BEGIN
   IF (SELECT first_name||'|'||middle_name||'|'||last_name||'|'||phone||'|'||email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002')
      <> 'Staff|Middle|Corrected|+2348012345678|staff@example.test' THEN RAISE EXCEPTION 'staff correction/email preservation failed'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 2 THEN RAISE EXCEPTION 'expected two atomic audit rows'; END IF;
-END $;
+END $$;
 
 -- School administrators may request a new sign-in email, but the live Auth
 -- identity and profile email must not change until the account owner verifies.
@@ -91,7 +91,7 @@ BEGIN
     THEN RAISE EXCEPTION 'profile email changed before verification'; END IF;
   IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'pending'
     THEN RAISE EXCEPTION 'email request was not left pending'; END IF;
-END $;
+END $$;
 
 UPDATE public.schoolpro_member_email_change_requests
 SET status='verification_sent'
@@ -114,7 +114,7 @@ BEGIN
       AND before_values->>'email'='staff@example.test'
       AND after_values->>'email'='new.staff@example.test'
   ) THEN RAISE EXCEPTION 'email change audit values are incorrect'; END IF;
-END $;
+END $$;
 
 -- Unauthorized and inactive actors must not modify either profile or audit.
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
@@ -179,17 +179,17 @@ DO $$ BEGIN
     THEN RAISE EXCEPTION 'school admin cannot read audit history'; END IF;
 END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
-DO $ BEGIN
+DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 0
     THEN RAISE EXCEPTION 'unrelated user can read audit history'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 0
     THEN RAISE EXCEPTION 'unrelated user can read email change requests'; END IF;
-END $;
+END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
-DO $ BEGIN
+DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 1
     THEN RAISE EXCEPTION 'target account cannot read its own email change request'; END IF;
-END $;
+END $$;
 RESET ROLE;
 DO $$ BEGIN
   IF has_table_privilege('authenticated','public.schoolpro_profile_change_audit','INSERT')

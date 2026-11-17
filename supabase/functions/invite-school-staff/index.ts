@@ -70,6 +70,9 @@ Deno.serve(async(req:Request)=>{
       const linkedIds=new Set((links||[]).map((link:any)=>link.student_id));
       const missing=guardian.studentIds.filter(id=>!linkedIds.has(id));
       if(!missing.length){results.push({email:guardian.email,status:'already-linked',children:guardian.studentIds.length});continue;}
+      const {data:pending,error:pendingError}=await admin.from('schoolpro_access_invitations').select('id').eq('school_id',schoolId).eq('email',guardian.email).eq('role','parent').is('accepted_at',null).gt('expires_at',new Date().toISOString()).limit(1);
+      if(pendingError)throw pendingError;
+      if(pending?.length){results.push({email:guardian.email,status:'invitation-already-pending',children:missing.length});continue;}
       const invitationCode=crypto.randomUUID()+crypto.randomUUID();
       const {error:inviteError}=await admin.from('schoolpro_access_invitations').insert({school_id:schoolId,email:guardian.email,role:'parent',student_ids:missing,relationship:'guardian',token_hash:await hash(invitationCode),expires_at:new Date(Date.now()+7*86400000).toISOString(),created_by:user.id});
       if(inviteError)throw inviteError;

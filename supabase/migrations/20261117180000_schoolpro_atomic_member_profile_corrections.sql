@@ -34,7 +34,7 @@ create policy schoolpro_profile_change_audit_school_admin_read
     )
     or exists (
       select 1 from public.schoolpro_schools owner_school
-      where owner_school.id = school_id and owner_school.owner_id = (select auth.uid())
+      where owner_school.id = schoolpro_profile_change_audit.school_id and owner_school.owner_id = (select auth.uid())
     )
     or exists (
       select 1
@@ -42,7 +42,7 @@ create policy schoolpro_profile_change_audit_school_admin_read
       join public.schoolpro_member_responsibilities responsibility
         on responsibility.school_id = admin_member.school_id
        and responsibility.member_id = admin_member.id
-      where admin_member.school_id = school_id
+      where admin_member.school_id = schoolpro_profile_change_audit.school_id
         and admin_member.user_id = (select auth.uid())
         and admin_member.status = 'active'
         and responsibility.responsibility = 'school_admin'
@@ -240,7 +240,7 @@ create policy schoolpro_member_email_change_read
     )
     or exists (
       select 1 from public.schoolpro_schools owner_school
-      where owner_school.id = school_id and owner_school.owner_id = (select auth.uid())
+      where owner_school.id = schoolpro_member_email_change_requests.school_id and owner_school.owner_id = (select auth.uid())
     )
     or exists (
       select 1
@@ -248,7 +248,7 @@ create policy schoolpro_member_email_change_read
       join public.schoolpro_member_responsibilities responsibility
         on responsibility.school_id = admin_member.school_id
        and responsibility.member_id = admin_member.id
-      where admin_member.school_id = school_id
+      where admin_member.school_id = schoolpro_member_email_change_requests.school_id
         and admin_member.user_id = (select auth.uid())
         and admin_member.status = 'active'
         and responsibility.responsibility = 'school_admin'

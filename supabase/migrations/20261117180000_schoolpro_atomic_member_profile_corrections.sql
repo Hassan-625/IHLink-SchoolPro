@@ -21,6 +21,7 @@ create index if not exists schoolpro_profile_change_audit_scope_idx
 alter table public.schoolpro_profile_change_audit enable row level security;
 revoke all on public.schoolpro_profile_change_audit from anon, public;
 grant select on public.schoolpro_profile_change_audit to authenticated;
+grant usage on schema private to authenticated;
 
 drop policy if exists schoolpro_profile_change_audit_school_admin_read
   on public.schoolpro_profile_change_audit;

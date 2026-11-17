@@ -87,4 +87,10 @@ assert.match(authority,/private\.schoolpro_is_exam_officer\(c\.school_id\)/i);
 assert.match(authority,/private\.schoolpro_is_school_admin\(s\.school_id\)/i);
 assert.match(profile,/eq\('session',session\)/,
   'The account page must show only current-session subject allocations.');
+assert.match(broadsheet,/const canPublishAll=memberRole==='exam_officer'\|\|additionalResponsibilities\.includes\('exam_officer'\)/,
+  'Final approval, publication and correction reopening UI must require an active Exam Officer role or responsibility.');
+assert.doesNotMatch(broadsheet,/const canPublishAll=.*super administrator|const canPublishAll=.*super_admin/i,
+  'Super Admin must not receive Exam Officer publication authority from the global platform role.');
+assert.match(broadsheet,/const canManageSchoolView=.*super administrator/,
+  'Super Admin retains school administration/view access independently of Exam Officer authority.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');

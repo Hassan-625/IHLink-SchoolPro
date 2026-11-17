@@ -3997,3 +3997,16 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 
 
 - Follow-up test hardening — 2026-11-16: the disposable PostgreSQL leadership fixture now directly exercises `private.schoolpro_member_leads_class`, the class-level authorization helper used by the result approval trigger. It asserts that the combined Nursery–Primary Headteacher is authorized for both Nursery and Primary classes, the Overall Secondary Principal is authorized for both JSS and SSS classes, and the combined Principal's precedence blocks the section Vice Principal at the class-approval boundary. This adds no production data or migration behavior.
+
+
+---
+
+## Stage C — bulk parent/guardian account creation from imported contacts (2026-11-17)
+
+- Branch: `feat/schoolpro-bulk-guardian-account-linking`, based on current `main` at the PR #223 merge commit.
+- Added **Create & Link Parent/Guardian Accounts** to the Parents & Guardians workspace. It reads the guardian name, email and phone already stored on active student records; no student re-import is required.
+- The Edge Function groups contacts by normalized exact email, so one guardian with multiple children is handled as one account and all relevant child links are grouped together. The function derives the initial surname from the final name token and calls the existing `schoolpro_set_initial_credential` flow. New accounts remain Auth-banned until the existing first-login surname challenge is completed and the guardian chooses a new password; only then can the account obtain a session. The invitation remains pending until the authenticated guardian submits the verified school code.
+- New guardian accounts receive a school-scoped pending invitation but are not linked/activated by the administrator. The guardian must complete the existing surname first-login challenge, choose a new password, then sign in with the verified email and school code; `schoolpro_join_school_code` accepts the invitation after authentication. Existing IHLink accounts are not duplicated and their passwords/profile details are not overwritten; missing child links are placed in a school-scoped pending invitation and require the existing account holder to sign in with the school's code. Already-linked children are skipped, suspended links are not silently reactivated, and pending invitations are detected to avoid duplicate invitations on repeated bulk runs.
+- Missing guardian surnames are reported for correction rather than creating accounts with guessed credentials. Per-guardian failures are returned independently; if new-account setup fails, the newly created Auth user is deleted.
+- Added regression coverage for tenant scoping, normalized-email grouping, multiple children, existing-account handling, initial surname challenge, deferred verified invitation acceptance, idempotent pending invitations, and UI wiring.
+- **Release status:** branch-only implementation. CI/typecheck/build and focused guardian regression are pending. No production Auth accounts, guardian links, invitations, database migrations, production business data, or Render deployment have been created or changed. Merge and any production rollout remain approval gates.

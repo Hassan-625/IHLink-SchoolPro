@@ -63,7 +63,7 @@ jobs:
         id: supabase-cli
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.2.0
 
       - name: Start disposable local Supabase without replaying historical migrations
         shell: bash

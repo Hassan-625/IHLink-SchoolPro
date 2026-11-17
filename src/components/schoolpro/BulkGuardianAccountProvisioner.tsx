@@ -24,9 +24,9 @@ export function BulkGuardianAccountProvisioner({schoolId,onComplete}:Props){
    const rows=Array.isArray(data?.results)?data.results as GuardianResult[]:[];
    setResults(rows);setSchoolCode(String(data?.schoolCode||''));
    const created=rows.filter(row=>row.status==='created-and-linked').length;
-   const existing=rows.filter(row=>row.status==='existing-account-pending').length;
+   const existing=rows.filter(row=>row.status==='existing-account-pending'||row.status==='invitation-already-pending').length;
    const linked=rows.filter(row=>row.status==='already-linked').length;
-   const attention=rows.filter(row=>row.status==='needs-attention'||row.status==='failed').length;
+   const attention=rows.filter(row=>row.status==='needs-attention'||row.status==='inactive-account'||row.status==='failed').length;
    setMessage(`Processed ${rows.length} unique guardian email(s): ${created} new account(s) created and linked, ${existing} existing account(s) awaiting guardian sign-in, ${linked} already linked, and ${attention} needing attention.`);
    await onComplete();
   }catch{

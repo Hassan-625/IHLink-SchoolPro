@@ -34,3 +34,35 @@ wait "$locker"
 actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select first_name || ':' || count from public.profiles cross join (select count(*) from public.schoolpro_profile_change_audit where target_user_id='10000000-0000-0000-0000-000000000002') a(count) where id='10000000-0000-0000-0000-000000000002'")"
 test "$actual" = "Staff:2"
 echo "PASS: concurrent membership removal prevents profile correction and creates no additional audit row."
+
+# Repeat the race against a guardian link and the email-change request RPC.
+psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL' &
+BEGIN;
+SELECT id FROM public.schoolpro_guardian_links
+ WHERE school_id='20000000-0000-0000-0000-000000000001'
+   AND guardian_user_id='10000000-0000-0000-0000-000000000003'
+ FOR UPDATE;
+SELECT pg_sleep(2);
+DELETE FROM public.schoolpro_guardian_links
+ WHERE school_id='20000000-0000-0000-0000-000000000001'
+   AND guardian_user_id='10000000-0000-0000-0000-000000000003';
+COMMIT;
+SQL
+locker=$!
+sleep 0.25
+if psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --quiet <<'SQL'
+SELECT set_config('request.jwt.claim.role','service_role',false);
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',false);
+SELECT public.schoolpro_request_member_email_change_atomic(
+ '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000003',
+ '10000000-0000-0000-0000-000000000001','guardian.new@example.test');
+SQL
+then
+  wait "$locker"
+  echo "FAIL: email change request succeeded after concurrent guardian-link removal."
+  exit 1
+fi
+wait "$locker"
+actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select count(*) from public.schoolpro_member_email_change_requests where target_user_id='10000000-0000-0000-0000-000000000003'")"
+test "$actual" = "0"
+echo "PASS: concurrent guardian-link removal prevents email change request creation."

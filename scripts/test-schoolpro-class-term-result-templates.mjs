@@ -16,6 +16,12 @@ assert.match(migration,/create table public\.schoolpro_result_template_library/i
 assert.match(migration,/create table public\.schoolpro_result_template_section_mappings/i);
 assert.match(migration,/section_key text not null check \(section_key in \('nursery','primary','junior_secondary','senior_secondary'\)\)/i);
 assert.match(migration,/This custom template has not been mapped to the selected class section/i);
+assert.match(migration,/schoolpro_set_result_template_sections/);
+assert.match(migration,/v_template_config jsonb/);
+assert.match(migration,/v_new_name:=left\(trim\(v_template_config->>'name'\),120\)/i);
+assert.match(migration,/p_section_keys text\[\]/);
+assert.match(migration,/add column template_id uuid not null/i);
+assert.match(page,/schoolpro_set_result_template_sections/);
 assert.match(page,/schoolpro_result_template_library/);
 assert.match(page,/schoolpro_result_template_section_mappings/);
 assert.match(page,/Add another custom template/);

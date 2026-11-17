@@ -73,6 +73,7 @@ declare
   actor_member_id uuid;
   target_member_id uuid;
   target_guardian_link_id uuid;
+  target_profile_status text;
   before_profile jsonb;
   after_profile jsonb;
   fields text[];
@@ -148,6 +149,14 @@ begin
 
   if target_member_id is null and target_guardian_link_id is null then
     raise exception 'Target account is not linked to this school';
+  end if;
+
+  select p.status::text into target_profile_status
+  from public.profiles p
+  where p.id = p_target_user_id
+  for update;
+  if target_profile_status is distinct from 'active' then
+    raise exception 'Target account is not active';
   end if;
 
   select jsonb_build_object(

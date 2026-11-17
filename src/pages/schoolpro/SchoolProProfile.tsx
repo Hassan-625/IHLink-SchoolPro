@@ -2,7 +2,7 @@ import {SchoolCodeCard} from '@/components/SchoolCodeCard';
 import {NativeAppSecurity} from '@/components/NativeAppSecurity';
 import {Link,useNavigate} from 'react-router-dom';
 import {Browser} from '@capacitor/browser';
-import {isNativeApp} from '@/lib/nativeAuth';
+import {isNativeApp,nativeAuthRedirect,publicAppOrigin,nativeOAuthEnabled} from '@/lib/nativeAuth';
 import {useEffect,useState} from 'react';
 import {ModulePage} from '@/components/ModulePage';
 import {Card} from '@/components/ui/Card';
@@ -36,7 +36,7 @@ export function SchoolProProfile(){
     ? await supabase.auth.resend({type:'email_change',email:user.email||''})
     : await supabase.auth.updateUser(
       {email:pendingEmail.requested_email},
-      {emailRedirectTo:`${window.location.origin}/verify-email?email_change=1`}
+      {emailRedirectTo:isNativeApp()&&nativeOAuthEnabled?nativeAuthRedirect:`${isNativeApp()?publicAppOrigin:window.location.origin}/verify-email?email_change=1`}
      );
    if(error){
     if(pendingEmail.status==='pending')await supabase.from('schoolpro_member_email_change_requests').update({status:'pending'}).eq('id',pendingEmail.id).eq('status','verification_sent');

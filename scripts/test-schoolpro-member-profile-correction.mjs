@@ -36,12 +36,12 @@ assert.match(migration, /schoolpro_member_email_change_requests/);
 assert.match(migration, /status = 'confirmed'/);
 assert.match(migration, /after update of email on auth\.users/i);
 assert.match(migration, /update public\.profiles set email = new\.email/);
-assert.match(emailEdge, /caller\.auth\.getUser\\(token\\)/);
-assert.match(emailEdge, /admin\.rpc\\('schoolpro_request_member_email_change_atomic'/);
+assert.match(emailEdge, /caller\.auth\.getUser\(token\)/);
+assert.match(emailEdge, /admin\.rpc\('schoolpro_request_member_email_change_atomic'/);
 assert.match(emailEdge, /p_actor_id: actor\.id/);
-assert.doesNotMatch(emailEdge, /updateUserById|email_confirm\\s*:\\s*true/i, 'administrator request must not bypass email verification');
+assert.doesNotMatch(emailEdge, /updateUserById|email_confirm\s*:\s*true/i, 'administrator request must not bypass email verification');
 assert.match(profilePage, /supabase\.auth\.updateUser/);
-assert.match(profilePage, /supabase\.auth\.resend\\(\\{type:'email_change'/);
+assert.match(profilePage, /supabase\.auth\.resend\(\{type:'email_change'/);
 assert.match(profilePage, /current sign-in email remains active until verification/);
 assert.doesNotMatch(edge, /profiles'\)\.update/i, 'all profile writes must pass through the atomic database RPC');
 

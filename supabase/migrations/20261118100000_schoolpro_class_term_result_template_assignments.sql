@@ -67,8 +67,26 @@ begin
      or nullif(trim(p_template_config->>'name'),'') is null
      or nullif(trim(p_template_config->>'storage_path'),'') is null
      or nullif(trim(p_template_config->>'sheet_name'),'') is null
-     or (p_template_config->>'storage_path') not like p_school::text||'/%' then
+     or (p_template_config->>'storage_path') not like p_school::text||'/%'
+     or position('..' in p_template_config->>'storage_path')>0
+     or octet_length(p_template_config::text)>100000 then
     raise exception 'Choose a saved result workbook belonging to this school';
+  end if;
+  if not exists(
+    select 1 from storage.objects o
+    where o.bucket_id='school-result-templates'
+      and o.name=p_template_config->>'storage_path'
+  ) then
+    raise exception 'The selected result workbook is no longer available in this school';
+  end if;
+  if nullif(p_template_config->>'logo_storage_path','') is not null and (
+    (p_template_config->>'logo_storage_path') not like p_school::text||'/%'
+    or position('..' in p_template_config->>'logo_storage_path')>0
+    or not exists(select 1 from storage.objects o
+      where o.bucket_id='school-result-templates'
+        and o.name=p_template_config->>'logo_storage_path')
+  ) then
+    raise exception 'The selected school logo is not available in this school';
   end if;
 
   if not exists(

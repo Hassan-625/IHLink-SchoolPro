@@ -4010,3 +4010,16 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Missing guardian surnames are reported for correction rather than creating accounts with guessed credentials. Per-guardian failures are returned independently; if new-account setup fails, the newly created Auth user is deleted.
 - Added regression coverage for tenant scoping, normalized-email grouping, multiple children, existing-account handling, initial surname challenge, deferred verified invitation acceptance, idempotent pending invitations, and UI wiring.
 - **Release status:** branch-only implementation. CI/typecheck/build and focused guardian regression are pending. No production Auth accounts, guardian links, invitations, database migrations, production business data, or Render deployment have been created or changed. Merge and any production rollout remain approval gates.
+
+
+---
+
+## 2026-11-17 — Issue #204: audited staff and guardian profile correction
+
+- Isolated implementation on `feat/schoolpro-audited-member-profile-correction`, based on current `main`; stale PR #105 was reviewed for design context only and was not merged or cherry-picked.
+- Added a narrow correction path for linked staff and guardian identities: first, middle and last name plus phone only. Sign-in email and Supabase Auth identity are deliberately excluded.
+- Added Edge Function `schoolpro-profile-correction`. It authenticates the caller, then delegates the write to a service-role-only database RPC. The RPC independently rechecks the active actor, school owner/administrator or explicit `school_admin` responsibility, and the target's school membership or guardian link.
+- The database RPC locks the school relationship rows while checking target linkage, locks the profile row, and writes the profile change and audit entry in one transaction. Audit rows do not cascade away when a school or account is deleted; authenticated clients cannot insert/forge audit rows. School administrators can read audit entries through the school-scoped policy.
+- Added Staff & Access and Parents & Guardians correction actions. Both pages disclose that a correction changes the shared IHLink identity and therefore appears in every school linked to that same account. Truly separate Auth accounts remain independent. The sign-in email is not editable in this workflow.
+- Added source-contract tests plus disposable PostgreSQL coverage for staff and guardian correction, email preservation, unauthorized/inactive actors, audit visibility, forged-audit denial, and rollback when audit insertion fails. A separate concurrency test holds and removes a membership while correction attempts to lock it; the correction must fail without changing the profile or adding an audit row.
+- **Release status:** implementation is branch-only. CI and disposable PostgreSQL tests have not yet run. No production migration has been applied, no Edge Function deployed, no profile/account/business data changed, and no Render deployment or merge performed. Review CI and migration compatibility before any release; production migration and Edge Function deployment require separate explicit approval.

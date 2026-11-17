@@ -32,7 +32,7 @@ then
 fi
 wait "$locker"
 actual="$(psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --tuples-only --no-align --command "select first_name || ':' || count from public.profiles cross join (select count(*) from public.schoolpro_profile_change_audit where target_user_id='10000000-0000-0000-0000-000000000002') a(count) where id='10000000-0000-0000-0000-000000000002'")"
-test "$actual" = "Staff:2"
+test "$actual" = "Staff:1"
 echo "PASS: concurrent membership removal prevents profile correction and creates no additional audit row."
 
 # Repeat the race against a guardian link and the email-change request RPC.

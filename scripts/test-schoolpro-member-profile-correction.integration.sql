@@ -194,14 +194,14 @@ WHERE id='10000000-0000-0000-0000-000000000002';
 
 -- Unauthorized and inactive actors must not modify either profile or audit.
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
-DO $ BEGIN
+DO $$ BEGIN
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'global Super Admin cannot read school audit history'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 2
     THEN RAISE EXCEPTION 'global Super Admin cannot read email change request history'; END IF;
-END $;
+END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
-DO $ BEGIN
+DO $$ BEGIN
   BEGIN
     PERFORM public.schoolpro_correct_member_profile_atomic(
       '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',

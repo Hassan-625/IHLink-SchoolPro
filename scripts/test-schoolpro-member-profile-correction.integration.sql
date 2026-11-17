@@ -44,14 +44,16 @@ INSERT INTO auth.users VALUES
 ('10000000-0000-0000-0000-000000000001','admin@example.test'),
 ('10000000-0000-0000-0000-000000000002','staff@example.test'),
 ('10000000-0000-0000-0000-000000000003','guardian@example.test'),
-('10000000-0000-0000-0000-000000000004','outsider@example.test');
+('10000000-0000-0000-0000-000000000004','outsider@example.test'),
+('10000000-0000-0000-0000-000000000005','superadmin@example.test');
 INSERT INTO public.schoolpro_schools VALUES
 ('20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001');
 INSERT INTO public.profiles(id,email,first_name,middle_name,last_name,phone,role,status) VALUES
 ('10000000-0000-0000-0000-000000000001','admin@example.test','Admin',null,'User',null,'user','active'),
 ('10000000-0000-0000-0000-000000000002','staff@example.test','Old',null,'Staff','08000000000','user','active'),
 ('10000000-0000-0000-0000-000000000003','guardian@example.test','Old',null,'Guardian',null,'user','active'),
-('10000000-0000-0000-0000-000000000004','outsider@example.test','Out',null,'Sider',null,'user','active');
+('10000000-0000-0000-0000-000000000004','outsider@example.test','Out',null,'Sider',null,'user','active'),
+('10000000-0000-0000-0000-000000000005','superadmin@example.test','Global',null,'Admin',null,'super_admin','active');
 INSERT INTO public.schoolpro_members VALUES
 ('30000000-0000-0000-0000-000000000001','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001','administrator','active'),
 ('30000000-0000-0000-0000-000000000002','20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002','teacher','active');
@@ -89,7 +91,7 @@ BEGIN
     THEN RAISE EXCEPTION 'email changed before verification'; END IF;
   IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'staff@example.test'
     THEN RAISE EXCEPTION 'profile email changed before verification'; END IF;
-  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'pending'
+  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002' AND requested_email='new.staff@example.test') <> 'pending'
     THEN RAISE EXCEPTION 'email request was not left pending'; END IF;
 END $$;
 
@@ -131,7 +133,7 @@ DO $$
 BEGIN
   IF (SELECT email FROM public.profiles WHERE id='10000000-0000-0000-0000-000000000002') <> 'replacement.staff@example.test'
     THEN RAISE EXCEPTION 'verified Auth email was not synced to IHLink profile'; END IF;
-  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 'confirmed'
+  IF (SELECT status FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002' AND requested_email='replacement.staff@example.test') <> 'confirmed'
     THEN RAISE EXCEPTION 'email change request was not marked confirmed'; END IF;
   IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
     THEN RAISE EXCEPTION 'verified email change was not audited'; END IF;
@@ -191,8 +193,15 @@ UPDATE public.profiles SET status='active'
 WHERE id='10000000-0000-0000-0000-000000000002';
 
 -- Unauthorized and inactive actors must not modify either profile or audit.
+SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000005',false);
+DO $ BEGIN
+  IF (SELECT count(*) FROM public.schoolpro_profile_change_audit) <> 3
+    THEN RAISE EXCEPTION 'global Super Admin cannot read school audit history'; END IF;
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests) <> 2
+    THEN RAISE EXCEPTION 'global Super Admin cannot read email change request history'; END IF;
+END $;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000004',false);
-DO $$ BEGIN
+DO $ BEGIN
   BEGIN
     PERFORM public.schoolpro_correct_member_profile_atomic(
       '20000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000002',
@@ -261,8 +270,8 @@ DO $$ BEGIN
 END $$;
 SELECT set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',false);
 DO $$ BEGIN
-  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 1
-    THEN RAISE EXCEPTION 'target account cannot read its own email change request'; END IF;
+  IF (SELECT count(*) FROM public.schoolpro_member_email_change_requests WHERE target_user_id='10000000-0000-0000-0000-000000000002') <> 2
+    THEN RAISE EXCEPTION 'target account cannot read its email change request history'; END IF;
 END $$;
 RESET ROLE;
 DO $$ BEGIN

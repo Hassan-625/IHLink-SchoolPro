@@ -175,14 +175,14 @@ create policy schoolpro_result_template_library_read
   using (private.has_school_access(school_id));
 create policy schoolpro_result_template_library_insert
   on public.schoolpro_result_template_library for insert to authenticated
-  with check (private.schoolpro_is_school_admin(school_id) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
+  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
 create policy schoolpro_result_template_library_update
   on public.schoolpro_result_template_library for update to authenticated
-  using (private.schoolpro_is_school_admin(school_id))
-  with check (private.schoolpro_is_school_admin(school_id) and updated_by=(select auth.uid()));
+  using (private.is_active_account() and private.schoolpro_is_school_admin(school_id))
+  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and updated_by=(select auth.uid()));
 create policy schoolpro_result_template_library_delete
   on public.schoolpro_result_template_library for delete to authenticated
-  using (private.schoolpro_is_school_admin(school_id));
+  using (private.is_active_account() and private.schoolpro_is_school_admin(school_id));
 grant select,insert,update,delete on public.schoolpro_result_template_library to authenticated;
 
 create table public.schoolpro_result_template_section_mappings (
@@ -204,7 +204,7 @@ create policy schoolpro_result_template_section_mappings_read
   using (private.has_school_access(school_id));
 create policy schoolpro_result_template_section_mappings_insert
   on public.schoolpro_result_template_section_mappings for insert to authenticated
-  with check (private.schoolpro_is_school_admin(school_id) and mapped_by=(select auth.uid()));
+  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and mapped_by=(select auth.uid()));
 create policy schoolpro_result_template_section_mappings_delete
   on public.schoolpro_result_template_section_mappings for delete to authenticated
   using (private.schoolpro_is_school_admin(school_id));

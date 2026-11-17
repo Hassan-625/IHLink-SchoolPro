@@ -327,7 +327,7 @@ begin
 
  if not exists(
    select 1 from public.schoolpro_audit_logs
-   where action='Class or section results reopened for correction'
+   where action='Super Admin reopened class or section results for correction'
      and actor_id='66666666-6666-4666-8666-666666666666'
      and metadata->>'authorization_role'='super_admin_override'
      and metadata->>'super_admin_override'='true'

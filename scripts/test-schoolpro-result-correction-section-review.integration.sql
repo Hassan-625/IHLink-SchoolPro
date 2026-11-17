@@ -7,6 +7,7 @@ create role anon nologin;
 create role authenticated nologin;
 create schema auth;
 create schema private;
+create type public.user_role as enum ('super_admin');
 create table auth.users(id uuid primary key);
 
 create or replace function auth.uid()
@@ -103,6 +104,9 @@ create table public.schoolpro_audit_logs (
   metadata jsonb not null default '{}'::jsonb
 );
 
+create or replace function private.is_admin(p_roles public.user_role[])
+returns boolean language sql stable
+as $$ select auth.uid()='66666666-6666-4666-8666-666666666666'::uuid $$;
 create or replace function private.is_active_account()
 returns boolean language sql stable
 as $$ select auth.uid() is not null $$;
@@ -175,13 +179,15 @@ insert into public.schoolpro_members(id,school_id,user_id,role) values
  ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','22222222-2222-4222-8222-222222222222','class_teacher'),
  ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','33333333-3333-4333-8333-333333333333','head_teacher'),
  ('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','44444444-4444-4444-8444-444444444444','head_teacher'),
- ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','exam_officer');
+ ('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','55555555-5555-4555-8555-555555555555','exam_officer'),
+ ('10000000-0000-4000-8000-000000000006','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','66666666-6666-4666-8666-666666666666','administrator');
 insert into auth.users(id) values
  ('11111111-1111-4111-8111-111111111111'),
  ('22222222-2222-4222-8222-222222222222'),
  ('33333333-3333-4333-8333-333333333333'),
  ('44444444-4444-4444-8444-444444444444'),
- ('55555555-5555-4555-8555-555555555555');
+ ('55555555-5555-4555-8555-555555555555'),
+ ('66666666-6666-4666-8666-666666666666');
 
 insert into public.schoolpro_classes(id,school_id,level,form_teacher_id) values
  ('20000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','primary','10000000-0000-4000-8000-000000000002'),
@@ -200,6 +206,7 @@ insert into public.schoolpro_results(id,school_id,student_id,term,session,status
  ('40000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000001','Second Term','2025/2026','published',true);
 
 \ir ../supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql
+\ir ../supabase/migrations/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses.sql
 
 set role authenticated;
 
@@ -286,6 +293,50 @@ begin
 end
 $test$;
 
+-- A global Super Admin is not an appointed Exam Officer, but may
+-- authorize a forwarded correction request as an audited override.
+begin;
+select set_config('request.jwt.claim.sub','66666666-6666-4666-8666-666666666666',false);
+do $test$
+begin
+ if private.is_admin(array['super_admin']::public.user_role[]) is not true then
+   raise exception 'Super Admin fixture is not recognized as a global administrator';
+ end if;
+ if private.schoolpro_is_exam_officer('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa') then
+   raise exception 'Super Admin inherited Exam Officer authority without appointment';
+ end if;
+
+ perform public.schoolpro_decide_result_reopening(
+   current_setting('test.teacher_request')::uuid,
+   true,
+   'Authorized Super Admin correction override'
+ );
+
+ if (select status from public.schoolpro_result_correction_batches
+     where id=current_setting('test.teacher_request')::uuid) <> 'approved' then
+   raise exception 'Super Admin correction override was not recorded';
+ end if;
+
+ if not exists(
+   select 1 from public.schoolpro_results
+   where id='40000000-0000-4000-8000-000000000001'
+     and status='draft' and not locked
+ ) then
+   raise exception 'Super Admin correction override did not reopen the result';
+ end if;
+
+ if not exists(
+   select 1 from public.schoolpro_audit_logs
+   where action='Super Admin reopened class or section results for correction'
+     and actor_id='66666666-6666-4666-8666-666666666666'
+     and metadata->>'authorization_role'='super_admin_override'
+     and metadata->>'super_admin_override'='true'
+ ) then
+   raise exception 'Super Admin correction override was not fully audited';
+ end if;
+end
+$test$;
+rollback;
 -- Independent Exam Officer authorizes reopening exactly the snapshotted row.
 select set_config('request.jwt.claim.sub','55555555-5555-4555-8555-555555555555',false);
 select public.schoolpro_decide_result_reopening(current_setting('test.teacher_request')::uuid,true,'Verified correction evidence') as reopened;

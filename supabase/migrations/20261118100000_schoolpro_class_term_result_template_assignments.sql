@@ -779,8 +779,12 @@ begin
      or not private.has_school_access(p_school) then
     raise exception 'An active member of this school is required to save a generated result';
   end if;
-  if p_term not in ('First Term','Second Term','Third Term')
+  if p_school is null or p_student is null or p_class is null
+     or p_template_assignment_id is null or p_template_id is null
+     or p_template_assignment_updated_at is null
+     or p_term not in ('First Term','Second Term','Third Term')
      or char_length(trim(coalesce(p_session,''))) not between 4 and 20
+     or nullif(trim(coalesce(p_storage_path,'')),'') is null
      or p_storage_path not like p_school::text||'/'||p_student::text||'/%'
      or position('..' in coalesce(p_storage_path,''))>0
      or jsonb_typeof(p_template_config_snapshot)<>'object'

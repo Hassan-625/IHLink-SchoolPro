@@ -58,6 +58,13 @@ assert.match(migration,/schoolpro_subjects_canonical_name_uidx/i);
 assert.match(migration,/create unique index[\s\S]*where is_catalogue_entry/i);
 assert.match(migration,/pg_advisory_xact_lock\(hashtextextended\(new\.school_id::text,0\)\)/i);
 assert.match(migration,/schoolpro_guard_canonical_subject_name/i);
+assert.match(migration,/old\.is_catalogue_entry=false and new\.is_catalogue_entry=true[\\s\\S]*existing\.is_catalogue_entry/i,"The database must allow one explicitly selected legacy duplicate to become canonical while preventing a second canonical collision.");
+assert.match(subjects,/async function promoteLegacySubject/,"School administrators need a visible workflow to select the canonical record among ambiguous legacy duplicates.");
+assert.match(subjects,/Choose as canonical/,"Legacy duplicate resolution must require an explicit record selection.");
+assert.match(subjects,/Other historical subject records and their IDs will remain unchanged/,"Legacy subject resolution must not rewrite historical subject identities.");
+assert.match(integration,/explicit legacy canonical selection/,"The SQL regression must prove one chosen legacy record can be promoted.");
+assert.match(integration,/a second same-name legacy record was also promoted/,"The SQL regression must prevent multiple canonical records for one normalized subject name.");
+
 assert.match(migration,/if tg_op='INSERT' then[\s\S]*pg_advisory_xact_lock/i,'The database guard must serialize all new subject inserts, not only flagged canonical rows.');
 assert.match(subjects,/is_catalogue_entry:true/,'School Admin-created subjects must enter the canonical school catalogue.');
 assert.match(subjects,/already exists in the school catalogue/i,'Duplicate subject creation must direct administrators to reuse the existing record.');

@@ -1,9 +1,27 @@
-import { Parser } from "hot-formula-parser";
+import { Parser, SUPPORTED_FORMULAS } from "hot-formula-parser";
 
 const MAX_FORMULA_CELLS = 10000;
 const MAX_FORMULA_EVALUATIONS = 50000;
 const MAX_RANGE_CELLS = 25000;
-const EXCEL_ERROR = /^#(?:REF!|NAME\\?|VALUE!|DIV\\/0!|N\\/A|NUM!|NULL!|CIRCULAR!)/i;
+const EXCEL_ERROR = /^#(?:REF!|NAME\?|VALUE!|DIV\/0!|N\/A|NUM!|NULL!|CIRCULAR!)/i;
+const SUPPORTED_FUNCTIONS = new Set(SUPPORTED_FORMULAS.map((name) => String(name).toUpperCase()));
+const UNSUPPORTED_FUNCTIONS = new Set([
+  "DATE", "DATEVALUE", "TIME", "TIMEVALUE", "NOW", "TODAY", "RAND", "RANDBETWEEN",
+  "YEAR", "MONTH", "DAY", "HOUR", "MINUTE", "SECOND", "EDATE", "EOMONTH",
+  "NETWORKDAYS", "NETWORKDAYS.INTL", "WORKDAY", "WORKDAY.INTL", "WEEKDAY", "WEEKNUM",
+  "DAYS", "DATEDIF", "OFFSET", "INDIRECT",
+]);
+
+function unsupportedFormulaReason(formula) {
+  if (/#REF!|_xlfn\.|_xlws\.|\[[^\]]+\.(?:xlsx|xlsm|xlsb|xls)\]/i.test(formula)) {
+    return "broken, external-workbook or unsupported Excel function reference";
+  }
+  if (formula.includes("!")) return "cross-worksheet formula references are not supported";
+  if (/\[[^\]]+\]/.test(formula)) return "structured table references are not supported";
+  const functions = [...formula.matchAll(/([A-Z][A-Z0-9_.]*)\s*\(/gi)].map((match) => match[1].toUpperCase());
+  const unsupported = [...new Set(functions.filter((name) => UNSUPPORTED_FUNCTIONS.has(name) || !SUPPORTED_FUNCTIONS.has(name)))];
+  return unsupported.length ? "formula function(s) not supported for verified calculation: " + unsupported.join(", ") : null;
+}
 
 function cellScalar(cell) {
   const value = cell?.value;
@@ -67,7 +85,9 @@ export function calculateWorkbookFormulas(workbook) {
       const formula = String(cell.formula || "").replace(/^=/, "");
       if (!formula.trim()) throw new Error("A formula cell is empty at " + sheet.name + "!" + address + ".");
       if (formula.length > 8192) throw new Error("The formula at " + sheet.name + "!" + address + " exceeds Excel's supported formula length.");
-      if (formula.includes("!") || /\\[[^\\]]+\\]/.test(formula)) {
+      const unsupportedReason = unsupportedFormulaReason(formula);
+      if (unsupportedReason) throw new Error("Unsupported formula at " + sheet.name + "!" + address + ": " + unsupportedReason + ".");
+      if (formula.includes("!") || /\[[^\]]+\]/.test(formula)) {
         throw new Error("Cross-sheet and external-workbook formula references are not supported yet (" + sheet.name + "!" + address + "). Keep formula dependencies on the same worksheet.");
       }
 
@@ -77,7 +97,7 @@ export function calculateWorkbookFormulas(workbook) {
 
       parser.on("callCellValue", (coordinate, done) => {
         try {
-          const label = String(coordinate?.label || "").replace(/\\$/g, "");
+          const label = String(coordinate?.label || "").replace(/\$/g, "");
           if (!/^[A-Z]{1,3}[1-9][0-9]*$/i.test(label)) {
             throw new Error("Unsupported cell reference in " + sheet.name + "!" + address + ".");
           }

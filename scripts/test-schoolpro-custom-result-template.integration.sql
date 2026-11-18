@@ -119,6 +119,26 @@ begin
     if sqlerrm like 'ASSERT:%' then raise; end if;
     if position('already exists in the school catalogue' in sqlerrm)=0 then raise; end if;
   end;
+
+  -- An administrator's explicit selection may promote one ambiguous legacy
+  -- record without renaming, deleting or rewriting any historical subject ID.
+  update public.schoolpro_subjects set is_catalogue_entry=true
+  where id='10000000-0000-4000-8000-000000000003';
+  if not (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000003')
+     or (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000002') then
+    raise exception 'ASSERT: explicit legacy canonical selection changed the wrong subject record';
+  end if;
+  begin
+    update public.schoolpro_subjects set is_catalogue_entry=true
+    where id='10000000-0000-4000-8000-000000000002';
+    raise exception 'ASSERT: a second same-name legacy record was also promoted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('A canonical subject with this name already exists' in sqlerrm)=0 then raise; end if;
+  end;
+  if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\\s+',' ','g'))='physical development')<>2 then
+    raise exception 'ASSERT: legacy duplicate subject rows were deleted or rewritten';
+  end if;
 end;
 $catalogue$;
 

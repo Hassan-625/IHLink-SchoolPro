@@ -99,7 +99,10 @@ assert.match(page,/async function confirmGeneratedResult/);
 assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
 assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
 assert.match(page,/schoolpro-issue-result-verification/);
-assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,"The reviewed result must retain the exact class assignment version used to generate it.");
+assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/
+assert.match(page,/classId:selected\.class_id/,"The generated preview must retain its class ID for server-side assignment revalidation.");
+assert.match(page,/currentAssignment=await supabase\.from\("schoolpro_result_template_assignments"\)/,"Finalization must reload the live class-term-session assignment.");
+assert.match(page,/stale preview cannot be finalized/,"A changed template assignment or subject mapping must invalidate an old preview.");,"The reviewed result must retain the exact class assignment version used to generate it.");
 assert.match(page,/template_assignment_id:pendingResultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment.");
 assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignment\.template_config/,"Generated output history must preserve the exact workbook configuration.");
 assert.match(page,/subject_row_mappings_snapshot:pendingResultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping.");

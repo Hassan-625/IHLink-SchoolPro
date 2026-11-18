@@ -772,6 +772,9 @@ grant execute on function public.schoolpro_set_result_template_sections(uuid,uui
 -- The workbook is uploaded first; this RPC is the authoritative commit point.
 -- Locking the assignment row prevents it being changed between comparison and
 -- output-row insertion.
+alter table public.schoolpro_generated_result_outputs
+  add column if not exists formula_calculation_snapshot jsonb not null default '{}'::jsonb;
+
 create or replace function public.schoolpro_record_generated_result_output(
   p_school uuid,
   p_student uuid,
@@ -783,7 +786,8 @@ create or replace function public.schoolpro_record_generated_result_output(
   p_template_id uuid,
   p_template_assignment_updated_at timestamptz,
   p_template_config_snapshot jsonb,
-  p_subject_row_mappings_snapshot jsonb
+  p_subject_row_mappings_snapshot jsonb,
+  p_formula_calculation_snapshot jsonb
 ) returns uuid
 language plpgsql
 security definer
@@ -806,7 +810,12 @@ begin
      or p_storage_path not like p_school::text||'/'||p_student::text||'/%'
      or position('..' in coalesce(p_storage_path,''))>0
      or jsonb_typeof(p_template_config_snapshot)<>'object'
-     or jsonb_typeof(p_subject_row_mappings_snapshot)<>'object' then
+     or jsonb_typeof(p_subject_row_mappings_snapshot)<>'object'
+     or jsonb_typeof(p_formula_calculation_snapshot)<>'object'
+     or p_formula_calculation_snapshot->>'engine'<>'hot-formula-parser'
+     or p_formula_calculation_snapshot->>'engineVersion'<>'4.0.0'
+     or coalesce((p_formula_calculation_snapshot->>'formulaCount')::integer,-1)<0
+     or p_formula_calculation_snapshot->>'calculationMode'<>'same-sheet-dependency-graph' then
     raise exception 'The generated result metadata is invalid';
   end if;
 
@@ -841,21 +850,21 @@ begin
   insert into public.schoolpro_generated_result_outputs(
     school_id,student_id,term,session,format,storage_path,generated_by,
     template_assignment_id,template_id,template_assignment_updated_at,
-    template_config_snapshot,subject_row_mappings_snapshot
+    template_config_snapshot,subject_row_mappings_snapshot,formula_calculation_snapshot
   ) values (
     p_school,p_student,trim(p_term),trim(p_session),'xlsx',p_storage_path,auth.uid(),
     v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
-    v_assignment.template_config,v_assignment.subject_row_mappings
+    v_assignment.template_config,v_assignment.subject_row_mappings,p_formula_calculation_snapshot
   ) returning id into v_output_id;
 
   return v_output_id;
 end;
 $$;
 revoke all on function public.schoolpro_record_generated_result_output(
-  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb
 ) from public,anon;
 grant execute on function public.schoolpro_record_generated_result_output(
-  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb
 ) to authenticated;
 
      or v_template_config->>'storage_path' not like p_school::text||'/%'

@@ -23,7 +23,7 @@ create unique index if not exists schoolpro_subjects_canonical_name_uidx
 
 create or replace function private.schoolpro_guard_canonical_subject_name()
 returns trigger language plpgsql security definer set search_path=''
-as $
+as $fn$
 begin
   if new.is_catalogue_entry then
     perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
@@ -39,7 +39,7 @@ begin
   end if;
   return new;
 end;
-$;
+$fn$;
 revoke all on function private.schoolpro_guard_canonical_subject_name() from public,anon,authenticated;
 drop trigger if exists schoolpro_guard_canonical_subject_name on public.schoolpro_subjects;
 create trigger schoolpro_guard_canonical_subject_name
@@ -105,6 +105,7 @@ declare
   v_new_name text;
   v_assignment uuid;
   v_is_form_master boolean := false;
+  v_old_subject_rows jsonb;
 begin
   if auth.uid() is null or not private.is_active_account() then
     raise exception 'An active signed-in account is required';
@@ -163,7 +164,7 @@ begin
     raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
   end if;
 
-  select template_name into v_old_name
+  select template_name,subject_row_mappings into v_old_name,v_old_subject_rows
   from public.schoolpro_result_template_assignments
   where school_id=p_school and class_id=p_class
     and term=trim(p_term) and session=trim(p_session)
@@ -171,9 +172,9 @@ begin
 
   v_new_name:=left(trim(v_template_config->>'name'),120);
   insert into public.schoolpro_result_template_assignments(
-    school_id,class_id,term,session,template_name,template_config,updated_by
+    school_id,class_id,term,session,template_name,template_config,subject_row_mappings,updated_by
   ) values (
-    p_school,p_class,trim(p_term),trim(p_session),v_new_name,p_template_config,auth.uid()
+    p_school,p_class,trim(p_term),trim(p_session),v_new_name,p_template_config,p_subject_row_mappings,auth.uid()
   )
   on conflict(school_id,class_id,term,session) do update
     set template_name=excluded.template_name,
@@ -424,15 +425,17 @@ begin
   on conflict(school_id,class_id,term,session) do update
     set template_name=excluded.template_name,
         template_config=excluded.template_config,
+        subject_row_mappings=excluded.subject_row_mappings,
         updated_by=excluded.updated_by,
         template_id=excluded.template_id,
         updated_at=now()
   returning id into v_assignment;
   insert into public.schoolpro_result_template_assignment_audit(
-    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by
+    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by,
+    previous_subject_row_mappings,new_subject_row_mappings
   ) values (p_school,p_class,trim(p_term),trim(p_session),
     case when v_old_name is null then 'assigned' else 'reassigned' end,
-    v_old_name,v_new_name,auth.uid());
+    v_old_name,v_new_name,auth.uid(),coalesce(v_old_subject_rows,'{}'::jsonb),p_subject_row_mappings);
   return v_assignment;
 end;
 $$;

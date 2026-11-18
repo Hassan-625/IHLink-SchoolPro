@@ -431,34 +431,11 @@ begin
   for v_subject_key,v_subject_row in select key,value from jsonb_each_text(p_subject_row_mappings)
   loop
     if v_subject_key !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-       or v_subject_row !~ '^[1-9][0-9]{0,4}
+       or v_subject_row !~ '^[1-9][0-9]{0,4}$' then
       raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
     end if;
-  end loop;
-  select count(*) into v_assignment_count
-  from public.schoolpro_subject_assignments a
-  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
-  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
-  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
-    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
-  end if;
-  if exists(
-    select 1 from public.schoolpro_subject_assignments a
-    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
-      and not (p_subject_row_mappings ? a.subject_id::text)
-  ) then
-    raise exception 'One or more allocated class subjects have no workbook row mapping';
-  end if;
-  if exists(
-    select 1 from (
-      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
-    ) rows group by row_number having count(*)>1
-  ) then
-    raise exception 'Two subjects cannot be mapped to the same workbook row';
-  end if;
-
-       or v_subject_row::integer>10000 then
-      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
+    if v_subject_row::integer>10000 then
+      raise exception 'Subject worksheet rows must be between 1 and 10000';
     end if;
   end loop;
   select count(*) into v_assignment_count

@@ -12,7 +12,7 @@ const UNSUPPORTED_FUNCTIONS = new Set([
   "DAYS", "DATEDIF", "OFFSET", "INDIRECT",
 ]);
 
-function unsupportedFormulaReason(formula) {
+export function unsupportedWorkbookFormula(formula) {
   if (/#REF!|_xlfn\.|_xlws\.|\[[^\]]+\.(?:xlsx|xlsm|xlsb|xls)\]/i.test(formula)) {
     return "broken, external-workbook or unsupported Excel function reference";
   }
@@ -85,7 +85,7 @@ export function calculateWorkbookFormulas(workbook) {
       const formula = String(cell.formula || "").replace(/^=/, "");
       if (!formula.trim()) throw new Error("A formula cell is empty at " + sheet.name + "!" + address + ".");
       if (formula.length > 8192) throw new Error("The formula at " + sheet.name + "!" + address + " exceeds Excel's supported formula length.");
-      const unsupportedReason = unsupportedFormulaReason(formula);
+      const unsupportedReason = unsupportedWorkbookFormula(formula);
       if (unsupportedReason) throw new Error("Unsupported formula at " + sheet.name + "!" + address + ": " + unsupportedReason + ".");
       if (formula.includes("!") || /\[[^\]]+\]/.test(formula)) {
         throw new Error("Cross-sheet and external-workbook formula references are not supported yet (" + sheet.name + "!" + address + "). Keep formula dependencies on the same worksheet.");

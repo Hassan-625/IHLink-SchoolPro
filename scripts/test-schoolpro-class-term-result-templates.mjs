@@ -7,6 +7,12 @@ const subjects=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const profiles=readFileSync('src/lib/resultTemplateProfiles.ts','utf8');
 const integration=readFileSync('scripts/test-schoolpro-custom-result-template.integration.sql','utf8');
 const workflow=readFileSync('.github/workflows/ci.yml','utf8');
+const formulaEngine=readFileSync('src/lib/excelFormulaCalculation.mjs','utf8');
+assert.match(formulaEngine,/callCellValue/,'Formula dependencies must resolve to live cells rather than cached formula results.');
+assert.match(formulaEngine,/callRangeValue/,'Excel range references must be evaluated from the current worksheet cells.');
+assert.match(formulaEngine,/Circular formula reference/,'Circular formula dependencies must block generation.');
+assert.match(formulaEngine,/MAX_FORMULA_CELLS/,'Formula evaluation must have a bounded workbook resource limit.');
+assert.match(formulaEngine,/cell\.value = \{ formula, result \}/,'Calculated values must be written back as formula cached results while preserving formulas.');
 
 assert.match(migration,/unique \(school_id,class_id,term,session\)/i);
 assert.match(migration,/c\.form_teacher_id=v_member/i);
@@ -114,10 +120,15 @@ assert.match(page,/for\(const pupil of roster\)/,'Each student workbook must be 
 assert.match(page,/if\(!generated\)\{failed\.push\(label\);\}/,'A student generation failure must be recorded without aborting the remaining batch.');
 assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
 assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');
-assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
+assert.match(page,/formulaCalculationVerified:true/,"Published workbooks may proceed only after the supported formula engine recalculates their formulas.");
 assert.match(page,/let hasFormulaCells=false/,'Formula detection must scan the full worksheet, not only the truncated preview list.');
 assert.match(page,/resultMeta\.hasFormulaCells/,'Published workbook finalization must block formulas anywhere in the workbook.');
-assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
+assert.match(page,/p_formula_calculation_snapshot:resultMeta\.formulaCalculation/,'The formula engine/version/count and calculation timestamp must be persisted with each generated output.');
+assert.match(page,/formulaCalculation\?\.engine!==\"hot-formula-parser\"/,'The official finalization guard must reject missing or unknown formula calculation provenance.');
+assert.match(profiles,/SUPPORTED_FORMULAS/,'Formula acceptance must match the actual parser-supported function catalogue.');
+assert.match(profiles,/cross-worksheet formula references are not supported/,'Cross-sheet formulas must fail closed rather than use stale cached values.');
+assert.match(profiles,/volatile and date-serial-sensitive functions fail closed/,'Volatile and date-serial-sensitive functions must not be reported as verified.');
+assert.match(page,/calculated workbook formulas/,"The generated preview must state that formulas have been recalculated before finalization.");
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,'The preview must snapshot the exact class template assignment.');
 assert.match(page,/classId:selected\.class_id/,"The generated preview must retain its class ID for server-side assignment revalidation.");
@@ -130,7 +141,7 @@ assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignmen
 assert.match(page,/subject_row_mappings_snapshot:pendingResultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping.");
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
-assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');
+assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'Every worksheet formula must be recalculated before the output workbook is serialized.');
 assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
 assert.match(profiles,/unrecognized\/custom formula function/,'Unknown or custom workbook functions must be blocked instead of trusting cached values.');
 assert.match(profiles,/supportedWorkbookFormulaFunctions/,'Only the supported Excel formula function profile is accepted.');
@@ -138,7 +149,7 @@ assert.match(profiles,/unsupportedWorkbookFormula/,'Unknown custom functions and
 assert.match(profiles,/xlsx\|xlsm\|xlsb\|xls/,'External workbook references are distinguished from structured table references.');
 
 assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
-assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
+assert.match(page,/Calculated · /,'The populated preview must show calculated formula values rather than formula expressions or stale cached values.');
 assert.match(page,/Confirm preview and create workbook/);
 
 
@@ -268,8 +279,8 @@ assert.match(page,/for\(const pupil of roster\)/,'Each student workbook must be 
 assert.match(page,/if\(!generated\)\{failed\.push\(label\);\}/,'A student generation failure must be recorded without aborting the remaining batch.');
 assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
 assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');
-assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
-assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
+assert.match(page,/formulaCalculationVerified:true/,"Published workbooks may proceed only after the supported formula engine recalculates their formulas.");
+assert.match(page,/calculated workbook formulas/,"The generated preview must state that formulas have been recalculated before finalization.");
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,'The preview must snapshot the exact class template assignment.');
 assert.match(page,/classId:selected\.class_id/,"The generated preview must retain its class ID for server-side assignment revalidation.");
@@ -282,7 +293,7 @@ assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignmen
 assert.match(page,/subject_row_mappings_snapshot:pendingResultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping.");
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
-assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');
+assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'Every worksheet formula must be recalculated before the output workbook is serialized.');
 assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
 assert.match(profiles,/unrecognized\/custom formula function/,'Unknown or custom workbook functions must be blocked instead of trusting cached values.');
 assert.match(profiles,/supportedWorkbookFormulaFunctions/,'Only the supported Excel formula function profile is accepted.');
@@ -290,7 +301,7 @@ assert.match(profiles,/unsupportedWorkbookFormula/,'Unknown custom functions and
 assert.match(profiles,/xlsx\|xlsm\|xlsb\|xls/,'External workbook references are distinguished from structured table references.');
 
 assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
-assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
+assert.match(page,/Calculated · /,'The populated preview must show calculated formula values rather than formula expressions or stale cached values.');
 assert.match(page,/Confirm preview and create workbook/);
 
 

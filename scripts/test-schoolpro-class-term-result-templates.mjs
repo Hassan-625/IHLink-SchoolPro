@@ -37,6 +37,8 @@ assert.match(migration,/p_formula_calculation_snapshot jsonb/,'The atomic output
 assert.match(migration,/formula_calculation_snapshot\)/,'The output RPC must insert formula calculation provenance into the generated result row.');
 assert.match(integration,/formula_calculation_snapshot/,'The disposable PostgreSQL test must assert formula provenance storage and RPC exposure.');
 assert.match(migration,/create table public\.schoolpro_result_template_library/i);
+assert.match(migration,/regexp_replace\(lower\(c\.level\),'\[\^a-z0-9\]\+','_','g'\)/i,'Class section detection must lowercase class levels before replacing separators.');
+assert.doesNotMatch(migration,/lower\(regexp_replace\(c\.level/i,'Class section detection must not filter uppercase letters before lowercasing.');
 assert.match(migration,/create table public\.schoolpro_result_template_section_mappings/i);
 assert.match(migration,/section_key text not null check \(section_key in \('nursery','primary','junior_secondary','senior_secondary'\)\)/i);
 assert.match(migration,/This custom template has not been mapped to the selected class section/i);

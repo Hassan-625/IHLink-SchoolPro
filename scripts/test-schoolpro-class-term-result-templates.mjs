@@ -150,4 +150,15 @@ assert.match(integration,/subject_row_mappings=v_map/i);
 assert.match(integration,/Two subjects cannot be mapped to the same workbook row/i);
 assert.match(workflow,/custom-result-template-mapping-integration/,'CI must run the exact migration and subject/mapping authorization tests against disposable PostgreSQL.');
 
+const subjectPage=await readFile(new URL('../src/pages/schoolpro/SchoolProSubjects.tsx',import.meta.url),'utf8');
+const promotionMigration=await readFile(new URL('../supabase/migrations/20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql',import.meta.url),'utf8');
+assert.match(subjectPage,/rpc\("schoolpro_promote_legacy_subject_to_catalogue"/,'Legacy subject promotion must use the audited server-side RPC, not a direct table update.');
+assert.doesNotMatch(subjectPage,/from\("schoolpro_subjects"\)\.update\(\{is_catalogue_entry:true\}\)/,'Browser clients must not directly mutate canonical subject markers.');
+assert.match(promotionMigration,/private\.schoolpro_is_school_admin\(p_school\)/,'Only an authorized school administrator may promote a legacy subject.');
+assert.match(promotionMigration,/schoolpro_subject_catalogue_promotion_audit/,'Legacy subject promotion must create an immutable-by-client audit record.');
+assert.match(promotionMigration,/for update/i,'Promotion must lock the selected historical subject row.');
+assert.match(integration,/schoolpro_promote_legacy_subject_to_catalogue/,'Disposable PostgreSQL tests must exercise the audited promotion RPC.');
+assert.match(integration,/non-admin promoted a legacy subject/i,'Disposable PostgreSQL tests must reject non-admin promotion.');
+assert.match(workflow,/custom-result-template-mapping-integration/,'The exact promotion migration must be covered by the disposable PostgreSQL job.');
+
 console.log('PASS: custom workbook library, canonical subject catalogue, Form Master selection, audited subject-ID mapping, populated pre-verification preview, score/formula validation and disposable PostgreSQL coverage.');

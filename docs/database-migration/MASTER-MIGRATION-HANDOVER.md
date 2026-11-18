@@ -4134,3 +4134,10 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Restored the intended `<div className="scroll-mt-20 grid ...">` wrapper around those panels and closed it before `ModulePage` ends.
 - Commit: `f22d696ab9ed488c2c96aae77311fc4cee45f7fe`.
 - This is branch-only. No production migration, production data change, merge, or Render deployment occurred. Fresh CI for this commit must confirm TypeScript validation before treating the correction as passing.
+
+
+### PR #226 exact-head CI corrections — 2026-11-18
+- Fixed the remaining JSX parse error by removing the redundant closing `</div>` after the saved-results and generated-preview panels; the main editor grid already closes at the end of the preceding panel.
+- Replaced all 11 references to the undefined `private.schoolpro_is_school_admin(uuid)` helper in the custom result-template migration with the existing `private.has_school_access(uuid, public.school_member_role[])` authorization helper, restricted to the proprietor and administrator roles. This avoids introducing a parallel or permissive authorization function.
+- Corrected the member-profile concurrency test's expected audit count: the staff profile already has two legitimate audit entries (profile correction and verified email change) before the concurrent membership-removal attempt. The race must add no third entry, so the expected count is two.
+- These changes are limited to PR #226 source, migration and disposable test files. No production migration, production data modification, merge, or Render deployment was performed. Fresh exact-head CI and disposable PostgreSQL tests are required before considering the fixes verified.

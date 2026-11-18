@@ -391,9 +391,6 @@ begin
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
       and fm.school_id=p_school and fm.user_id=auth.uid() and fm.status='active'
   ) into v_is_form_master;
-  raise notice 'custom-template authorization: uid=%, member=%, form_master=%, admin_access=%',
-    auth.uid(),v_member,v_is_form_master,
-    private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]);
   if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;

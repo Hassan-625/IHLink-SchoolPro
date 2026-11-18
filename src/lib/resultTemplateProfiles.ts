@@ -75,3 +75,31 @@ export function resolveSubjectRowsById(
  }
  return result;
 }
+
+
+const supportedWorkbookFormulaFunctions=new Set([
+ 'SUM','AVERAGE','AVERAGEA','AVERAGEIF','AVERAGEIFS','MIN','MAX','COUNT','COUNTA','COUNTBLANK','COUNTIF','COUNTIFS','SUMIF','SUMIFS','SUMPRODUCT','SUBTOTAL','AGGREGATE',
+ 'IF','IFS','AND','OR','NOT','XOR','SWITCH','IFERROR','IFNA','TRUE','FALSE','NA',
+ 'ROUND','ROUNDUP','ROUNDDOWN','MROUND','TRUNC','INT','ABS','SIGN','MOD','POWER','SQRT','EXP','LN','LOG','LOG10','PI','CEILING','CEILING.MATH','FLOOR','FLOOR.MATH',
+ 'RANK','RANK.EQ','RANK.AVG','LARGE','SMALL',
+ 'VLOOKUP','HLOOKUP','XLOOKUP','INDEX','MATCH','CHOOSE','CHOOSECOLS','CHOOSEROWS','ADDRESS','ROW','ROWS','COLUMN','COLUMNS','OFFSET','INDIRECT',
+ 'LEFT','RIGHT','MID','LEN','TRIM','CLEAN','UPPER','LOWER','PROPER','CONCAT','CONCATENATE','TEXTJOIN','TEXT','VALUE','NUMBERVALUE','SUBSTITUTE','REPLACE','FIND','SEARCH','EXACT','REPT','TEXTBEFORE','TEXTAFTER','TEXTSPLIT',
+ 'DATE','YEAR','MONTH','DAY','HOUR','MINUTE','SECOND','TODAY','NOW','EDATE','EOMONTH','NETWORKDAYS','NETWORKDAYS.INTL','WORKDAY','WORKDAY.INTL','WEEKDAY','WEEKNUM','DAYS','DATEDIF',
+ 'ISBLANK','ISNUMBER','ISTEXT','ISERROR','ISERR','ISNA','ISLOGICAL','ISFORMULA','FORMULATEXT','ERROR.TYPE',
+ 'HYPERLINK','GETPIVOTDATA','TRANSPOSE','FILTER','SORT','SORTBY','UNIQUE','SEQUENCE','TAKE','DROP','VSTACK','HSTACK','WRAPROWS','WRAPCOLS','TOCOL','TOROW','LET','LAMBDA','MAP','REDUCE','SCAN','MAKEARRAY','BYROW','BYCOL',
+ 'RAND','RANDBETWEEN'
+]);
+
+/**
+ * ExcelJS preserves formulas but does not calculate them. Accept only standard
+ * Excel functions in the supported workbook profile; block external/broken
+ * references and unrecognized custom functions instead of trusting cached values.
+ */
+export function unsupportedWorkbookFormula(formula:string):string|null{
+ const source=String(formula||'');
+ if(/#REF!|_xlfn\\.|_xlws\\.|\\[[^\\]]+\\]/i.test(source))
+  return 'broken, external-workbook or unsupported Excel function reference';
+ const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\\s*\\(/gi)].map(match=>match[1].toUpperCase());
+ const unsupported=[...new Set(functions.filter(name=>!supportedWorkbookFormulaFunctions.has(name)))];
+ return unsupported.length?('unrecognized/custom formula function(s): '+unsupported.join(', ')):null;
+}

@@ -62,7 +62,7 @@ const workbook = makeWorkbook([
   [{ formula: "AVERAGE(A1:B1)", result: 0 }],
 ]);
 const summary = calculateWorkbookFormulas(workbook);
-assert.equal(summary.formulaCount, 3);
+assert.equal(summary.formulaCount, 4);
 assert.equal(workbook.sheet.getCell("C1").result, 30);
 assert.equal(workbook.sheet.getCell("A2").result, 60);
 assert.equal(workbook.sheet.getCell("B2").result, "PASS");

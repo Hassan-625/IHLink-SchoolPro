@@ -16,6 +16,7 @@ assert.match(migration,/and not s\.is_catalogue_entry/i,"Result-template assignm
 assert.match(migration,/Subject rows cannot overwrite the workbook heading/i,"Subject mappings must start at or below the workbook subject-row boundary.");
 assert.match(page,/row<Number\(choice\.config\.start_row\|\|1\)/,"The UI must prevent subject rows from overwriting workbook headings.");
 assert.match(page,/columnOwners\.forEach/,"Workbook result columns must not collide.");
+assert.match(page,/Result output column .* overlaps mapped .* range/,"Repeated subject/result output columns must not overlap student-detail, custom-field or media ranges.");
 assert.doesNotMatch(page,/normalizedRole===\x27exam_officer\x27/,"Exam Officers must use the saved class mapping rather than reassigning it.");
 assert.match(migration,/private\.schoolpro_is_school_admin\(p_school\)/i);
 assert.match(migration,/p_template_config->>'storage_path'.*p_school::text/i);

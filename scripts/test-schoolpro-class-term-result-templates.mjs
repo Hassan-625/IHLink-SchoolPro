@@ -97,6 +97,10 @@ assert.match(page,/setGeneratedPreview\(preview\)/,'The selected student result 
 assert.match(page,/Verification is not issued before this review/i);
 assert.match(page,/async function confirmGeneratedResult/);
 assert.match(page,/schoolpro-issue-result-verification/);
+assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,"The reviewed result must retain the exact class assignment version used to generate it.");
+assert.match(page,/template_assignment_id:pendingResultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment.");
+assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignment\.template_config/,"Generated output history must preserve the exact workbook configuration.");
+assert.match(page,/subject_row_mappings_snapshot:pendingResultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping.");
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
 assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');

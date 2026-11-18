@@ -292,6 +292,10 @@ declare
   v_english text:='10000000-0000-4000-8000-000000000006';
   v_map jsonb;
 begin
+  raise notice 'custom-template test marker A: uid=%, member=%, form_teacher=%',
+    auth.uid(),
+    (select m.id from public.schoolpro_members m where m.school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and m.user_id=auth.uid() and m.status='active' limit 1),
+    (select c.form_teacher_id from public.schoolpro_classes c where c.id='50000000-0000-4000-8000-000000000001');
   v_map:=jsonb_build_object(v_math,10,v_english,11);
   v_id:=public.schoolpro_set_class_result_template(
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',

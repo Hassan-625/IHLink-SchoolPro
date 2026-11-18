@@ -27,8 +27,24 @@ as $fn$
 begin
   if tg_op='INSERT' then
     perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
-  elsif new.is_catalogue_entry
-     or new.school_id is distinct from old.school_id
+  elsif tg_op='UPDATE'
+    and old.is_catalogue_entry=false and new.is_catalogue_entry=true
+    and new.school_id is not distinct from old.school_id
+    and new.name is not distinct from old.name then
+    -- An administrator may explicitly choose one historical duplicate as the
+    -- canonical record. Other legacy rows remain intact and retain their IDs.
+    perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
+    if exists(
+      select 1 from public.schoolpro_subjects existing
+      where existing.school_id=new.school_id and existing.id is distinct from new.id
+        and existing.is_catalogue_entry
+        and lower(regexp_replace(btrim(existing.name), '\s+', ' ', 'g'))
+          = lower(regexp_replace(btrim(new.name), '\s+', ' ', 'g'))
+    ) then
+      raise exception 'A canonical subject with this name already exists. Choose that existing catalogue record';
+    end if;
+    return new;
+  elsif new.school_id is distinct from old.school_id
      or new.name is distinct from old.name then
     perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
   else

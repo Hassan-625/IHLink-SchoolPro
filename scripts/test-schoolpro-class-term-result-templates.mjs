@@ -82,6 +82,10 @@ assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range asse
 assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');
 assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
 assert.match(profiles,/unrecognized\/custom formula function/,'Unknown or custom workbook functions must be blocked instead of trusting cached values.');
+assert.match(profiles,/supportedWorkbookFormulaFunctions/,'Only the supported Excel formula function profile is accepted.');
+assert.match(profiles,/unsupportedWorkbookFormula/,'Unknown custom functions and external/broken references are flagged.');
+assert.match(profiles,/xlsx\|xlsm\|xlsb\|xls/,'External workbook references are distinguished from structured table references.');
+
 assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
 assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
 assert.match(page,/Confirm preview and create workbook/);

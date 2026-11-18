@@ -96,6 +96,8 @@ assert.match(page,/result subjects could not be resolved to the school subject c
 assert.match(page,/setGeneratedPreview\(preview\)/,'The selected student result must be populated into a reviewable workbook preview before finalization.');
 assert.match(page,/Verification is not issued before this review/i);
 assert.match(page,/async function confirmGeneratedResult/);
+assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
+assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,"The reviewed result must retain the exact class assignment version used to generate it.");
 assert.match(page,/template_assignment_id:pendingResultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment.");

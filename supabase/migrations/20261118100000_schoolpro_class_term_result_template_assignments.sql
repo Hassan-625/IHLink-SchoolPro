@@ -48,6 +48,51 @@ on public.schoolpro_subjects
 for each row execute function private.schoolpro_guard_canonical_subject_name();
 
 
+
+-- A Form Master may add an existing canonical school subject to their own
+-- assigned class/session. They cannot create or rename catalogue entries.
+create or replace function public.schoolpro_form_master_add_class_subject(
+  p_school uuid,p_class uuid,p_subject uuid,p_session text
+) returns uuid
+language plpgsql security definer set search_path=''
+as $fn$
+declare
+  v_member uuid;
+  v_assignment uuid;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or char_length(trim(coalesce(p_session,''))) not between 4 and 20 then
+    raise exception 'An active account and valid academic session are required';
+  end if;
+  select m.id into v_member
+  from public.schoolpro_members m
+  where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+  limit 1;
+  if v_member is null or not exists(
+    select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.id=p_class and c.archived_at is null
+      and c.form_teacher_id=v_member
+  ) then
+    raise exception 'Only the Form Master assigned to this class can select its subjects';
+  end if;
+  if not exists(
+    select 1 from public.schoolpro_subjects s
+    where s.school_id=p_school and s.id=p_subject and s.is_catalogue_entry
+  ) then
+    raise exception 'Select an existing canonical subject from this school catalogue';
+  end if;
+  insert into public.schoolpro_subject_assignments(
+    school_id,class_id,subject_id,teacher_member_id,session
+  ) values (p_school,p_class,p_subject,null,trim(p_session))
+  on conflict(class_id,subject_id,session) do update
+    set updated_at=now()
+  returning id into v_assignment;
+  return v_assignment;
+end;
+$fn$;
+revoke all on function public.schoolpro_form_master_add_class_subject(uuid,uuid,uuid,text) from public,anon;
+grant execute on function public.schoolpro_form_master_add_class_subject(uuid,uuid,uuid,text) to authenticated;
+
 create table public.schoolpro_result_template_assignments (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schoolpro_schools(id) on delete cascade,

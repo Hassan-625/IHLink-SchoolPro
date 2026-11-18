@@ -153,6 +153,12 @@ export function calculateWorkbookFormulas(workbook) {
         if (typeof result === "string" && EXCEL_ERROR.test(result)) {
           throw new Error("Formula calculation returned " + result + " at " + sheet.name + "!" + address + ".");
         }
+        if (typeof result === "number" && !Number.isFinite(result)) {
+          throw new Error("Formula calculation returned a non-finite number at " + sheet.name + "!" + address + ".");
+        }
+        if (result !== null && typeof result === "object") {
+          throw new Error("Formula calculation returned a non-scalar result at " + sheet.name + "!" + address + "; array/dynamic-array results are not supported.");
+        }
         if (result === undefined) {
           throw new Error("Formula calculation returned no value at " + sheet.name + "!" + address + ".");
         }

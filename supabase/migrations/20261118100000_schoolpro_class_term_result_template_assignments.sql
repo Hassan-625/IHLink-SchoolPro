@@ -353,38 +353,6 @@ begin
      or octet_length(p_template_config::text)>100000 then
     raise exception 'Choose a saved custom result workbook belonging to this school';
   end if;
-  if jsonb_typeof(p_subject_row_mappings)<>'object'
-     or octet_length(p_subject_row_mappings::text)>50000 then
-    raise exception 'Map each assigned class subject to one workbook row before saving';
-  end if;
-  for v_subject_key,v_subject_row in select key,value from jsonb_each_text(p_subject_row_mappings)
-  loop
-    if v_subject_key !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-       or v_subject_row !~ '^[1-9][0-9]{0,4}$' then
-      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
-    end if;
-  end loop;
-  select count(*) into v_assignment_count
-  from public.schoolpro_subject_assignments a
-  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
-  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
-  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
-    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
-  end if;
-  if exists(
-    select 1 from public.schoolpro_subject_assignments a
-    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
-      and not (p_subject_row_mappings ? a.subject_id::text)
-  ) then
-    raise exception 'One or more allocated class subjects have no workbook row mapping';
-  end if;
-  if exists(
-    select 1 from (
-      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
-    ) rows group by row_number having count(*)>1
-  ) then
-    raise exception 'Two subjects cannot be mapped to the same workbook row';
-  end if;
 
   if not exists(select 1 from storage.objects o
     where o.bucket_id='school-result-templates'
@@ -454,6 +422,65 @@ begin
   if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)
       or private.schoolpro_is_exam_officer(p_school)) then
     raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  end if;
+
+  if jsonb_typeof(p_subject_row_mappings)<>'object'
+     or octet_length(p_subject_row_mappings::text)>50000 then
+    raise exception 'Map each assigned class subject to one workbook row before saving';
+  end if;
+  for v_subject_key,v_subject_row in select key,value from jsonb_each_text(p_subject_row_mappings)
+  loop
+    if v_subject_key !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+       or v_subject_row !~ '^[1-9][0-9]{0,4}
+      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
+    end if;
+  end loop;
+  select count(*) into v_assignment_count
+  from public.schoolpro_subject_assignments a
+  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
+  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
+  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
+    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subject_assignments a
+    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
+      and not (p_subject_row_mappings ? a.subject_id::text)
+  ) then
+    raise exception 'One or more allocated class subjects have no workbook row mapping';
+  end if;
+  if exists(
+    select 1 from (
+      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
+    ) rows group by row_number having count(*)>1
+  ) then
+    raise exception 'Two subjects cannot be mapped to the same workbook row';
+  end if;
+
+       or v_subject_row::integer>10000 then
+      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
+    end if;
+  end loop;
+  select count(*) into v_assignment_count
+  from public.schoolpro_subject_assignments a
+  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
+  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
+  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
+    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subject_assignments a
+    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
+      and not (p_subject_row_mappings ? a.subject_id::text)
+  ) then
+    raise exception 'One or more allocated class subjects have no workbook row mapping';
+  end if;
+  if exists(
+    select 1 from (
+      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
+    ) rows group by row_number having count(*)>1
+  ) then
+    raise exception 'Two subjects cannot be mapped to the same workbook row';
   end if;
 
   select template_name,subject_row_mappings into v_old_name,v_old_subject_rows

@@ -129,12 +129,12 @@ assert.match(page,/Calculated · /,'The populated preview displays calculated fo
 assert.match(formulaEngine,/MAX_FORMULA_CELLS/,'Formula evaluation has a resource ceiling.');
 assert.match(page,/p_formula_calculation_snapshot:resultMeta\.formulaCalculation/,'The formula engine/version/count and calculation timestamp must be persisted with each generated output.');
 assert.match(page,/formulaCalculation\?\.engine!==\"hot-formula-parser\"/,'The official finalization guard must reject missing or unknown formula calculation provenance.');
-assert.match(profiles,/SUPPORTED_FORMULAS/,'Formula acceptance must match the actual parser-supported function catalogue.');
 assert.match(profiles,/unsupportedWorkbookFormula/,'The shared validator is exported from the formula engine for the upload preview.');
 assert.match(formulaEngine,/unsupportedFormulaReason\(formula\)/,'The calculator itself must enforce the same allowlist as the UI validator.');
 assert.match(formulaEngine,/SUPPORTED_FUNCTIONS/,'Only functions implemented by the selected formula engine may be calculated.');
 assert.match(formulaEngine,/cross-worksheet formula references are not supported/,'The engine must reject unsupported cross-sheet dependencies.');
-assert.match(profiles,/cross-worksheet formula references are not supported/,'Cross-sheet formulas must fail closed rather than use stale cached values.');
+assert.match(formulaEngine,/SUPPORTED_FORMULAS/,'Formula acceptance must match the actual parser-supported function catalogue.');
+assert.match(formulaEngine,/formula function\(s\) not supported for verified calculation/,'Unsupported/custom functions must fail closed.');
 assert.match(profiles,/volatile and date-serial-sensitive functions fail closed/,'Volatile and date-serial-sensitive functions must not be reported as verified.');
 assert.match(page,/calculated workbook formulas/,"The generated preview must state that formulas have been recalculated before finalization.");
 assert.match(page,/schoolpro-issue-result-verification/);

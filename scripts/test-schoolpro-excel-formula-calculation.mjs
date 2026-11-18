@@ -67,6 +67,12 @@ assert.equal(workbook.sheet.getCell("C1").result, 30);
 assert.equal(workbook.sheet.getCell("A2").result, 60);
 assert.equal(workbook.sheet.getCell("B2").result, "PASS");
 assert.equal(workbook.sheet.getCell("A3").result, 15);
+const dateWorkbook = makeWorkbook([
+  [new Date(Date.UTC(2026, 0, 1)), { formula: "A1+1", result: 0 }],
+]);
+calculateWorkbookFormulas(dateWorkbook);
+const excelDateSerial = Date.UTC(2026, 0, 1) / 86400000 + 25569;
+assert.equal(dateWorkbook.sheet.getCell("B1").result, excelDateSerial + 1);
 assert.equal(workbook.calcProperties.calcMode, "auto");
 assert.equal(workbook.calcProperties.fullCalcOnLoad, true);
 assert.equal(unsupportedWorkbookFormula("SUM(A1:B1)"), null);

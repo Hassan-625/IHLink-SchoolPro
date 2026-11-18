@@ -7,3 +7,5 @@ export type FormulaCalculationSummary = {
   calculationMode: "same-sheet-dependency-graph";
 };
 export declare function calculateWorkbookFormulas(workbook: any): FormulaCalculationSummary;
+
+export declare function unsupportedWorkbookFormula(formula: string): string | null;

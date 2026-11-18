@@ -76,6 +76,7 @@ create table public.schoolpro_generated_result_outputs(
 );
 
 \ir ../supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql
+\ir ../supabase/migrations/20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql
 
 do $privileges$
 begin
@@ -120,22 +121,6 @@ begin
     if position('already exists in the school catalogue' in sqlerrm)=0 then raise; end if;
   end;
 
-  -- An administrator's explicit selection may promote one ambiguous legacy
-  -- record without renaming, deleting or rewriting any historical subject ID.
-  update public.schoolpro_subjects set is_catalogue_entry=true
-  where id='10000000-0000-4000-8000-000000000003';
-  if not (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000003')
-     or (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000002') then
-    raise exception 'ASSERT: explicit legacy canonical selection changed the wrong subject record';
-  end if;
-  begin
-    update public.schoolpro_subjects set is_catalogue_entry=true
-    where id='10000000-0000-4000-8000-000000000002';
-    raise exception 'ASSERT: a second same-name legacy record was also promoted';
-  exception when others then
-    if sqlerrm like 'ASSERT:%' then raise; end if;
-    if position('A canonical subject with this name already exists' in sqlerrm)=0 then raise; end if;
-  end;
   if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\\s+',' ','g'))='physical development')<>2 then
     raise exception 'ASSERT: legacy duplicate subject rows were deleted or rewritten';
   end if;
@@ -167,6 +152,47 @@ select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001'
 select set_config('test.active','true',false);
 select set_config('test.school_admin','false',false);
 select set_config('test.exam_officer','false',false);
+select set_config('test.school_admin','true',false);
+do $legacy_promotion_rpc$
+begin
+  perform public.schoolpro_promote_legacy_subject_to_catalogue(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000003'
+  );
+  if not (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000003')
+     or (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000002') then
+    raise exception 'ASSERT: audited RPC promoted the wrong legacy subject record';
+  end if;
+  if (select count(*) from public.schoolpro_subject_catalogue_promotion_audit where subject_id='10000000-0000-4000-8000-000000000003')<>1 then
+    raise exception 'ASSERT: legacy subject promotion was not audited exactly once';
+  end if;
+  begin
+    perform public.schoolpro_promote_legacy_subject_to_catalogue(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000002'
+    );
+    raise exception 'ASSERT: RPC promoted a second same-name legacy record';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('A canonical subject with this name already exists' in sqlerrm)=0 then raise; end if;
+  end;
+  if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\\s+',' ','g'))='physical development')<>2 then
+    raise exception 'ASSERT: legacy duplicate subject rows were deleted or rewritten';
+  end if;
+end;
+$legacy_promotion_rpc$;
+select set_config('test.school_admin','false',false);
+do $legacy_promotion_denied$
+begin
+  begin
+    perform public.schoolpro_promote_legacy_subject_to_catalogue(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','10000000-0000-4000-8000-000000000002'
+    );
+    raise exception 'ASSERT: non-admin promoted a legacy subject';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Only an active school administrator' in sqlerrm)=0 then raise; end if;
+  end;
+end;
+$legacy_promotion_denied$;
 
 do $form_master$
 declare

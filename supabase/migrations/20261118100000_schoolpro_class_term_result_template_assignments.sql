@@ -748,3 +748,90 @@ end;
 $$;
 revoke all on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) from public,anon;
 grant execute on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) to authenticated;
+
+
+-- Atomically validate the exact class-template snapshot and record the output.
+-- The workbook is uploaded first; this RPC is the authoritative commit point.
+-- Locking the assignment row prevents it being changed between comparison and
+-- output-row insertion.
+create or replace function public.schoolpro_record_generated_result_output(
+  p_school uuid,
+  p_student uuid,
+  p_class uuid,
+  p_term text,
+  p_session text,
+  p_storage_path text,
+  p_template_assignment_id uuid,
+  p_template_id uuid,
+  p_template_assignment_updated_at timestamptz,
+  p_template_config_snapshot jsonb,
+  p_subject_row_mappings_snapshot jsonb
+) returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_assignment public.schoolpro_result_template_assignments%rowtype;
+  v_output_id uuid;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.has_school_access(p_school) then
+    raise exception 'An active member of this school is required to save a generated result';
+  end if;
+  if p_term not in ('First Term','Second Term','Third Term')
+     or char_length(trim(coalesce(p_session,''))) not between 4 and 20
+     or p_storage_path not like p_school::text||'/'||p_student::text||'/%'
+     or position('..' in coalesce(p_storage_path,''))>0
+     or jsonb_typeof(p_template_config_snapshot)<>'object'
+     or jsonb_typeof(p_subject_row_mappings_snapshot)<>'object' then
+    raise exception 'The generated result metadata is invalid';
+  end if;
+
+  perform 1
+  from public.schoolpro_students s
+  where s.id=p_student and s.school_id=p_school and s.class_id=p_class;
+  if not found then
+    raise exception 'The selected student is no longer enrolled in this class';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+  if not found
+     or v_assignment.id<>p_template_assignment_id
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot then
+    raise exception 'The class result design or subject mapping changed after preview. Refresh and generate a new preview.';
+  end if;
+
+  if not exists(
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-result-outputs' and o.name=p_storage_path
+  ) then
+    raise exception 'The generated workbook upload could not be verified';
+  end if;
+
+  insert into public.schoolpro_generated_result_outputs(
+    school_id,student_id,term,session,format,storage_path,generated_by,
+    template_assignment_id,template_id,template_assignment_updated_at,
+    template_config_snapshot,subject_row_mappings_snapshot
+  ) values (
+    p_school,p_student,trim(p_term),trim(p_session),'xlsx',p_storage_path,auth.uid(),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings
+  ) returning id into v_output_id;
+
+  return v_output_id;
+end;
+$$;
+revoke all on function public.schoolpro_record_generated_result_output(
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb
+) from public,anon;
+grant execute on function public.schoolpro_record_generated_result_output(
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb
+) to authenticated;

@@ -602,7 +602,7 @@ declare
   v_count integer;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.has_school_access(p_school) then
+     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'Only an active authorized school administrator can map result templates';
   end if;
   if p_section_keys is null then
@@ -792,7 +792,7 @@ declare
   v_output_id uuid;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
+     or not private.has_school_access(p_school) then
     raise exception 'An active member of this school is required to save a generated result';
   end if;
   if p_school is null or p_student is null or p_class is null

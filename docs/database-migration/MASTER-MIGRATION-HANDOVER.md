@@ -4143,3 +4143,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - These changes are limited to PR #226 source, migration and disposable test files. No production migration, production data modification, merge, or Render deployment was performed. Fresh exact-head CI and disposable PostgreSQL tests are required before considering the fixes verified.
 
 - Follow-up review preserved the original general `has_school_access(school_id)` read policies and the generated-output RPC's general active-member access check; only the intended school-administration checks use the proprietor/administrator role-array overload. This avoids unintentionally narrowing ordinary school-member read/download access.
+
+
+### PR #226 class-wide result workbook batch — 2026-11-18
+- Implemented the requested batch operation in `SchoolProResultTemplates.tsx`: from a selected student/class, the page enumerates the loaded roster for that same class and sequentially builds a separate workbook for each student using the saved class/term/session assignment and stable subject-ID row mappings.
+- Refactored the existing generator to accept a student ID and return an isolated workbook/metadata/preview payload. Refactored confirmation to accept that payload, so each student's result is independently revalidated against the live assignment and finalized through the existing `schoolpro_record_generated_result_output` RPC with per-student storage path and immutable template/mapping provenance.
+- The batch continues after a student's preview/finalization error, tracks completed/success/failed counts and reports failed student names. It does not create one shared class workbook or modify student scores.
+- Draft/unpublished results remain clearly marked review copies; published workbooks still fail closed when formulas are present because ExcelJS does not calculate formulas in-browser. No formula publication safeguard was weakened.
+- Added source-contract assertions for explicit student generation, class-only roster selection, per-student payload finalization, continuation after failures, and the corrected role-scoped authorization helper while preserving general school-member read policies.
+- Changes are branch-only. No production migration, production data change, PR merge, or Render deployment was performed. Fresh exact-head CI and disposable PostgreSQL tests remain required.

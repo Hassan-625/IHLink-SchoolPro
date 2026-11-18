@@ -102,7 +102,7 @@ assert.match(migration,/previous_subject_row_mappings jsonb/i);
 assert.match(migration,/new_subject_row_mappings jsonb/i);
 assert.match(page,/forceFullCalc:true/);
 assert.match(page,/calcMode:'auto'/);
-assert.match(page,/const writeMappedCell=\(address:string,value:any\)=>\{const cell=sheet\.getCell\(mappedAnchor\(address\)\)\.master;if\(!cell\.formula\)cell\.value=value;\}/);
+assert.match(page,/const writeMappedCell=\(address:string,value:any\)=>\{const cell=sheet\.getCell\(mappedAnchor\(address\)\)\.master;if\(!isFormulaCell\(cell\)\)cell\.value=value;\}/);
 assert.match(migration,/Every subject allocated to this class and session must be mapped exactly once/i);
 assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
 
@@ -267,7 +267,7 @@ assert.match(migration,/previous_subject_row_mappings jsonb/i);
 assert.match(migration,/new_subject_row_mappings jsonb/i);
 assert.match(page,/forceFullCalc:true/);
 assert.match(page,/calcMode:'auto'/);
-assert.match(page,/const writeMappedCell=\(address:string,value:any\)=>\{const cell=sheet\.getCell\(mappedAnchor\(address\)\)\.master;if\(!cell\.formula\)cell\.value=value;\}/);
+assert.match(page,/const writeMappedCell=\(address:string,value:any\)=>\{const cell=sheet\.getCell\(mappedAnchor\(address\)\)\.master;if\(!isFormulaCell\(cell\)\)cell\.value=value;\}/);
 assert.match(migration,/Every subject allocated to this class and session must be mapped exactly once/i);
 assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
 

@@ -343,6 +343,10 @@ begin
     if sqlerrm like 'ASSERT:%' then raise; end if;
     if position('Only this class Form Master or an authorized school administrator' in sqlerrm)=0 then raise; end if;
   end;
+  -- Subsequent mapping-validation cases must run as the class Form Master;
+  -- the preceding negative case deliberately switched to the Exam Officer.
+  perform set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',false);
+  perform set_config('test.exam_officer','false',false);
 
   begin
     perform public.schoolpro_set_class_result_template(

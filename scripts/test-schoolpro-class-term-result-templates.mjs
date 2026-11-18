@@ -184,8 +184,8 @@ assert.match(integration,/subject_row_mappings=v_map/i);
 assert.match(integration,/Two subjects cannot be mapped to the same workbook row/i);
 assert.match(workflow,/custom-result-template-mapping-integration/,'CI must run the exact migration and subject/mapping authorization tests against disposable PostgreSQL.');
 
-const subjectPage=await readFile(new URL('../src/pages/schoolpro/SchoolProSubjects.tsx',import.meta.url),'utf8');
-const promotionMigration=await readFile(new URL('../supabase/migrations/20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql',import.meta.url),'utf8');
+const subjectPage=readFileSync(new URL('../src/pages/schoolpro/SchoolProSubjects.tsx',import.meta.url),'utf8');
+const promotionMigration=readFileSync(new URL('../supabase/migrations/20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql',import.meta.url),'utf8');
 assert.match(subjectPage,/rpc\("schoolpro_promote_legacy_subject_to_catalogue"/,'Legacy subject promotion must use the audited server-side RPC, not a direct table update.');
 assert.doesNotMatch(subjectPage,/from\("schoolpro_subjects"\)\.update\(\{is_catalogue_entry:true\}\)/,'Browser clients must not directly mutate canonical subject markers.');
 assert.match(promotionMigration,/private\.has_school_access\(p_school, ARRAY\['proprietor','administrator'\]::public\.school_member_role\[\]\)/,'Only a proprietor or administrator may promote a legacy subject.');

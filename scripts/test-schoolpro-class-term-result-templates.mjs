@@ -71,7 +71,7 @@ assert.match(migration,/schoolpro_subjects_canonical_name_uidx/i);
 assert.match(migration,/create unique index[\s\S]*where is_catalogue_entry/i);
 assert.match(migration,/pg_advisory_xact_lock\(hashtextextended\(new\.school_id::text,0\)\)/i);
 assert.match(migration,/schoolpro_guard_canonical_subject_name/i);
-assert.match(migration,/old\.is_catalogue_entry=false and new\.is_catalogue_entry=true[\\s\\S]*existing\.is_catalogue_entry/i,"The database must allow one explicitly selected legacy duplicate to become canonical while preventing a second canonical collision.");
+assert.match(migration,/old\.is_catalogue_entry=false and new\.is_catalogue_entry=true[\s\S]*existing\.is_catalogue_entry/i,"The database must allow one explicitly selected legacy duplicate to become canonical while preventing a second canonical collision.");
 assert.match(subjects,/async function promoteLegacySubject/,"School administrators need a visible workflow to select the canonical record among ambiguous legacy duplicates.");
 assert.match(subjects,/Choose as canonical/,"Legacy duplicate resolution must require an explicit record selection.");
 assert.match(subjects,/Other historical subject records and their IDs will remain unchanged/,"Legacy subject resolution must not rewrite historical subject identities.");

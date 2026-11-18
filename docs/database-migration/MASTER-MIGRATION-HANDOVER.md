@@ -4065,3 +4065,6 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 
 
 - **Disposable PostgreSQL migration coverage added (2026-11-18):** added scripts/test-schoolpro-custom-result-template.integration.sql, which applies the exact PR migration on a fresh PostgreSQL database and exercises legacy duplicate preservation, normalized duplicate rejection for both flagged and unflagged inserts, cross-school name isolation, Form Master-only catalogue selection, idempotent selection, preservation of existing teacher allocation, subject-selection audit, assignment/audit write privileges, and valid/invalid subject-ID worksheet mappings. Added a dedicated custom-result-template-mapping-integration job to .github/workflows/ci.yml. The focused source regression is also exposed as npm run test:schoolpro-custom-result-templates and remains included through test-result-workflow.mjs.
+
+
+- **Template assignment authority hardening:** the class assignment RPC now records the trusted workbook name from the school-owned library snapshot rather than accepting the caller-supplied label. The disposable PostgreSQL fixture verifies that a non-Form-Master member cannot assign the class workbook and that spoofed names do not replace the library name.

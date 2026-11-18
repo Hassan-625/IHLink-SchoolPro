@@ -360,4 +360,21 @@ begin
 end;
 $output_provenance$;
 
+do $atomic_output$
+declare
+  v_definition text;
+begin
+  select pg_get_functiondef('public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)'::regprocedure)
+    into v_definition;
+  if v_definition is null
+     or position('for update' in lower(v_definition))=0
+     or position('subject_row_mappings_snapshot' in lower(v_definition))=0
+     or position('schoolpro_generated_result_outputs' in lower(v_definition))=0
+     or not has_function_privilege('authenticated','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)','EXECUTE') then
+    raise exception 'ASSERT: generated result finalization is not protected by the atomic authenticated RPC';
+  end if;
+end;
+$atomic_output$;
+
 select 'PASS: canonical school subject uniqueness, non-destructive legacy duplicate handling, Form Master class-scoped selection, preserved teacher allocations, idempotent audit, and audited subject-ID workbook row mappings.' as result;

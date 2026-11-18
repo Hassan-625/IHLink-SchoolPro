@@ -211,9 +211,9 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
 
 
  async function confirmGeneratedResult(payload?:{workbook:Blob;meta:any;preview:Array<{cell:string;value:string;formula:boolean}>}){
-  const workbookToFinalize=payload?.workbook||workbookToFinalize;
-  const resultMeta=payload?.meta||resultMeta;
-  const preview=payload?.preview||preview;
+  const workbookToFinalize=payload?.workbook||pendingWorkbook;
+  const resultMeta=payload?.meta||pendingResultMeta;
+  const preview=payload?.preview||generatedPreview;
   if(!supabase||!workbookToFinalize||!resultMeta)return false;
   if(resultMeta.isPublished&&preview.some(cell=>cell.formula)){setError("This published workbook contains formulas that the browser cannot calculate reliably. The workbook preview shows the formulas, not verified calculated totals. No verification code or official result file will be issued. Use a formula-free verified template or wait until reliable formula calculation is supported.");return false;}
   setBusy(true);setError(null);

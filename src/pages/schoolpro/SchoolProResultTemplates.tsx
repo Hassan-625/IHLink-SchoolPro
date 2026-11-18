@@ -8,7 +8,7 @@ import {saveSchoolFile,downloadSchoolFile,schoolFileName,XLSX_MIME} from '@/lib/
 import {SharedTemplateGallery,sampleTemplateUrl} from '@/components/schoolpro/SharedTemplateGallery';
 import {prepareA4ResultSheet} from '@/lib/a4ResultTemplate';
 import {WorkbookMappingPreview} from '@/components/schoolpro/WorkbookMappingPreview';
-import {resultTemplateProfile,combineAssessment,subjectClassSummary,assessmentMaximumForResults,sumResultTotals} from '@/lib/resultTemplateProfiles';
+import {resultTemplateProfile,resolveSubjectRowsById,combineAssessment,subjectClassSummary,assessmentMaximumForResults,sumResultTotals} from '@/lib/resultTemplateProfiles';
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import QRCode from "qrcode";
 import ExcelJS from "exceljs/dist/exceljs.min.js";
@@ -152,13 +152,9 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    const termNames=["First Term","Second Term","Third Term"],termIndex=termNames.indexOf(term);
    const previous=new Map<string,any[]>();
    for(const priorTerm of termNames.slice(0,Math.max(0,termIndex))){const response=await db.rpc(coordinatorOnly?"schoolpro_review_result":"schoolpro_printable_result",{p_student:selectedStudent,p_term:priorTerm,p_session:session});if(response.error)throw new Error("Previous term results could not be loaded. Please try again.");previous.set(priorTerm,response.data||[]);}
-   const subjectRows=matchingAssignment.subject_row_mappings||{};
-   const mappedRows=resultRows.map((result:any)=>Number(subjectRows[result.subject_id]));
-   if(mappedRows.some((row:number)=>!Number.isInteger(row)||row<1||row>10000))throw new Error("One or more published subjects are missing a saved canonical subject-ID row mapping. Ask the Form Master to complete the class mapping.");
-   if(new Set(mappedRows).size!==mappedRows.length)throw new Error("Two published subjects point to the same workbook row. Correct the class subject mapping before generating.");
-   if(classSubjects.some(subject=>!subjectRows[subject.subject_id]))throw new Error("The saved workbook mapping is missing a currently allocated class subject. Update the Form Master mapping before generating.");
-   const mappedSubjectIds=new Set(classSubjects.map(subject=>subject.subject_id));
-   if(resultRows.some((result:any)=>!mappedSubjectIds.has(result.subject_id)))throw new Error("A published result subject is not allocated to this class for the selected session. Ask the school administrator to correct the class subject allocation.");
+   const subjectRows=resolveSubjectRowsById(classSubjects,matchingAssignment.subject_row_mappings||{});
+   const mappedRows=resultRows.map((result:any)=>subjectRows[result.subject_id]);
+   if(mappedRows.some((row:number|undefined)=>row===undefined))throw new Error("A published result subject is not allocated to this class for the selected session. Ask the school administrator to correct the class subject allocation.");
    const termTotalRows:{current:Array<{total_score:number|string}>;first:Array<{total_score:number|string}>;second:Array<{total_score:number|string}>}={current:[],first:[],second:[]};
    resultRows.forEach((result:any,index:number)=>{
     const row=mappedRows[index];if(template.columns.subject&&!layout?.preserve_subject_labels)writeMappedCell(`${template.columns.subject}${row}`,result.subject?.name||"Subject");

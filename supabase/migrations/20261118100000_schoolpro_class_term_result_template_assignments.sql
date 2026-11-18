@@ -553,6 +553,28 @@ end;
 $$;
 
 
+-- Preserve the exact class assignment and workbook configuration used for each
+-- generated file. These immutable snapshots remain readable even if the live
+-- assignment is later changed or the library template is retired.
+alter table public.schoolpro_generated_result_outputs
+  add column if not exists template_assignment_id uuid,
+  add column if not exists template_id uuid,
+  add column if not exists template_assignment_updated_at timestamptz,
+  add column if not exists template_config_snapshot jsonb,
+  add column if not exists subject_row_mappings_snapshot jsonb;
+
+alter table public.schoolpro_generated_result_outputs
+  drop constraint if exists schoolpro_generated_result_outputs_template_config_snapshot_object,
+  add constraint schoolpro_generated_result_outputs_template_config_snapshot_object
+    check (template_config_snapshot is null or jsonb_typeof(template_config_snapshot)='object'),
+  drop constraint if exists schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object,
+  add constraint schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object
+    check (subject_row_mappings_snapshot is null or jsonb_typeof(subject_row_mappings_snapshot)='object');
+
+create index if not exists schoolpro_generated_result_outputs_template_assignment_idx
+  on public.schoolpro_generated_result_outputs(school_id,template_assignment_id)
+  where template_assignment_id is not null;
+
 -- Replace all section mappings in one transaction; a failed mapping update
 -- cannot leave a template partially unmapped.
 create or replace function public.schoolpro_set_result_template_sections(

@@ -49,6 +49,7 @@ assert.match(migration,/schoolpro_subjects_canonical_name_uidx/i);
 assert.match(migration,/create unique index[\s\S]*where is_catalogue_entry/i);
 assert.match(migration,/pg_advisory_xact_lock\(hashtextextended\(new\.school_id::text,0\)\)/i);
 assert.match(migration,/schoolpro_guard_canonical_subject_name/i);
+assert.match(migration,/if tg_op='INSERT' then[\\s\\S]*pg_advisory_xact_lock/i,'The database guard must serialize all new subject inserts, not only flagged canonical rows.');
 assert.match(subjects,/is_catalogue_entry:true/,'School Admin-created subjects must enter the canonical school catalogue.');
 assert.match(subjects,/already exists in the school catalogue/i,'Duplicate subject creation must direct administrators to reuse the existing record.');
 assert.match(migration,/create or replace function public\.schoolpro_form_master_add_class_subject/i);

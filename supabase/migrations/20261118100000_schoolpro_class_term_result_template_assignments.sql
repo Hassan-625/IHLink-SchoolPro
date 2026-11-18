@@ -467,7 +467,10 @@ begin
   from public.schoolpro_result_template_library l
   where l.school_id=p_school and l.id=v_template_id and l.is_active;
   if v_template_config is null
-     or coalesce(v_template_config->>'start_row','') !~ '^[1-9][0-9]{0,4}
+     or coalesce(v_template_config->>'start_row','') !~ '^[1-9][0-9]{0,4}$'
+     or v_template_config->>'storage_path' is distinct from p_template_config->>'storage_path'
+     or v_template_config->>'storage_path' not like p_school::text||'/%'
+     or position('..' in v_template_config->>'storage_path')>0 then
     raise exception 'The selected custom result template is no longer available';
   end if;
   if nullif(v_template_config->>'logo_storage_path','') is not null and (

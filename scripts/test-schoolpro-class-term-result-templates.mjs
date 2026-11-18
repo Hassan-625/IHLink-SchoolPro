@@ -10,7 +10,13 @@ const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 
 assert.match(migration,/unique \(school_id,class_id,term,session\)/i);
 assert.match(migration,/c\.form_teacher_id=v_member/i);
-assert.match(migration,/private\.schoolpro_is_exam_officer\(p_school\)/i);
+assert.doesNotMatch(migration,/schoolpro_is_exam_officer\(p_school\)/i, "Exam Officers consume the saved mapping but do not replace the Form Master/Admin workbook assignment.");
+assert.match(migration,/schoolpro_guard_class_subject_catalogue/i,"New class allocations must reference canonical catalogue subjects.");
+assert.match(migration,/and not s\.is_catalogue_entry/i,"Result-template assignment must reject legacy non-canonical class allocations.");
+assert.match(migration,/Subject rows cannot overwrite the workbook heading/i,"Subject mappings must start at or below the workbook subject-row boundary.");
+assert.match(page,/row<Number\(choice\.config\.start_row\|\|1\)/,"The UI must prevent subject rows from overwriting workbook headings.");
+assert.match(page,/columnOwners\.forEach/,"Workbook result columns must not collide.");
+assert.doesNotMatch(page,/normalizedRole===\x27exam_officer\x27/,"Exam Officers must use the saved class mapping rather than reassigning it.");
 assert.match(migration,/private\.schoolpro_is_school_admin\(p_school\)/i);
 assert.match(migration,/p_template_config->>'storage_path'.*p_school::text/i);
 assert.match(migration,/storage\.objects o[\s\S]*bucket_id='school-result-templates'/i);

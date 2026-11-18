@@ -75,8 +75,8 @@ assert.match(migration,/old\.is_catalogue_entry=false and new\.is_catalogue_entr
 assert.match(subjects,/async function promoteLegacySubject/,"School administrators need a visible workflow to select the canonical record among ambiguous legacy duplicates.");
 assert.match(subjects,/Choose as canonical/,"Legacy duplicate resolution must require an explicit record selection.");
 assert.match(subjects,/Other historical subject records and their IDs will remain unchanged/,"Legacy subject resolution must not rewrite historical subject identities.");
-assert.match(integration,/explicit legacy canonical selection/,"The SQL regression must prove one chosen legacy record can be promoted.");
-assert.match(integration,/a second same-name legacy record was also promoted/,"The SQL regression must prevent multiple canonical records for one normalized subject name.");
+assert.match(integration,/audited RPC promoted the wrong legacy subject record/,"The SQL regression must prove one chosen legacy record can be promoted.");
+assert.match(integration,/RPC promoted a second same-name legacy record/,"The SQL regression must prevent multiple canonical records for one normalized subject name.");
 
 assert.match(migration,/if tg_op='INSERT' then[\s\S]*pg_advisory_xact_lock/i,'The database guard must serialize all new subject inserts, not only flagged canonical rows.');
 assert.match(subjects,/is_catalogue_entry:true/,'School Admin-created subjects must enter the canonical school catalogue.');
@@ -148,9 +148,9 @@ assert.match(page,/currentAssignment=await supabase\.from\("schoolpro_result_tem
 assert.match(page,/rpc\("schoolpro_record_generated_result_output"/,"Published result metadata must be committed through the atomic database RPC.");
 assert.doesNotMatch(page,/from\("schoolpro_generated_result_outputs"\)\.insert\(/,"The browser must not directly insert generated-result provenance rows.");
 assert.match(page,/stale preview cannot be finalized/,"A changed template assignment or subject mapping must invalidate an old preview.");
-assert.match(page,/template_assignment_id:pendingResultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment.");
-assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignment\.template_config/,"Generated output history must preserve the exact workbook configuration.");
-assert.match(page,/subject_row_mappings_snapshot:pendingResultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping.");
+assert.match(page,/p_template_assignment_id:resultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment through the atomic RPC payload.");
+assert.match(page,/p_template_config_snapshot:resultMeta\.templateAssignment\.template_config/,"Generated output history must preserve the exact workbook configuration in the atomic RPC payload.");
+assert.match(page,/p_subject_row_mappings_snapshot:resultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping in the atomic RPC payload.");
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
 assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'Every worksheet formula must be recalculated before the output workbook is serialized.');

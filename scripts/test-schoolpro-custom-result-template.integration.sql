@@ -175,7 +175,7 @@ begin
     if sqlerrm like 'ASSERT:%' then raise; end if;
     if position('A canonical subject with this name already exists' in sqlerrm)=0 then raise; end if;
   end;
-  if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\\s+',' ','g'))='physical development')<>2 then
+  if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\s+',' ','g'))='physical development')<>2 then
     raise exception 'ASSERT: legacy duplicate subject rows were deleted or rewritten';
   end if;
 end;

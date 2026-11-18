@@ -80,6 +80,8 @@ assert.match(page,/schoolpro-issue-result-verification/);
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
 assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');
+assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
+assert.match(profiles,/unrecognized\/custom formula function/,'Unknown or custom workbook functions must be blocked instead of trusting cached values.');
 assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
 assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
 assert.match(page,/Confirm preview and create workbook/);

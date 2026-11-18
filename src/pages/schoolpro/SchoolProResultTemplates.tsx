@@ -210,6 +210,10 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
   if(pendingResultMeta.isPublished&&generatedPreview.some(cell=>cell.formula)){setError("This published workbook contains formulas that the browser cannot calculate reliably. The workbook preview shows the formulas, not verified calculated totals. No verification code or official result file will be issued. Use a formula-free verified template or wait until reliable formula calculation is supported.");return;}
   setBusy(true);setError(null);
   try{
+   const currentAssignment=await supabase.from("schoolpro_result_template_assignments").select("id,template_id,updated_at,template_config,subject_row_mappings").eq("school_id",pendingResultMeta.schoolId).eq("class_id",pendingResultMeta.classId).eq("term",pendingResultMeta.term).eq("session",pendingResultMeta.session).maybeSingle();
+   if(currentAssignment.error||!currentAssignment.data)throw new Error("The saved class workbook assignment could not be revalidated. Refresh the design and preview before finalizing.");
+   const savedAssignment=currentAssignment.data,expectedAssignment=pendingResultMeta.templateAssignment;
+   if(savedAssignment.id!==expectedAssignment.id||savedAssignment.template_id!==expectedAssignment.template_id||savedAssignment.updated_at!==expectedAssignment.updated_at||JSON.stringify(savedAssignment.template_config)!==JSON.stringify(expectedAssignment.template_config)||JSON.stringify(savedAssignment.subject_row_mappings)!==JSON.stringify(expectedAssignment.subject_row_mappings))throw new Error("The class workbook assignment or subject-row mapping changed after preview. The stale preview cannot be finalized; reload the current assignment and generate a new preview.");
    const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await pendingWorkbook.arrayBuffer());
    const template=pendingResultMeta.template as Template;
    const sheet=workbook.getWorksheet(template.sheet_name)||workbook.worksheets[0];

@@ -126,6 +126,29 @@ $fn$;
 revoke all on function public.schoolpro_form_master_add_class_subject(uuid,uuid,uuid,text) from public,anon;
 grant execute on function public.schoolpro_form_master_add_class_subject(uuid,uuid,uuid,text) to authenticated;
 
+-- All new class allocations must reference a canonical school-catalogue subject.
+-- Existing historical allocations remain untouched and keep their subject IDs.
+create or replace function private.schoolpro_guard_class_subject_catalogue()
+returns trigger language plpgsql security definer set search_path=''
+as $fn$
+begin
+  if not exists(
+    select 1 from public.schoolpro_subjects s
+    where s.school_id=new.school_id and s.id=new.subject_id
+      and s.is_catalogue_entry
+  ) then
+    raise exception 'Class subject allocations must use an existing canonical subject from this school catalogue';
+  end if;
+  return new;
+end;
+$fn$;
+revoke all on function private.schoolpro_guard_class_subject_catalogue() from public,anon,authenticated;
+drop trigger if exists schoolpro_guard_class_subject_catalogue on public.schoolpro_subject_assignments;
+create trigger schoolpro_guard_class_subject_catalogue
+before insert or update of school_id,subject_id
+on public.schoolpro_subject_assignments
+for each row execute function private.schoolpro_guard_class_subject_catalogue();
+
 create table public.schoolpro_result_template_assignments (
   id uuid primary key default gen_random_uuid(),
   school_id uuid not null references public.schoolpro_schools(id) on delete cascade,
@@ -236,10 +259,8 @@ begin
       and c.archived_at is null and c.form_teacher_id=v_member
   ) into v_is_form_master;
 
-  if not (v_is_form_master
-      or private.schoolpro_is_school_admin(p_school)
-      or private.schoolpro_is_exam_officer(p_school)) then
-    raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+    raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
   select template_name,subject_row_mappings into v_old_name,v_old_subject_rows
@@ -430,6 +451,150 @@ begin
   from public.schoolpro_result_template_library l
   where l.school_id=p_school and l.id=v_template_id and l.is_active;
   if v_template_config is null
+     or coalesce(v_template_config->>'start_row','') !~ '^[1-9][0-9]{0,4}     or v_template_config->>'storage_path' not like p_school::text||'/%'
+     or position('..' in v_template_config->>'storage_path')>0 then
+    raise exception 'The selected custom result template is no longer available';
+  end if;
+  if nullif(v_template_config->>'logo_storage_path','') is not null and (
+    v_template_config->>'logo_storage_path' not like p_school::text||'/%'
+    or position('..' in v_template_config->>'logo_storage_path')>0
+    or not exists(select 1 from storage.objects o
+      where o.bucket_id='school-result-templates'
+        and o.name=v_template_config->>'logo_storage_path')
+  ) then
+    raise exception 'The selected custom result template has an unavailable school logo';
+  end if;
+
+  select m.id into v_member
+  from public.schoolpro_members m
+  where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
+  limit 1;
+  select exists(select 1 from public.schoolpro_classes c
+    where c.school_id=p_school and c.id=p_class and c.archived_at is null
+      and c.form_teacher_id=v_member) into v_is_form_master;
+  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)
+      or private.schoolpro_is_exam_officer(p_school)) then
+    raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  end if;
+
+  if jsonb_typeof(p_subject_row_mappings)<>'object'
+     or octet_length(p_subject_row_mappings::text)>50000 then
+    raise exception 'Map each assigned class subject to one workbook row before saving';
+  end if;
+  for v_subject_key,v_subject_row in select key,value from jsonb_each_text(p_subject_row_mappings)
+  loop
+    if v_subject_key !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+       or v_subject_row !~ '^[1-9][0-9]{0,4}$' then
+      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
+    end if;
+    if v_subject_row::integer>10000 then
+      raise exception 'Subject worksheet rows must be between 1 and 10000';
+    end if;
+    if v_subject_row::integer < (v_template_config->>'start_row')::integer then
+      raise exception 'Subject rows cannot overwrite the workbook heading or student-detail area; use the configured subject start row or a later row';
+    end if;
+  end loop;
+  select count(*) into v_assignment_count
+  from public.schoolpro_subject_assignments a
+  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
+  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
+  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
+    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subject_assignments a
+    join public.schoolpro_subjects s on s.id=a.subject_id and s.school_id=a.school_id
+    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
+      and not s.is_catalogue_entry
+  ) then
+    raise exception 'This class still has a legacy subject allocation outside the canonical school catalogue. Ask the school administrator to resolve it before mapping results';
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subject_assignments a
+    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
+      and not (p_subject_row_mappings ? a.subject_id::text)
+  ) then
+    raise exception 'One or more allocated class subjects have no workbook row mapping';
+  end if;
+  if exists(
+    select 1 from (
+      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
+    ) rows group by row_number having count(*)>1
+  ) then
+    raise exception 'Two subjects cannot be mapped to the same workbook row';
+  end if;
+
+  select template_name,subject_row_mappings into v_old_name,v_old_subject_rows
+  from public.schoolpro_result_template_assignments
+  where school_id=p_school and class_id=p_class
+    and term=trim(p_term) and session=trim(p_session)
+  for update;
+  v_new_name:=left(trim(v_template_config->>'name'),120);
+  insert into public.schoolpro_result_template_assignments(
+    school_id,class_id,term,session,template_name,template_config,subject_row_mappings,updated_by,template_id
+  ) values (
+    p_school,p_class,trim(p_term),trim(p_session),v_new_name,v_template_config,p_subject_row_mappings,auth.uid(),v_template_id
+  )
+  on conflict(school_id,class_id,term,session) do update
+    set template_name=excluded.template_name,
+        template_config=excluded.template_config,
+        subject_row_mappings=excluded.subject_row_mappings,
+        updated_by=excluded.updated_by,
+        template_id=excluded.template_id,
+        updated_at=now()
+  returning id into v_assignment;
+  insert into public.schoolpro_result_template_assignment_audit(
+    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by,
+    previous_subject_row_mappings,new_subject_row_mappings
+  ) values (p_school,p_class,trim(p_term),trim(p_session),
+    case when v_old_name is null then 'assigned' else 'reassigned' end,
+    v_old_name,v_new_name,auth.uid(),coalesce(v_old_subject_rows,'{}'::jsonb),p_subject_row_mappings);
+  return v_assignment;
+end;
+$$;
+
+
+-- Replace all section mappings in one transaction; a failed mapping update
+-- cannot leave a template partially unmapped.
+create or replace function public.schoolpro_set_result_template_sections(
+  p_school uuid,p_template_id uuid,p_section_keys text[]
+) returns integer
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_count integer;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.schoolpro_is_school_admin(p_school) then
+    raise exception 'Only an active authorized school administrator can map result templates';
+  end if;
+  if p_section_keys is null then
+    raise exception 'Choose the sections for this result template';
+  end if;
+  if exists(select 1 from unnest(p_section_keys) k
+    where k not in ('nursery','primary','junior_secondary','senior_secondary')) then
+    raise exception 'One or more selected school sections are invalid';
+  end if;
+  perform 1 from public.schoolpro_result_template_library l
+  where l.school_id=p_school and l.id=p_template_id and l.is_active
+  for update;
+  if not found then
+    raise exception 'The selected custom result template is unavailable';
+  end if;
+  delete from public.schoolpro_result_template_section_mappings
+  where school_id=p_school and template_id=p_template_id;
+  insert into public.schoolpro_result_template_section_mappings(
+    school_id,template_id,section_key,mapped_by
+  )
+  select p_school,p_template_id,k,auth.uid()
+  from (select distinct unnest(p_section_keys) as k) selected;
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+revoke all on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) from public,anon;
+grant execute on function public.schoolpro_set_result_template_sections(uuid,uuid,text[]) to authenticated;
+
      or v_template_config->>'storage_path' is distinct from p_template_config->>'storage_path'
      or v_template_config->>'storage_path' not like p_school::text||'/%'
      or position('..' in v_template_config->>'storage_path')>0 then

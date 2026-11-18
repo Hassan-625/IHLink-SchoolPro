@@ -3,6 +3,8 @@ import {readFileSync} from 'node:fs';
 
 const page=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
 const migration=readFileSync('supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql','utf8');
+const subjects=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
+const profiles=readFileSync('src/lib/resultTemplateProfiles.ts','utf8');
 
 assert.match(migration,/unique \(school_id,class_id,term,session\)/i);
 assert.match(migration,/c\.form_teacher_id=v_member/i);
@@ -41,4 +43,32 @@ assert.match(page,/templateLibrary\.length/);
 assert.match(page,/draftMappedSections/);
 assert.match(page,/schoolpro_result_template_library/);
 assert.match(page,/if\(!matchingAssignment\)/,'Production generation must require an explicit class/term/session template assignment.');
-console.log('PASS: school custom workbook library, four-section mappings, authorized class/term/session assignments, audit history and no-default production fallback.');
+
+assert.match(migration,/add column if not exists is_catalogue_entry boolean not null default false/i);
+assert.match(migration,/schoolpro_subjects_canonical_name_uidx/i);
+assert.match(migration,/create unique index[\\s\\S]*where is_catalogue_entry/i);
+assert.match(migration,/pg_advisory_xact_lock\\(hashtextextended\\(new\\.school_id::text,0\\)\\)/i);
+assert.match(migration,/schoolpro_guard_canonical_subject_name/i);
+assert.match(subjects,/is_catalogue_entry:true/,'School Admin-created subjects must enter the canonical school catalogue.');
+assert.match(subjects,/already exists in the school catalogue/i,'Duplicate subject creation must direct administrators to reuse the existing record.');
+assert.match(migration,/create or replace function public\\.schoolpro_form_master_add_class_subject/i);
+assert.match(migration,/c\\.form_teacher_id=v_member/i,'A Form Master may add catalogue subjects only to their assigned class.');
+assert.match(migration,/s\\.is_catalogue_entry/i,'Form Masters may select only canonical school-catalogue subjects.');
+assert.match(migration,/grant execute on function public\\.schoolpro_form_master_add_class_subject\\(uuid,uuid,uuid,text\\) to authenticated/i);
+assert.match(page,/schoolpro_subject_assignments/,'Workbook mapping must use existing class subject assignments.');
+assert.match(page,/schoolpro_form_master_add_class_subject/,'Form Masters select existing school catalogue subjects rather than creating duplicates.');
+assert.match(page,/p_subject_row_mappings:subjectRowMappings/);
+assert.match(page,/subject_row_mappings/);
+assert.match(page,/resolveSubjectRowsById/,'Subject-to-row mapping must use stable subject IDs, not display-name matching.');
+assert.doesNotMatch(page,/resolveSubjectRows\\(/,'Name-based subject matching must not be used for production workbook generation.');
+assert.match(profiles,/Every allocated class subject must have exactly one saved workbook row mapping/);
+assert.match(profiles,/Two subjects cannot be mapped to the same workbook row/);
+assert.match(migration,/previous_subject_row_mappings jsonb/i);
+assert.match(migration,/new_subject_row_mappings jsonb/i);
+assert.match(page,/forceFullCalc:true/);
+assert.match(page,/calcMode:'auto'/);
+assert.match(page,/const writeMappedCell=\\(address:string,value:any\\)=>\\{const cell=sheet\\.getCell\\(mappedAnchor\\(address\\)\\)\\.master;if\\(!cell\\.formula\\)cell\\.value=value;\\}/);
+assert.match(migration,/Every subject allocated to this class and session must be mapped exactly once/i);
+assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
+
+console.log('PASS: multi-workbook section library, canonical subject catalogue, Form Master subject selection, audited subject-ID row mappings, formula-preserving writes and no-default production fallback.');

@@ -101,7 +101,9 @@ assert.match(page,/Formula expressions are preserved but are not calculated in t
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/
 assert.match(page,/classId:selected\.class_id/,"The generated preview must retain its class ID for server-side assignment revalidation.");
-assert.match(page,/currentAssignment=await supabase\.from\("schoolpro_result_template_assignments"\)/,"Finalization must reload the live class-term-session assignment.");
+assert.match(page,/currentAssignment=await supabase\.from\("schoolpro_result_template_assignments"\)/
+assert.match(page,/rpc\("schoolpro_record_generated_result_output"/,"Published result metadata must be committed through the atomic database RPC.");
+assert.doesNotMatch(page,/from\("schoolpro_generated_result_outputs"\)\.insert\(/,"The browser must not directly insert generated-result provenance rows.");,"Finalization must reload the live class-term-session assignment.");
 assert.match(page,/stale preview cannot be finalized/,"A changed template assignment or subject mapping must invalidate an old preview.");,"The reviewed result must retain the exact class assignment version used to generate it.");
 assert.match(page,/template_assignment_id:pendingResultMeta\.templateAssignment\.id/,"Generated output history must identify the class result-template assignment.");
 assert.match(page,/template_config_snapshot:pendingResultMeta\.templateAssignment\.template_config/,"Generated output history must preserve the exact workbook configuration.");

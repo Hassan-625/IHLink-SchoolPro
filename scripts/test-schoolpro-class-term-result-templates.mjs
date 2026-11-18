@@ -18,7 +18,8 @@ assert.match(page,/row<Number\(choice\.config\.start_row\|\|1\)/,"The UI must pr
 assert.match(page,/columnOwners\.forEach/,"Workbook result columns must not collide.");
 assert.match(page,/Result output column .* overlaps mapped .* range/,"Repeated subject/result output columns must not overlap student-detail, custom-field or media ranges.");
 assert.doesNotMatch(page,/normalizedRole===\x27exam_officer\x27/,"Exam Officers must use the saved class mapping rather than reassigning it.");
-assert.match(migration,/private\.schoolpro_is_school_admin\(p_school\)/i);
+assert.match(migration,/private\\.has_school_access\\(p_school, ARRAY\\['proprietor','administrator'\\]::public\\.school_member_role\\[\\]\\)/i, 'Template administration must use the existing role-scoped school access helper.');
+assert.match(migration,/using \\(private\\.has_school_access\\(school_id\\)\\)/i, 'General school-member read access must remain available where it was previously granted.');
 assert.match(migration,/p_template_config->>'storage_path'.*p_school::text/i);
 assert.match(migration,/storage\.objects o[\s\S]*bucket_id='school-result-templates'/i);
 assert.match(migration,/position\('\.\.' in p_template_config->>'storage_path'\)/i);
@@ -103,6 +104,14 @@ assert.match(page,/result subjects could not be resolved to the school subject c
 assert.match(page,/setGeneratedPreview\(preview\)/,'The selected student result must be populated into a reviewable workbook preview before finalization.');
 assert.match(page,/Verification is not issued before this review/i);
 assert.match(page,/async function confirmGeneratedResult/);
+assert.match(page,/async function generate\\(studentId\\?:string\\)/,'The generator must accept an explicit student so the class batch can reuse the same validated workbook builder.');
+assert.match(page,/async function confirmGeneratedResult\\(payload\\?:/,'Batch finalization must consume each student’s own generated workbook and metadata rather than shared React state.');
+assert.match(page,/async function generateClassBatch\\(\\)/,'The result page must expose one class-wide batch operation.');
+assert.match(page,/students\\.filter\\(student=>student\\.class_id===classId\\)/,'A batch must include only students in the selected class.');
+assert.match(page,/for\\(const pupil of roster\\)/,'Each student workbook must be generated and finalized sequentially.');
+assert.match(page,/if\\(!generated\\)\\{failed\\.push\\(label\\);\\}/,'A student generation failure must be recorded without aborting the remaining batch.');
+assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
+assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');
 assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
 assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
 assert.match(page,/schoolpro-issue-result-verification/);

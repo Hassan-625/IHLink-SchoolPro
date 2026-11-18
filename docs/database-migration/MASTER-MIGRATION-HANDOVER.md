@@ -4111,3 +4111,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Confirmed the disposable PostgreSQL integration script includes both `20261118100000_schoolpro_class_term_result_template_assignments.sql` and `20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql`, with proprietor/administrator authorization fixture and non-admin rejection coverage.
 - GitHub Actions have started generating runs for the corrected head, but runner dispatch remains queued; no passing result is claimed.
 - Outstanding acceptance gaps remain unchanged: generation currently targets one selected student, not a complete class roster; ExcelJS preserves formulas but does not calculate them, so official publication of formula-bearing workbooks remains fail-closed. No production data, migration, merge, or Render deployment performed.
+
+
+## 2026-11-18 PR #226 — Actions queue pressure mitigation
+- Inspected the repository's latest 100 Actions runs: all 100 were queued pull-request runs; none were in progress. The latest queued job requested a standard GitHub-hosted `ubuntu-latest` runner and had no assigned runner name or runner group.
+- Identified that the four PR validation workflows had no concurrency policy. Repeated branch updates were creating a new set of runs each time, leaving obsolete revisions in the pending queue.
+- Added workflow-scoped concurrency groups keyed by workflow name and PR number/ref to SchoolPro CI, Stage C0 regression, Student INSERT RETURNING RLS regression, and payment-page validation. A newer run for the same workflow/PR now supersedes its older pending/running run; different required workflows remain independent.
+- This is preventive queue control. It does not retroactively cancel the already-created queued runs. The GitHub integration available here exposes workflow-run reads and reruns, but no cancel-run or workflow-dispatch action; existing stale queued runs therefore still require cancellation through GitHub Actions UI/CLI by an authorized repository user.
+- No self-hosted runner was registered, no runner token or credential was handled, and no billing/runner plan was changed. No production migration, merge, or Render deployment was performed.
+- Validation status: new workflow YAML and exact-head checks must still execute on GitHub-hosted runners. The source and disposable-PostgreSQL custom-template tests are not yet reported as passing.

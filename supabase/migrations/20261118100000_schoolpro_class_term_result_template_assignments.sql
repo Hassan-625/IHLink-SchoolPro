@@ -498,7 +498,7 @@ begin
   where school_id=p_school and class_id=p_class
     and term=trim(p_term) and session=trim(p_session)
   for update;
-  v_new_name:=left(trim(p_template_config->>'name'),120);
+  v_new_name:=left(trim(v_template_config->>'name'),120);
   insert into public.schoolpro_result_template_assignments(
     school_id,class_id,term,session,template_name,template_config,subject_row_mappings,updated_by,template_id
   ) values (

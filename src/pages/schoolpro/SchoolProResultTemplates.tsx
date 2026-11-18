@@ -198,7 +198,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    setGeneratedPreview(preview);
    setPendingWorkbook(new Blob([output],{type:XLSX_MIME}));
    setPendingResultMeta({schoolId,studentId:selectedStudent,student:{...student},schoolName:schoolQuery.data?.name||ctx.schoolName,term,session,isPublished:resultRows.every((r:any)=>r.status==="published"),verificationBaseUrl:termQuery.data?.verification_base_url||"https://ihlink-schoolpro.onrender.com",template:{...template},templateAssignment:{id:classTemplateAssignment.id,template_id:classTemplateAssignment.template_id,updated_at:classTemplateAssignment.updated_at,template_config:{...classTemplateAssignment.template_config},subject_row_mappings:{...classTemplateAssignment.subject_row_mappings}}});
-   setMessage("Populated result preview is ready. Review the student data, subject rows and formula cells, then confirm to create the workbook. Verification is not issued before this review.");
+   setMessage("Populated result preview is ready. Review the student data and subject rows. "+(preview.some(cell=>cell.formula)?"Formula expressions are preserved but are not calculated in this browser preview; published verification will remain blocked until formula results can be reliably calculated.":"No formula cells were found.")+" Verification is not issued before this review.");
    setBusy(false);return;
   }catch(err){setError(err instanceof Error&&/No matching row|repeats a subject|merged range|Merge the range|No published results|Publish this student|Result details could|space for eight/.test(err.message)?err.message:"Your result could not be generated. Check the workbook and selected records, then try again.");}
   setBusy(false);
@@ -207,6 +207,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
 
  async function confirmGeneratedResult(){
   if(!supabase||!pendingWorkbook||!pendingResultMeta)return;
+  if(pendingResultMeta.isPublished&&generatedPreview.some(cell=>cell.formula)){setError("This published workbook contains formulas that the browser cannot calculate reliably. The workbook preview shows the formulas, not verified calculated totals. No verification code or official result file will be issued. Use a formula-free verified template or wait until reliable formula calculation is supported.");return;}
   setBusy(true);setError(null);
   try{
    const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await pendingWorkbook.arrayBuffer());

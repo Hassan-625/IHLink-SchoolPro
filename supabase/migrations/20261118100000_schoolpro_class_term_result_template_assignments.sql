@@ -86,7 +86,7 @@ create index schoolpro_class_subject_selection_audit_scope_idx
 alter table public.schoolpro_class_subject_selection_audit enable row level security;
 create policy schoolpro_class_subject_selection_audit_read
   on public.schoolpro_class_subject_selection_audit for select to authenticated
-  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
+  using (private.has_school_access(school_id));
 revoke all on public.schoolpro_class_subject_selection_audit from public,anon,authenticated;
 grant select on public.schoolpro_class_subject_selection_audit to authenticated;
 
@@ -184,7 +184,7 @@ create index schoolpro_result_template_assignments_lookup_idx
 alter table public.schoolpro_result_template_assignments enable row level security;
 create policy schoolpro_result_template_assignments_school_read
   on public.schoolpro_result_template_assignments for select to authenticated
-  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
+  using (private.has_school_access(school_id));
 grant select on public.schoolpro_result_template_assignments to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignments from anon,authenticated;
 
@@ -207,7 +207,7 @@ create index schoolpro_result_template_assignment_audit_lookup_idx
 alter table public.schoolpro_result_template_assignment_audit enable row level security;
 create policy schoolpro_result_template_assignment_audit_school_read
   on public.schoolpro_result_template_assignment_audit for select to authenticated
-  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
+  using (private.has_school_access(school_id));
 grant select on public.schoolpro_result_template_assignment_audit to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignment_audit from anon,authenticated;
 
@@ -340,7 +340,7 @@ create index schoolpro_result_template_library_school_idx
 alter table public.schoolpro_result_template_library enable row level security;
 create policy schoolpro_result_template_library_read
   on public.schoolpro_result_template_library for select to authenticated
-  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
+  using (private.has_school_access(school_id));
 create policy schoolpro_result_template_library_insert
   on public.schoolpro_result_template_library for insert to authenticated
   with check (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
@@ -369,7 +369,7 @@ create index schoolpro_result_template_section_mappings_section_idx
 alter table public.schoolpro_result_template_section_mappings enable row level security;
 create policy schoolpro_result_template_section_mappings_read
   on public.schoolpro_result_template_section_mappings for select to authenticated
-  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
+  using (private.has_school_access(school_id));
 create policy schoolpro_result_template_section_mappings_insert
   on public.schoolpro_result_template_section_mappings for insert to authenticated
   with check (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]) and mapped_by=(select auth.uid()));
@@ -602,7 +602,7 @@ declare
   v_count integer;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
+     or not private.has_school_access(p_school) then
     raise exception 'Only an active authorized school administrator can map result templates';
   end if;
   if p_section_keys is null then

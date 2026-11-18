@@ -206,7 +206,7 @@ assert.match(genderMigration,/never for authorization/i,'Gender must be document
 assert.match(profile,/select\('gender'\)/i,'Staff must be able to load their self-declared gender');
 assert.match(profile,/gender\}\)\.eq\('id',user\.id\)/i,'Staff must be able to save their own gender preference');
 assert.match(profile,/Gender \(optional\)/i,'My Account must expose an optional gender field');
-assert.match(staff,/last_name,gender\)/i,'Staff & Access must read gender only as profile metadata');
+assert.match(staff,/last_name,[^)]*gender\)/i,'Staff & Access must read gender only as profile metadata, alongside other profile fields.');
 assert.match(staff,/gender==='male'\?'Headmaster':member\.profile\?\.gender==='female'\?'Headmistress'/i,'Gender may only derive a suggested display title');
 assert.match(staff,/Suggested: \{suggestedTitle\}/i,'The suggested title must be visible to the administrator');
 assert.match(staff,/Select title/i,'The suggested title must not be silently persisted as an appointment title');

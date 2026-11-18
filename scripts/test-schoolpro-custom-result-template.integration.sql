@@ -5,16 +5,17 @@ create role authenticated nologin;
 create schema auth;
 create schema private;
 create schema storage;
+create type public.school_member_role as enum ('proprietor','administrator','subject_teacher','class_teacher','exam_officer');
 
 create or replace function auth.uid()
 returns uuid language sql stable
 as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
 create or replace function private.has_school_access(p_school uuid)
-returns boolean language sql stable as $$ select true $$;
+returns boolean language sql stable as $ select true $;
+create or replace function private.has_school_access(p_school uuid,p_roles public.school_member_role[])
+returns boolean language sql stable as $ select current_setting('test.school_admin',true)='true' $;
 create or replace function private.is_active_account()
 returns boolean language sql stable as $$ select current_setting('test.active',true)='true' $$;
-create or replace function private.schoolpro_is_school_admin(p_school uuid)
-returns boolean language sql stable as $$ select current_setting('test.school_admin',true)='true' $$;
 create or replace function private.schoolpro_is_exam_officer(p_school uuid)
 returns boolean language sql stable as $$ select current_setting('test.exam_officer',true)='true' $$;
 

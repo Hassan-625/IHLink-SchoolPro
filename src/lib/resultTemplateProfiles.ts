@@ -97,9 +97,9 @@ const supportedWorkbookFormulaFunctions=new Set([
  */
 export function unsupportedWorkbookFormula(formula:string):string|null{
  const source=String(formula||'');
- if(/#REF!|_xlfn\\.|_xlws\\.|\\[[^\\]]+\\]/i.test(source))
+ if(/#REF!|_xlfn\.|_xlws\.|\[[^\]]+\]/i.test(source))
   return 'broken, external-workbook or unsupported Excel function reference';
- const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\\s*\\(/gi)].map(match=>match[1].toUpperCase());
+ const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\s*\(/gi)].map(match=>match[1].toUpperCase());
  const unsupported=[...new Set(functions.filter(name=>!supportedWorkbookFormulaFunctions.has(name)))];
  return unsupported.length?('unrecognized/custom formula function(s): '+unsupported.join(', ')):null;
 }

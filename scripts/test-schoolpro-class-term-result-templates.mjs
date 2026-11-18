@@ -5,6 +5,8 @@ const page=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8
 const migration=readFileSync('supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql','utf8');
 const subjects=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const profiles=readFileSync('src/lib/resultTemplateProfiles.ts','utf8');
+const integration=readFileSync('scripts/test-schoolpro-custom-result-template.integration.sql','utf8');
+const workflow=readFileSync('.github/workflows/ci.yml','utf8');
 
 assert.match(migration,/unique \(school_id,class_id,term,session\)/i);
 assert.match(migration,/c\.form_teacher_id=v_member/i);
@@ -103,4 +105,13 @@ assert.match(page,/selectedDesignKey,subjectRowMappings/,'Changing an unsaved ma
 assert.match(page,/!scheme\?\.components\?\.length/,'Score validation must reject rows with no configured assessment scheme.');
 assert.match(page,/maximum<=0/,'Score validation must reject invalid component maxima.');
 
-console.log('PASS: multi-workbook section library, canonical subject catalogue, Form Master subject selection, audited subject-ID row mappings, populated pre-verification preview, score validation and formula-safe writes.');
+
+assert.match(integration,/\\ir \.\.\/supabase\/migrations\/20261118100000_schoolpro_class_term_result_template_assignments\.sql/,'The disposable PostgreSQL fixture must execute the exact migration from this PR.');
+assert.match(integration,/unflagged duplicate subject insert bypassed the database guard/i);
+assert.match(integration,/Form Master selected a subject outside their assigned class/i);
+assert.match(integration,/Form Master selection overwrote an existing teacher allocation/i);
+assert.match(integration,/subject_row_mappings=v_map/i);
+assert.match(integration,/Two subjects cannot be mapped to the same workbook row/i);
+assert.match(workflow,/custom-result-template-mapping-integration/,'CI must run the exact migration and subject/mapping authorization tests against disposable PostgreSQL.');
+
+console.log('PASS: custom workbook library, canonical subject catalogue, Form Master selection, audited subject-ID mapping, populated pre-verification preview, score/formula validation and disposable PostgreSQL coverage.');

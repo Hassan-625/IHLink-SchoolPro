@@ -77,29 +77,29 @@ export function resolveSubjectRowsById(
 }
 
 
-const supportedWorkbookFormulaFunctions=new Set([
- 'SUM','AVERAGE','AVERAGEA','AVERAGEIF','AVERAGEIFS','MIN','MAX','COUNT','COUNTA','COUNTBLANK','COUNTIF','COUNTIFS','SUMIF','SUMIFS','SUMPRODUCT','SUBTOTAL','AGGREGATE',
- 'IF','IFS','AND','OR','NOT','XOR','SWITCH','IFERROR','IFNA','TRUE','FALSE','NA',
- 'ROUND','ROUNDUP','ROUNDDOWN','MROUND','TRUNC','INT','ABS','SIGN','MOD','POWER','SQRT','EXP','LN','LOG','LOG10','PI','CEILING','CEILING.MATH','FLOOR','FLOOR.MATH',
- 'RANK','RANK.EQ','RANK.AVG','LARGE','SMALL',
- 'VLOOKUP','HLOOKUP','XLOOKUP','INDEX','MATCH','CHOOSE','CHOOSECOLS','CHOOSEROWS','ADDRESS','ROW','ROWS','COLUMN','COLUMNS','OFFSET','INDIRECT',
- 'LEFT','RIGHT','MID','LEN','TRIM','CLEAN','UPPER','LOWER','PROPER','CONCAT','CONCATENATE','TEXTJOIN','TEXT','VALUE','NUMBERVALUE','SUBSTITUTE','REPLACE','FIND','SEARCH','EXACT','REPT','TEXTBEFORE','TEXTAFTER','TEXTSPLIT',
- 'DATE','YEAR','MONTH','DAY','HOUR','MINUTE','SECOND','TODAY','NOW','EDATE','EOMONTH','NETWORKDAYS','NETWORKDAYS.INTL','WORKDAY','WORKDAY.INTL','WEEKDAY','WEEKNUM','DAYS','DATEDIF',
- 'ISBLANK','ISNUMBER','ISTEXT','ISERROR','ISERR','ISNA','ISLOGICAL','ISFORMULA','FORMULATEXT','ERROR.TYPE',
- 'HYPERLINK','GETPIVOTDATA','TRANSPOSE','FILTER','SORT','SORTBY','UNIQUE','SEQUENCE','TAKE','DROP','VSTACK','HSTACK','WRAPROWS','WRAPCOLS','TOCOL','TOROW','LET','LAMBDA','MAP','REDUCE','SCAN','MAKEARRAY','BYROW','BYCOL',
- 'RAND','RANDBETWEEN'
+import { SUPPORTED_FORMULAS } from "hot-formula-parser";
+
+const supportedWorkbookFormulaFunctions=new Set(SUPPORTED_FORMULAS.map(name=>String(name).toUpperCase()));
+const unsupportedWorkbookFormulaFunctions=new Set([
+ 'DATE','DATEVALUE','TIME','TIMEVALUE','NOW','TODAY','RAND','RANDBETWEEN',
+ 'YEAR','MONTH','DAY','HOUR','MINUTE','SECOND','EDATE','EOMONTH',
+ 'NETWORKDAYS','NETWORKDAYS.INTL','WORKDAY','WORKDAY.INTL','WEEKDAY','WEEKNUM','DAYS','DATEDIF',
+ 'OFFSET','INDIRECT'
 ]);
 
 /**
- * ExcelJS preserves formulas but does not calculate them. Accept only standard
- * Excel functions in the supported workbook profile; block external/broken
- * references and unrecognized custom functions instead of trusting cached values.
+ * Formula support is deliberately tied to the actual calculation engine.
+ * ExcelJS only stores formulas; hot-formula-parser evaluates the supported
+ * same-worksheet Excel subset. Cross-sheet, external, structured-reference,
+ * volatile and date-serial-sensitive formulas fail closed.
  */
 export function unsupportedWorkbookFormula(formula:string):string|null{
  const source=String(formula||'');
- if(/#REF!|_xlfn\.|_xlws\.|\[[^\]]+\.(?:xlsx|xlsm|xlsb|xls)\]/i.test(source))
+ if(/#REF!|_xlfn\\.|_xlws\\.|\\[[^\\]]+\\.(?:xlsx|xlsm|xlsb|xls)\\]/i.test(source))
   return 'broken, external-workbook or unsupported Excel function reference';
- const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\s*\(/gi)].map(match=>match[1].toUpperCase());
- const unsupported=[...new Set(functions.filter(name=>!supportedWorkbookFormulaFunctions.has(name)))];
- return unsupported.length?('unrecognized/custom formula function(s): '+unsupported.join(', ')):null;
+ if(source.includes('!'))return 'cross-worksheet formula references are not supported by the calculation engine';
+ if(/\\[[^\\]]+\\]/.test(source))return 'structured table references are not supported by the calculation engine';
+ const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\\s*\\(/gi)].map(match=>match[1].toUpperCase());
+ const unsupported=[...new Set(functions.filter(name=>unsupportedWorkbookFormulaFunctions.has(name)||!supportedWorkbookFormulaFunctions.has(name)))];
+ return unsupported.length?('formula function(s) not supported for verified calculation: '+unsupported.join(', ')):null;
 }

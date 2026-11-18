@@ -65,6 +65,24 @@ insert into public.schoolpro_subjects(id,school_id,name,code,class_name) values
 
 \ir ../supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql
 
+do $privileges$
+begin
+  if has_table_privilege('authenticated','public.schoolpro_result_template_assignments','INSERT')
+     or has_table_privilege('authenticated','public.schoolpro_result_template_assignments','UPDATE')
+     or has_table_privilege('authenticated','public.schoolpro_result_template_assignments','DELETE') then
+    raise exception 'ASSERT: authenticated users can directly mutate class result-template assignments';
+  end if;
+  if has_table_privilege('authenticated','public.schoolpro_result_template_assignment_audit','INSERT')
+     or has_table_privilege('authenticated','public.schoolpro_class_subject_selection_audit','INSERT') then
+    raise exception 'ASSERT: authenticated users can directly forge subject or template audit rows';
+  end if;
+  if not has_table_privilege('authenticated','public.schoolpro_class_subject_selection_audit','SELECT') then
+    raise exception 'ASSERT: authorized school members cannot read subject-selection audit history';
+  end if;
+end;
+$privileges$;
+
+
 do $catalogue$
 begin
   if not (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000001') then

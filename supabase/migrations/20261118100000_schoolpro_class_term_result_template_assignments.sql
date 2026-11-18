@@ -25,17 +25,23 @@ create or replace function private.schoolpro_guard_canonical_subject_name()
 returns trigger language plpgsql security definer set search_path=''
 as $fn$
 begin
-  if new.is_catalogue_entry then
+  if tg_op='INSERT' then
     perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
-    if exists(
-      select 1 from public.schoolpro_subjects existing
-      where existing.school_id=new.school_id
-        and existing.id is distinct from new.id
-        and lower(regexp_replace(btrim(existing.name), '\s+', ' ', 'g'))
-          = lower(regexp_replace(btrim(new.name), '\s+', ' ', 'g'))
-    ) then
-      raise exception 'A subject with this name already exists in the school catalogue. Select the existing subject instead of creating a duplicate';
-    end if;
+  elsif new.is_catalogue_entry
+     or new.school_id is distinct from old.school_id
+     or new.name is distinct from old.name then
+    perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
+  else
+    return new;
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subjects existing
+    where existing.school_id=new.school_id
+      and existing.id is distinct from new.id
+      and lower(regexp_replace(btrim(existing.name), '\s+', ' ', 'g'))
+        = lower(regexp_replace(btrim(new.name), '\s+', ' ', 'g'))
+  ) then
+    raise exception 'A subject with this name already exists in the school catalogue. Select the existing subject instead of creating a duplicate';
   end if;
   return new;
 end;

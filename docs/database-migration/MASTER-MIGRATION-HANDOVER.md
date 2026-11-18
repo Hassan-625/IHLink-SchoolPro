@@ -4154,3 +4154,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Changes are branch-only. No production migration, production data change, PR merge, or Render deployment was performed. Fresh exact-head CI and disposable PostgreSQL tests remain required.
 
 - Follow-up disposable PostgreSQL execution exposed a malformed trusted-template `start_row` validation condition in the migration. Restored the complete anchored numeric regex and explicit checks that the library storage path matches the selected assignment, belongs to the school, and contains no traversal segment. This was corrected on the PR branch only; production remains untouched.
+
+
+### PR #226 verified Excel formula calculation — 2026-11-18
+- Replaced the blanket published-formula block with a browser-side calculation engine using the MIT-licensed `hot-formula-parser@4.0.0` package. The evaluator resolves same-worksheet cell and range dependencies recursively, calculates formula cells in dependency order, replaces stale cached results while preserving the original formulas/styles, and sets Excel recalculation properties for future edits.
+- The generated preview now displays recalculated formula values. The engine scans every worksheet, not only the active preview sheet, and stores formula count, evaluation count, worksheet counts, engine/version, calculation mode and timestamp with each generated output.
+- The output-finalization RPC now requires and persists `formula_calculation_snapshot` alongside the existing template/subject mapping provenance. Missing/unknown calculation provenance cannot be submitted as an official output.
+- Fail-closed boundary: only functions exposed by the parser are accepted; volatile and date-serial-sensitive functions, external-workbook references, cross-worksheet references, structured table references, unsupported/custom functions, formula errors, circular references, and oversized formula/range workloads block generation. Formula cells remain protected from input writes. This is a supported Excel formula subset, not a claim of complete Microsoft Excel compatibility.
+- Added executable formula regressions for SUM, AVERAGE, IF, range references, dependent formulas, replacement of stale cached values, circular references and division-by-zero, plus disposable PostgreSQL assertions for formula provenance.
+- All changes remain on PR #226's branch. No production migration, result output, production data, merge or Render deployment was performed. Exact-head CI and disposable PostgreSQL execution must pass before release.

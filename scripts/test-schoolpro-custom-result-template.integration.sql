@@ -401,7 +401,8 @@ begin
   if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_assignment_id')
      or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_id')
      or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_config_snapshot')
-     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='subject_row_mappings_snapshot') then
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='subject_row_mappings_snapshot')
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='formula_calculation_snapshot') then
     raise exception 'ASSERT: generated workbooks do not preserve their template assignment and mapping provenance';
   end if;
 end;
@@ -411,14 +412,16 @@ do $atomic_output$
 declare
   v_definition text;
 begin
-  select pg_get_functiondef('public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)'::regprocedure)
+  select pg_get_functiondef('public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb)'::regprocedure)
     into v_definition;
   if v_definition is null
      or position('for update' in lower(v_definition))=0
      or position('subject_row_mappings_snapshot' in lower(v_definition))=0
+     or position('formula_calculation_snapshot' in lower(v_definition))=0
+     or position('p_formula_calculation_snapshot' in lower(v_definition))=0
      or position('schoolpro_generated_result_outputs' in lower(v_definition))=0
-     or not has_function_privilege('authenticated','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)','EXECUTE')
-     or has_function_privilege('anon','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb)','EXECUTE') then
+     or not has_function_privilege('authenticated','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb)','EXECUTE')
+     or has_function_privilege('anon','public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb)','EXECUTE') then
     raise exception 'ASSERT: generated result finalization is not protected by the atomic authenticated RPC';
   end if;
 end;

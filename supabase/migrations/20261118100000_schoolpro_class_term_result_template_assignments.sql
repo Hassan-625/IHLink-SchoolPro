@@ -86,7 +86,7 @@ create index schoolpro_class_subject_selection_audit_scope_idx
 alter table public.schoolpro_class_subject_selection_audit enable row level security;
 create policy schoolpro_class_subject_selection_audit_read
   on public.schoolpro_class_subject_selection_audit for select to authenticated
-  using (private.has_school_access(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 revoke all on public.schoolpro_class_subject_selection_audit from public,anon,authenticated;
 grant select on public.schoolpro_class_subject_selection_audit to authenticated;
 
@@ -184,7 +184,7 @@ create index schoolpro_result_template_assignments_lookup_idx
 alter table public.schoolpro_result_template_assignments enable row level security;
 create policy schoolpro_result_template_assignments_school_read
   on public.schoolpro_result_template_assignments for select to authenticated
-  using (private.has_school_access(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 grant select on public.schoolpro_result_template_assignments to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignments from anon,authenticated;
 
@@ -207,7 +207,7 @@ create index schoolpro_result_template_assignment_audit_lookup_idx
 alter table public.schoolpro_result_template_assignment_audit enable row level security;
 create policy schoolpro_result_template_assignment_audit_school_read
   on public.schoolpro_result_template_assignment_audit for select to authenticated
-  using (private.has_school_access(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 grant select on public.schoolpro_result_template_assignment_audit to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignment_audit from anon,authenticated;
 
@@ -275,7 +275,7 @@ begin
       and c.archived_at is null and c.form_teacher_id=v_member
   ) into v_is_form_master;
 
-  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+  if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
@@ -340,17 +340,17 @@ create index schoolpro_result_template_library_school_idx
 alter table public.schoolpro_result_template_library enable row level security;
 create policy schoolpro_result_template_library_read
   on public.schoolpro_result_template_library for select to authenticated
-  using (private.has_school_access(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 create policy schoolpro_result_template_library_insert
   on public.schoolpro_result_template_library for insert to authenticated
-  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
+  with check (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]) and created_by=(select auth.uid()) and updated_by=(select auth.uid()));
 create policy schoolpro_result_template_library_update
   on public.schoolpro_result_template_library for update to authenticated
-  using (private.is_active_account() and private.schoolpro_is_school_admin(school_id))
-  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and updated_by=(select auth.uid()));
+  using (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]))
+  with check (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]) and updated_by=(select auth.uid()));
 create policy schoolpro_result_template_library_delete
   on public.schoolpro_result_template_library for delete to authenticated
-  using (private.is_active_account() and private.schoolpro_is_school_admin(school_id));
+  using (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 grant select,insert,update,delete on public.schoolpro_result_template_library to authenticated;
 
 create table public.schoolpro_result_template_section_mappings (
@@ -369,13 +369,13 @@ create index schoolpro_result_template_section_mappings_section_idx
 alter table public.schoolpro_result_template_section_mappings enable row level security;
 create policy schoolpro_result_template_section_mappings_read
   on public.schoolpro_result_template_section_mappings for select to authenticated
-  using (private.has_school_access(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 create policy schoolpro_result_template_section_mappings_insert
   on public.schoolpro_result_template_section_mappings for insert to authenticated
-  with check (private.is_active_account() and private.schoolpro_is_school_admin(school_id) and mapped_by=(select auth.uid()));
+  with check (private.is_active_account() and private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]) and mapped_by=(select auth.uid()));
 create policy schoolpro_result_template_section_mappings_delete
   on public.schoolpro_result_template_section_mappings for delete to authenticated
-  using (private.schoolpro_is_school_admin(school_id));
+  using (private.has_school_access(school_id, ARRAY['proprietor','administrator']::public.school_member_role[]));
 grant select,insert,delete on public.schoolpro_result_template_section_mappings to authenticated;
 
 alter table public.schoolpro_result_template_assignments
@@ -488,7 +488,7 @@ begin
   select exists(select 1 from public.schoolpro_classes c
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
       and c.form_teacher_id=v_member) into v_is_form_master;
-  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+  if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
@@ -602,7 +602,7 @@ declare
   v_count integer;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.schoolpro_is_school_admin(p_school) then
+     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'Only an active authorized school administrator can map result templates';
   end if;
   if p_section_keys is null then
@@ -654,7 +654,7 @@ grant execute on function public.schoolpro_set_result_template_sections(uuid,uui
   select exists(select 1 from public.schoolpro_classes c
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
       and c.form_teacher_id=v_member) into v_is_form_master;
-  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+  if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
@@ -735,7 +735,7 @@ declare
   v_count integer;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.schoolpro_is_school_admin(p_school) then
+     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'Only an active authorized school administrator can map result templates';
   end if;
   if p_section_keys is null then
@@ -792,7 +792,7 @@ declare
   v_output_id uuid;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.has_school_access(p_school) then
+     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'An active member of this school is required to save a generated result';
   end if;
   if p_school is null or p_student is null or p_class is null

@@ -211,112 +211,6 @@ create policy schoolpro_result_template_assignment_audit_school_read
 grant select on public.schoolpro_result_template_assignment_audit to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignment_audit from anon,authenticated;
 
-create or replace function public.schoolpro_set_class_result_template(
-  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb,p_subject_row_mappings jsonb
-) returns uuid
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_member uuid;
-  v_old_name text;
-  v_new_name text;
-  v_assignment uuid;
-  v_is_form_master boolean := false;
-  v_old_subject_rows jsonb;
-begin
-  if auth.uid() is null or not private.is_active_account() then
-    raise exception 'An active signed-in account is required';
-  end if;
-  if p_term not in ('First Term','Second Term','Third Term')
-     or char_length(trim(coalesce(p_session,''))) not between 4 and 20 then
-    raise exception 'Choose a valid term and academic session';
-  end if;
-  if jsonb_typeof(p_template_config) <> 'object'
-     or nullif(trim(p_template_config->>'name'),'') is null
-     or nullif(trim(p_template_config->>'storage_path'),'') is null
-     or nullif(trim(p_template_config->>'sheet_name'),'') is null
-     or (p_template_config->>'storage_path') not like p_school::text||'/%'
-     or position('..' in p_template_config->>'storage_path')>0
-     or octet_length(p_template_config::text)>100000 then
-    raise exception 'Choose a saved result workbook belonging to this school';
-  end if;
-  if not exists(
-    select 1 from storage.objects o
-    where o.bucket_id='school-result-templates'
-      and o.name=p_template_config->>'storage_path'
-  ) then
-    raise exception 'The selected result workbook is no longer available in this school';
-  end if;
-  if nullif(p_template_config->>'logo_storage_path','') is not null and (
-    (p_template_config->>'logo_storage_path') not like p_school::text||'/%'
-    or position('..' in p_template_config->>'logo_storage_path')>0
-    or not exists(select 1 from storage.objects o
-      where o.bucket_id='school-result-templates'
-        and o.name=p_template_config->>'logo_storage_path')
-  ) then
-    raise exception 'The selected school logo is not available in this school';
-  end if;
-
-  if not exists(
-    select 1 from public.schoolpro_classes c
-    where c.school_id=p_school and c.id=p_class and c.archived_at is null
-  ) then
-    raise exception 'Choose an active class in the selected school';
-  end if;
-
-  select m.id into v_member
-  from public.schoolpro_members m
-  where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
-  limit 1;
-
-  select exists(
-    select 1 from public.schoolpro_classes c
-    where c.school_id=p_school and c.id=p_class
-      and c.archived_at is null and c.form_teacher_id=v_member
-  ) into v_is_form_master;
-
-  raise notice 'inside custom-template guard: uid=%, school=%, class=%, member=%, form_master=%, admin_access=%',
-    auth.uid(),p_school,p_class,v_member,v_is_form_master,
-    private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]);
-  if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
-    raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
-  end if;
-
-  select template_name,subject_row_mappings into v_old_name,v_old_subject_rows
-  from public.schoolpro_result_template_assignments
-  where school_id=p_school and class_id=p_class
-    and term=trim(p_term) and session=trim(p_session)
-  for update;
-
-  v_new_name:=left(trim(v_template_config->>'name'),120);
-  insert into public.schoolpro_result_template_assignments(
-    school_id,class_id,term,session,template_name,template_config,subject_row_mappings,updated_by
-  ) values (
-    p_school,p_class,trim(p_term),trim(p_session),v_new_name,p_template_config,p_subject_row_mappings,auth.uid()
-  )
-  on conflict(school_id,class_id,term,session) do update
-    set template_name=excluded.template_name,
-        template_config=excluded.template_config,
-        subject_row_mappings=excluded.subject_row_mappings,
-        updated_by=excluded.updated_by,
-        updated_at=now()
-  returning id into v_assignment;
-
-  insert into public.schoolpro_result_template_assignment_audit(
-    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by,
-    previous_subject_row_mappings,new_subject_row_mappings
-  ) values (
-    p_school,p_class,trim(p_term),trim(p_session),
-    case when v_old_name is null then 'assigned' else 'reassigned' end,
-    v_old_name,v_new_name,auth.uid(),coalesce(v_old_subject_rows,'{}'::jsonb),p_subject_row_mappings
-  );
-  return v_assignment;
-end;
-$$;
-revoke all on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb,jsonb) from public,anon;
-grant execute on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb,jsonb) to authenticated;
-
-
 -- A school owns a library of independently configured workbooks. The legacy
 -- one-row schoolpro_result_templates record remains the inbuilt/sample design;
 -- it is not the production source when a school has mapped custom templates.
@@ -490,9 +384,16 @@ begin
   from public.schoolpro_members m
   where m.school_id=p_school and m.user_id=auth.uid() and m.status='active'
   limit 1;
-  select exists(select 1 from public.schoolpro_classes c
+  select exists(
+    select 1
+    from public.schoolpro_classes c
+    join public.schoolpro_members fm on fm.id=c.form_teacher_id
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
-      and c.form_teacher_id=v_member) into v_is_form_master;
+      and fm.school_id=p_school and fm.user_id=auth.uid() and fm.status='active'
+  ) into v_is_form_master;
+  raise notice 'custom-template authorization: uid=%, member=%, form_master=%, admin_access=%',
+    auth.uid(),v_member,v_is_form_master,
+    private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]);
   if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;

@@ -193,6 +193,20 @@ begin
 end;
 $form_master$;
 
+do $legacy_allocation$
+begin
+  begin
+    insert into public.schoolpro_subject_assignments(school_id,class_id,subject_id,teacher_member_id,session)
+    values('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      '10000000-0000-4000-8000-000000000002',null,'2026/2027');
+    raise exception 'ASSERT: non-canonical legacy subject allocation was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('canonical subject' in sqlerrm)=0 then raise; end if;
+  end;
+end;
+$legacy_allocation$;
+
 -- A saved custom workbook and section mapping are required for the class-level
 -- assignment. The same canonical subject IDs are used in the row mapping.
 insert into storage.objects(bucket_id,name) values
@@ -205,7 +219,7 @@ insert into public.schoolpro_result_template_library(
  'Primary custom result',
  'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx',
  'Result',
- '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+ '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result","start_row":10}'::jsonb,
  '30000000-0000-4000-8000-000000000001',
  '30000000-0000-4000-8000-000000000001'
 );
@@ -233,6 +247,34 @@ begin
   if not exists(select 1 from public.schoolpro_result_template_assignment_audit where class_id='50000000-0000-4000-8000-000000000001' and new_subject_row_mappings=v_map) then
     raise exception 'ASSERT: subject row mapping was not included in the assignment audit';
   end if;
+
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result","start_row":10}'::jsonb,
+      jsonb_build_object(v_math,9,v_english,11)
+    );
+    raise exception 'ASSERT: subject row mapping overwrote the workbook heading area';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('cannot overwrite the workbook heading' in sqlerrm)=0 then raise; end if;
+  end;
+
+  select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',false);
+  select set_config('test.exam_officer','true',false);
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result","start_row":10}'::jsonb,
+      v_map
+    );
+    raise exception 'ASSERT: Exam Officer replaced the saved class result workbook mapping';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Only this class Form Master or an authorized school administrator' in sqlerrm)=0 then raise; end if;
+  end;
 
   begin
     perform public.schoolpro_set_class_result_template(

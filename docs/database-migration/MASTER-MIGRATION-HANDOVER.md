@@ -4152,3 +4152,5 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Draft/unpublished results remain clearly marked review copies; published workbooks still fail closed when formulas are present because ExcelJS does not calculate formulas in-browser. No formula publication safeguard was weakened.
 - Added source-contract assertions for explicit student generation, class-only roster selection, per-student payload finalization, continuation after failures, and the corrected role-scoped authorization helper while preserving general school-member read policies.
 - Changes are branch-only. No production migration, production data change, PR merge, or Render deployment was performed. Fresh exact-head CI and disposable PostgreSQL tests remain required.
+
+- Follow-up disposable PostgreSQL execution exposed a malformed trusted-template `start_row` validation condition in the migration. Restored the complete anchored numeric regex and explicit checks that the library storage path matches the selected assignment, belongs to the school, and contains no traversal segment. This was corrected on the PR branch only; production remains untouched.

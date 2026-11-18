@@ -71,4 +71,16 @@ assert.match(page,/const writeMappedCell=\(address:string,value:any\)=>\{const c
 assert.match(migration,/Every subject allocated to this class and session must be mapped exactly once/i);
 assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
 
-console.log('PASS: multi-workbook section library, canonical subject catalogue, Form Master subject selection, audited subject-ID row mappings, formula-preserving writes and no-default production fallback.');
+
+assert.match(page,/setGeneratedPreview\(preview\)/,'The selected student result must be populated into a reviewable workbook preview before finalization.');
+assert.match(page,/Verification is not issued before this review/i);
+assert.match(page,/async function confirmGeneratedResult/);
+assert.match(page,/schoolpro-issue-result-verification/);
+assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
+assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
+assert.match(page,/formulaProblems/,'Broken/external/unsupported formula markers must be flagged before preview.');
+assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
+assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
+assert.match(page,/Confirm preview and create workbook/);
+
+console.log('PASS: multi-workbook section library, canonical subject catalogue, Form Master subject selection, audited subject-ID row mappings, populated pre-verification preview, score validation and formula-safe writes.');

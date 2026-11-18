@@ -4127,3 +4127,10 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Corrected malformed single-dollar SQL function-body delimiters in the disposable custom-result PostgreSQL fixture; both helper functions now use valid paired dollar quoting.
 - Corrected the member-profile email-change fixture so the second pending request actually targets `replacement.staff@example.test` before the test marks that request as `verification_sent` and verifies that an in-flight request cannot be replaced.
 - These are branch-only source/test corrections. They do not apply migrations, modify production records, merge PR #226, or deploy to Render. Re-run CI and disposable PostgreSQL tests against the new exact head; passing status is not yet claimed.
+
+
+### PR #226 JSX layout-wrapper correction — 2026-11-18
+- The latest Stage C0 run exposed that the earlier Card-closing correction left the result-template layout wrapper malformed: its `className` was dangling after the conditional fragment, and the wrapper was not opened/closed around the editor and generated-result panels.
+- Restored the intended `<div className="scroll-mt-20 grid ...">` wrapper around those panels and closed it before `ModulePage` ends.
+- Commit: `f22d696ab9ed488c2c96aae77311fc4cee45f7fe`.
+- This is branch-only. No production migration, production data change, merge, or Render deployment occurred. Fresh CI for this commit must confirm TypeScript validation before treating the correction as passing.

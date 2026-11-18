@@ -224,11 +224,11 @@ begin
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
     '50000000-0000-4000-8000-000000000001',
     'First Term','2026/2027',
-    '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+    '{"name":"Spoofed caller name","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
     v_map
   );
-  if not exists(select 1 from public.schoolpro_result_template_assignments where id=v_id and subject_row_mappings=v_map) then
-    raise exception 'ASSERT: saved class result assignment did not retain canonical subject row mappings';
+  if not exists(select 1 from public.schoolpro_result_template_assignments where id=v_id and subject_row_mappings=v_map and template_name='Primary custom result') then
+    raise exception 'ASSERT: assignment did not retain the trusted library name and canonical subject row mappings';
   end if;
   if not exists(select 1 from public.schoolpro_result_template_assignment_audit where class_id='50000000-0000-4000-8000-000000000001' and new_subject_row_mappings=v_map) then
     raise exception 'ASSERT: subject row mapping was not included in the assignment audit';
@@ -272,6 +272,21 @@ begin
     if sqlerrm like 'ASSERT:%' then raise; end if;
     if position('between 1 and 10000' in sqlerrm)=0 then raise; end if;
   end;
+
+  perform set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',false);
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+      v_map
+    );
+    raise exception 'ASSERT: a non-Form-Master member assigned the class result workbook';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Only this class Form Master' in sqlerrm)=0 then raise; end if;
+  end;
+  perform set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',false);
 
   if (select count(*) from public.schoolpro_result_template_assignment_audit where class_id='50000000-0000-4000-8000-000000000001')<>1 then
     raise exception 'ASSERT: rejected subject mappings changed the assignment audit';

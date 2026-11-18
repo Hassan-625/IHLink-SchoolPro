@@ -53,10 +53,10 @@ assert.match(migration,/if tg_op='INSERT' then[\s\S]*pg_advisory_xact_lock/i,'Th
 assert.match(subjects,/is_catalogue_entry:true/,'School Admin-created subjects must enter the canonical school catalogue.');
 assert.match(subjects,/already exists in the school catalogue/i,'Duplicate subject creation must direct administrators to reuse the existing record.');
 assert.match(migration,/create or replace function public\.schoolpro_form_master_add_class_subject/i);
-assert.match(migration,/create table public\\.schoolpro_class_subject_selection_audit/i);
+assert.match(migration,/create table public\.schoolpro_class_subject_selection_audit/i);
 assert.match(migration,/schoolpro_class_subject_selection_audit_read/i);
-assert.match(migration,/insert into public\\.schoolpro_class_subject_selection_audit/i,'A newly added class subject must be audited.');
-assert.match(migration,/on conflict\\(class_id,subject_id,session\\) do nothing/i,'Form Master subject selection must be idempotent and preserve existing teacher assignment rows.');
+assert.match(migration,/insert into public\.schoolpro_class_subject_selection_audit/i,'A newly added class subject must be audited.');
+assert.match(migration,/on conflict\(class_id,subject_id,session\) do nothing/i,'Form Master subject selection must be idempotent and preserve existing teacher assignment rows.');
 
 assert.match(migration,/c\.form_teacher_id=v_member/i,'A Form Master may add catalogue subjects only to their assigned class.');
 assert.match(migration,/s\.is_catalogue_entry/i,'Form Masters may select only canonical school-catalogue subjects.');

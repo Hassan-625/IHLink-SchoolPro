@@ -5,6 +5,10 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+concurrency:
+  group: schoolpro-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-24.04
@@ -16,6 +20,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run test:schoolpro-custom-result-templates
+      - run: npm run test:schoolpro-excel-formula-calculation
       - run: node scripts/test-startup-diagnostic.mjs
       - run: node scripts/test-school-context-refresh.mjs
       - run: node scripts/test-academic-sessions.mjs
@@ -656,6 +662,34 @@ jobs:
       - name: Execute subject-assignment trigger and tenant-boundary regression
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-subject-assignment-guard.integration.sql
 
+
+  custom-result-template-mapping-integration:
+    name: Custom result template subjects and mappings (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_custom_result_template_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_custom_result_template_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_custom_result_template_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Apply the exact custom-template migration and test subject/mapping authorization
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-custom-result-template.integration.sql
 
   existing-student-import-payload-diagnostic-integration:
     name: Existing-student import payload diagnostic (disposable PostgreSQL)

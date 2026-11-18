@@ -49,3 +49,32 @@ export function sumResultTotals(rows:Array<{total_score:number|string}>):number|
  for(const row of rows){const value=Number(row.total_score);if(!Number.isFinite(value))return null;total+=value;}
  return total;
 }
+
+
+/**
+ * Resolve workbook rows from the saved canonical subject IDs. Display names are
+ * intentionally not used as identity because schools may have similar labels.
+ */
+export function resolveSubjectRowsById(
+ subjects:Array<{subject_id:string}>,
+ mappings:Record<string,number|string>
+):Record<string,number>{
+ if(!subjects.length)throw new Error('The class has no allocated school-catalogue subjects for this session.');
+ const ids=subjects.map(subject=>subject.subject_id);
+ if(new Set(ids).size!==ids.length)throw new Error('The class subject catalogue contains a duplicate subject allocation.');
+ const keys=Object.keys(mappings||{});
+ if(keys.length!==ids.length||ids.some(id=>!Object.prototype.hasOwnProperty.call(mappings,id))||keys.some(id=>!ids.includes(id)))
+  throw new Error('Every allocated class subject must have exactly one saved workbook row mapping.');
+ const result:Record<string,number>={};
+ const used=new Set<number>();
+ for(const id of ids){
+  const row=Number(mappings[id]);
+  if(!Number.isInteger(row)||row<1||row>10000)throw new Error('Each subject must map to a valid worksheet row.');
+  if(used.has(row))throw new Error('Two subjects cannot be mapped to the same workbook row.');
+  used.add(row);result[id]=row;
+ }
+ return result;
+}
+
+
+export { unsupportedWorkbookFormula } from "./excelFormulaCalculation.mjs";

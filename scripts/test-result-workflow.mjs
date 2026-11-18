@@ -114,3 +114,5 @@ assert.match(overrideMigration,/Only the eligible appointed section head can app
 assert.match(overrideMigration,/super_admin_override/i,
   'Super Admin result actions must record their override status in audit metadata.');
 console.log('PASS: subject-specific score entry, Form Master hand-off, complete section review, correction return, Exam Officer final approval/publication, and authorized class/section reopening source contracts.');
+
+await import('./test-schoolpro-class-term-result-templates.mjs');

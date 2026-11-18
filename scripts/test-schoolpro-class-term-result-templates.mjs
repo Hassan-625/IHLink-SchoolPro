@@ -110,6 +110,9 @@ assert.match(integration,/\\ir \.\.\/supabase\/migrations\/20261118100000_school
 assert.match(integration,/has_table_privilege\('authenticated','public\.schoolpro_result_template_assignments','INSERT'\)/i);
 assert.match(integration,/can directly forge subject or template audit rows/i);
 assert.match(integration,/unflagged duplicate subject insert bypassed the database guard/i);
+assert.match(migration,/v_new_name:=left\(trim\(v_template_config->>'name'\),120\)/i,'Class assignments must snapshot the trusted library name, not a caller-supplied label.');
+assert.match(integration,/Spoofed caller name/i,'The disposable database test must reject caller-supplied template-name spoofing.');
+assert.match(integration,/non-Form-Master member assigned the class result workbook/i,'The assignment RPC must reject non-Form-Master, non-admin actors.');
 assert.match(integration,/Form Master selected a subject outside their assigned class/i);
 assert.match(integration,/Form Master selection overwrote an existing teacher allocation/i);
 assert.match(integration,/subject_row_mappings=v_map/i);

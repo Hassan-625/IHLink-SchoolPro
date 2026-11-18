@@ -83,4 +83,10 @@ assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input
 assert.match(page,/Formula · /,'The preview must display formulas explicitly instead of stale cached values.');
 assert.match(page,/Confirm preview and create workbook/);
 
+
+assert.match(page,/mediaCells/,'Image and QR anchors must not overwrite formula cells.');
+assert.match(page,/selectedDesignKey,subjectRowMappings/,'Changing an unsaved mapping invalidates an earlier populated preview.');
+assert.match(page,/!scheme\?\.components\?\.length/,'Score validation must reject rows with no configured assessment scheme.');
+assert.match(page,/maximum<=0/,'Score validation must reject invalid component maxima.');
+
 console.log('PASS: multi-workbook section library, canonical subject catalogue, Form Master subject selection, audited subject-ID row mappings, populated pre-verification preview, score validation and formula-safe writes.');

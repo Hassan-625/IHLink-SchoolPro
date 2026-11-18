@@ -20,6 +20,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run typecheck
+      - run: npm run test:schoolpro-custom-result-templates
       - run: node scripts/test-startup-diagnostic.mjs
       - run: node scripts/test-school-context-refresh.mjs
       - run: node scripts/test-academic-sessions.mjs

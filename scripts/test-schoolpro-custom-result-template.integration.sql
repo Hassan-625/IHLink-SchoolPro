@@ -292,15 +292,6 @@ declare
   v_english text:='10000000-0000-4000-8000-000000000006';
   v_map jsonb;
 begin
-  raise notice 'custom-template auth diagnostic: uid=%, member=%, form_teacher=%, exact_form_master=%, active_account=%, admin_access=%',
-    auth.uid(),
-    (select m.id from public.schoolpro_members m where m.school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and m.user_id=auth.uid() and m.status='active' limit 1),
-    (select c.form_teacher_id from public.schoolpro_classes c where c.id='50000000-0000-4000-8000-000000000001'),
-    exists(select 1 from public.schoolpro_classes c join public.schoolpro_members m on m.id=c.form_teacher_id
-      where c.school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and c.id='50000000-0000-4000-8000-000000000001'
-        and c.archived_at is null and m.user_id=auth.uid() and m.status='active'),
-    private.is_active_account(),
-    private.has_school_access('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', ARRAY['proprietor','administrator']::public.school_member_role[]);
   v_map:=jsonb_build_object(v_math,10,v_english,11);
   v_id:=public.schoolpro_set_class_result_template(
     'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',

@@ -80,6 +80,12 @@ assert.match(migration,/Every subject allocated to this class and session must b
 assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
 
 
+assert.match(page,/middle_name\?:string\|null/,'The generated report must include the student's middle name when present.');
+assert.match(page,/select\("id,first_name,middle_name,last_name,admission_number/,'The result roster query must load the student's middle name.');
+assert.match(page,/student_name:\[student\.first_name,student\.middle_name,student\.last_name\]\.filter\(Boolean\)\.join\(" "\)/,'The mapped student name must include first, middle and last names.');
+assert.match(page,/filter\(\(r:any\)=>r\.term===term\)\.forEach\(\(r:any\)=>totalsByStudent\.set/,'Grade analysis must use the selected term, not mix all terms in the academic session.');
+assert.match(page,/result subjects could not be resolved to the school subject catalogue/,'Missing subject identity must block workbook generation instead of printing a generic Subject label.');
+
 assert.match(page,/setGeneratedPreview\(preview\)/,'The selected student result must be populated into a reviewable workbook preview before finalization.');
 assert.match(page,/Verification is not issued before this review/i);
 assert.match(page,/async function confirmGeneratedResult/);

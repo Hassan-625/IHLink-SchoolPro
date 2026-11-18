@@ -156,7 +156,7 @@ assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range asse
 assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'Every worksheet formula must be recalculated before the output workbook is serialized.');
 assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
 assert.match(profiles,/unsupportedWorkbookFormula/,'Unknown custom functions and external/broken references are flagged.');
-assert.match(profiles,/xlsx\|xlsm\|xlsb\|xls/,'External workbook references are distinguished from structured table references.');
+assert.match(formulaEngine,/xlsx\|xlsm\|xlsb\|xls/,'External workbook references are distinguished from structured table references.');
 
 assert.match(page,/Choose a writable cell; formulas are preserved/,'Mapped input fields must not target formula cells.');
 assert.match(page,/Calculated · /,'The populated preview must show calculated formula values rather than formula expressions or stale cached values.');

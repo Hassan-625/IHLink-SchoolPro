@@ -63,6 +63,18 @@ insert into public.schoolpro_subjects(id,school_id,name,code,class_name) values
  ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Physical Development','PHY-N','Nursery'),
  ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','  physical   development ','PHY-P','Primary');
 
+create table public.schoolpro_generated_result_outputs(
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null,
+  student_id uuid not null,
+  term text not null,
+  session text not null,
+  format text not null,
+  storage_path text not null,
+  generated_by uuid,
+  generated_at timestamptz not null default now()
+);
+
 \ir ../supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql
 
 do $privileges$
@@ -335,5 +347,17 @@ begin
   end if;
 end;
 $workbook_mapping$;
+
+
+do $output_provenance$
+begin
+  if not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_assignment_id')
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_id')
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='template_config_snapshot')
+     or not exists(select 1 from information_schema.columns where table_schema='public' and table_name='schoolpro_generated_result_outputs' and column_name='subject_row_mappings_snapshot') then
+    raise exception 'ASSERT: generated workbooks do not preserve their template assignment and mapping provenance';
+  end if;
+end;
+$output_provenance$;
 
 select 'PASS: canonical school subject uniqueness, non-destructive legacy duplicate handling, Form Master class-scoped selection, preserved teacher allocations, idempotent audit, and audited subject-ID workbook row mappings.' as result;

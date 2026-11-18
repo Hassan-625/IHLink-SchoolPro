@@ -32,6 +32,10 @@ assert.ok(migration.includes("v_template_config->>'storage_path' is distinct fro
 assert.match(migration,/storage\.objects o[\s\S]*bucket_id='school-result-templates'/i);
 assert.match(migration,/position\('\.\.' in p_template_config->>'storage_path'\)/i);
 assert.match(migration,/schoolpro_result_template_assignment_audit/i);
+assert.match(migration,/add column if not exists formula_calculation_snapshot jsonb not null default '\{\}'::jsonb/i,'Generated output rows must persist formula calculation provenance.');
+assert.match(migration,/p_formula_calculation_snapshot jsonb/,'The atomic output RPC must require formula calculation metadata.');
+assert.match(migration,/formula_calculation_snapshot\)/,'The output RPC must insert formula calculation provenance into the generated result row.');
+assert.match(integration,/formula_calculation_snapshot/,'The disposable PostgreSQL test must assert formula provenance storage and RPC exposure.');
 assert.match(migration,/create table public\.schoolpro_result_template_library/i);
 assert.match(migration,/create table public\.schoolpro_result_template_section_mappings/i);
 assert.match(migration,/section_key text not null check \(section_key in \('nursery','primary','junior_secondary','senior_secondary'\)\)/i);

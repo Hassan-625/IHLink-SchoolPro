@@ -115,6 +115,8 @@ assert.match(page,/if\(!generated\)\{failed\.push\(label\);\}/,'A student genera
 assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
 assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');
 assert.match(page,/published workbook contains formulas that the browser cannot calculate reliably/,"A published result with unevaluated workbook formulas must not receive verification or be stored as official output.");
+assert.match(page,/let hasFormulaCells=false/,'Formula detection must scan the full worksheet, not only the truncated preview list.');
+assert.match(page,/resultMeta\.hasFormulaCells/,'Published workbook finalization must block formulas anywhere in the workbook.');
 assert.match(page,/Formula expressions are preserved but are not calculated in this browser preview/,"The preview must clearly disclose that ExcelJS preserves but does not calculate formulas.");
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,'The preview must snapshot the exact class template assignment.');

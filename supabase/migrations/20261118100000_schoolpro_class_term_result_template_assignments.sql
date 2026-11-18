@@ -472,9 +472,8 @@ begin
   select exists(select 1 from public.schoolpro_classes c
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
       and c.form_teacher_id=v_member) into v_is_form_master;
-  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)
-      or private.schoolpro_is_exam_officer(p_school)) then
-    raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+    raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
   if jsonb_typeof(p_subject_row_mappings)<>'object'
@@ -617,9 +616,8 @@ grant execute on function public.schoolpro_set_result_template_sections(uuid,uui
   select exists(select 1 from public.schoolpro_classes c
     where c.school_id=p_school and c.id=p_class and c.archived_at is null
       and c.form_teacher_id=v_member) into v_is_form_master;
-  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)
-      or private.schoolpro_is_exam_officer(p_school)) then
-    raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
+  if not (v_is_form_master or private.schoolpro_is_school_admin(p_school)) then
+    raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;
 
   if jsonb_typeof(p_subject_row_mappings)<>'object'

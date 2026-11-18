@@ -49,7 +49,7 @@ export function SchoolProSubjects(){
     const key=target.name.trim().replace(/\\s+/g," ").toLocaleLowerCase();
     const sameName=subjects.filter(x=>x.name.trim().replace(/\\s+/g," ").toLocaleLowerCase()===key);
     if(sameName.some(x=>x.is_catalogue_entry)){setError("A canonical subject with this name already exists. Allocate that existing subject instead.");return;}
-    if(!window.confirm("Promote \\""+target.name+"\\" as the canonical school subject? Other historical subject records and their IDs will remain unchanged."))return;
+    if(!window.confirm('Promote "'+target.name+'" as the canonical school subject? Other historical subject records and their IDs will remain unchanged.'))return;
     const {error:promoteError}=await supabase.from("schoolpro_subjects").update({is_catalogue_entry:true}).eq("school_id",schoolId).eq("id",subjectId).eq("is_catalogue_entry",false);
     if(promoteError){setError(customerMessage(promoteError.message));return;}
     setMessage("Selected historical subject is now the canonical catalogue record. Existing subject IDs and historical results were not rewritten.");

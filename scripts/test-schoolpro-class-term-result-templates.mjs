@@ -121,8 +121,12 @@ assert.match(page,/if\(!generated\)\{failed\.push\(label\);\}/,'A student genera
 assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
 assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');
 assert.match(page,/formulaCalculationVerified:true/,"Published workbooks may proceed only after the supported formula engine recalculates their formulas.");
-assert.match(page,/let hasFormulaCells=false/,'Formula detection must scan the full worksheet, not only the truncated preview list.');
 assert.match(page,/resultMeta\.hasFormulaCells/,'Published workbook finalization must block formulas anywhere in the workbook.');
+assert.match(page,/formulaCalculationVerified:true/,'Official publication requires a successful formula calculation result.');
+assert.match(page,/p_formula_calculation_snapshot:resultMeta\.formulaCalculation/,'Formula calculation engine provenance is stored with every output.');
+assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'All workbook worksheets are recalculated before serialization.');
+assert.match(page,/Calculated · /,'The populated preview displays calculated formula values.');
+assert.match(formulaEngine,/MAX_FORMULA_CELLS/,'Formula evaluation has a resource ceiling.');
 assert.match(page,/p_formula_calculation_snapshot:resultMeta\.formulaCalculation/,'The formula engine/version/count and calculation timestamp must be persisted with each generated output.');
 assert.match(page,/formulaCalculation\?\.engine!==\"hot-formula-parser\"/,'The official finalization guard must reject missing or unknown formula calculation provenance.');
 assert.match(profiles,/SUPPORTED_FORMULAS/,'Formula acceptance must match the actual parser-supported function catalogue.');

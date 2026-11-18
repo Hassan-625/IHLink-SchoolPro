@@ -4120,3 +4120,10 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - This is preventive queue control. It does not retroactively cancel the already-created queued runs. The GitHub integration available here exposes workflow-run reads and reruns, but no cancel-run or workflow-dispatch action; existing stale queued runs therefore still require cancellation through GitHub Actions UI/CLI by an authorized repository user.
 - No self-hosted runner was registered, no runner token or credential was handled, and no billing/runner plan was changed. No production migration, merge, or Render deployment was performed.
 - Validation status: new workflow YAML and exact-head checks must still execute on GitHub-hosted runners. The source and disposable-PostgreSQL custom-template tests are not yet reported as passing.
+
+
+## 2026-11-18 PR #226 — CI fixture and JSX corrections
+- Corrected the unmatched outer Card wrapper in `SchoolProResultTemplates.tsx` that caused the TypeScript/JSX parser to reject the custom result-template page and downstream builds.
+- Corrected malformed single-dollar SQL function-body delimiters in the disposable custom-result PostgreSQL fixture; both helper functions now use valid paired dollar quoting.
+- Corrected the member-profile email-change fixture so the second pending request actually targets `replacement.staff@example.test` before the test marks that request as `verification_sent` and verifies that an in-flight request cannot be replaced.
+- These are branch-only source/test corrections. They do not apply migrations, modify production records, merge PR #226, or deploy to Render. Re-run CI and disposable PostgreSQL tests against the new exact head; passing status is not yet claimed.

@@ -243,7 +243,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    const name=schoolFileName([resultMeta.schoolName,resultMeta.student.class_name,resultMeta.student.first_name+" "+resultMeta.student.last_name,resultMeta.student.admission_number,resultMeta.term,resultMeta.session,resultMeta.isPublished?"Result":"Draft Review"],"xlsx");
    if(!resultMeta.isPublished){
     const saved=await saveSchoolFile(blob,name);setMessage(saved?"Review copy downloaded. Scores remain saved for the Exam Officer to approve and publish.":"Review copy is ready to download.");
-    setPendingWorkbook(null);setPendingResultMeta(null);setBusy(false);return;
+    setPendingWorkbook(null);setPendingResultMeta(null);setBusy(false);return true;
    }
    const safeSession=String(resultMeta.session).replace(/[^a-zA-Z0-9_-]/g,"-"),safeTerm=String(resultMeta.term).replace(/[^a-zA-Z0-9_-]/g,"-"),outputPath=`${resultMeta.schoolId}/${resultMeta.studentId}/${safeSession}/${safeTerm}/${crypto.randomUUID()}.xlsx`;
    const uploaded=await supabase.storage.from("schoolpro-result-outputs").upload(outputPath,blob,{contentType:blob.type});
@@ -255,7 +255,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    const saved=await saveSchoolFile(blob,name);
    setMessage(saved?"Reviewed result is stored and downloaded.":"Reviewed result is stored. Download it from Saved generated results.");
    setPendingWorkbook(null);setPendingResultMeta(null);
-   return true;
+   setBusy(false);return true;
   }catch(err){setError(err instanceof Error?err.message:"The reviewed workbook could not be finalized. No result score was changed.");}
   setBusy(false);
   return false;

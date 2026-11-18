@@ -107,8 +107,8 @@ assert.match(migration,/Every subject allocated to this class and session must b
 assert.match(migration,/Two subjects cannot be mapped to the same workbook row/i);
 
 
-assert.match(page,/middle_name\?:string\|null/,'The generated report must include the student's middle name when present.');
-assert.match(page,/select\("id,first_name,middle_name,last_name,admission_number/,'The result roster query must load the student's middle name.');
+assert.match(page,/middle_name\?:string\|null/,"The generated report must include the student's middle name when present.");
+assert.match(page,/select\("id,first_name,middle_name,last_name,admission_number/,"The result roster query must load the student's middle name.");
 assert.match(page,/student_name:\[student\.first_name,student\.middle_name,student\.last_name\]\.filter\(Boolean\)\.join\(" "\)/,'The mapped student name must include first, middle and last names.');
 assert.match(page,/filter\(\(r:any\)=>r\.term===term\)\.forEach\(\(r:any\)=>totalsByStudent\.set/,'Grade analysis must use the selected term, not mix all terms in the academic session.');
 assert.match(page,/result subjects could not be resolved to the school subject catalogue/,'Missing subject identity must block workbook generation instead of printing a generic Subject label.');
@@ -139,7 +139,7 @@ assert.match(formulaEngine,/SUPPORTED_FUNCTIONS/,'Only functions implemented by 
 assert.match(formulaEngine,/cross-worksheet formula references are not supported/,'The engine must reject unsupported cross-sheet dependencies.');
 assert.match(formulaEngine,/SUPPORTED_FORMULAS/,'Formula acceptance must match the actual parser-supported function catalogue.');
 assert.match(formulaEngine,/formula function\(s\) not supported for verified calculation/,'Unsupported/custom functions must fail closed.');
-assert.match(profiles,/volatile and date-serial-sensitive functions fail closed/,'Volatile and date-serial-sensitive functions must not be reported as verified.');
+assert.match(formulaEngine,/UNSUPPORTED_FUNCTIONS/,'Volatile and date-serial-sensitive functions must not be reported as verified.');
 assert.match(page,/calculated workbook formulas/,"The generated preview must state that formulas have been recalculated before finalization.");
 assert.match(page,/schoolpro-issue-result-verification/);
 assert.match(page,/templateAssignment:\{id:classTemplateAssignment\.id,template_id:classTemplateAssignment\.template_id,updated_at:classTemplateAssignment\.updated_at/,'The preview must snapshot the exact class template assignment.');

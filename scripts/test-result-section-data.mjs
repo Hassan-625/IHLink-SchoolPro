@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import ts from 'typescript';
-async function module(path){let source=await readFile(path,'utf8');if(path.endsWith('resultTemplateProfiles.ts'))source=source.replace(/^export \\{ unsupportedWorkbookFormula \} from [\"'][^\"']+[\"'];\\s*$/m,'');const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));}
+async function module(path){let source=await readFile(path,'utf8');if(path.endsWith('resultTemplateProfiles.ts'))source=source.replace('export { unsupportedWorkbookFormula } from "./excelFormulaCalculation.mjs";','');const code=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;return import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));}
 const {resolveResultSectionTemplate,keepResultSectionTemplate}=await module('src/lib/resultSectionTemplates.ts');
 const base={id:'private-row',school_id:'only-this-school',storage_path:'school/default.xlsx',component_columns:{exam:'E',__section_templates:{nursery:{storage_path:'school/nursery.xlsx',component_columns:{exam:'F'}},primary:{storage_path:'school/primary.xlsx',component_columns:{exam:'G'}}}}};
 assert.equal(resolveResultSectionTemplate(base,'nursery').storage_path,'school/nursery.xlsx');

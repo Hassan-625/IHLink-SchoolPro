@@ -812,10 +812,10 @@ begin
      or jsonb_typeof(p_template_config_snapshot)<>'object'
      or jsonb_typeof(p_subject_row_mappings_snapshot)<>'object'
      or jsonb_typeof(p_formula_calculation_snapshot)<>'object'
-     or p_formula_calculation_snapshot->>'engine'<>'hot-formula-parser'
-     or p_formula_calculation_snapshot->>'engineVersion'<>'4.0.0'
+     or p_formula_calculation_snapshot->>'engine' is distinct from 'hot-formula-parser'
+     or p_formula_calculation_snapshot->>'engineVersion' is distinct from '4.0.0'
      or coalesce((p_formula_calculation_snapshot->>'formulaCount')::integer,-1)<0
-     or p_formula_calculation_snapshot->>'calculationMode'<>'same-sheet-dependency-graph' then
+     or p_formula_calculation_snapshot->>'calculationMode' is distinct from 'same-sheet-dependency-graph' then
     raise exception 'The generated result metadata is invalid';
   end if;
 

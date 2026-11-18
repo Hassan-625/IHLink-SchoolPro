@@ -39,7 +39,8 @@
     "test:schoolpro-printable-class-average": "node scripts/test-schoolpro-printable-class-average-consistency.mjs",
     "test:schoolpro-report-card-schemes": "node scripts/test-schoolpro-report-card-assessment-schemes.mjs",
     "test:schoolpro-guardian-invitations": "node scripts/test-schoolpro-guardian-invitation-security.mjs",
-    "test:schoolpro-cbt-session-scope": "node scripts/test-schoolpro-cbt-session-scope.mjs"
+    "test:schoolpro-cbt-session-scope": "node scripts/test-schoolpro-cbt-session-scope.mjs",
+    "test:schoolpro-custom-result-templates": "node scripts/test-schoolpro-class-term-result-templates.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

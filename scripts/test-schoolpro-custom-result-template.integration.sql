@@ -261,8 +261,8 @@ begin
     if position('cannot overwrite the workbook heading' in sqlerrm)=0 then raise; end if;
   end;
 
-  select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',false);
-  select set_config('test.exam_officer','true',false);
+  perform set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',false);
+  perform set_config('test.exam_officer','true',false);
   begin
     perform public.schoolpro_set_class_result_template(
       'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',

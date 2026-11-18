@@ -21,7 +21,8 @@ assert.doesNotMatch(page,/normalizedRole===\x27exam_officer\x27/,"Exam Officers 
 assert.match(migration,/private\.has_school_access\(p_school, ARRAY\['proprietor','administrator'\]::public\.school_member_role\[\]\)/i, 'Template administration must use the existing role-scoped school access helper.');
 assert.match(migration,/using \(private\.has_school_access\(school_id\)\)/i, 'General school-member read access must remain available where it was previously granted.');
 assert.match(migration,/p_template_config->>'storage_path'.*p_school::text/i);
-assert.match(migration,/coalesce\(v_template_config->>'start_row',''\) !~ '\^\[1-9\]\[0-9\]\{0,4\}\
+assert.ok(migration.includes("coalesce(v_template_config->>'start_row','') !~ '^[1-9][0-9]{0,4}$'"), 'Trusted template start_row must be a bounded positive integer.');
+assert.ok(migration.includes("v_template_config->>'storage_path' is distinct from p_template_config->>'storage_path'"), 'The class assignment must use the exact trusted library storage path.');
 assert.match(migration,/storage\.objects o[\s\S]*bucket_id='school-result-templates'/i);
 assert.match(migration,/position\('\.\.' in p_template_config->>'storage_path'\)/i);
 assert.match(migration,/schoolpro_result_template_assignment_audit/i);

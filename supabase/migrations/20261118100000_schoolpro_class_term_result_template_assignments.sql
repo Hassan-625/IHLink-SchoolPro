@@ -1,5 +1,52 @@
 -- Class / term / session result-template assignment selected by the Form Master.
--- Snapshot the workbook mapping so Exam Officer generation uses the exact same design.
+-- Snapshot the workbook and canonical subject-row mapping for reproducible output.
+
+-- Preserve every existing subject ID. Promote only unambiguous legacy names into
+-- the canonical catalogue; ambiguous legacy duplicates remain untouched.
+alter table public.schoolpro_subjects
+  add column if not exists is_catalogue_entry boolean not null default false;
+
+with normalized as (
+  select id,school_id,
+    lower(regexp_replace(btrim(name), '\s+', ' ', 'g')) as subject_key,
+    count(*) over (partition by school_id,lower(regexp_replace(btrim(name), '\s+', ' ', 'g'))) as copies
+  from public.schoolpro_subjects
+)
+update public.schoolpro_subjects s
+set is_catalogue_entry=true
+from normalized n
+where n.id=s.id and n.copies=1;
+
+create unique index if not exists schoolpro_subjects_canonical_name_uidx
+  on public.schoolpro_subjects(school_id,lower(regexp_replace(btrim(name), '\s+', ' ', 'g')))
+  where is_catalogue_entry;
+
+create or replace function private.schoolpro_guard_canonical_subject_name()
+returns trigger language plpgsql security definer set search_path=''
+as $
+begin
+  if new.is_catalogue_entry then
+    perform pg_advisory_xact_lock(hashtextextended(new.school_id::text,0));
+    if exists(
+      select 1 from public.schoolpro_subjects existing
+      where existing.school_id=new.school_id
+        and existing.id is distinct from new.id
+        and lower(regexp_replace(btrim(existing.name), '\s+', ' ', 'g'))
+          = lower(regexp_replace(btrim(new.name), '\s+', ' ', 'g'))
+    ) then
+      raise exception 'A subject with this name already exists in the school catalogue. Select the existing subject instead of creating a duplicate';
+    end if;
+  end if;
+  return new;
+end;
+$;
+revoke all on function private.schoolpro_guard_canonical_subject_name() from public,anon,authenticated;
+drop trigger if exists schoolpro_guard_canonical_subject_name on public.schoolpro_subjects;
+create trigger schoolpro_guard_canonical_subject_name
+before insert or update of school_id,name,is_catalogue_entry
+on public.schoolpro_subjects
+for each row execute function private.schoolpro_guard_canonical_subject_name();
+
 
 create table public.schoolpro_result_template_assignments (
   id uuid primary key default gen_random_uuid(),
@@ -9,6 +56,7 @@ create table public.schoolpro_result_template_assignments (
   session text not null check (char_length(trim(session)) between 4 and 20),
   template_name text not null check (char_length(trim(template_name)) between 1 and 120),
   template_config jsonb not null check (jsonb_typeof(template_config)='object'),
+  subject_row_mappings jsonb not null default '{}'::jsonb check (jsonb_typeof(subject_row_mappings)='object'),
   updated_by uuid not null references public.profiles(id),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -33,7 +81,9 @@ create table public.schoolpro_result_template_assignment_audit (
   previous_template_name text,
   new_template_name text not null,
   changed_by uuid not null,
-  changed_at timestamptz not null default now()
+  changed_at timestamptz not null default now(),
+  previous_subject_row_mappings jsonb not null default '{}'::jsonb,
+  new_subject_row_mappings jsonb not null default '{}'::jsonb
 );
 create index schoolpro_result_template_assignment_audit_lookup_idx
   on public.schoolpro_result_template_assignment_audit(school_id,class_id,session,term,changed_at desc);
@@ -45,7 +95,7 @@ grant select on public.schoolpro_result_template_assignment_audit to authenticat
 revoke insert,update,delete on public.schoolpro_result_template_assignment_audit from anon,authenticated;
 
 create or replace function public.schoolpro_set_class_result_template(
-  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb
+  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb,p_subject_row_mappings jsonb
 ) returns uuid
 language plpgsql security definer set search_path=''
 as $$
@@ -128,22 +178,24 @@ begin
   on conflict(school_id,class_id,term,session) do update
     set template_name=excluded.template_name,
         template_config=excluded.template_config,
+        subject_row_mappings=excluded.subject_row_mappings,
         updated_by=excluded.updated_by,
         updated_at=now()
   returning id into v_assignment;
 
   insert into public.schoolpro_result_template_assignment_audit(
-    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by
+    school_id,class_id,term,session,action,previous_template_name,new_template_name,changed_by,
+    previous_subject_row_mappings,new_subject_row_mappings
   ) values (
     p_school,p_class,trim(p_term),trim(p_session),
     case when v_old_name is null then 'assigned' else 'reassigned' end,
-    v_old_name,v_new_name,auth.uid()
+    v_old_name,v_new_name,auth.uid(),coalesce(v_old_subject_rows,'{}'::jsonb),p_subject_row_mappings
   );
   return v_assignment;
 end;
 $$;
-revoke all on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb) from public,anon;
-grant execute on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb) to authenticated;
+revoke all on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb,jsonb) from public,anon;
+grant execute on function public.schoolpro_set_class_result_template(uuid,uuid,text,text,jsonb,jsonb) to authenticated;
 
 
 -- A school owns a library of independently configured workbooks. The legacy
@@ -220,7 +272,7 @@ alter table public.schoolpro_result_template_assignments
 -- Keep the workbook snapshot for reproducible historical output, but require
 -- that it originates from a custom template mapped to this class's section.
 create or replace function public.schoolpro_set_class_result_template(
-  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb
+  p_school uuid,p_class uuid,p_term text,p_session text,p_template_config jsonb,p_subject_row_mappings jsonb
 ) returns uuid
 language plpgsql security definer set search_path=''
 as $$
@@ -233,6 +285,11 @@ declare
   v_template_id uuid;
   v_template_config jsonb;
   v_section text;
+  v_old_subject_rows jsonb;
+  v_subject_key text;
+  v_subject_row text;
+  v_mapping_count integer;
+  v_assignment_count integer;
 begin
   if auth.uid() is null or not private.is_active_account() then
     raise exception 'An active signed-in account is required';
@@ -250,6 +307,39 @@ begin
      or octet_length(p_template_config::text)>100000 then
     raise exception 'Choose a saved custom result workbook belonging to this school';
   end if;
+  if jsonb_typeof(p_subject_row_mappings)<>'object'
+     or octet_length(p_subject_row_mappings::text)>50000 then
+    raise exception 'Map each assigned class subject to one workbook row before saving';
+  end if;
+  for v_subject_key,v_subject_row in select key,value from jsonb_each_text(p_subject_row_mappings)
+  loop
+    if v_subject_key !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+       or v_subject_row !~ '^[1-9][0-9]{0,4}$' then
+      raise exception 'Subject mappings must use valid catalogue subject IDs and positive worksheet row numbers';
+    end if;
+  end loop;
+  select count(*) into v_assignment_count
+  from public.schoolpro_subject_assignments a
+  where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session);
+  select count(*) into v_mapping_count from jsonb_each(p_subject_row_mappings);
+  if v_assignment_count=0 or v_assignment_count<>v_mapping_count then
+    raise exception 'Every subject allocated to this class and session must be mapped exactly once';
+  end if;
+  if exists(
+    select 1 from public.schoolpro_subject_assignments a
+    where a.school_id=p_school and a.class_id=p_class and a.session=trim(p_session)
+      and not (p_subject_row_mappings ? a.subject_id::text)
+  ) then
+    raise exception 'One or more allocated class subjects have no workbook row mapping';
+  end if;
+  if exists(
+    select 1 from (
+      select value::integer as row_number from jsonb_each_text(p_subject_row_mappings)
+    ) rows group by row_number having count(*)>1
+  ) then
+    raise exception 'Two subjects cannot be mapped to the same workbook row';
+  end if;
+
   if not exists(select 1 from storage.objects o
     where o.bucket_id='school-result-templates'
       and o.name=p_template_config->>'storage_path') then
@@ -320,16 +410,16 @@ begin
     raise exception 'Only this class Form Master, an authorized school administrator, or the Exam Officer can assign its result design';
   end if;
 
-  select template_name into v_old_name
+  select template_name,subject_row_mappings into v_old_name,v_old_subject_rows
   from public.schoolpro_result_template_assignments
   where school_id=p_school and class_id=p_class
     and term=trim(p_term) and session=trim(p_session)
   for update;
   v_new_name:=left(trim(p_template_config->>'name'),120);
   insert into public.schoolpro_result_template_assignments(
-    school_id,class_id,term,session,template_name,template_config,updated_by,template_id
+    school_id,class_id,term,session,template_name,template_config,subject_row_mappings,updated_by,template_id
   ) values (
-    p_school,p_class,trim(p_term),trim(p_session),v_new_name,v_template_config,auth.uid(),v_template_id
+    p_school,p_class,trim(p_term),trim(p_session),v_new_name,v_template_config,p_subject_row_mappings,auth.uid(),v_template_id
   )
   on conflict(school_id,class_id,term,session) do update
     set template_name=excluded.template_name,

@@ -1,0 +1,264 @@
+\set ON_ERROR_STOP on
+
+create role anon nologin;
+create role authenticated nologin;
+create schema auth;
+create schema private;
+create schema storage;
+
+create or replace function auth.uid()
+returns uuid language sql stable
+as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create or replace function private.has_school_access(p_school uuid)
+returns boolean language sql stable as $$ select true $$;
+create or replace function private.is_active_account()
+returns boolean language sql stable as $$ select current_setting('test.active',true)='true' $$;
+create or replace function private.schoolpro_is_school_admin(p_school uuid)
+returns boolean language sql stable as $$ select current_setting('test.school_admin',true)='true' $$;
+create or replace function private.schoolpro_is_exam_officer(p_school uuid)
+returns boolean language sql stable as $$ select current_setting('test.exam_officer',true)='true' $$;
+
+create table public.profiles(id uuid primary key);
+create table public.schoolpro_schools(id uuid primary key);
+create table public.schoolpro_classes(
+  id uuid primary key,
+  school_id uuid not null references public.schoolpro_schools(id),
+  level text not null,
+  archived_at timestamptz,
+  form_teacher_id uuid
+);
+create table public.schoolpro_members(
+  id uuid primary key,
+  school_id uuid not null references public.schoolpro_schools(id),
+  user_id uuid not null,
+  status text not null
+);
+create table public.schoolpro_subjects(
+  id uuid primary key,
+  school_id uuid not null references public.schoolpro_schools(id),
+  name text not null,
+  code text not null,
+  class_name text not null
+);
+create table public.schoolpro_subject_assignments(
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null references public.schoolpro_schools(id),
+  class_id uuid not null references public.schoolpro_classes(id),
+  subject_id uuid not null references public.schoolpro_subjects(id),
+  teacher_member_id uuid,
+  session text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique(class_id,subject_id,session)
+);
+create table storage.objects(bucket_id text not null,name text not null,primary key(bucket_id,name));
+
+insert into public.schoolpro_schools(id) values
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),
+ ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+-- Seed legacy subject rows before the migration. Unambiguous rows may be
+-- promoted; ambiguous duplicates must retain their original IDs unchanged.
+insert into public.schoolpro_subjects(id,school_id,name,code,class_name) values
+ ('10000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Mathematics','MTH','Primary'),
+ ('10000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Physical Development','PHY-N','Nursery'),
+ ('10000000-0000-4000-8000-000000000003','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','  physical   development ','PHY-P','Primary');
+
+\ir ../supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql
+
+do $catalogue$
+begin
+  if not (select is_catalogue_entry from public.schoolpro_subjects where id='10000000-0000-4000-8000-000000000001') then
+    raise exception 'ASSERT: unique legacy subject was not promoted to the canonical catalogue';
+  end if;
+  if (select count(*) from public.schoolpro_subjects where school_id='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa' and lower(regexp_replace(btrim(name),'\s+',' ','g'))='physical development' and is_catalogue_entry)<>0 then
+    raise exception 'ASSERT: ambiguous historical duplicate subjects were incorrectly promoted';
+  end if;
+  begin
+    insert into public.schoolpro_subjects(id,school_id,name,code,class_name,is_catalogue_entry)
+    values('10000000-0000-4000-8000-000000000004','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','  MATHEMATICS  ','MATH2','Primary',true);
+    raise exception 'ASSERT: duplicate canonical subject name was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('already exists in the school catalogue' in sqlerrm)=0 then raise; end if;
+  end;
+  begin
+    insert into public.schoolpro_subjects(id,school_id,name,code,class_name,is_catalogue_entry)
+    values('10000000-0000-4000-8000-000000000005','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Mathematics','MATH3','Primary',false);
+    raise exception 'ASSERT: unflagged duplicate subject insert bypassed the database guard';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('already exists in the school catalogue' in sqlerrm)=0 then raise; end if;
+  end;
+end;
+$catalogue$;
+
+-- Same normalized subject name remains legal in a different school.
+insert into public.schoolpro_subjects(id,school_id,name,code,class_name,is_catalogue_entry)
+values('20000000-0000-4000-8000-000000000001','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','Mathematics','MTH','Primary',true);
+
+insert into public.profiles(id) values
+ ('30000000-0000-4000-8000-000000000001'),
+ ('30000000-0000-4000-8000-000000000002');
+insert into public.schoolpro_members(id,school_id,user_id,status) values
+ ('40000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000001','active'),
+ ('40000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','30000000-0000-4000-8000-000000000002','active');
+insert into public.schoolpro_classes(id,school_id,level,form_teacher_id) values
+ ('50000000-0000-4000-8000-000000000001','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Primary 1','40000000-0000-4000-8000-000000000001'),
+ ('50000000-0000-4000-8000-000000000002','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','Primary 2',null);
+
+-- English is already allocated by the administrator to a teacher. Form Master
+-- selection must return that row without replacing its teacher allocation.
+insert into public.schoolpro_subjects(id,school_id,name,code,class_name,is_catalogue_entry) values
+ ('10000000-0000-4000-8000-000000000006','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','English Language','ENG','Primary',true);
+insert into public.schoolpro_subject_assignments(school_id,class_id,subject_id,teacher_member_id,session) values
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001','10000000-0000-4000-8000-000000000006','40000000-0000-4000-8000-000000000002','2026/2027');
+
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',false);
+select set_config('test.active','true',false);
+select set_config('test.school_admin','false',false);
+select set_config('test.exam_officer','false',false);
+
+do $form_master$
+declare
+  v_math uuid;
+  v_english uuid;
+  v_assignment uuid;
+  v_teacher uuid;
+begin
+  v_math:=public.schoolpro_form_master_add_class_subject(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001','2026/2027');
+  if v_math is null then raise exception 'ASSERT: Form Master subject selection did not return an assignment'; end if;
+  v_english:=public.schoolpro_form_master_add_class_subject(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000006','2026/2027');
+  select teacher_member_id into v_teacher from public.schoolpro_subject_assignments where id=v_english;
+  if v_teacher is distinct from '40000000-0000-4000-8000-000000000002'::uuid then
+    raise exception 'ASSERT: Form Master selection overwrote an existing teacher allocation';
+  end if;
+  perform public.schoolpro_form_master_add_class_subject(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+    '10000000-0000-4000-8000-000000000001','2026/2027');
+  if (select count(*) from public.schoolpro_subject_assignments where class_id='50000000-0000-4000-8000-000000000001' and session='2026/2027')<>2 then
+    raise exception 'ASSERT: repeated Form Master selection created duplicate class-subject allocations';
+  end if;
+  if (select count(*) from public.schoolpro_class_subject_selection_audit where class_id='50000000-0000-4000-8000-000000000001')<>1 then
+    raise exception 'ASSERT: Form Master subject selection audit is missing or duplicates an idempotent retry';
+  end if;
+  begin
+    perform public.schoolpro_form_master_add_class_subject(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000002',
+      '10000000-0000-4000-8000-000000000001','2026/2027');
+    raise exception 'ASSERT: Form Master selected a subject outside their assigned class';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Only the Form Master assigned to this class' in sqlerrm)=0 then raise; end if;
+  end;
+  begin
+    perform public.schoolpro_form_master_add_class_subject(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      '10000000-0000-4000-8000-000000000002','2026/2027');
+    raise exception 'ASSERT: Form Master selected ambiguous legacy subject not in canonical catalogue';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('existing canonical subject' in sqlerrm)=0 then raise; end if;
+  end;
+  begin
+    perform public.schoolpro_form_master_add_class_subject(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      '20000000-0000-4000-8000-000000000001','2026/2027');
+    raise exception 'ASSERT: cross-school subject entered a class catalogue';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('existing canonical subject' in sqlerrm)=0 then raise; end if;
+  end;
+end;
+$form_master$;
+
+-- A saved custom workbook and section mapping are required for the class-level
+-- assignment. The same canonical subject IDs are used in the row mapping.
+insert into storage.objects(bucket_id,name) values
+ ('school-result-templates','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx');
+insert into public.schoolpro_result_template_library(
+  id,school_id,name,storage_path,sheet_name,template_config,created_by,updated_by
+) values (
+ '60000000-0000-4000-8000-000000000001',
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ 'Primary custom result',
+ 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx',
+ 'Result',
+ '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+ '30000000-0000-4000-8000-000000000001',
+ '30000000-0000-4000-8000-000000000001'
+);
+insert into public.schoolpro_result_template_section_mappings(school_id,template_id,section_key,mapped_by) values
+ ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','60000000-0000-4000-8000-000000000001','primary','30000000-0000-4000-8000-000000000001');
+
+do $workbook_mapping$
+declare
+  v_id uuid;
+  v_math text:='10000000-0000-4000-8000-000000000001';
+  v_english text:='10000000-0000-4000-8000-000000000006';
+  v_map jsonb;
+begin
+  v_map:=jsonb_build_object(v_math,10,v_english,11);
+  v_id:=public.schoolpro_set_class_result_template(
+    'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+    '50000000-0000-4000-8000-000000000001',
+    'First Term','2026/2027',
+    '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+    v_map
+  );
+  if not exists(select 1 from public.schoolpro_result_template_assignments where id=v_id and subject_row_mappings=v_map) then
+    raise exception 'ASSERT: saved class result assignment did not retain canonical subject row mappings';
+  end if;
+  if not exists(select 1 from public.schoolpro_result_template_assignment_audit where class_id='50000000-0000-4000-8000-000000000001' and new_subject_row_mappings=v_map) then
+    raise exception 'ASSERT: subject row mapping was not included in the assignment audit';
+  end if;
+
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+      jsonb_build_object(v_math,10,v_english,10)
+    );
+    raise exception 'ASSERT: duplicate subject workbook rows were accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Two subjects cannot be mapped to the same workbook row' in sqlerrm)=0 then raise; end if;
+  end;
+
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+      jsonb_build_object(v_math,10)
+    );
+    raise exception 'ASSERT: incomplete subject mapping was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('Every subject allocated to this class and session must be mapped exactly once' in sqlerrm)=0 then raise; end if;
+  end;
+
+  begin
+    perform public.schoolpro_set_class_result_template(
+      'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','50000000-0000-4000-8000-000000000001',
+      'First Term','2026/2027',
+      '{"name":"Primary custom result","storage_path":"aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/primary-result.xlsx","sheet_name":"Result"}'::jsonb,
+      jsonb_build_object(v_math,10001,v_english,11)
+    );
+    raise exception 'ASSERT: out-of-range workbook row was accepted';
+  exception when others then
+    if sqlerrm like 'ASSERT:%' then raise; end if;
+    if position('between 1 and 10000' in sqlerrm)=0 then raise; end if;
+  end;
+
+  if (select count(*) from public.schoolpro_result_template_assignment_audit where class_id='50000000-0000-4000-8000-000000000001')<>1 then
+    raise exception 'ASSERT: rejected subject mappings changed the assignment audit';
+  end if;
+end;
+$workbook_mapping$;
+
+select 'PASS: canonical school subject uniqueness, non-destructive legacy duplicate handling, Form Master class-scoped selection, preserved teacher allocations, idempotent audit, and audited subject-ID workbook row mappings.' as result;

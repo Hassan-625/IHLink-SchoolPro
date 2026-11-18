@@ -32,7 +32,7 @@ declare
   v_subject public.schoolpro_subjects%rowtype;
 begin
   if auth.uid() is null or not private.is_active_account()
-     or not private.schoolpro_is_school_admin(p_school) then
+     or not private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]) then
     raise exception 'Only an active school administrator can resolve a historical subject';
   end if;
 

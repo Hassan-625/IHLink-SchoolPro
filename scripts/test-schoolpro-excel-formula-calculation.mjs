@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { calculateWorkbookFormulas } from "../src/lib/excelFormulaCalculation.mjs";
+import { calculateWorkbookFormulas, unsupportedWorkbookFormula } from "../src/lib/excelFormulaCalculation.mjs";
 
 function makeWorkbook(rows) {
   const cells = new Map();
@@ -69,6 +69,16 @@ assert.equal(workbook.sheet.getCell("B2").result, "PASS");
 assert.equal(workbook.sheet.getCell("A3").result, 15);
 assert.equal(workbook.calcProperties.calcMode, "auto");
 assert.equal(workbook.calcProperties.fullCalcOnLoad, true);
+assert.equal(unsupportedWorkbookFormula("SUM(A1:B1)"), null);
+assert.match(unsupportedWorkbookFormula("SUM(Sheet2!A1:A3)"), /cross-worksheet/);
+assert.match(unsupportedWorkbookFormula("TODAY()"), /not supported/);
+assert.match(unsupportedWorkbookFormula("CUSTOM(A1)"), /not supported/);
+
+const sharedFormula = makeWorkbook([[{ sharedFormula: "A1" }]]);
+assert.throws(() => calculateWorkbookFormulas(sharedFormula), /Shared-formula cells are not supported/);
+
+const arrayFormula = makeWorkbook([[{ formula: "SUM(A1:A2)", result: 0, shareType: "array" }]]);
+assert.throws(() => calculateWorkbookFormulas(arrayFormula), /Array formulas are not supported/);
 
 const circular = makeWorkbook([
   [{ formula: "B1+1", result: 0 }, { formula: "A1+1", result: 0 }],

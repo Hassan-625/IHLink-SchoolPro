@@ -4068,3 +4068,17 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 
 
 - **Template assignment authority hardening:** the class assignment RPC now records the trusted workbook name from the school-owned library snapshot rather than accepting the caller-supplied label. The disposable PostgreSQL fixture verifies that a non-Form-Master member cannot assign the class workbook and that spoofed names do not replace the library name.
+
+
+## PR #226 / Issue #227 custom result-template pre-merge review — 2026-11-18
+
+- Reviewed the class/term/session assignment migration, school-owned workbook library and section mappings, Form Master subject-selection RPC, workbook-generation path, subject-ID row mapping helper, disposable PostgreSQL fixture, and CI wiring on `feat/schoolpro-class-term-result-template-selection`.
+- Corrected the generated student-name binding to include `middle_name` and added it to the roster query. Corrected grade-analysis population to use only the selected term rather than combining all terms in the session. Missing subject IDs returned by the catalogue lookup now block generation instead of printing the misleading fallback label `Subject`.
+- Added source-contract assertions for these three data-integrity corrections.
+- Remaining pre-merge blockers identified:
+  1. ExcelJS does not calculate formulas. The current code preserves formulas and asks Excel to recalculate on open, but the in-app pre-verification preview displays formula expressions and cannot prove their calculated results. The formula whitelist only screens function names; it is not a calculation engine. Do not treat this as a verified formula preview or merge as complete until a reliable calculation path is implemented and tested, or the workflow explicitly prevents verification issuance until recalculation has been confirmed.
+  2. Legacy duplicate subject names are intentionally not promoted to canonical catalogue entries, but the trigger currently rejects promotion/creation when any legacy duplicate exists. There is no administrator resolution path to choose one existing subject ID as the canonical identity while retaining the other historical IDs. This leaves ambiguous legacy subjects unusable in the new Form Master selection flow.
+  3. Workbook mapping validation checks basic cell/range syntax and some overlaps, but does not fully validate collisions between subject/component columns, field mappings, and subject-row allocations. A mapping can therefore be syntactically valid while writing unrelated data into the same worksheet locations.
+  4. Grade-analysis calculation was mixing all terms in the selected session; fixed in the current branch. Full-name binding and missing-subject fallback were also corrected.
+- No production database or Storage objects were changed. The migration has only been reviewed as source; the disposable PostgreSQL integration job has not executed because GitHub-hosted runners remain queued and local Docker/psql are unavailable in the user's environment.
+- Do not merge or apply the production migration until the formula-calculation limitation and legacy-subject resolution path are addressed, the workbook mapping collision checks are strengthened, and focused tests run against the exact final head. GitHub Actions queue status is not a test result.

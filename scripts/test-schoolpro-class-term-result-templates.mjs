@@ -84,6 +84,8 @@ assert.match(page,/Formula · /,'The preview must display formulas explicitly in
 assert.match(page,/Confirm preview and create workbook/);
 
 
+assert.match(page,/Score input for/,'Assessment score cells mapped to formula cells must block generation.');
+assert.match(page,/Subject-name input for/,'Subject name cells mapped to formula cells must block generation.');
 assert.match(page,/mediaCells/,'Image and QR anchors must not overwrite formula cells.');
 assert.match(page,/selectedDesignKey,subjectRowMappings/,'Changing an unsaved mapping invalidates an earlier populated preview.');
 assert.match(page,/!scheme\?\.components\?\.length/,'Score validation must reject rows with no configured assessment scheme.');

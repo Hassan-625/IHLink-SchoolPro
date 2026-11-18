@@ -275,6 +275,9 @@ begin
       and c.archived_at is null and c.form_teacher_id=v_member
   ) into v_is_form_master;
 
+  raise notice 'inside custom-template guard: uid=%, school=%, class=%, member=%, form_master=%, admin_access=%',
+    auth.uid(),p_school,p_class,v_member,v_is_form_master,
+    private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[]);
   if not (v_is_form_master or private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])) then
     raise exception 'Only this class Form Master or an authorized school administrator can assign its result design';
   end if;

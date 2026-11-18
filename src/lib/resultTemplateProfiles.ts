@@ -77,29 +77,4 @@ export function resolveSubjectRowsById(
 }
 
 
-import { SUPPORTED_FORMULAS } from "hot-formula-parser";
-
-const supportedWorkbookFormulaFunctions=new Set(SUPPORTED_FORMULAS.map(name=>String(name).toUpperCase()));
-const unsupportedWorkbookFormulaFunctions=new Set([
- 'DATE','DATEVALUE','TIME','TIMEVALUE','NOW','TODAY','RAND','RANDBETWEEN',
- 'YEAR','MONTH','DAY','HOUR','MINUTE','SECOND','EDATE','EOMONTH',
- 'NETWORKDAYS','NETWORKDAYS.INTL','WORKDAY','WORKDAY.INTL','WEEKDAY','WEEKNUM','DAYS','DATEDIF',
- 'OFFSET','INDIRECT'
-]);
-
-/**
- * Formula support is deliberately tied to the actual calculation engine.
- * ExcelJS only stores formulas; hot-formula-parser evaluates the supported
- * same-worksheet Excel subset. Cross-sheet, external, structured-reference,
- * volatile and date-serial-sensitive formulas fail closed.
- */
-export function unsupportedWorkbookFormula(formula:string):string|null{
- const source=String(formula||'');
- if(/#REF!|_xlfn\\.|_xlws\\.|\\[[^\\]]+\\.(?:xlsx|xlsm|xlsb|xls)\\]/i.test(source))
-  return 'broken, external-workbook or unsupported Excel function reference';
- if(source.includes('!'))return 'cross-worksheet formula references are not supported by the calculation engine';
- if(/\\[[^\\]]+\\]/.test(source))return 'structured table references are not supported by the calculation engine';
- const functions=[...source.matchAll(/([A-Z][A-Z0-9_.]*)\\s*\\(/gi)].map(match=>match[1].toUpperCase());
- const unsupported=[...new Set(functions.filter(name=>unsupportedWorkbookFormulaFunctions.has(name)||!supportedWorkbookFormulaFunctions.has(name)))];
- return unsupported.length?('formula function(s) not supported for verified calculation: '+unsupported.join(', ')):null;
-}
+export { unsupportedWorkbookFormula } from "./excelFormulaCalculation.mjs";

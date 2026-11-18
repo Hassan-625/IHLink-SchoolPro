@@ -26,7 +26,7 @@ export function unsupportedWorkbookFormula(formula) {
 function cellScalar(cell) {
   const value = cell?.value;
   if (value === null || value === undefined) return null;
-  if (value instanceof Date) return value;
+  if (value instanceof Date) return Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate(), value.getUTCHours(), value.getUTCMinutes(), value.getUTCSeconds(), value.getUTCMilliseconds()) / 86400000 + 25569;
   if (typeof value === "object") {
     if (Array.isArray(value.richText)) return value.richText.map((part) => part.text || "").join("");
     if (typeof value.text === "string") return value.text;

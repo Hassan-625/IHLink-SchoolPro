@@ -15,7 +15,7 @@ function makeWorkbook(rows) {
   };
   const getCell = (rowOrAddress, column) => {
     const address = typeof rowOrAddress === "string"
-      ? rowOrAddress.replace(/\\$/g, "").toUpperCase()
+      ? rowOrAddress.replace(/\$/g, "").toUpperCase()
       : columnName(column) + rowOrAddress;
     if (!cells.has(address)) {
       const cell = {
@@ -58,7 +58,7 @@ function makeWorkbook(rows) {
 
 const workbook = makeWorkbook([
   [10, 20, { formula: "SUM(A1:B1)", result: 0 }],
-  [{ formula: "C1*2", result: 0 }, { formula: "IF(A2>=60,\\"PASS\\",\\"FAIL\\")", result: "stale" }],
+  [{ formula: "C1*2", result: 0 }, { formula: "IF(A2>=60,\"PASS\",\"FAIL\")", result: "stale" }],
   [{ formula: "AVERAGE(A1:B1)", result: 0 }],
 ]);
 const summary = calculateWorkbookFormulas(workbook);

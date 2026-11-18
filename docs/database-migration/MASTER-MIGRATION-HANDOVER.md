@@ -4102,3 +4102,12 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 
 
 - **Authorization helper correction (2026-11-18):** follow-up review found the first draft of the legacy-promotion RPC referenced a school-admin helper that was not present in the repository. Replaced it with the established `private.has_school_access(p_school, ARRAY['proprietor','administrator']::public.school_member_role[])` role-scoped authorization contract. Updated the disposable PostgreSQL fixture to model that exact overload and the source-contract assertion. The first draft must not be deployed; only the corrected migration on the current PR head is eligible for further validation.
+
+
+## 2026-11-18 PR #226 validation correction
+- PR #226 is now reported mergeable by GitHub and its head branch is not behind `main`; no merge or production action was taken.
+- Re-inspection found malformed assertions in `scripts/test-schoolpro-class-term-result-templates.mjs` (missing assertion closures and stray trailing fragments). Repaired the assertions for template-assignment snapshot, live assignment revalidation, and prohibition on direct generated-output inserts.
+- Correction commit: `2364cbcd7db5b6f5c166549e00d83aaed46e3744`.
+- Confirmed the disposable PostgreSQL integration script includes both `20261118100000_schoolpro_class_term_result_template_assignments.sql` and `20261118143000_schoolpro_audited_legacy_subject_catalogue_promotion.sql`, with proprietor/administrator authorization fixture and non-admin rejection coverage.
+- GitHub Actions have started generating runs for the corrected head, but runner dispatch remains queued; no passing result is claimed.
+- Outstanding acceptance gaps remain unchanged: generation currently targets one selected student, not a complete class roster; ExcelJS preserves formulas but does not calculate them, so official publication of formula-bearing workbooks remains fail-closed. No production data, migration, merge, or Render deployment performed.

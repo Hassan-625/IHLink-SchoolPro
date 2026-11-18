@@ -55,6 +55,25 @@ for each row execute function private.schoolpro_guard_canonical_subject_name();
 
 
 
+create table public.schoolpro_class_subject_selection_audit (
+  id uuid primary key default gen_random_uuid(),
+  school_id uuid not null,
+  class_id uuid not null,
+  subject_id uuid not null,
+  assignment_id uuid not null,
+  session text not null,
+  selected_by uuid not null,
+  selected_at timestamptz not null default now()
+);
+create index schoolpro_class_subject_selection_audit_scope_idx
+  on public.schoolpro_class_subject_selection_audit(school_id,class_id,session,selected_at desc);
+alter table public.schoolpro_class_subject_selection_audit enable row level security;
+create policy schoolpro_class_subject_selection_audit_read
+  on public.schoolpro_class_subject_selection_audit for select to authenticated
+  using (private.has_school_access(school_id));
+revoke all on public.schoolpro_class_subject_selection_audit from public,anon,authenticated;
+grant select on public.schoolpro_class_subject_selection_audit to authenticated;
+
 -- A Form Master may add an existing canonical school subject to their own
 -- assigned class/session. They cannot create or rename catalogue entries.
 create or replace function public.schoolpro_form_master_add_class_subject(
@@ -90,9 +109,17 @@ begin
   insert into public.schoolpro_subject_assignments(
     school_id,class_id,subject_id,teacher_member_id,session
   ) values (p_school,p_class,p_subject,null,trim(p_session))
-  on conflict(class_id,subject_id,session) do update
-    set updated_at=now()
+  on conflict(class_id,subject_id,session) do nothing
   returning id into v_assignment;
+  if v_assignment is null then
+    select a.id into v_assignment from public.schoolpro_subject_assignments a
+    where a.school_id=p_school and a.class_id=p_class and a.subject_id=p_subject
+      and a.session=trim(p_session);
+  else
+    insert into public.schoolpro_class_subject_selection_audit(
+      school_id,class_id,subject_id,assignment_id,session,selected_by
+    ) values (p_school,p_class,p_subject,v_assignment,trim(p_session),auth.uid());
+  end if;
   return v_assignment;
 end;
 $fn$;

@@ -55,7 +55,14 @@ export function calculateWorkbookFormulas(workbook) {
   for (const sheet of workbook.worksheets) {
     const formulas = [];
     sheet.eachRow((row) => row.eachCell((cell) => {
-      if (cell.formula) formulas.push(cell);
+      if (cell.formula) {
+        if (cell.value?.shareType === "array") {
+          throw new Error("Array formulas are not supported for verified calculation (" + sheet.name + "!" + cell.address + "). Replace the array formula with ordinary cell formulas.");
+        }
+        formulas.push(cell);
+      } else if (cell.value?.sharedFormula) {
+        throw new Error("Shared-formula cells are not supported for verified calculation (" + sheet.name + "!" + cell.address + "). Save the workbook with individual formulas in each cell.");
+      }
     }));
 
     formulaCount += formulas.length;

@@ -66,7 +66,7 @@ assert.equal(summary.formulaCount, 3);
 assert.equal(workbook.sheet.getCell("C1").result, 30);
 assert.equal(workbook.sheet.getCell("A2").result, 60);
 assert.equal(workbook.sheet.getCell("B2").result, "PASS");
-assert.equal(workbook.sheet.getCell("C3").result, 15);
+assert.equal(workbook.sheet.getCell("A3").result, 15);
 assert.equal(workbook.calcProperties.calcMode, "auto");
 assert.equal(workbook.calcProperties.fullCalcOnLoad, true);
 

@@ -439,10 +439,10 @@ begin
   end if;
 
   select case
-    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(nursery|kindergarten|preprimary|pre_primary|kg)(_|$)' then 'nursery'
-    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(junior_secondary|junior|jss)(_|$)' then 'junior_secondary'
-    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(senior_secondary|senior|sss)(_|$)' then 'senior_secondary'
-    when lower(regexp_replace(c.level,'[^a-z0-9]+','_','g')) ~ '(^|_)(primary|basic)(_|$)' then 'primary'
+    when regexp_replace(lower(c.level),'[^a-z0-9]+','_','g') ~ '(^|_)(nursery|kindergarten|preprimary|pre_primary|kg)(_|$)' then 'nursery'
+    when regexp_replace(lower(c.level),'[^a-z0-9]+','_','g') ~ '(^|_)(junior_secondary|junior|jss)(_|$)' then 'junior_secondary'
+    when regexp_replace(lower(c.level),'[^a-z0-9]+','_','g') ~ '(^|_)(senior_secondary|senior|sss)(_|$)' then 'senior_secondary'
+    when regexp_replace(lower(c.level),'[^a-z0-9]+','_','g') ~ '(^|_)(primary|basic)(_|$)' then 'primary'
     else null end
   into v_section
   from public.schoolpro_classes c

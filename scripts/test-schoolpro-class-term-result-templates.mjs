@@ -107,6 +107,8 @@ assert.match(page,/maximum<=0/,'Score validation must reject invalid component m
 
 
 assert.match(integration,/\\ir \.\.\/supabase\/migrations\/20261118100000_schoolpro_class_term_result_template_assignments\.sql/,'The disposable PostgreSQL fixture must execute the exact migration from this PR.');
+assert.match(integration,/has_table_privilege\('authenticated','public\.schoolpro_result_template_assignments','INSERT'\)/i);
+assert.match(integration,/cannot directly forge subject or template audit rows/i);
 assert.match(integration,/unflagged duplicate subject insert bypassed the database guard/i);
 assert.match(integration,/Form Master selected a subject outside their assigned class/i);
 assert.match(integration,/Form Master selection overwrote an existing teacher allocation/i);

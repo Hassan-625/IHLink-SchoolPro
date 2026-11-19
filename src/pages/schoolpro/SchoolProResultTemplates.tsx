@@ -266,7 +266,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
 
  async function generateClassBatch(){
   const classId=selectedPupil?.class_id;
-  if(!classId||!selectedStudent||busy||batchRunning)return;
+  if(!classId||!selectedStudent||busy||batchRunning)return;if(batchReviewQueue.length){setError("Review or finalize the prepared student workbooks before starting another batch. Existing previews have been kept.");return;}
   const roster=students.filter(student=>student.class_id===classId);
   if(!roster.length){setError("There are no students in the selected class to process.");return;}
   setBatchRunning(true);setError(null);setBatchReviewQueue([]);

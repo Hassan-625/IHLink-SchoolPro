@@ -218,3 +218,5 @@ assert.match(integration,/non-admin promoted a legacy subject/i,'Disposable Post
 assert.match(workflow,/custom-result-template-mapping-integration/,'The exact promotion migration must be covered by the disposable PostgreSQL job.');
 
 console.log('PASS: custom workbook library, canonical subject catalogue, Form Master selection, audited subject-ID mapping, populated pre-verification preview, score/formula validation and disposable PostgreSQL coverage.');
+
+assert.match(page,/from\("schoolpro_subjects"\)\.select\("id,name"\)\.eq\("school_id",schoolId\)\.in\("id",printableSubjectIds\)/,'Workbook subject resolution must independently enforce the active school tenant boundary.');

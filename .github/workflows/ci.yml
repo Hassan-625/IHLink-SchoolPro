@@ -925,6 +925,34 @@ jobs:
         run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-class-result-submission-scope.integration.sql
 
 
+  exam-officer-first-result-review-integration:
+    name: Exam Officer first result review (disposable PostgreSQL)
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: schoolpro_exam_officer_first_review_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d schoolpro_exam_officer_first_review_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/schoolpro_exam_officer_first_review_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+      - name: Verify first review, forwarding, invalidation and Section Head gate
+        run: psql "$DATABASE_URL" --set ON_ERROR_STOP=1 --file scripts/test-schoolpro-exam-officer-first-review.integration.sql
+
   cbt-session-scope-integration:
     name: CBT class, subject and session authorization (disposable PostgreSQL)
     runs-on: ubuntu-24.04

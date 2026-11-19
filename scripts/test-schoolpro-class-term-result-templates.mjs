@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const page=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
+const mappingPreview=readFileSync('src/components/schoolpro/WorkbookMappingPreview.tsx','utf8');
 const migration=readFileSync('supabase/migrations/20261118100000_schoolpro_class_term_result_template_assignments.sql','utf8');
 const subjects=readFileSync('src/pages/schoolpro/SchoolProSubjects.tsx','utf8');
 const profiles=readFileSync('src/lib/resultTemplateProfiles.ts','utf8');
@@ -220,3 +221,9 @@ assert.match(workflow,/custom-result-template-mapping-integration/,'The exact pr
 console.log('PASS: custom workbook library, canonical subject catalogue, Form Master selection, audited subject-ID mapping, populated pre-verification preview, score/formula validation and disposable PostgreSQL coverage.');
 
 assert.match(page,/from\("schoolpro_subjects"\)\.select\("id,name"\)\.eq\("school_id",schoolId\)\.in\("id",printableSubjectIds\)/,'Workbook subject resolution must independently enforce the active school tenant boundary.');
+
+assert.match(mappingPreview,/ROW_WINDOW=60/,'Workbook mapping preview must expose worksheet rows beyond the first fixed viewport.');
+assert.match(mappingPreview,/COLUMN_WINDOW=20/,'Workbook mapping preview must expose worksheet columns beyond the first fixed viewport.');
+assert.match(mappingPreview,/setStartRow\(startRow\+ROW_WINDOW\)/,'Workbook mapping preview must navigate forward through later worksheet rows.');
+assert.match(mappingPreview,/setStartColumn\(startColumn\+COLUMN_WINDOW\)/,'Workbook mapping preview must navigate forward through later worksheet columns.');
+assert.match(mappingPreview,/disabled=\{cell\.formula\|\|Boolean\(cell\.text\)\}/,'Navigating the workbook must preserve protection for existing text and formula cells.');

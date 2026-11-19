@@ -4190,3 +4190,15 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - Added source-contract assertions and a disposable PostgreSQL integration test for unauthorized first review, incomplete-matrix rejection, audit recording, score-edit invalidation, resubmission, and the Section Head approval gate. A dedicated CI job runs this test on PostgreSQL 16.
 - Branch-only. No production migration, result rows, marks, staff appointments, published results, merge, or Render deployment has been performed.
 - Live Stage C1 acceptance remains blocked by the previously recorded lack of a Form Master appointment, academic session, active subject assignments and actual marks for HA Academy Pre-Nursery A/B. Do not create synthetic data or broaden the exercise without explicit authorization.
+
+
+---
+
+## Stage C — result workbook attendance tenant/term scope correction (2026-11-19)
+
+- Branch: `fix/schoolpro-result-workbook-attendance-scope`.
+- Focused review found the custom result workbook generator loaded attendance by student ID only, without explicitly constraining the query to the selected school. It also counted attendance across all dates when term boundaries were absent.
+- The correction scopes the attendance query by both `school_id` and `student_id`, then includes only attendance dates within the selected term's configured start/end dates.
+- If either boundary is missing or the dates are reversed, attendance-derived fields remain blank rather than reporting all-history counts or misleading zeroes. Explicit `class_days` from term settings remains authoritative; otherwise the attendance fallback is used only when a valid term interval exists.
+- Added source-contract regression assertions for tenant scope, ordered term boundaries, date filtering, and fail-closed blank fields.
+- No database migration is required. No production records, attendance, results, or workbooks were changed. PR creation, CI verification, merge, and Render deployment remain pending.

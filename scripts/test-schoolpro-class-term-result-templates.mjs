@@ -170,6 +170,11 @@ assert.match(page,/p_template_config_snapshot:resultMeta\.templateAssignment\.te
 assert.match(page,/p_subject_row_mappings_snapshot:resultMeta\.templateAssignment\.subject_row_mappings/,"Generated output history must preserve the exact canonical subject-row mapping in the atomic RPC payload.");
 assert.ok(page.indexOf('setGeneratedPreview(preview)')<page.indexOf('schoolpro-issue-result-verification'),'Verification must be deferred until the user confirms the populated preview.');
 assert.match(page,/invalidScoreRows/,'Missing, non-numeric and out-of-range assessment scores must block preview generation.');
+assert.match(page,/from\("schoolpro_attendance"\)\.select\("school_id,status,attendance_date"\)\.eq\("school_id",schoolId\)\.eq\("student_id",targetStudentId\)/,'Result workbook attendance reads must be constrained to both the active school and selected student.');
+assert.match(page,/attendancePeriodConfigured=Boolean\(attendanceStart&&attendanceEnd&&String\(attendanceStart\)<=String\(attendanceEnd\)\)/,'Attendance totals must require a valid, ordered start and end date for the selected term.');
+assert.match(page,/attendancePeriodConfigured\?allAttendance\.filter/,'Attendance totals must include only records within the configured term boundaries.');
+assert.match(page,/attendance_recorded:attendancePeriodConfigured\?attendance\.length:""/,'Missing term boundaries must leave attendance fields blank instead of presenting all-history totals or misleading zeroes.');
+assert.match(page,/class_days:termQuery\.data\?\.class_days\?\?\(attendancePeriodConfigured\?attendance\.length:""\)/,'Class days must not silently fall back to all-history attendance when term dates are missing.');
 assert.match(page,/calculateWorkbookFormulas\(workbook\)/,'Every worksheet formula must be recalculated before the output workbook is serialized.');
 assert.match(page,/unsupportedWorkbookFormula/,'Workbook formulas must be checked against the supported Excel formula profile.');
 assert.match(profiles,/unsupportedWorkbookFormula/,'Unknown custom functions and external/broken references are flagged.');

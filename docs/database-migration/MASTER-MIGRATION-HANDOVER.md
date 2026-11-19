@@ -4202,3 +4202,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - If either boundary is missing or the dates are reversed, attendance-derived fields remain blank rather than reporting all-history counts or misleading zeroes. Explicit `class_days` from term settings remains authoritative; otherwise the attendance fallback is used only when a valid term interval exists.
 - Added source-contract regression assertions for tenant scope, ordered term boundaries, date filtering, and fail-closed blank fields.
 - No database migration is required. No production records, attendance, results, or workbooks were changed. PR creation, CI verification, merge, and Render deployment remain pending.
+
+
+## Stage C — workbook subject lookup tenant boundary (2026-11-19)
+
+- Follow-up review of the live workbook generator found that its subject-name resolution query filtered by subject IDs but did not independently constrain the lookup to the active school.
+- The query now adds `school_id = selected school` before resolving result subject names. If a result row references a subject outside the school catalogue, resolution fails closed instead of using that foreign subject name.
+- Added a source regression assertion for the explicit school predicate. No schema change or production migration is required; no production data was modified.
+- Branch `fix/schoolpro-workbook-subject-tenant-scope`; PR and CI validation pending. Do not merge or deploy until exact-head checks pass and release approval is given.

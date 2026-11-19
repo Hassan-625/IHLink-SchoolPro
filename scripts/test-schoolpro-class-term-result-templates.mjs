@@ -126,6 +126,7 @@ assert.match(page,/async function confirmGeneratedResult/);
 assert.match(page,/async function generate\(studentId\?:string\)/,'The generator must accept an explicit student so the class batch can reuse the same validated workbook builder.');
 assert.match(page,/async function confirmGeneratedResult\(payload\?:/,'Batch finalization must consume each student’s own generated workbook and metadata rather than shared React state.');
 assert.match(page,/async function generateClassBatch\(\)/,'The result page must expose one class-wide batch operation.');
+assert.match(page,/if\(batchReviewQueue\.length\)\{setError\("Review or finalize the prepared student workbooks before starting another batch\./,'A second batch must not silently discard student previews awaiting review.');
 assert.match(page,/students\.filter\(student=>student\.class_id===classId\)/,'A batch must include only students in the selected class.');
 assert.match(page,/for\(const pupil of roster\)/,'Each student workbook preview must be generated sequentially.');
 assert.match(page,/queued\.push\(\{id:pupil\.id,label,payload:generated\}\)/,'Each student workbook must be retained with its own preview and metadata for review.');

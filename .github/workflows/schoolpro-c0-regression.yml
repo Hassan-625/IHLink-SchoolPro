@@ -119,10 +119,23 @@ jobs:
             filename="${migration##*/}"
             migration_stamp="${filename%%_*}"
             if [[ "$migration_stamp" > "$baseline_cutoff" ]]; then
+              # Production applied the template RPC privilege correction after
+              # its prerequisite assignment migration even though the recorded
+              # database version sorts earlier. Preserve that real dependency
+              # order in the disposable baseline replay.
+              if [[ "$filename" == "20261118064317_revoke_anon_schoolpro_class_result_template_assignment.sql" ]]; then
+                continue
+              fi
               echo "Applying post-baseline migration: $migration"
               psql "$database_url" -v ON_ERROR_STOP=1 -f "$migration"
             fi
           done < <(find supabase/migrations -maxdepth 1 -type f -name '*.sql' | sort)
+
+          grant_fix="supabase/migrations/20261118064317_revoke_anon_schoolpro_class_result_template_assignment.sql"
+          if [[ -f "$grant_fix" ]]; then
+            echo "Applying deferred dependency migration: $grant_fix"
+            psql "$database_url" -v ON_ERROR_STOP=1 -f "$grant_fix"
+          fi
 
       - name: Run C0 SQL security and lifecycle regressions
         env:

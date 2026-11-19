@@ -282,7 +282,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    }catch{failed.push(label);}
    setBatchProgress({completed:generatedCount+failed.length,total:roster.length,success:0,failed:[...failed]});
   }
-  setBatchReviewQueue(queued);
+  setBatchReviewQueue(queued);setPendingWorkbook(null);setPendingResultMeta(null);setGeneratedPreview([]);
   setBatchRunning(false);
   setMessage("Batch preparation finished: "+generatedCount+" separate workbook previews are waiting for individual review. No verification codes or official output records have been created yet."+ (failed.length?" Failed/skipped: "+failed.join(", "):""));
  }

@@ -6,6 +6,7 @@ const results=readFileSync('src/pages/schoolpro/SchoolProResults.tsx','utf8');
 const authority=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
 const overrideMigration=readFileSync('supabase/migrations/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses.sql','utf8');
 const correctionRouting=readFileSync('supabase/migrations/20261114222000_schoolpro_result_correction_section_review.sql','utf8');
+const firstReviewMigration=readFileSync('supabase/migrations/20261119120000_schoolpro_exam_officer_first_result_review.sql','utf8');
 const profile=readFileSync('src/pages/schoolpro/SchoolProProfile.tsx','utf8');
 const correctionIntegration=readFileSync('scripts/test-schoolpro-result-correction-section-review.integration.sql','utf8');
 
@@ -34,7 +35,25 @@ assert.match(broadsheet,/request\.scope==='section'&&request\.section===classNam
 assert.match(broadsheet,/async function refreshWorkflowView\(/, 'Workflow transitions must refresh the current class broadsheet and workflow status.');
 assert.match(broadsheet,/if\(!result\.error\)await refreshWorkflowView\(\)/, 'Form Master submission must refresh workflow status immediately.');
 assert.match(broadsheet,/if\(!r\.error\)await refreshWorkflowView\(\)/, 'Successful section return, section approval, Exam Officer approval and publication must refresh workflow status immediately.');
-assert.match(broadsheet,/Submit class results to section head/i,
+assert.match(firstReviewMigration,/create table if not exists public\.schoolpro_result_first_reviews/i,
+  'Every class/term/session must have a durable first-pass Exam Officer review record.');
+assert.match(firstReviewMigration,/private\.schoolpro_is_exam_officer\(p_school\)/,
+  'Only the appointed Exam Officer may perform the first review; Super Admin must remain distinct.');
+assert.match(firstReviewMigration,/private\.schoolpro_class_result_matrix_complete/,
+  'Exam Officer first review must validate the complete class/subject/student matrix.');
+assert.match(firstReviewMigration,/set status = 'invalidated'/,
+  'Any subsequent score edit must invalidate the prior Exam Officer first review.');
+assert.match(firstReviewMigration,/Exam Officer must complete first review and forward this class to the Section Head/,
+  'The result trigger must prevent Section Head approval before first review.');
+assert.match(broadsheet,/Submit class results to Exam Officer/i,
+  'Form Masters must submit the class result to the Exam Officer first.');
+assert.match(broadsheet,/schoolpro_exam_officer_review_class_results/,
+  'The Exam Officer must have a first-review and forward action.');
+assert.match(broadsheet,/Validate and forward to Section Head/,
+  'The first Exam Officer review must explicitly forward to Section Head.');
+assert.match(broadsheet,/Approve this class for Exam Officer final review/,
+  'Section Head approval must precede the separate Exam Officer final review.');
+assert.match(broadsheet,/Submit class results to Exam Officer/i,
   'The Form Master must have a class submission hand-off.');
 assert.match(broadsheet,/schoolpro_approve_section_results/i,
   'The appointed Section Head must approve the complete section.');
@@ -89,7 +108,9 @@ assert.match(authority,/private\.schoolpro_is_exam_officer\(c\.school_id\)/i);
 assert.match(authority,/private\.schoolpro_is_school_admin\(s\.school_id\)/i);
 assert.match(profile,/eq\('session',session\)/,
   'The account page must show only current-session subject allocations.');
-assert.match(broadsheet,/const canPublishAll=.*super administrator.*memberRole==='exam_officer'/i,
+assert.match(broadsheet,/const isExamOfficer=memberRole==='exam_officer'/i,
+  'The UI must identify an appointed Exam Officer separately from platform Super Admin authority.');
+assert.match(broadsheet,/const canPublishAll=.*super administrator.*\|\|isExamOfficer/i,
   'Super Admin and appointed Exam Officers must have final approval, publication and correction controls.');assert.match(broadsheet,/const canManageSchoolView=.*super administrator/,
   'Super Admin retains school administration/view access independently of Exam Officer authority.');
 assert.match(correctionIntegration,/20261117193141_schoolpro_remove_super_admin_result_authority_bypasses\.sql/,'The database fixture must load the actual Super Admin bypass-removal migration.');

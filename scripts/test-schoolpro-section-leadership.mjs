@@ -6,6 +6,7 @@ const integration=readFileSync('scripts/test-schoolpro-section-leadership.integr
 const principalMigration=readFileSync('supabase/migrations/20261108118000_schoolpro_principal_section_leadership.sql','utf8');
 const workflowMigration=readFileSync('supabase/migrations/20261108119000_schoolpro_form_master_section_head_result_workflow.sql','utf8');
 const authorityMigration=readFileSync('supabase/migrations/20261108120000_schoolpro_role_responsibility_and_result_lifecycle.sql','utf8');
+const firstReviewMigration=readFileSync('supabase/migrations/20261119120000_schoolpro_exam_officer_first_result_review.sql','utf8');
 const combinedLeadershipMigration=readFileSync('supabase/migrations/20261116130000_schoolpro_combined_leadership_appointments.sql','utf8');
 const leadershipTitlesMigration=readFileSync('supabase/migrations/20261116140000_schoolpro_section_leadership_display_titles.sql','utf8');
 const genderMigration=readFileSync('supabase/migrations/20261116170000_schoolpro_staff_profile_gender.sql','utf8');
@@ -115,9 +116,10 @@ assert.match(principalMigration,/Only the appointed section Head Teacher, Vice P
 assert.match(principalMigration,/Results must be approved by the section head before publication/i);
 assert.match(broadsheet,/className\?\.form_teacher_id===memberId/i);
 assert.match(broadsheet,/assignedSections\.includes\(className\.level\)/i);
-assert.match(broadsheet,/Submit class results to section head/i);
+assert.match(broadsheet,/Submit class results to Exam Officer/i);
 assert.match(workflowMigration,/Only the assigned Form Master can submit this class result register/i);
 assert.match(workflowMigration,/must submit this result to the section head before approval/i);
+assert.match(firstReviewMigration,/must submit this result to the Exam Officer before Section Head approval/i);
 assert.match(workflowMigration,/must approve this result before publication/i);
 assert.match(workflowMigration,/class roster changed after submission; the Form Master must resubmit/i);
 assert.match(workflowMigration,/private\.schoolpro_result_assessment_complete\(r\.id\)/i);

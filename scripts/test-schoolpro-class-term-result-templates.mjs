@@ -127,7 +127,16 @@ assert.match(page,/async function generate\(studentId\?:string\)/,'The generator
 assert.match(page,/async function confirmGeneratedResult\(payload\?:/,'Batch finalization must consume each student’s own generated workbook and metadata rather than shared React state.');
 assert.match(page,/async function generateClassBatch\(\)/,'The result page must expose one class-wide batch operation.');
 assert.match(page,/students\.filter\(student=>student\.class_id===classId\)/,'A batch must include only students in the selected class.');
-assert.match(page,/for\(const pupil of roster\)/,'Each student workbook must be generated and finalized sequentially.');
+assert.match(page,/for\(const pupil of roster\)/,'Each student workbook preview must be generated sequentially.');
+assert.match(page,/queued\.push\(\{id:pupil\.id,label,payload:generated\}\)/,'Each student workbook must be retained with its own preview and metadata for review.');
+assert.match(page,/setBatchReviewQueue\(queued\)/,'Batch preparation must stage all successful student previews before any official finalization.');
+assert.match(page,/async function finalizeBatchWorkbook\(/,'Each staged workbook must have an independent explicit finalization action.');
+assert.match(page,/confirmGeneratedResult\(item\.payload\)/,'Finalization must use the exact workbook payload that the user reviewed.');
+assert.match(page,/Review each student workbook before finalizing/,'The batch UI must clearly require individual student workbook review.');
+assert.match(page,/Inspect populated workbook preview/,'The batch UI must expose the populated cell preview before confirmation.');
+assert.match(page,/No verification codes or official output records have been created yet/,'Batch preparation must not issue verification or persist official outputs.');
+const batchGenerator=page.slice(page.indexOf('async function generateClassBatch()'),page.indexOf('async function finalizeBatchWorkbook('));
+assert.doesNotMatch(batchGenerator,/confirmGeneratedResult\(/,'Batch generation must not finalize any student workbook automatically.');
 assert.match(page,/if\(!generated\)\{failed\.push\(label\);\}/,'A student generation failure must be recorded without aborting the remaining batch.');
 assert.match(page,/Generate separate workbooks for all /,'The user-facing control must make the separate-per-student batch explicit.');
 assert.match(page,/return true;/,'Finalization must report per-student success to the batch coordinator.');

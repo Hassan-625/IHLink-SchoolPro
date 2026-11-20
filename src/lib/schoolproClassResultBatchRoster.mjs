@@ -11,7 +11,7 @@ export function buildClassResultBatchRoster(roster, { classId, session, maxStude
   const targetClassId = String(classId ?? "").trim();
   const targetSession = String(session ?? "").trim();
   if (!targetClassId) throw new Error("A selected class is required for the result batch.");
-  if (!/^\d{4}\s*[/-]\s*\d{4}$/.test(targetSession)) {
+  if (!/^\d{4}[/-]\d{4}$/.test(targetSession)) {
     throw new Error("A valid academic session is required for the result batch.");
   }
   if (!Array.isArray(roster) || roster.length === 0) {

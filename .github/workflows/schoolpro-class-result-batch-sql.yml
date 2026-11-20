@@ -7,14 +7,7 @@ on:
       - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
-  push:
-    branches:
-      - feat/schoolpro-class-result-batch-persistence
-    paths:
-      - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
-      - "supabase/baselines/schoolpro-c0-baseline.sql"
-      - "supabase/tests/schoolpro_class_result_batch_security.sql"
-      - ".github/workflows/schoolpro-class-result-batch-sql.yml"
+  workflow_dispatch:
 
 concurrency:
   group: schoolpro-class-result-batch-sql-${{ github.event.pull_request.number || github.ref }}

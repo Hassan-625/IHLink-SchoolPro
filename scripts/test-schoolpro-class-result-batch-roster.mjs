@@ -30,10 +30,12 @@ assert.throws(
   () => buildClassResultBatchRoster([{ id: "a", class_id: "class-2" }], { classId: "class-1", session: "2025/2026" }),
   /outside the selected class/,
 );
-assert.throws(
-  () => buildClassResultBatchRoster([{ id: "a", class_id: "class-1" }], { classId: "class-1", session: "2025" }),
-  /valid academic session/,
-);
+for (const invalidSession of ["2025", "2025-26", "not-a-session", "2025/abcd"]) {
+  assert.throws(
+    () => buildClassResultBatchRoster([{ id: "a", class_id: "class-1" }], { classId: "class-1", session: invalidSession }),
+    /valid academic session/,
+  );
+}
 assert.throws(
   () => buildClassResultBatchRoster(Array.from({ length: 501 }, (_, i) => ({ id: String(i), class_id: "class-1" })), { classId: "class-1", session: "2025/2026" }),
   /supported batch size/,

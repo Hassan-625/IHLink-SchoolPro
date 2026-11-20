@@ -42,7 +42,8 @@
     "test:schoolpro-cbt-session-scope": "node scripts/test-schoolpro-cbt-session-scope.mjs",
     "test:schoolpro-custom-result-templates": "node scripts/test-schoolpro-class-term-result-templates.mjs",
     "test:schoolpro-excel-formula-calculation": "node scripts/test-schoolpro-excel-formula-calculation.mjs",
-    "test:schoolpro-exceljs-row-expansion": "node scripts/test-schoolpro-exceljs-row-expansion.mjs"
+    "test:schoolpro-exceljs-row-expansion": "node scripts/test-schoolpro-exceljs-row-expansion.mjs",
+    "test:schoolpro-class-result-batch-roster": "node scripts/test-schoolpro-class-result-batch-roster.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

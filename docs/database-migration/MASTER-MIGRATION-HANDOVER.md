@@ -4272,3 +4272,6 @@ Added regression coverage that executes the production conversion helper against
 
 - Follow-up hardening: the roster validator also rejects a submitted learner who has a second active enrollment-history row for a different class in the same school/session. This avoids accepting ambiguous historical class placement even if one matching row exists.
 - Added `.github/workflows/schoolpro-class-result-batch-sql.yml`: on the PR branch, it uses Supabase CLI v2.122.1 to create a disposable migration with `supabase migration new`, applies the candidate through `supabase db reset --local`, then runs the SQL security regression. The run is pending/in progress; no pass is claimed yet.
+
+
+- Expanded the SQL regression with transaction-scoped runtime fixtures proving access for the school owner, assigned Form Master and Super Admin, and denial for an unassigned teacher, student and guardian. All fixture rows are rolled back. The local SQL workflow is rerunning with this runtime coverage.

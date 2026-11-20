@@ -1,0 +1,55 @@
+name: SchoolPro class-result batch SQL security
+
+on:
+  pull_request:
+    paths:
+      - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "supabase/tests/schoolpro_class_result_batch_security.sql"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - ".github/workflows/schoolpro-class-result-batch-sql.yml"
+  push:
+    branches:
+      - feat/schoolpro-class-result-batch-persistence
+    paths:
+      - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "supabase/tests/schoolpro_class_result_batch_security.sql"
+      - "supabase/migrations/**"
+      - "supabase/config.toml"
+      - ".github/workflows/schoolpro-class-result-batch-sql.yml"
+
+jobs:
+  batch-sql-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+
+      # Create the migration through the Supabase CLI as required. Keep the
+      # candidate in docs/drafts until this disposable local database passes.
+      - name: Generate disposable candidate migration
+        shell: bash
+        run: |
+          supabase migration new schoolpro_class_result_batch_persistence
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          test -n "$migration_file"
+          cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
+          echo "Generated and populated $migration_file"
+
+      - name: Start local Supabase and apply migrations
+        run: |
+          supabase start
+          supabase db reset --local
+
+      - name: Run SQL security regression
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes postgresql-client
+          eval "$(supabase status -o env)"
+          test -n "$DB_URL"
+          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql

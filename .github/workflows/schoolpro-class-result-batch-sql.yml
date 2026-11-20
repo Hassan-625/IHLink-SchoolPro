@@ -5,6 +5,7 @@ on:
     paths:
       - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
       - "supabase/baselines/schoolpro-c0-baseline.sql"
+      - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
   workflow_dispatch:
@@ -69,6 +70,7 @@ jobs:
             | psql "$database_url" --set ON_ERROR_STOP=1
           restored_school_table="$(psql "$database_url" --tuples-only --no-align --command "select to_regclass('public.schoolpro_schools')")"
           test "$restored_school_table" = "schoolpro_schools"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql
 
       - name: Apply candidate migration and run SQL security regression
         env:

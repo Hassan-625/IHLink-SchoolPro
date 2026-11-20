@@ -102,7 +102,7 @@ export function expandWorksheetRowsForRoster(worksheet, options = {}) {
   const sourceRows = [];
   for (let row = startRow; row <= endRow; row++) sourceRows.push(snapshotRow(worksheet.getRow(row)));
 
-  const mergeRefs = Object.keys(worksheet._merges || {});
+  const mergeRefs = [...(worksheet.model?.merges || [])];
   const sourceMerges = [];
   const preservedMerges = [];
   for (const reference of mergeRefs) {

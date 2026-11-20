@@ -121,6 +121,18 @@ declare
   v_super_admin uuid:=gen_random_uuid();
   v_school uuid:=gen_random_uuid();
   v_class uuid:=gen_random_uuid();
+  v_other_class uuid:=gen_random_uuid();
+  v_student_record uuid:=gen_random_uuid();
+  v_other_student_record uuid:=gen_random_uuid();
+  v_template_id uuid:=gen_random_uuid();
+  v_assignment_id uuid:=gen_random_uuid();
+  v_assignment_updated_at timestamptz;
+  v_batch_id uuid;
+  v_config jsonb:='{"sheet":"Results"}'::jsonb;
+  v_mappings jsonb:='{"subjectRows":[]}'::jsonb;
+  v_formula jsonb:='{"engine":"hot-formula-parser","engineVersion":"4.0.0","formulaCount":0,"calculationMode":"same-sheet-dependency-graph"}'::jsonb;
+  v_roster jsonb;
+  v_denied boolean;
   v_form_member uuid:=gen_random_uuid();
   v_unassigned_member uuid:=gen_random_uuid();
 begin
@@ -136,12 +148,47 @@ begin
 
   insert into public.schoolpro_schools(id,owner_id,name,code)
   values(v_school,v_owner,'Class batch security fixture','BATCH-'||replace(v_school::text,'-',''));
+  update public.schoolpro_schools set status='active' where id=v_school;
+  insert into public.schoolpro_subscriptions(school_id,tier,billing_cycle,status,renews_at)
+  values(v_school,'standard','termly','active',now()+interval '90 days');
   insert into public.schoolpro_members(id,school_id,user_id,role,status,employment_status)
   values
     (v_form_member,v_school,v_form_teacher,'teacher','active','active'),
     (v_unassigned_member,v_school,v_unassigned_teacher,'teacher','active','active');
   insert into public.schoolpro_classes(id,school_id,name,level,form_teacher_id)
-  values(v_class,v_school,'Fixture Class','primary',v_form_member);
+  values
+    (v_class,v_school,'Fixture Class','primary',v_form_member),
+    (v_other_class,v_school,'Other Fixture Class','primary',null);
+
+  -- Current student.class_id deliberately differs from the selected session's
+  -- enrollment-history class. Batch creation must use history, not current placement.
+  insert into public.schoolpro_students(
+    id,school_id,admission_number,first_name,last_name,class_name,class_id,user_id
+  ) values
+    (v_student_record,v_school,'BATCH-STUDENT-1','Test','Learner','Other Fixture Class',v_other_class,v_student),
+    (v_other_student_record,v_school,'BATCH-STUDENT-2','Other','Learner','Other Fixture Class',v_other_class,null);
+
+  insert into public.schoolpro_enrollment_history(
+    school_id,student_id,session,class_id,class_name,status
+  ) values
+    (v_school,v_student_record,'2026/2027',v_class,'Fixture Class','active'),
+    (v_school,v_other_student_record,'2026/2027',v_other_class,'Other Fixture Class','active');
+
+  insert into public.schoolpro_result_template_library(
+    id,school_id,name,storage_path,sheet_name,template_config,created_by,updated_by
+  ) values (
+    v_template_id,v_school,'Batch fixture template',
+    v_school::text||'/templates/batch-fixture.xlsx','Results',
+    v_config,v_owner,v_owner
+  );
+
+  insert into public.schoolpro_result_template_assignments(
+    id,school_id,class_id,term,session,template_name,template_config,
+    subject_row_mappings,updated_by,template_id
+  ) values (
+    v_assignment_id,v_school,v_class,'First Term','2026/2027',
+    'Batch fixture template',v_config,v_mappings,v_owner,v_template_id
+  ) returning updated_at into v_assignment_updated_at;
 
   execute 'set local role authenticated';
 
@@ -174,6 +221,69 @@ begin
   if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
     raise exception 'Super Admin was denied class-result batch access';
   end if;
+
+  -- Owner creates a batch using the historical class placement, even though
+  -- the student's current class_id points elsewhere.
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  v_roster:=jsonb_build_array(jsonb_build_object(
+    'student_id',v_student_record,'student_order',1
+  ));
+  v_batch_id:=public.schoolpro_create_class_result_batch(
+    v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+    v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
+  );
+  if not exists (
+    select 1 from public.schoolpro_class_result_batches b
+    where b.id=v_batch_id and b.status='uploading'
+      and b.expected_student_count=1
+      and b.storage_path=v_school::text||'/'||v_class::text||'/'||v_batch_id::text||'/workbook.xlsx'
+  ) then
+    raise exception 'Valid historical-session class batch was not persisted correctly';
+  end if;
+  if not exists (
+    select 1 from public.schoolpro_class_result_batch_reviews r
+    where r.batch_id=v_batch_id and r.student_id=v_student_record
+      and r.student_order=1 and r.review_status='pending'
+  ) then
+    raise exception 'Per-student pending review row was not created';
+  end if;
+
+  -- Duplicate IDs, another class's historical enrollment and stale design
+  -- snapshots must each fail closed without creating another batch.
+  v_denied:=false;
+  begin
+    perform public.schoolpro_create_class_result_batch(
+      v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+      v_assignment_updated_at,v_config,v_mappings,v_formula,
+      jsonb_build_array(
+        jsonb_build_object('student_id',v_student_record,'student_order',1),
+        jsonb_build_object('student_id',v_student_record,'student_order',2)
+      )
+    );
+  exception when others then v_denied:=true;
+  end;
+  if not v_denied then raise exception 'Duplicate student ID was accepted'; end if;
+
+  v_denied:=false;
+  begin
+    perform public.schoolpro_create_class_result_batch(
+      v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+      v_assignment_updated_at,v_config,v_mappings,v_formula,
+      jsonb_build_array(jsonb_build_object('student_id',v_other_student_record,'student_order',1))
+    );
+  exception when others then v_denied:=true;
+  end;
+  if not v_denied then raise exception 'Cross-class historical roster row was accepted'; end if;
+
+  v_denied:=false;
+  begin
+    perform public.schoolpro_create_class_result_batch(
+      v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+      v_assignment_updated_at,v_config||'{"stale":true}'::jsonb,v_mappings,v_formula,v_roster
+    );
+  exception when others then v_denied:=true;
+  end;
+  if not v_denied then raise exception 'Stale template configuration snapshot was accepted'; end if;
 
   execute 'reset role';
 end

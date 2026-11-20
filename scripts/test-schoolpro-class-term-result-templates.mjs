@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {typedCustomValue} from '../src/lib/resultTemplateTypedValues.mjs';
+import {buildRosterSubjectRowPlan} from '../src/lib/resultTemplateRosterLayout.mjs';
 
 const page=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
 const mappingPreview=readFileSync('src/components/schoolpro/WorkbookMappingPreview.tsx','utf8');
@@ -252,3 +253,32 @@ assert.ok(typedCustomValue('2026-09-01','date','Start date') instanceof Date);
 assert.throws(()=>typedCustomValue('not-a-number','number','Average'),/finite number/);
 assert.throws(()=>typedCustomValue('not-a-date','date','Start date'),/valid date/);
 assert.throws(()=>typedCustomValue('maybe','boolean','Eligible'),/true\/false/);
+
+
+// Class-roster row expansion planning uses stable student and canonical subject IDs.
+const rosterPlan=buildRosterSubjectRowPlan(
+  [{id:'student-a'},{id:'student-b'},{id:'student-c'}],
+  [{subject_id:'subject-math'},{subject_id:'subject-english'}],
+  {'subject-math':'13','subject-english':'14'}
+);
+assert.equal(rosterPlan.rowStride,2);
+assert.equal(rosterPlan.students[0].subjectRows['subject-math'],13);
+assert.equal(rosterPlan.students[1].subjectRows['subject-math'],15);
+assert.equal(rosterPlan.students[2].subjectRows['subject-english'],18);
+assert.equal(rosterPlan.finalRow,18);
+assert.throws(
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-a'}],[{subject_id:'subject-math'}],{'subject-math':'13'}),
+  /unique stable ID/
+);
+assert.throws(
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'}],[{subject_id:'subject-math'},{subject_id:'subject-english'}],{'subject-math':'13','subject-english':'13'}),
+  /same workbook row/
+);
+assert.throws(
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{rowStride:0}),
+  /row stride/
+);
+assert.throws(
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{maxRows:13}),
+  /worksheet row limit/
+);

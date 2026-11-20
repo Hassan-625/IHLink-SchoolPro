@@ -252,6 +252,14 @@ begin
    and eh.class_id=p_class
    and eh.session=trim(p_session)
    and eh.status='active'
+   and not exists (
+     select 1 from public.schoolpro_enrollment_history other
+     where other.school_id=eh.school_id
+       and other.student_id=eh.student_id
+       and other.session=eh.session
+       and other.status='active'
+       and other.class_id is distinct from p_class
+   )
   join public.schoolpro_students st
     on st.id=eh.student_id and st.school_id=p_school;
 

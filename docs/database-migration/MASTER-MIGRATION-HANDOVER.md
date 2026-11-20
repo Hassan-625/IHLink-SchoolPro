@@ -4265,3 +4265,11 @@ Added regression coverage that executes the production conversion helper against
 - This is a client-side payload contract only. The eventual database RPC must independently revalidate the submitted student IDs against `schoolpro_enrollment_history` using the exact school, session and class; client validation is not an authorization boundary.
 - Read-only production inspection confirmed the exact history columns (`school_id, student_id, session, class_id, class_name, arm, section, status`), class Form Teacher member reference, active member status field, and the existing individual-output RPC's exact template-assignment snapshot checks.
 - No migration, production data/schema/storage change, merge or Render deployment was performed. The Supabase CLI is not available in the current execution environment, so no migration filename was fabricated; executable migration creation remains gated on using `supabase migration new` in the repository environment.
+
+
+### PR #239 — academic-session format regression correction (2026-11-20)
+
+- Exact-head CI exposed that the roster helper accepted any session string between four and twenty characters; the test expected malformed values such as `2025` to be rejected.
+- Tightened the client-side contract to require a four-digit start year and four-digit end year separated by `/` or `-`, with optional surrounding whitespace. Added negative cases for short, malformed and non-year session labels.
+- This corrects the failing regression without changing the important boundary: the database RPC must still independently validate exact school/session/class enrollment membership. No production schema or data was changed.
+- PR #239 remains draft and unmerged; rerun exact-head CI before further integration.

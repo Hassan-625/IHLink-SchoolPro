@@ -4,18 +4,16 @@ on:
   pull_request:
     paths:
       - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
-      - "supabase/migrations/**"
-      - "supabase/config.toml"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
   push:
     branches:
       - feat/schoolpro-class-result-batch-persistence
     paths:
       - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
-      - "supabase/migrations/**"
-      - "supabase/config.toml"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
 
 jobs:
@@ -29,31 +27,37 @@ jobs:
         with:
           version: 2.122.1
 
-      # Create the migration through the Supabase CLI as required. Keep the
-      # candidate in docs/drafts until this disposable local database passes.
-      - name: Generate disposable candidate migration
+      # The tracked migration chain intentionally has no complete historical
+      # bootstrap. Restore the sanitized schema-only baseline, then apply only
+      # the candidate migration; never replay the incomplete legacy chain.
+      - name: Generate candidate migration through Supabase CLI
         shell: bash
         run: |
+          mv supabase/migrations "$RUNNER_TEMP/schoolpro-existing-migrations"
+          mkdir -p supabase/migrations
           supabase migration new schoolpro_class_result_batch_persistence
           migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
           test -n "$migration_file"
           cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
           echo "Generated and populated $migration_file"
 
-      - name: Start local Supabase and apply migrations
-        run: |
-          # Edge Functions are not part of this database-only test. The existing
-          # certificate worker imports a missing design.ts file, so move only
-          # that unrelated worker out of the local CLI scan for this job.
-          mv supabase/functions/schoolpro-testing-certificate-worker /tmp/schoolpro-testing-certificate-worker
-          supabase start --exclude edge-runtime
-          supabase db reset --local
-
-      - name: Run SQL security regression
+      - name: Start disposable Supabase and restore schema-only baseline
         shell: bash
         run: |
+          # This unrelated worker imports a missing design.ts file. It is not
+          # part of database validation, so temporarily withhold that function.
+          mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
+          supabase start --exclude edge-runtime
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
           eval "$(supabase status -o env)"
           test -n "$DB_URL"
+          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/baselines/schoolpro-c0-baseline.sql
+
+      - name: Apply candidate migration and run SQL security regression
+        shell: bash
+        run: |
+          supabase migration up --local
+          eval "$(supabase status -o env)"
           psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
+          supabase migration list --local

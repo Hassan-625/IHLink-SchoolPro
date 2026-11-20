@@ -10,17 +10,17 @@ function cloneValue(value) {
 
 function splitFormula(formula, transform) {
   if (typeof formula !== "string" || !formula.trim()) throw new Error("A non-empty formula is required.");
-  if (/!|\\[[^\\]]+\\]|#REF!|_xlfn\\.|_xlws\\./i.test(formula)) {
+  if (/!|\[[^\]]+\]|#REF!|_xlfn\.|_xlws\./i.test(formula)) {
     throw new Error("Cross-sheet, external, broken, structured or unsupported formulas cannot be expanded safely.");
   }
   return formula.split(/("(?:[^"]|"")*")/g).map((part, index) => index % 2 ? part : transform(part)).join("");
 }
 
 function shiftReferencesAtOrBelow(formula, threshold, delta) {
-  return splitFormula(formula, part => part.replace(/(?<![A-Z0-9_.])\\$?([A-Z]{1,3})(\\$?)([1-9][0-9]*)(?![A-Z0-9_.])/gi,
+  return splitFormula(formula, part => part.replace(/(?<![A-Z0-9_.])\$?([A-Z]{1,3})(\$?)([1-9][0-9]*)(?![A-Z0-9_.])/gi,
     (reference, column, absoluteRow, rowText) => {
       const row = Number(rowText);
-      if (absoluteRow || row < threshold) return reference;
+      if (row < threshold) return reference;
       const next = row + delta;
       if (!Number.isSafeInteger(next) || next < 1 || next > MAX_EXCEL_ROWS) {
         throw new Error("Expanding the workbook would create an invalid formula row reference.");

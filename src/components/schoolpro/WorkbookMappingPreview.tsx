@@ -14,7 +14,7 @@ export function WorkbookMappingPreview({file,path,sheetName,onSelect}:{file:File
  useEffect(()=>{let current=true;workbookRef.current=null;setLoaded(false);setRows([]);setNotice('');setStartRow(1);setStartColumn(1);void(async()=>{
   try{const source=file||(path&&supabase?(await supabase.storage.from('school-result-templates').download(path)).data:null);if(!source)return;
    const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await source.arrayBuffer());const sheet=workbook.getWorksheet(sheetName)||workbook.worksheets[0];if(!sheet)return;
-   let usedRow=1,usedColumn=1;sheet.eachRow((row:any)=>row.eachCell((cell:any)=>{if(cell.value!==null){usedRow=Math.max(usedRow,row.number);usedColumn=Math.max(usedColumn,cell.col);}});
+   let usedRow=1,usedColumn=1;sheet.eachRow((row:any)=>row.eachCell((cell:any)=>{if(cell.value!==null){usedRow=Math.max(usedRow,row.number);usedColumn=Math.max(usedColumn,cell.col);}}));
    if(current){workbookRef.current=workbook;setLastRow(usedRow);setLastColumn(usedColumn);setLoaded(true);}
   }catch{if(current)setNotice('The workbook preview could not be opened. Please try again.');}
  })();return()=>{current=false;workbookRef.current=null};},[file,path,sheetName]);

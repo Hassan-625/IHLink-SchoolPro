@@ -44,7 +44,7 @@ function snapshotRow(row) {
       note: cloneValue(cell.note), dataValidation: cloneValue(cell.dataValidation), protection: cloneValue(cell.protection) });
   }
   return { number: row.number, height: row.height, hidden: row.hidden, outlineLevel: row.outlineLevel,
-    collapsed: row.collapsed, style: cloneValue(row.style), cells };
+    style: cloneValue(row.style), cells };
 }
 
 function restoreRow(worksheet, rowNumber, snapshot, rowDelta, insertionRow, insertedRows) {
@@ -52,7 +52,6 @@ function restoreRow(worksheet, rowNumber, snapshot, rowDelta, insertionRow, inse
   row.height = snapshot.height;
   row.hidden = snapshot.hidden;
   row.outlineLevel = snapshot.outlineLevel;
-  row.collapsed = snapshot.collapsed;
   row.style = cloneValue(snapshot.style || {});
   for (const item of snapshot.cells) {
     const cell = row.getCell(item.column);

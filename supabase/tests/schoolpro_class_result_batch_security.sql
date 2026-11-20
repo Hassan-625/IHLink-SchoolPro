@@ -128,7 +128,10 @@ begin
   select x.id,'authenticated','authenticated','batch-fixture-'||x.id||'@example.invalid','{}','{}',now(),now()
   from (values(v_owner),(v_form_teacher),(v_unassigned_teacher),(v_student),(v_guardian),(v_super_admin)) x(id);
 
-  update public.profiles set status='active' where id in (v_owner,v_form_teacher,v_unassigned_teacher,v_student,v_guardian,v_super_admin);
+  insert into public.profiles(id,email,status,role)
+  select x.id,'batch-fixture-'||x.id||'@example.invalid','active','customer'::public.user_role
+  from (values(v_owner),(v_form_teacher),(v_unassigned_teacher),(v_student),(v_guardian),(v_super_admin)) x(id)
+  on conflict (id) do update set status='active';
   update public.profiles set role='super_admin' where id=v_super_admin;
 
   insert into public.schoolpro_schools(id,owner_id,name,code)

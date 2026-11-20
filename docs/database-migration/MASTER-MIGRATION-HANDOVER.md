@@ -4268,3 +4268,7 @@ Added regression coverage that executes the production conversion helper against
 - Added `supabase/tests/schoolpro_class_result_batch_security.sql` for RLS/grant/RPC/storage-policy contract assertions. This metadata-only suite must run against a disposable database after the candidate migration.
 - Production introspection confirmed the live enrollment-history status is `active`, membership roles include the intended staff roles, subject assignments expose `ended_at`, and the dedicated bucket/tables do not yet exist.
 - **Not applied to production.** The Supabase CLI is unavailable in the current execution environment, so this is not yet a CLI-generated file under `supabase/migrations`. Next gate: generate the migration with `supabase migration new`, run SQL regression against a disposable local database, fix any parser/runtime issues, then review before seeking production approval. No production schema/data/storage changes, merge, or Render deployment.
+
+
+- Follow-up hardening: the roster validator also rejects a submitted learner who has a second active enrollment-history row for a different class in the same school/session. This avoids accepting ambiguous historical class placement even if one matching row exists.
+- Added `.github/workflows/schoolpro-class-result-batch-sql.yml`: on the PR branch, it uses Supabase CLI v2.122.1 to create a disposable migration with `supabase migration new`, applies the candidate through `supabase db reset --local`, then runs the SQL security regression. The run is pending/in progress; no pass is claimed yet.

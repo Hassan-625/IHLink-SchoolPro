@@ -61,8 +61,11 @@ jobs:
           database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
           # The local Supabase database already owns public; omit the dump's
           # CREATE SCHEMA public statement, as in the established C0 harness.
+          grep -n -m 3 'schoolpro_schools' supabase/baselines/schoolpro-c0-baseline.sql
           sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
             | psql "$database_url" --set ON_ERROR_STOP=1
+          restored_school_table="$(psql "$database_url" --tuples-only --no-align --command "select to_regclass('public.schoolpro_schools')")"
+          test "$restored_school_table" = "schoolpro_schools"
 
       - name: Apply candidate migration and run SQL security regression
         env:

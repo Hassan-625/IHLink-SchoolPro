@@ -108,4 +108,72 @@ begin
 end
 $test$;
 
+
+-- Runtime authorization regression with transaction-scoped fixtures. The
+-- rollback below removes all fixture rows; this never touches live schools.
+do $runtime$
+declare
+  v_owner uuid:=gen_random_uuid();
+  v_form_teacher uuid:=gen_random_uuid();
+  v_unassigned_teacher uuid:=gen_random_uuid();
+  v_student uuid:=gen_random_uuid();
+  v_guardian uuid:=gen_random_uuid();
+  v_super_admin uuid:=gen_random_uuid();
+  v_school uuid:=gen_random_uuid();
+  v_class uuid:=gen_random_uuid();
+  v_form_member uuid:=gen_random_uuid();
+  v_unassigned_member uuid:=gen_random_uuid();
+begin
+  insert into auth.users(id,aud,role,email,raw_app_meta_data,raw_user_meta_data,created_at,updated_at)
+  select x.id,'authenticated','authenticated','batch-fixture-'||x.id||'@example.invalid','{}','{}',now(),now()
+  from (values(v_owner),(v_form_teacher),(v_unassigned_teacher),(v_student),(v_guardian),(v_super_admin)) x(id);
+
+  update public.profiles set status='active' where id in (v_owner,v_form_teacher,v_unassigned_teacher,v_student,v_guardian,v_super_admin);
+  update public.profiles set role='super_admin' where id=v_super_admin;
+
+  insert into public.schoolpro_schools(id,owner_id,name,code)
+  values(v_school,v_owner,'Class batch security fixture','BATCH-'||replace(v_school::text,'-',''));
+  insert into public.schoolpro_members(id,school_id,user_id,role,status,employment_status)
+  values
+    (v_form_member,v_school,v_form_teacher,'teacher','active','active'),
+    (v_unassigned_member,v_school,v_unassigned_teacher,'teacher','active','active');
+  insert into public.schoolpro_classes(id,school_id,name,level,form_teacher_id)
+  values(v_class,v_school,'Fixture Class','primary',v_form_member);
+
+  execute 'set local role authenticated';
+
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'School owner was denied class-result batch access';
+  end if;
+
+  perform set_config('request.jwt.claim.sub',v_form_teacher::text,true);
+  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'Assigned Form Master was denied class-result batch access';
+  end if;
+
+  perform set_config('request.jwt.claim.sub',v_unassigned_teacher::text,true);
+  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'Unassigned teacher gained class-result batch access';
+  end if;
+
+  perform set_config('request.jwt.claim.sub',v_student::text,true);
+  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'Student gained staff-only class-result batch access';
+  end if;
+
+  perform set_config('request.jwt.claim.sub',v_guardian::text,true);
+  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'Guardian gained staff-only class-result batch access';
+  end if;
+
+  perform set_config('request.jwt.claim.sub',v_super_admin::text,true);
+  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
+    raise exception 'Super Admin was denied class-result batch access';
+  end if;
+
+  execute 'reset role';
+end
+$runtime$;
+
 rollback;

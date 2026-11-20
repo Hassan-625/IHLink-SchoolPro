@@ -49,12 +49,18 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Supabase CLI startup auto-applies files in supabase/migrations.
+          # Withhold the candidate until after the sanitized baseline is restored.
+          mv supabase/migrations "$RUNNER_TEMP/schoolpro-candidate-migrations"
+          mkdir -p supabase/migrations
           # The certificate worker has an unrelated missing design.ts import.
           # Edge Functions are not needed for this database-only regression.
           mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
           # Use a dedicated database port to avoid parallel-runner collisions.
           printf '\n[db]\nport = 54332\n' >> supabase/config.toml
           supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+          rmdir supabase/migrations
+          mv "$RUNNER_TEMP/schoolpro-candidate-migrations" supabase/migrations
 
       - name: Restore sanitized production schema baseline
         env:

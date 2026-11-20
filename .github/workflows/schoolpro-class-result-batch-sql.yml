@@ -42,9 +42,10 @@ jobs:
 
       - name: Start local Supabase and apply migrations
         run: |
-          # Edge Functions are not needed for database migration tests. Excluding
-          # the runtime also avoids loading an unrelated existing worker whose
-          # index.ts imports a missing design.ts module.
+          # Edge Functions are not part of this database-only test. The existing
+          # certificate worker imports a missing design.ts file, so move only
+          # that unrelated worker out of the local CLI scan for this job.
+          mv supabase/functions/schoolpro-testing-certificate-worker /tmp/schoolpro-testing-certificate-worker
           supabase start --exclude edge-runtime
           supabase db reset --local
 

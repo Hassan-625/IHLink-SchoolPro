@@ -4273,3 +4273,9 @@ Added regression coverage that executes the production conversion helper against
 - Tightened the client-side contract to require a four-digit start year and four-digit end year separated by `/` or `-`, with optional surrounding whitespace. Added negative cases for short, malformed and non-year session labels.
 - This corrects the failing regression without changing the important boundary: the database RPC must still independently validate exact school/session/class enrollment membership. No production schema or data was changed.
 - PR #239 remains draft and unmerged; rerun exact-head CI before further integration.
+
+
+### PR #239 — regex escaping correction after exact-head CI (2026-11-20)
+
+- The first session-format correction over-escaped the JavaScript regular-expression literal (`\\d` and `\\s`), causing valid `2024/2025` sessions to be rejected. The dedicated CI regression caught this.
+- Corrected the regex literal to use JavaScript regex escapes (`\d`, `\s`) and retained the malformed-session negative cases. Awaiting the new exact-head workflow result; do not mark PR #239 green until it passes.

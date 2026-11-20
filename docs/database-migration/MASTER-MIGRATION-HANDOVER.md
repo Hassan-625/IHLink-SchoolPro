@@ -4255,3 +4255,13 @@ Added regression coverage that executes the production conversion helper against
 - Added `docs/database-migration/drafts/schoolpro-class-result-batch-schema.sql` as a design draft for a private class-batch artifact table and per-student review rows. It defines upload/prepared/reviewing/completed/needs-attention states, snapshots the exact class template assignment, records each student's repeated worksheet row range, and links approved reviews to their individual official output record.
 - The SQL is explicitly a **draft, not a migration**. Executable create/ready/review RPCs, bucket storage policies, and database tests remain to be implemented. No production schema, storage, or data was changed.
 - PR #237's dedicated ExcelJS row-expansion regression passed after fixing escaped formula regexes and ExcelJS's getter-only row `collapsed` property. Existing formula references below inserted rows, including absolute references, are now tested for row shifts.
+
+
+## 2026-11-20 — Session-scoped class-result batch roster contract
+
+- Added `src/lib/schoolproClassResultBatchRoster.mjs` and `scripts/test-schoolpro-class-result-batch-roster.mjs` on branch `feat/schoolpro-class-result-batch-roster-contract`.
+- The helper accepts only a roster already resolved for the selected academic session, requires each row's session-resolved `class_id` to match the selected class, rejects duplicate/missing student IDs and enforces the 500-student batch limit. It deliberately ignores `current_class_id`, which can differ for historical sessions.
+- The regression includes students whose current class differs from their historical class, plus duplicate IDs, cross-class rows, invalid session labels, empty rosters and batch-size overflow.
+- This is a client-side payload contract only. The eventual database RPC must independently revalidate the submitted student IDs against `schoolpro_enrollment_history` using the exact school, session and class; client validation is not an authorization boundary.
+- Read-only production inspection confirmed the exact history columns (`school_id, student_id, session, class_id, class_name, arm, section, status`), class Form Teacher member reference, active member status field, and the existing individual-output RPC's exact template-assignment snapshot checks.
+- No migration, production data/schema/storage change, merge or Render deployment was performed. The Supabase CLI is not available in the current execution environment, so no migration filename was fabricated; executable migration creation remains gated on using `supabase migration new` in the repository environment.

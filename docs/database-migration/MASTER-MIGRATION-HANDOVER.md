@@ -4218,3 +4218,13 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The preview now navigates the worksheet in 60-row and 20-column windows, reports the visible and total row/column ranges, and retains the existing rule that occupied and formula cells cannot be selected as writable mapping targets.
 - Added source regression assertions for row/column navigation and protection of existing/formula cells.
 - This is a frontend-only change. No database migration, production data modification, workbook upload, class assignment, result generation, merge, or Render deployment is included. Exact-head CI and review are required before release.
+
+
+## Stage C continuation — typed custom workbook cell mappings (2026-11-20)
+
+**Branch:** `feat/schoolpro-typed-workbook-cell-mappings`  
+**Status:** Branch-only implementation; no merge, production migration, data write or Render deployment.
+
+Extended the existing school-owned custom field mapping contract with explicit `text`, `number`, `date` and `boolean` value types. The editor now exposes the type selector; generation coerces the actual live-bound value at write time and fails closed for invalid numbers, dates or ambiguous boolean values. Existing saved mappings without a type remain backward compatible as text. Cell/range targets continue to use the existing merged-range anchor behavior and formula-cell protection. This change is stored in the existing template JSON configuration and does not require a database migration.
+
+Added regression coverage that executes the production conversion helper against valid numeric/date/boolean/text values, blank values and invalid conversions. A TypeScript declaration file keeps the shared JavaScript helper typed at the React/TypeScript call site. Updated the source-contract test to inspect validation messages in the extracted helper rather than expecting those messages to remain in the React component after extraction. This increment does not yet implement repeated subject row blocks or multi-student rows inside one workbook; the current batch workflow still generates a separate workbook per student. Those remain explicit Issue #227 follow-ups. Formula recalculation remains limited to the supported formula engine; ExcelJS itself is not treated as a calculation engine.

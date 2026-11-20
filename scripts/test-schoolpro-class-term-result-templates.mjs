@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {typedCustomValue} from '../src/lib/resultTemplateTypedValues.mjs';
 
 const page=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
 const mappingPreview=readFileSync('src/components/schoolpro/WorkbookMappingPreview.tsx','utf8');
@@ -227,3 +228,27 @@ assert.match(mappingPreview,/COLUMN_WINDOW=20/,'Workbook mapping preview must ex
 assert.match(mappingPreview,/setStartRow\(startRow\+ROW_WINDOW\)/,'Workbook mapping preview must navigate forward through later worksheet rows.');
 assert.match(mappingPreview,/setStartColumn\(startColumn\+COLUMN_WINDOW\)/,'Workbook mapping preview must navigate forward through later worksheet columns.');
 assert.match(mappingPreview,/disabled=\{cell\.formula\|\|Boolean\(cell\.text\)\}/,'Navigating the workbook must preserve protection for existing text and formula cells.');
+
+
+// Typed custom workbook mappings must coerce values safely and fail closed.
+const typedMappingSource=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
+const typedMappingHelper=readFileSync('src/lib/resultTemplateTypedValues.mjs','utf8');
+assert.match(typedMappingSource,/valueType\?:'text'\|'number'\|'date'\|'boolean'/,'Custom workbook mappings must persist an explicit supported value type.');
+assert.match(typedMappingSource,/typedCustomValue/,'Custom mapped values must pass through the typed conversion boundary.');
+assert.match(typedMappingHelper,/must resolve to a finite number/,'Invalid numeric data must block workbook generation.');
+assert.match(typedMappingHelper,/must resolve to a valid date/,'Invalid date data must block workbook generation.');
+assert.match(typedMappingHelper,/must resolve to true\/false, yes\/no or 1\/0/,'Boolean mappings must reject ambiguous values.');
+assert.match(typedMappingSource,/field\.valueType\|\|\"text\"/,'The editor must let administrators select the mapped value type and preserve legacy mappings as text.');
+assert.match(typedMappingSource,/typedCustomValue\(field\.source===\"literal\"\?field\.value:/,'The generator must type-coerce the actual bound source value, not a preview-only value.');
+
+
+// Exercise the production conversion helper with real values and invalid inputs.
+assert.equal(typedCustomValue(' 42.5 ','number','Average'),42.5);
+assert.equal(typedCustomValue('','number','Average'),'','Blank optional numeric fields remain blank.');
+assert.equal(typedCustomValue('yes','boolean','Eligible'),true);
+assert.equal(typedCustomValue('0','boolean','Eligible'),false);
+assert.equal(typedCustomValue('Term 1','text','Label'),'Term 1');
+assert.ok(typedCustomValue('2026-09-01','date','Start date') instanceof Date);
+assert.throws(()=>typedCustomValue('not-a-number','number','Average'),/finite number/);
+assert.throws(()=>typedCustomValue('not-a-date','date','Start date'),/valid date/);
+assert.throws(()=>typedCustomValue('maybe','boolean','Eligible'),/true\/false/);

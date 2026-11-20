@@ -15,7 +15,7 @@ sheet.getCell("C4").value = { formula: "SUM(B3:B4)" };
 sheet.getCell("A3").style = { font: { bold: true }, fill: { type: "pattern", pattern: "solid", fgColor: { argb: "FFFF00" } } };
 sheet.getRow(3).height = 27;
 sheet.mergeCells("A3:A4");
-sheet.getCell("D7").value = { formula: "SUM(B6:B7)" };
+sheet.getCell("D7").value = { formula: "SUM(B6:B7)+$B$7" };
 
 const plan = expandWorksheetRowsForRoster(sheet, { startRow: 3, endRow: 4, repeatCount: 2 });
 assert.deepEqual(plan.blocks, [{ startRow: 3, endRow: 4 }, { startRow: 5, endRow: 6 }]);
@@ -23,7 +23,7 @@ assert.equal(plan.insertedRows, 2);
 assert.equal(sheet.getCell("C5").value.formula, "B5*2");
 assert.equal(sheet.getCell("C6").value.formula, "SUM(B5:B6)");
 assert.equal(sheet.getCell("B2").value.formula, "SUM(B7:B8)");
-assert.equal(sheet.getCell("D9").value.formula, "SUM(B8:B9)");
+assert.equal(sheet.getCell("D9").value.formula, "SUM(B8:B9)+$B$9");
 assert.equal(sheet.getCell("A5").value, "Student");
 assert.equal(sheet.getCell("B5").value, 12);
 assert.equal(sheet.getRow(5).height, 27);

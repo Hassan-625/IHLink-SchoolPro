@@ -4210,3 +4210,11 @@ No Render deployment was performed. The annual upgrade workflow is now installed
 - The query now adds `school_id = selected school` before resolving result subject names. If a result row references a subject outside the school catalogue, resolution fails closed instead of using that foreign subject name.
 - Added a source regression assertion for the explicit school predicate. No schema change or production migration is required; no production data was modified.
 - Branch `fix/schoolpro-workbook-subject-tenant-scope`; PR and CI validation pending. Do not merge or deploy until exact-head checks pass and release approval is given.
+
+
+## Stage C — full worksheet navigation in custom template mapping preview (2026-11-19)
+
+- Follow-up to Issue #227 found that the visual mapping preview displayed only the first 60 rows and 20 columns. Larger school workbooks could contain relevant fields outside that viewport, making those cells impossible to select in the editor.
+- The preview now navigates the worksheet in 60-row and 20-column windows, reports the visible and total row/column ranges, and retains the existing rule that occupied and formula cells cannot be selected as writable mapping targets.
+- Added source regression assertions for row/column navigation and protection of existing/formula cells.
+- This is a frontend-only change. No database migration, production data modification, workbook upload, class assignment, result generation, merge, or Render deployment is included. Exact-head CI and review are required before release.

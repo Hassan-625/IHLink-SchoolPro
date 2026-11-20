@@ -1,0 +1,31 @@
+name: SchoolPro ExcelJS roster row expansion
+on:
+  pull_request:
+    paths:
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "src/lib/excelFormulaRowTranslation.mjs"
+      - "scripts/test-schoolpro-exceljs-row-expansion.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/schoolpro-exceljs-row-expansion.yml"
+  push:
+    branches:
+      - feat/schoolpro-exceljs-row-expansion
+    paths:
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "src/lib/excelFormulaRowTranslation.mjs"
+      - "scripts/test-schoolpro-exceljs-row-expansion.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/schoolpro-exceljs-row-expansion.yml"
+jobs:
+  exceljs-row-expansion:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:schoolpro-exceljs-row-expansion

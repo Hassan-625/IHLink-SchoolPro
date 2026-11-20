@@ -4275,3 +4275,7 @@ Added regression coverage that executes the production conversion helper against
 
 
 - Expanded the SQL regression with transaction-scoped runtime fixtures proving access for the school owner, assigned Form Master and Super Admin, and denial for an unassigned teacher, student and guardian. All fixture rows are rolled back. The local SQL workflow is rerunning with this runtime coverage.
+
+
+- Expanded runtime SQL coverage beyond the authorization helper: the school owner creates a valid batch for a learner whose current `schoolpro_students.class_id` differs from the selected session's historical `schoolpro_enrollment_history.class_id`; the RPC must accept that historical roster. The same test rejects duplicate student IDs, a learner enrolled in another class for that session, and a stale template configuration snapshot. All fixtures are inside a transaction and rolled back.
+- Final CI harness now follows the already-validated C0 baseline pattern: create the candidate migration with the CLI, start a disposable local Supabase database on a dedicated port, restore the sanitized schema-only baseline, apply only the candidate SQL, then run the runtime/security regression. No production connection or write is used.

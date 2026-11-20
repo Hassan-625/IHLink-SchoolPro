@@ -47,7 +47,7 @@ function snapshotRow(row) {
     collapsed: row.collapsed, style: cloneValue(row.style), cells };
 }
 
-function restoreRow(worksheet, rowNumber, snapshot, rowDelta) {
+function restoreRow(worksheet, rowNumber, snapshot, rowDelta, insertionRow, insertedRows) {
   const row = worksheet.getRow(rowNumber);
   row.height = snapshot.height;
   row.hidden = snapshot.hidden;
@@ -58,7 +58,7 @@ function restoreRow(worksheet, rowNumber, snapshot, rowDelta) {
     const cell = row.getCell(item.column);
     let value = cloneValue(item.value);
     if (value && typeof value === "object" && value.formula) {
-      value = { ...value, formula: translateFormulaRows(value.formula, rowDelta) };
+      value = { ...value, formula: translateFormulaRows(shiftReferencesAtOrBelow(value.formula, insertionRow, insertedRows), rowDelta) };
     } else if (value && typeof value === "object" && (value.sharedFormula || value.shareType === "array")) {
       throw new Error("Shared and array formulas cannot be copied into repeated student rows.");
     }
@@ -152,7 +152,7 @@ export function expandWorksheetRowsForRoster(worksheet, options = {}) {
     const blockStart = startRow + index * rowStride;
     if (index > 0) {
       for (let offset = 0; offset < blockHeight; offset++) {
-        restoreRow(worksheet, blockStart + offset, sourceRows[offset], index * rowStride);
+        restoreRow(worksheet, blockStart + offset, sourceRows[offset], index * rowStride, insertionRow, insertedRows);
       }
       for (const reference of sourceMerges) {
         const shifted = reference.replace(/([A-Z]+)([1-9][0-9]*)/gi, (m, col, row) => col + (Number(row) + index * rowStride));

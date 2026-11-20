@@ -232,11 +232,12 @@ assert.match(mappingPreview,/disabled=\{cell\.formula\|\|Boolean\(cell\.text\)\}
 
 // Typed custom workbook mappings must coerce values safely and fail closed.
 const typedMappingSource=readFileSync('src/pages/schoolpro/SchoolProResultTemplates.tsx','utf8');
+const typedMappingHelper=readFileSync('src/lib/resultTemplateTypedValues.mjs','utf8');
 assert.match(typedMappingSource,/valueType\?:'text'\|'number'\|'date'\|'boolean'/,'Custom workbook mappings must persist an explicit supported value type.');
 assert.match(typedMappingSource,/typedCustomValue/,'Custom mapped values must pass through the typed conversion boundary.');
-assert.match(typedMappingSource,/must resolve to a finite number/,'Invalid numeric data must block workbook generation.');
-assert.match(typedMappingSource,/must resolve to a valid date/,'Invalid date data must block workbook generation.');
-assert.match(typedMappingSource,/must resolve to true\/false, yes\/no or 1\/0/,'Boolean mappings must reject ambiguous values.');
+assert.match(typedMappingHelper,/must resolve to a finite number/,'Invalid numeric data must block workbook generation.');
+assert.match(typedMappingHelper,/must resolve to a valid date/,'Invalid date data must block workbook generation.');
+assert.match(typedMappingHelper,/must resolve to true\/false, yes\/no or 1\/0/,'Boolean mappings must reject ambiguous values.');
 assert.match(typedMappingSource,/field\.valueType\|\|\"text\"/,'The editor must let administrators select the mapped value type and preserve legacy mappings as text.');
 assert.match(typedMappingSource,/typedCustomValue\(field\.source===\"literal\"\?field\.value:/,'The generator must type-coerce the actual bound source value, not a preview-only value.');
 

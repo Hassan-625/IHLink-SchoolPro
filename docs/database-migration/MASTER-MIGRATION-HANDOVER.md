@@ -4246,3 +4246,12 @@ Added regression coverage that executes the production conversion helper against
 - It fails closed for cross-sheet, external, structured, broken, shared and array formulas; merges crossing the repeated-block or insertion boundaries; invalid row ranges/strides; and Excel row-limit overflow.
 - Added `scripts/test-schoolpro-exceljs-row-expansion.mjs`, registered it in `package.json`, and added it to the main CI workflow.
 - This is a tested worksheet-operation layer only. The existing UI still produces individual student workbooks; the class-level staff-only artifact, per-student review records, and integration into the existing generation/finalization path remain outstanding. No production migration, data write, Render deployment, or merge was performed.
+
+
+## 2026-11-20 — Class-result batch persistence design
+
+- Read-only production schema inspection confirmed `schoolpro_generated_result_outputs` is uniquely keyed by `(student_id, term, session, format)`; its read/storage policies allow student and guardian access to the student-specific output. A shared class workbook must not be inserted into this table or the existing student-output storage namespace.
+- Read-only inspection also confirmed class-level staff authorization must exclude the existing `private.schoolpro_can_read_class(uuid)` helper: that helper intentionally includes students and active guardians. The proposed helper `private.schoolpro_can_manage_class_result_batch(school_id,class_id,session)` is staff-only, limited to Super Admin, school leaders/Exam Officer, the class Form Master, and teachers assigned to the class/session.
+- Added `docs/database-migration/drafts/schoolpro-class-result-batch-schema.sql` as a design draft for a private class-batch artifact table and per-student review rows. It defines upload/prepared/reviewing/completed/needs-attention states, snapshots the exact class template assignment, records each student's repeated worksheet row range, and links approved reviews to their individual official output record.
+- The SQL is explicitly a **draft, not a migration**. Executable create/ready/review RPCs, bucket storage policies, and database tests remain to be implemented. No production schema, storage, or data was changed.
+- PR #237's dedicated ExcelJS row-expansion regression passed after fixing escaped formula regexes and ExcelJS's getter-only row `collapsed` property. Existing formula references below inserted rows, including absolute references, are now tested for row shifts.

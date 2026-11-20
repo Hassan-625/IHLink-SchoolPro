@@ -42,7 +42,10 @@ jobs:
 
       - name: Start local Supabase and apply migrations
         run: |
-          supabase start
+          # Edge Functions are not needed for database migration tests. Excluding
+          # the runtime also avoids loading an unrelated existing worker whose
+          # index.ts imports a missing design.ts module.
+          supabase start --exclude edge-runtime
           supabase db reset --local
 
       - name: Run SQL security regression

@@ -27,12 +27,12 @@ jobs:
         with:
           version: 2.122.1
 
-      # The tracked migration chain intentionally has no complete historical
-      # bootstrap. Restore the sanitized schema-only baseline, then apply only
-      # the candidate migration; never replay the incomplete legacy chain.
       - name: Generate candidate migration through Supabase CLI
         shell: bash
         run: |
+          set -euo pipefail
+          # This repository's legacy migration chain has no complete initial
+          # schema. Keep it out of local startup; use the sanitized baseline.
           mv supabase/migrations "$RUNNER_TEMP/schoolpro-existing-migrations"
           mkdir -p supabase/migrations
           supabase migration new schoolpro_class_result_batch_persistence
@@ -41,23 +41,41 @@ jobs:
           cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
           echo "Generated and populated $migration_file"
 
-      - name: Start disposable Supabase and restore schema-only baseline
+      - name: Start disposable Supabase
         shell: bash
         run: |
-          # This unrelated worker imports a missing design.ts file. It is not
-          # part of database validation, so temporarily withhold that function.
+          set -euo pipefail
+          # The certificate worker has an unrelated missing design.ts import.
+          # Edge Functions are not needed for this database-only regression.
           mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
-          supabase start --exclude edge-runtime
-          sudo apt-get update
-          sudo apt-get install --yes postgresql-client
-          eval "$(supabase status -o env)"
-          test -n "$DB_URL"
-          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/baselines/schoolpro-c0-baseline.sql
+          # Use a dedicated database port to avoid parallel-runner collisions.
+          printf '\n[db]\nport = 54332\n' >> supabase/config.toml
+          supabase start -x studio,edge-runtime,logflare,vector,imgproxy
+
+      - name: Restore sanitized production schema baseline
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
+          # The local Supabase database already owns public; omit the dump's
+          # CREATE SCHEMA public statement, as in the established C0 harness.
+          sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
+            | psql "$database_url" --set ON_ERROR_STOP=1
 
       - name: Apply candidate migration and run SQL security regression
+        env:
+          PGPASSWORD: postgres
         shell: bash
         run: |
-          supabase migration up --local
-          eval "$(supabase status -o env)"
-          psql "$DB_URL" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
-          supabase migration list --local
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:54332/postgres"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          test -n "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: supabase stop --no-backup

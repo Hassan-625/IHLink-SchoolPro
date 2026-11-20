@@ -4246,3 +4246,39 @@ Added regression coverage that executes the production conversion helper against
 - It fails closed for cross-sheet, external, structured, broken, shared and array formulas; merges crossing the repeated-block or insertion boundaries; invalid row ranges/strides; and Excel row-limit overflow.
 - Added `scripts/test-schoolpro-exceljs-row-expansion.mjs`, registered it in `package.json`, and added it to the main CI workflow.
 - This is a tested worksheet-operation layer only. The existing UI still produces individual student workbooks; the class-level staff-only artifact, per-student review records, and integration into the existing generation/finalization path remain outstanding. No production migration, data write, Render deployment, or merge was performed.
+
+
+## 2026-11-20 — Class-result batch persistence design
+
+- Read-only production schema inspection confirmed `schoolpro_generated_result_outputs` is uniquely keyed by `(student_id, term, session, format)`; its read/storage policies allow student and guardian access to the student-specific output. A shared class workbook must not be inserted into this table or the existing student-output storage namespace.
+- Read-only inspection also confirmed class-level staff authorization must exclude the existing `private.schoolpro_can_read_class(uuid)` helper: that helper intentionally includes students and active guardians. The proposed helper `private.schoolpro_can_manage_class_result_batch(school_id,class_id,session)` is staff-only, limited to Super Admin, school leaders/Exam Officer, the class Form Master, and teachers assigned to the class/session.
+- Added `docs/database-migration/drafts/schoolpro-class-result-batch-schema.sql` as a design draft for a private class-batch artifact table and per-student review rows. It defines upload/prepared/reviewing/completed/needs-attention states, snapshots the exact class template assignment, records each student's repeated worksheet row range, and links approved reviews to their individual official output record.
+- The SQL is explicitly a **draft, not a migration**. Executable create/ready/review RPCs, bucket storage policies, and database tests remain to be implemented. No production schema, storage, or data was changed.
+- PR #237's dedicated ExcelJS row-expansion regression passed after fixing escaped formula regexes and ExcelJS's getter-only row `collapsed` property. Existing formula references below inserted rows, including absolute references, are now tested for row shifts.
+
+
+### Class-result batch database implementation candidate (2026-11-20)
+
+- Added `docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql` as a full executable candidate, replacing the earlier schema-only sketch.
+- Candidate creates parent class-batch records and per-student review records; direct authenticated/anon writes are revoked and RLS read access is limited to the staff helper.
+- Staff helper is explicit: Super Admin, school owner, proprietor/administrator, Exam Officer, head teacher/vice principal, the class Form Master, or a teacher with a non-ended subject assignment for the exact session. It deliberately does not call `private.schoolpro_can_read_class` or generic `private.has_school_access`, avoiding learner/guardian and unrelated platform-admin inheritance.
+- Create RPC validates the class and exact current template assignment/version/snapshots, then independently resolves every submitted student through `schoolpro_enrollment_history` for exact school/class/session and active enrollment. It never reads `schoolpro_students.current_class_id` as historical membership.
+- Ready RPC requires the private class workbook object to exist and be owned by the requesting staff member. Review RPC requires an existing matching individual XLSX official output for the same school/student/term/session/template assignment and snapshots; class workbooks remain separate from the student-keyed output table.
+- Dedicated private bucket is limited to 50 MiB and XLSX MIME; only authenticated staff with batch authorization and results-module access can upload/read. No student/guardian storage policy is defined.
+- Added `supabase/tests/schoolpro_class_result_batch_security.sql` for RLS/grant/RPC/storage-policy contract assertions. This metadata-only suite must run against a disposable database after the candidate migration.
+- Production introspection confirmed the live enrollment-history status is `active`, membership roles include the intended staff roles, subject assignments expose `ended_at`, and the dedicated bucket/tables do not yet exist.
+- **Not applied to production.** The Supabase CLI is unavailable in the current execution environment, so this is not yet a CLI-generated file under `supabase/migrations`. Next gate: generate the migration with `supabase migration new`, run SQL regression against a disposable local database, fix any parser/runtime issues, then review before seeking production approval. No production schema/data/storage changes, merge, or Render deployment.
+
+
+- Follow-up hardening: the roster validator also rejects a submitted learner who has a second active enrollment-history row for a different class in the same school/session. This avoids accepting ambiguous historical class placement even if one matching row exists.
+- Added `.github/workflows/schoolpro-class-result-batch-sql.yml`: on the PR branch, it uses Supabase CLI v2.122.1 to create a disposable migration with `supabase migration new`, applies the candidate through `supabase db reset --local`, then runs the SQL security regression. The run is pending/in progress; no pass is claimed yet.
+
+
+- Expanded the SQL regression with transaction-scoped runtime fixtures proving access for the school owner, assigned Form Master and Super Admin, and denial for an unassigned teacher, student and guardian. All fixture rows are rolled back. The local SQL workflow is rerunning with this runtime coverage.
+
+
+- Expanded runtime SQL coverage beyond the authorization helper: the school owner creates a valid batch for a learner whose current `schoolpro_students.class_id` differs from the selected session's historical `schoolpro_enrollment_history.class_id`; the RPC must accept that historical roster. The same test rejects duplicate student IDs, a learner enrolled in another class for that session, and a stale template configuration snapshot. All fixtures are inside a transaction and rolled back.
+- Final CI harness now follows the already-validated C0 baseline pattern: create the candidate migration with the CLI, start a disposable local Supabase database on a dedicated port, restore the sanitized schema-only baseline, apply only the candidate SQL, then run the runtime/security regression. No production connection or write is used.
+
+
+- CI sequencing correction: Supabase CLI startup applies files found under `supabase/migrations` before the baseline restore. The test workflow now temporarily withholds the generated candidate migration during `supabase start`, restores the sanitized baseline first, then applies only that generated candidate with `psql`. This avoids applying the candidate against the empty initial database. The workflow is PR-triggered (plus manual dispatch) to avoid duplicate push/PR database jobs.

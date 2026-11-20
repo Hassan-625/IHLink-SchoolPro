@@ -1,0 +1,19 @@
+-- SUPERSEDED DESIGN NOTE — do not apply this file.
+--
+-- The initial schema-only sketch has been replaced by the fuller executable
+-- candidate (still not a migration) at:
+--   docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql
+--
+-- That candidate includes:
+--   * parent batch and per-student review tables;
+--   * explicit staff-only helper that does not delegate to
+--     private.schoolpro_can_read_class (which admits learners/guardians);
+--   * create RPC that revalidates every student against
+--     schoolpro_enrollment_history for the exact school/class/session;
+--   * exact template assignment ID, version and snapshot validation;
+--   * ready RPC that verifies the private workbook upload;
+--   * approval RPC that requires a matching individual official output;
+--   * a separate private storage bucket with staff-only policies.
+--
+-- The implementation remains a draft pending local CLI-generated migration,
+-- disposable-database SQL regression, review and explicit production approval.

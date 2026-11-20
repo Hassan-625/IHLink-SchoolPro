@@ -248,6 +248,58 @@ begin
     raise exception 'Per-student pending review row was not created';
   end if;
 
+  -- Simulate the two Storage objects as transaction-scoped rows, then
+  -- exercise upload verification and official per-student approval.
+  execute 'reset role';
+  insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
+  select 'schoolpro-class-result-batches',b.storage_path,v_owner::text,v_owner,
+    '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
+  from public.schoolpro_class_result_batches b where b.id=v_batch_id;
+
+  insert into public.schoolpro_generated_result_outputs(
+    school_id,student_id,term,session,format,storage_path,generated_by,
+    template_assignment_id,template_id,template_assignment_updated_at,
+    template_config_snapshot,subject_row_mappings_snapshot,formula_calculation_snapshot
+  ) values (
+    v_school,v_student_record,'First Term','2026/2027','xlsx',
+    v_school::text||'/'||v_student_record::text||'/official-result.xlsx',v_owner,
+    v_assignment_id,v_template_id,v_assignment_updated_at,
+    v_config,v_mappings,v_formula
+  );
+
+  insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
+  values (
+    'schoolpro-result-outputs',
+    v_school::text||'/'||v_student_record::text||'/official-result.xlsx',
+    v_owner::text,v_owner,
+    '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
+  );
+
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
+    raise exception 'Batch did not transition to prepared after verified private upload';
+  end if;
+
+  if public.schoolpro_review_class_result_batch_student(
+    v_batch_id,v_student_record,'approved',
+    (select o.id from public.schoolpro_generated_result_outputs o
+     where o.school_id=v_school and o.student_id=v_student_record
+       and o.term='First Term' and o.session='2026/2027' and o.format='xlsx')
+  )<>'completed' then
+    raise exception 'Approved final student review did not complete the batch';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_class_result_batch_reviews r
+    join public.schoolpro_generated_result_outputs o on o.id=r.generated_result_output_id
+    join public.schoolpro_class_result_batches b on b.id=r.batch_id
+    where r.batch_id=v_batch_id and r.review_status='approved'
+      and o.student_id=v_student_record and b.status='completed'
+  ) then
+    raise exception 'Approved batch review was not linked to its official individual output';
+  end if;
+
   -- Duplicate IDs, another class's historical enrollment and stale design
   -- snapshots must each fail closed without creating another batch.
   v_denied:=false;

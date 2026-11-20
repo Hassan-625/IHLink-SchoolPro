@@ -16,6 +16,10 @@ on:
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
 
+concurrency:
+  group: schoolpro-class-result-batch-sql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   batch-sql-security:
     runs-on: ubuntu-latest

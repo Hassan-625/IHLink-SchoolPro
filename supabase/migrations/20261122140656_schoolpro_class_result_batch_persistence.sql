@@ -52,6 +52,7 @@ create table public.schoolpro_class_result_batch_reviews (
   term text not null,
   student_id uuid not null references public.schoolpro_students(id) on delete cascade,
   student_order integer not null check (student_order between 1 and 500),
+  student_storage_path text not null unique,
   subject_row_start integer,
   subject_row_end integer,
   review_status text not null default 'pending'
@@ -300,10 +301,11 @@ begin
 
   insert into public.schoolpro_class_result_batch_reviews(
     batch_id,school_id,class_id,session,term,student_id,student_order,
-    subject_row_start,subject_row_end
+    student_storage_path,subject_row_start,subject_row_end
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
+    p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/students/'||(x->>'student_id')||'.xlsx',
     case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
     case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
@@ -343,8 +345,17 @@ begin
     where o.bucket_id='schoolpro-class-result-batches'
       and o.name=v_batch.storage_path
       and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+  ) or exists (
+    select 1 from public.schoolpro_class_result_batch_reviews r
+    where r.batch_id=p_batch_id
+      and not exists (
+        select 1 from storage.objects o
+        where o.bucket_id='schoolpro-class-result-batches'
+          and o.name=r.student_storage_path
+          and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+      )
   ) then
-    raise exception 'The private class workbook upload could not be verified';
+    raise exception 'The private class register and every student workbook upload must be verified';
   end if;
 
   update public.schoolpro_class_result_batches
@@ -471,11 +482,18 @@ create policy schoolpro_class_result_batches_storage_insert
     bucket_id='schoolpro-class-result-batches'
     and owner_id=(select auth.uid())::text
     and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status='uploading'
-        and b.created_by=(select auth.uid())
+      select 1
+      from public.schoolpro_class_result_batches b
+      where b.status='uploading' and b.created_by=(select auth.uid())
         and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
         and private.schoolpro_module_allowed(b.school_id,'results')
+        and (
+          b.storage_path=name
+          or exists (
+            select 1 from public.schoolpro_class_result_batch_reviews r
+            where r.batch_id=b.id and r.student_storage_path=name
+          )
+        )
     )
   );
 
@@ -485,7 +503,10 @@ create policy schoolpro_class_result_batches_storage_read
     bucket_id='schoolpro-class-result-batches'
     and exists (
       select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name
+      where (b.storage_path=name or exists (
+        select 1 from public.schoolpro_class_result_batch_reviews r
+        where r.batch_id=b.id and r.student_storage_path=name
+      ))
         and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
         and private.schoolpro_module_allowed(b.school_id,'results')
     )

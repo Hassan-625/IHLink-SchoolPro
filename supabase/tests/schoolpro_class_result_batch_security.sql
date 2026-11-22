@@ -169,10 +169,10 @@ begin
     (v_other_student_record,v_school,'BATCH-STUDENT-2','Other','Learner','Other Fixture Class',v_other_class,null);
 
   insert into public.schoolpro_enrollment_history(
-    school_id,student_id,session,class_id,class_name,status
+    school_id,student_id,session,class_id,class_name,section,status
   ) values
-    (v_school,v_student_record,'2026/2027',v_class,'Fixture Class','active'),
-    (v_school,v_other_student_record,'2026/2027',v_other_class,'Other Fixture Class','active');
+    (v_school,v_student_record,'2026/2027',v_class,'Fixture Class','Primary','active'),
+    (v_school,v_other_student_record,'2026/2027',v_other_class,'Other Fixture Class','Primary','active');
 
   insert into public.schoolpro_result_template_library(
     id,school_id,name,storage_path,sheet_name,template_config,created_by,updated_by

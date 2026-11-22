@@ -61,3 +61,6 @@ create policy schoolpro_result_template_assignments_school_read
   using (private.has_school_access(school_id));
 grant select on public.schoolpro_result_template_assignments to authenticated;
 revoke insert,update,delete on public.schoolpro_result_template_assignments from anon,authenticated;
+
+-- The C0 snapshot predates class archival metadata used by current helpers.
+alter table public.schoolpro_classes add column if not exists archived_at timestamptz;

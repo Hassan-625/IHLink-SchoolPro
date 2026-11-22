@@ -232,6 +232,9 @@ begin
     v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
     v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
   );
+  -- Inspect fixture rows as the database owner; authenticated access is
+  -- exercised through the RPCs and the dedicated RLS checks above.
+  execute 'reset role';
   if not exists (
     select 1 from public.schoolpro_class_result_batches b
     where b.id=v_batch_id and b.status='uploading'
@@ -290,6 +293,7 @@ begin
     raise exception 'Approved final student review did not complete the batch';
   end if;
 
+  execute 'reset role';
   if not exists (
     select 1 from public.schoolpro_class_result_batch_reviews r
     join public.schoolpro_generated_result_outputs o on o.id=r.generated_result_output_id

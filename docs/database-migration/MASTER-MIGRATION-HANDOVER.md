@@ -4298,3 +4298,10 @@ Added regression coverage that executes the production conversion helper against
 - Corrected the Supabase CLI exclusion list from the unsupported `inbucket` alias to the supported `mailpit` container name. Commit: `9e34a0b0b784a2f86768c31053ffcb98197e8506`.
 - The next disposable SQL run must confirm whether the function now compiles and whether runtime authorization, historical enrollment, template snapshot, storage readiness, and per-student approval tests pass. The candidate remains a draft and is not yet a timestamped committed migration.
 - No production Supabase changes, PR merge, or Render deployment occurred.
+
+### 2026-11-22 — class-result batch SQL validation follow-up
+- Latest PR #238 SQL run `45024822330` started disposable Supabase and restored the sanitized baseline successfully, then failed while compiling the batch-create PL/pgSQL function.
+- The error was reported at the `subject_row_end` cast, but inspection of the source showed the actual earlier cause: the `formulaCount` regex literal was missing its closing quote and end anchor (`$`), so the parser continued into the later row-range expression.
+- Corrected the draft expression to `!~ '^[0-9]+$'`. Commit: `1a312cdcb70d8fc7cca8539f5820cd110539f5b6`.
+- This correction is in the draft only. Wait for the new disposable SQL regression and build validation before generating/committing a timestamped migration or integrating the workbook UI.
+- No production Supabase changes, PR merge, or Render deployment occurred.

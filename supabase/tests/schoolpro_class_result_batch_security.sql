@@ -192,42 +192,42 @@ begin
 
   execute 'set local role authenticated';
 
-  perform set_config('request.jwt.claim.sub',v_owner::text,true);
-  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'School owner was denied class-result batch access';
-  end if;
+  v_roster:=jsonb_build_array(jsonb_build_object(
+    'student_id',v_student_record,'student_order',1
+  ));
 
+  -- Exercise authorization through the public SECURITY DEFINER RPC. The
+  -- private schema intentionally has no direct USAGE grant to authenticated.
   perform set_config('request.jwt.claim.sub',v_form_teacher::text,true);
-  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'Assigned Form Master was denied class-result batch access';
-  end if;
+  perform public.schoolpro_create_class_result_batch(
+    v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+    v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
+  );
 
-  perform set_config('request.jwt.claim.sub',v_unassigned_teacher::text,true);
-  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'Unassigned teacher gained class-result batch access';
-  end if;
-
-  perform set_config('request.jwt.claim.sub',v_student::text,true);
-  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'Student gained staff-only class-result batch access';
-  end if;
-
-  perform set_config('request.jwt.claim.sub',v_guardian::text,true);
-  if private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'Guardian gained staff-only class-result batch access';
-  end if;
+  foreach v_unassigned_member in array array[v_unassigned_member,v_student,v_guardian] loop
+    perform set_config('request.jwt.claim.sub',v_unassigned_member::text,true);
+    v_denied:=false;
+    begin
+      perform public.schoolpro_create_class_result_batch(
+        v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+        v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
+      );
+    exception when others then v_denied:=true;
+    end;
+    if not v_denied then
+      raise exception 'Unassigned teacher, student, or guardian gained staff-only batch access';
+    end if;
+  end loop;
 
   perform set_config('request.jwt.claim.sub',v_super_admin::text,true);
-  if not private.schoolpro_can_manage_class_result_batch(v_school,v_class,'2026/2027') then
-    raise exception 'Super Admin was denied class-result batch access';
-  end if;
+  perform public.schoolpro_create_class_result_batch(
+    v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
+    v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
+  );
 
   -- Owner creates a batch using the historical class placement, even though
   -- the student's current class_id points elsewhere.
   perform set_config('request.jwt.claim.sub',v_owner::text,true);
-  v_roster:=jsonb_build_array(jsonb_build_object(
-    'student_id',v_student_record,'student_order',1
-  ));
   v_batch_id:=public.schoolpro_create_class_result_batch(
     v_school,v_class,'First Term','2026/2027',v_assignment_id,v_template_id,
     v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster

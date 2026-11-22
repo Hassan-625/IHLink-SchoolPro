@@ -158,6 +158,7 @@ declare
   v_assignment_id uuid:=gen_random_uuid();
   v_assignment_updated_at timestamptz;
   v_batch_id uuid;
+  v_output_id uuid;
   v_config jsonb:='{"sheet":"Results"}'::jsonb;
   v_mappings jsonb:='{"subjectRows":[]}'::jsonb;
   v_formula jsonb:='{"engine":"hot-formula-parser","engineVersion":"4.0.0","formulaCount":0,"calculationMode":"same-sheet-dependency-graph"}'::jsonb;
@@ -288,21 +289,21 @@ begin
   select 'schoolpro-class-result-batches',b.storage_path,v_owner::text,v_owner,
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
   from public.schoolpro_class_result_batches b where b.id=v_batch_id;
+  -- Mark-ready must fail until every per-student private workbook exists.
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  v_denied:=false;
+  begin
+    perform public.schoolpro_mark_class_result_batch_ready(v_batch_id);
+  exception when others then v_denied:=true;
+  end;
+  if not v_denied then raise exception 'Batch became ready without its private student workbook'; end if;
+  execute 'reset role';
+
   insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
   select 'schoolpro-class-result-batches',r.student_storage_path,v_owner::text,v_owner,
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":2048}'::jsonb
   from public.schoolpro_class_result_batch_reviews r where r.batch_id=v_batch_id;
-
-  insert into public.schoolpro_generated_result_outputs(
-    school_id,student_id,term,session,format,storage_path,generated_by,
-    template_assignment_id,template_id,template_assignment_updated_at,
-    template_config_snapshot,subject_row_mappings_snapshot,formula_calculation_snapshot
-  ) values (
-    v_school,v_student_record,'First Term','2026/2027','xlsx',
-    v_school::text||'/'||v_student_record::text||'/official-result.xlsx',v_owner,
-    v_assignment_id,v_template_id,v_assignment_updated_at,
-    v_config,v_mappings,v_formula
-  );
 
   insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
   values (
@@ -314,15 +315,19 @@ begin
 
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  v_output_id:=public.schoolpro_record_generated_result_output(
+    v_school,v_student_record,v_class,'First Term','2026/2027',
+    v_school::text||'/'||v_student_record::text||'/official-result.xlsx',
+    v_assignment_id,v_template_id,v_assignment_updated_at,
+    v_config,v_mappings,v_formula
+  );
+  if v_output_id is null then raise exception 'Historical-session official output RPC returned no output ID'; end if;
   if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
     raise exception 'Batch did not transition to prepared after verified private upload';
   end if;
 
   if public.schoolpro_review_class_result_batch_student(
-    v_batch_id,v_student_record,'approved',
-    (select o.id from public.schoolpro_generated_result_outputs o
-     where o.school_id=v_school and o.student_id=v_student_record
-       and o.term='First Term' and o.session='2026/2027' and o.format='xlsx')
+    v_batch_id,v_student_record,'approved',v_output_id
   )<>'completed' then
     raise exception 'Approved final student review did not complete the batch';
   end if;

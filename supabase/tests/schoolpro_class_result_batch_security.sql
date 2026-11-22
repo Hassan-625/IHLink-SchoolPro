@@ -55,6 +55,14 @@ begin
     raise exception 'Create-batch RPC does not independently validate exact historical enrollment';
   end if;
 
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema='public' and table_name='schoolpro_class_result_batch_reviews'
+      and column_name='student_storage_path' and is_nullable='NO'
+  ) then
+    raise exception 'Each batch review must have a durable private student workbook path';
+  end if;
+
   v_function:='public.schoolpro_mark_class_result_batch_ready(uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')
@@ -273,6 +281,10 @@ begin
   select 'schoolpro-class-result-batches',b.storage_path,v_owner::text,v_owner,
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
   from public.schoolpro_class_result_batches b where b.id=v_batch_id;
+  insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
+  select 'schoolpro-class-result-batches',r.student_storage_path,v_owner::text,v_owner,
+    '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":2048}'::jsonb
+  from public.schoolpro_class_result_batch_reviews r where r.batch_id=v_batch_id;
 
   insert into public.schoolpro_generated_result_outputs(
     school_id,student_id,term,session,format,storage_path,generated_by,

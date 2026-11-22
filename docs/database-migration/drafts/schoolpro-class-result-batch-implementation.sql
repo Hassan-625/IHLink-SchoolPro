@@ -222,10 +222,10 @@ begin
     where jsonb_typeof(x)<>'object'
       or not (coalesce(x->>'student_id','') ~* $re$^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$re$)
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -305,8 +305,8 @@ begin
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -530,10 +530,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -605,8 +605,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -830,10 +830,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -913,8 +913,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -1138,10 +1138,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -1213,8 +1213,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -1438,10 +1438,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -1521,8 +1521,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -1746,10 +1746,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -1821,8 +1821,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -2046,10 +2046,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -2129,8 +2129,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -2354,10 +2354,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -2429,8 +2429,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -2653,10 +2653,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -2736,8 +2736,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -2961,10 +2961,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -3036,8 +3036,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -3261,10 +3261,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -3344,8 +3344,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -3569,10 +3569,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -3644,8 +3644,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -3869,10 +3869,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -3952,8 +3952,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -4177,10 +4177,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -4252,8 +4252,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -4477,10 +4477,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -4560,8 +4560,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -4785,10 +4785,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -4860,8 +4860,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -5084,10 +5084,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -5167,8 +5167,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -5392,10 +5392,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -5467,8 +5467,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -5692,10 +5692,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -5775,8 +5775,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -6000,10 +6000,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -6075,8 +6075,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -6300,10 +6300,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -6383,8 +6383,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -6608,10 +6608,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -6683,8 +6683,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -6908,10 +6908,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -6991,8 +6991,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -7216,10 +7216,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -7291,8 +7291,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -7515,10 +7515,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -7598,8 +7598,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -7823,10 +7823,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -7898,8 +7898,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -8123,618 +8123,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
-          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
-          or (x->>'subject_row_end')::integer>1048576))
-  ) then
-    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
-  end if;
-
-  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
-    into v_distinct_ids,v_distinct_orders
-  from jsonb_array_elements(p_students) x;
-
-  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
-     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
-     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
-    raise exception 'The roster must have unique student IDs and contiguous student order';
-  end if;
-
-  -- Resolve every submitted ID against the immutable session history.
-  select count(distinct eh.student_id) into v_members
-  from jsonb_array_elements(p_students) x
-  join public.schoolpro_enrollment_history eh
-    on eh.student_id=(x->>'student_id')::uuid
-   and eh.school_id=p_school
-   and eh.class_id=p_class
-   and eh.session=trim(p_session)
-   and eh.status='active'
-   and not exists (
-     select 1 from public.schoolpro_enrollment_history other
-     where other.school_id=eh.school_id
-       and other.student_id=eh.student_id
-       and other.session=eh.session
-       and other.status='active'
-       and other.class_id is distinct from p_class
-   )
-  join public.schoolpro_students st
-    on st.id=eh.student_id and st.school_id=p_school;
-
-  if v_members<>v_expected then
-    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
-  end if;
-
-  select a.* into v_assignment
-  from public.schoolpro_result_template_assignments a
-  where a.id=p_template_assignment_id
-    and a.school_id=p_school and a.class_id=p_class
-    and a.term=trim(p_term) and a.session=trim(p_session)
-  for update;
-
-  if not found
-     or v_assignment.template_id<>p_template_id
-     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
-     or v_assignment.template_config is distinct from p_template_config_snapshot
-     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
-     or not exists (
-       select 1 from public.schoolpro_result_template_library t
-       where t.id=p_template_id and t.school_id=p_school and t.is_active
-     ) then
-    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
-  end if;
-
-  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
-
-  insert into public.schoolpro_class_result_batches(
-    id,school_id,class_id,term,session,template_assignment_id,template_id,
-    template_assignment_updated_at,template_config_snapshot,
-    subject_row_mappings_snapshot,formula_calculation_snapshot,
-    storage_path,expected_student_count,created_by
-  ) values (
-    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
-    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
-    v_assignment.template_config,v_assignment.subject_row_mappings,
-    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
-  );
-
-  insert into public.schoolpro_class_result_batch_reviews(
-    batch_id,school_id,class_id,session,term,student_id,student_order,
-    subject_row_start,subject_row_end
-  )
-  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
-    (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
-  from jsonb_array_elements(p_students) x;
-
-  return v_batch_id;
-end;
-$$;
-revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
-grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
-
-create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
-returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status<>'uploading' then
-    raise exception 'Only an uploading class-result batch can be marked ready';
-  end if;
-  if not exists (
-    select 1 from storage.objects o
-    where o.bucket_id='schoolpro-class-result-batches'
-      and o.name=v_batch.storage_path
-      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
-  ) then
-    raise exception 'The private class workbook upload could not be verified';
-  end if;
-
-  update public.schoolpro_class_result_batches
-  set status='prepared',updated_at=now()
-  where id=p_batch_id;
-  return 'prepared';
-end;
-$$;
-revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
-grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
-
-create or replace function public.schoolpro_review_class_result_batch_student(
-  p_batch_id uuid,
-  p_student_id uuid,
-  p_decision text,
-  p_output_id uuid default null
-) returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-  v_review public.schoolpro_class_result_batch_reviews%rowtype;
-  v_rejected integer;
-  v_pending integer;
-  v_next_status text;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status not in ('prepared','reviewing','needs_attention') then
-    raise exception 'This class-result batch is not open for review';
-  end if;
-  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
-    raise exception 'Review decision must be approved or rejected';
-  end if;
-
-  select r.* into v_review
-  from public.schoolpro_class_result_batch_reviews r
-  where r.batch_id=p_batch_id and r.student_id=p_student_id
-  for update;
-
-  if not found then
-    raise exception 'The student is not part of this class-result batch';
-  end if;
-
-  if lower(trim(p_decision))='approved' then
-    if p_output_id is null or not exists (
-      select 1
-      from public.schoolpro_generated_result_outputs o
-      where o.id=p_output_id
-        and o.school_id=v_batch.school_id
-        and o.student_id=p_student_id
-        and o.term=v_batch.term
-        and o.session=v_batch.session
-        and o.format='xlsx'
-        and o.template_assignment_id=v_batch.template_assignment_id
-        and o.template_id=v_batch.template_id
-        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
-        and o.template_config_snapshot=v_batch.template_config_snapshot
-        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
-        and exists (
-          select 1 from storage.objects so
-          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
-        )
-    ) then
-      raise exception 'Approval requires the matching official individual student workbook output';
-    end if;
-  elsif p_output_id is not null then
-    raise exception 'A rejected student review cannot link an official output';
-  end if;
-
-  update public.schoolpro_class_result_batch_reviews
-  set review_status=lower(trim(p_decision)),
-      reviewed_by=auth.uid(),reviewed_at=now(),
-      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
-  where id=v_review.id;
-
-  select count(*) filter (where review_status='rejected'),
-         count(*) filter (where review_status='pending')
-    into v_rejected,v_pending
-  from public.schoolpro_class_result_batch_reviews
-  where batch_id=p_batch_id;
-
-  v_next_status:=case
-    when v_rejected>0 then 'needs_attention'
-    when v_pending=0 then 'completed'
-    else 'reviewing'
-  end;
-
-  update public.schoolpro_class_result_batches
-  set status=v_next_status,updated_at=now()
-  where id=p_batch_id;
-
-  return v_next_status;
-end;
-$$;
-revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
-grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
-
--- Dedicated private storage namespace. There is no student/guardian policy.
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values (
-  'schoolpro-class-result-batches',
-  'schoolpro-class-result-batches',
-  false,
-  52428800,
-  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-);
-
-create policy schoolpro_class_result_batches_storage_insert
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id='schoolpro-class-result-batches'
-    and owner_id=(select auth.uid())::text
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status='uploading'
-        and b.created_by=(select auth.uid())
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-create policy schoolpro_class_result_batches_storage_read
-  on storage.objects for select to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
--- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
--- reviewing, and completed class workbooks are immutable through Storage API.
-create policy schoolpro_class_result_batches_storage_delete_failed
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-     or octet_length(p_template_config_snapshot::text)>100000
-     or octet_length(p_subject_row_mappings_snapshot::text)>100000
-     or octet_length(p_formula_calculation_snapshot::text)>100000
-     or jsonb_typeof(p_students)<>'array' then
-    raise exception 'The class-result batch metadata is invalid';
-  end if;
-
-  if not exists (
-    select 1 from public.schoolpro_classes c
-    where c.id=p_class and c.school_id=p_school and c.archived_at is null
-  ) then
-    raise exception 'The selected class is unavailable in this school';
-  end if;
-
-  select count(*) into v_expected from jsonb_array_elements(p_students);
-  if v_expected<1 or v_expected>500 then
-    raise exception 'A class-result batch must contain between 1 and 500 students';
-  end if;
-
-  if exists (
-    select 1 from jsonb_array_elements(p_students) x
-    where jsonb_typeof(x)<>'object'
-      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
-          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
-          or (x->>'subject_row_end')::integer>1048576))
-  ) then
-    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
-  end if;
-
-  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
-    into v_distinct_ids,v_distinct_orders
-  from jsonb_array_elements(p_students) x;
-
-  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
-     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
-     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
-    raise exception 'The roster must have unique student IDs and contiguous student order';
-  end if;
-
-  -- Resolve every submitted ID against the immutable session history.
-  select count(distinct eh.student_id) into v_members
-  from jsonb_array_elements(p_students) x
-  join public.schoolpro_enrollment_history eh
-    on eh.student_id=(x->>'student_id')::uuid
-   and eh.school_id=p_school
-   and eh.class_id=p_class
-   and eh.session=trim(p_session)
-   and eh.status='active'
-  join public.schoolpro_students st
-    on st.id=eh.student_id and st.school_id=p_school;
-
-  if v_members<>v_expected then
-    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
-  end if;
-
-  select a.* into v_assignment
-  from public.schoolpro_result_template_assignments a
-  where a.id=p_template_assignment_id
-    and a.school_id=p_school and a.class_id=p_class
-    and a.term=trim(p_term) and a.session=trim(p_session)
-  for update;
-
-  if not found
-     or v_assignment.template_id<>p_template_id
-     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
-     or v_assignment.template_config is distinct from p_template_config_snapshot
-     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
-     or not exists (
-       select 1 from public.schoolpro_result_template_library t
-       where t.id=p_template_id and t.school_id=p_school and t.is_active
-     ) then
-    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
-  end if;
-
-  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
-
-  insert into public.schoolpro_class_result_batches(
-    id,school_id,class_id,term,session,template_assignment_id,template_id,
-    template_assignment_updated_at,template_config_snapshot,
-    subject_row_mappings_snapshot,formula_calculation_snapshot,
-    storage_path,expected_student_count,created_by
-  ) values (
-    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
-    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
-    v_assignment.template_config,v_assignment.subject_row_mappings,
-    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
-  );
-
-  insert into public.schoolpro_class_result_batch_reviews(
-    batch_id,school_id,class_id,session,term,student_id,student_order,
-    subject_row_start,subject_row_end
-  )
-  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
-    (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
-  from jsonb_array_elements(p_students) x;
-
-  return v_batch_id;
-end;
-$$;
-revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
-grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
-
-create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
-returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status<>'uploading' then
-    raise exception 'Only an uploading class-result batch can be marked ready';
-  end if;
-  if not exists (
-    select 1 from storage.objects o
-    where o.bucket_id='schoolpro-class-result-batches'
-      and o.name=v_batch.storage_path
-      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
-  ) then
-    raise exception 'The private class workbook upload could not be verified';
-  end if;
-
-  update public.schoolpro_class_result_batches
-  set status='prepared',updated_at=now()
-  where id=p_batch_id;
-  return 'prepared';
-end;
-$$;
-revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
-grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
-
-create or replace function public.schoolpro_review_class_result_batch_student(
-  p_batch_id uuid,
-  p_student_id uuid,
-  p_decision text,
-  p_output_id uuid default null
-) returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-  v_review public.schoolpro_class_result_batch_reviews%rowtype;
-  v_rejected integer;
-  v_pending integer;
-  v_next_status text;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status not in ('prepared','reviewing','needs_attention') then
-    raise exception 'This class-result batch is not open for review';
-  end if;
-  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
-    raise exception 'Review decision must be approved or rejected';
-  end if;
-
-  select r.* into v_review
-  from public.schoolpro_class_result_batch_reviews r
-  where r.batch_id=p_batch_id and r.student_id=p_student_id
-  for update;
-
-  if not found then
-    raise exception 'The student is not part of this class-result batch';
-  end if;
-
-  if lower(trim(p_decision))='approved' then
-    if p_output_id is null or not exists (
-      select 1
-      from public.schoolpro_generated_result_outputs o
-      where o.id=p_output_id
-        and o.school_id=v_batch.school_id
-        and o.student_id=p_student_id
-        and o.term=v_batch.term
-        and o.session=v_batch.session
-        and o.format='xlsx'
-        and o.template_assignment_id=v_batch.template_assignment_id
-        and o.template_id=v_batch.template_id
-        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
-        and o.template_config_snapshot=v_batch.template_config_snapshot
-        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
-        and exists (
-          select 1 from storage.objects so
-          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
-        )
-    ) then
-      raise exception 'Approval requires the matching official individual student workbook output';
-    end if;
-  elsif p_output_id is not null then
-    raise exception 'A rejected student review cannot link an official output';
-  end if;
-
-  update public.schoolpro_class_result_batch_reviews
-  set review_status=lower(trim(p_decision)),
-      reviewed_by=auth.uid(),reviewed_at=now(),
-      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
-  where id=v_review.id;
-
-  select count(*) filter (where review_status='rejected'),
-         count(*) filter (where review_status='pending')
-    into v_rejected,v_pending
-  from public.schoolpro_class_result_batch_reviews
-  where batch_id=p_batch_id;
-
-  v_next_status:=case
-    when v_rejected>0 then 'needs_attention'
-    when v_pending=0 then 'completed'
-    else 'reviewing'
-  end;
-
-  update public.schoolpro_class_result_batches
-  set status=v_next_status,updated_at=now()
-  where id=p_batch_id;
-
-  return v_next_status;
-end;
-$$;
-revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
-grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
-
--- Dedicated private storage namespace. There is no student/guardian policy.
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values (
-  'schoolpro-class-result-batches',
-  'schoolpro-class-result-batches',
-  false,
-  52428800,
-  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-);
-
-create policy schoolpro_class_result_batches_storage_insert
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id='schoolpro-class-result-batches'
-    and owner_id=(select auth.uid())::text
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status='uploading'
-        and b.created_by=(select auth.uid())
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-create policy schoolpro_class_result_batches_storage_read
-  on storage.objects for select to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
--- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
--- reviewing, and completed class workbooks are immutable through Storage API.
-create policy schoolpro_class_result_batches_storage_delete_failed
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-     or octet_length(p_template_config_snapshot::text)>100000
-     or octet_length(p_subject_row_mappings_snapshot::text)>100000
-     or octet_length(p_formula_calculation_snapshot::text)>100000
-     or jsonb_typeof(p_students)<>'array' then
-    raise exception 'The class-result batch metadata is invalid';
-  end if;
-
-  if not exists (
-    select 1 from public.schoolpro_classes c
-    where c.id=p_class and c.school_id=p_school and c.archived_at is null
-  ) then
-    raise exception 'The selected class is unavailable in this school';
-  end if;
-
-  select count(*) into v_expected from jsonb_array_elements(p_students);
-  if v_expected<1 or v_expected>500 then
-    raise exception 'A class-result batch must contain between 1 and 500 students';
-  end if;
-
-  if exists (
-    select 1 from jsonb_array_elements(p_students) x
-    where jsonb_typeof(x)<>'object'
-      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -8814,8 +8206,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -9039,10 +8431,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -9114,8 +8506,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -9339,10 +8731,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -9422,8 +8814,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -9647,10 +9039,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -9722,8 +9114,616 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
+  from jsonb_array_elements(p_students) x;
+
+  return v_batch_id;
+end;
+$$;
+revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
+grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
+
+create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
+returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status<>'uploading' then
+    raise exception 'Only an uploading class-result batch can be marked ready';
+  end if;
+  if not exists (
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-class-result-batches'
+      and o.name=v_batch.storage_path
+      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+  ) then
+    raise exception 'The private class workbook upload could not be verified';
+  end if;
+
+  update public.schoolpro_class_result_batches
+  set status='prepared',updated_at=now()
+  where id=p_batch_id;
+  return 'prepared';
+end;
+$$;
+revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
+grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
+
+create or replace function public.schoolpro_review_class_result_batch_student(
+  p_batch_id uuid,
+  p_student_id uuid,
+  p_decision text,
+  p_output_id uuid default null
+) returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+  v_review public.schoolpro_class_result_batch_reviews%rowtype;
+  v_rejected integer;
+  v_pending integer;
+  v_next_status text;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status not in ('prepared','reviewing','needs_attention') then
+    raise exception 'This class-result batch is not open for review';
+  end if;
+  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
+    raise exception 'Review decision must be approved or rejected';
+  end if;
+
+  select r.* into v_review
+  from public.schoolpro_class_result_batch_reviews r
+  where r.batch_id=p_batch_id and r.student_id=p_student_id
+  for update;
+
+  if not found then
+    raise exception 'The student is not part of this class-result batch';
+  end if;
+
+  if lower(trim(p_decision))='approved' then
+    if p_output_id is null or not exists (
+      select 1
+      from public.schoolpro_generated_result_outputs o
+      where o.id=p_output_id
+        and o.school_id=v_batch.school_id
+        and o.student_id=p_student_id
+        and o.term=v_batch.term
+        and o.session=v_batch.session
+        and o.format='xlsx'
+        and o.template_assignment_id=v_batch.template_assignment_id
+        and o.template_id=v_batch.template_id
+        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
+        and o.template_config_snapshot=v_batch.template_config_snapshot
+        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
+        and exists (
+          select 1 from storage.objects so
+          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
+        )
+    ) then
+      raise exception 'Approval requires the matching official individual student workbook output';
+    end if;
+  elsif p_output_id is not null then
+    raise exception 'A rejected student review cannot link an official output';
+  end if;
+
+  update public.schoolpro_class_result_batch_reviews
+  set review_status=lower(trim(p_decision)),
+      reviewed_by=auth.uid(),reviewed_at=now(),
+      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
+  where id=v_review.id;
+
+  select count(*) filter (where review_status='rejected'),
+         count(*) filter (where review_status='pending')
+    into v_rejected,v_pending
+  from public.schoolpro_class_result_batch_reviews
+  where batch_id=p_batch_id;
+
+  v_next_status:=case
+    when v_rejected>0 then 'needs_attention'
+    when v_pending=0 then 'completed'
+    else 'reviewing'
+  end;
+
+  update public.schoolpro_class_result_batches
+  set status=v_next_status,updated_at=now()
+  where id=p_batch_id;
+
+  return v_next_status;
+end;
+$$;
+revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
+grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
+
+-- Dedicated private storage namespace. There is no student/guardian policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-class-result-batches',
+  'schoolpro-class-result-batches',
+  false,
+  52428800,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+);
+
+create policy schoolpro_class_result_batches_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-class-result-batches'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status='uploading'
+        and b.created_by=(select auth.uid())
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+create policy schoolpro_class_result_batches_storage_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+-- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
+-- reviewing, and completed class workbooks are immutable through Storage API.
+create policy schoolpro_class_result_batches_storage_delete_failed
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status in ('failed','cancelled')
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+     or octet_length(p_template_config_snapshot::text)>100000
+     or octet_length(p_subject_row_mappings_snapshot::text)>100000
+     or octet_length(p_formula_calculation_snapshot::text)>100000
+     or jsonb_typeof(p_students)<>'array' then
+    raise exception 'The class-result batch metadata is invalid';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_classes c
+    where c.id=p_class and c.school_id=p_school and c.archived_at is null
+  ) then
+    raise exception 'The selected class is unavailable in this school';
+  end if;
+
+  select count(*) into v_expected from jsonb_array_elements(p_students);
+  if v_expected<1 or v_expected>500 then
+    raise exception 'A class-result batch must contain between 1 and 500 students';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(p_students) x
+    where jsonb_typeof(x)<>'object'
+      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
+          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
+          or (x->>'subject_row_end')::integer>1048576))
+  ) then
+    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
+  end if;
+
+  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
+    into v_distinct_ids,v_distinct_orders
+  from jsonb_array_elements(p_students) x;
+
+  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
+     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
+     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
+    raise exception 'The roster must have unique student IDs and contiguous student order';
+  end if;
+
+  -- Resolve every submitted ID against the immutable session history.
+  select count(distinct eh.student_id) into v_members
+  from jsonb_array_elements(p_students) x
+  join public.schoolpro_enrollment_history eh
+    on eh.student_id=(x->>'student_id')::uuid
+   and eh.school_id=p_school
+   and eh.class_id=p_class
+   and eh.session=trim(p_session)
+   and eh.status='active'
+   and not exists (
+     select 1 from public.schoolpro_enrollment_history other
+     where other.school_id=eh.school_id
+       and other.student_id=eh.student_id
+       and other.session=eh.session
+       and other.status='active'
+       and other.class_id is distinct from p_class
+   )
+  join public.schoolpro_students st
+    on st.id=eh.student_id and st.school_id=p_school;
+
+  if v_members<>v_expected then
+    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.id=p_template_assignment_id
+    and a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+
+  if not found
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
+     or not exists (
+       select 1 from public.schoolpro_result_template_library t
+       where t.id=p_template_id and t.school_id=p_school and t.is_active
+     ) then
+    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
+  end if;
+
+  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
+
+  insert into public.schoolpro_class_result_batches(
+    id,school_id,class_id,term,session,template_assignment_id,template_id,
+    template_assignment_updated_at,template_config_snapshot,
+    subject_row_mappings_snapshot,formula_calculation_snapshot,
+    storage_path,expected_student_count,created_by
+  ) values (
+    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings,
+    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
+  );
+
+  insert into public.schoolpro_class_result_batch_reviews(
+    batch_id,school_id,class_id,session,term,student_id,student_order,
+    subject_row_start,subject_row_end
+  )
+  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
+    (x->>'student_id')::uuid,(x->>'student_order')::integer,
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
+  from jsonb_array_elements(p_students) x;
+
+  return v_batch_id;
+end;
+$$;
+revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
+grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
+
+create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
+returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status<>'uploading' then
+    raise exception 'Only an uploading class-result batch can be marked ready';
+  end if;
+  if not exists (
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-class-result-batches'
+      and o.name=v_batch.storage_path
+      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+  ) then
+    raise exception 'The private class workbook upload could not be verified';
+  end if;
+
+  update public.schoolpro_class_result_batches
+  set status='prepared',updated_at=now()
+  where id=p_batch_id;
+  return 'prepared';
+end;
+$$;
+revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
+grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
+
+create or replace function public.schoolpro_review_class_result_batch_student(
+  p_batch_id uuid,
+  p_student_id uuid,
+  p_decision text,
+  p_output_id uuid default null
+) returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+  v_review public.schoolpro_class_result_batch_reviews%rowtype;
+  v_rejected integer;
+  v_pending integer;
+  v_next_status text;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status not in ('prepared','reviewing','needs_attention') then
+    raise exception 'This class-result batch is not open for review';
+  end if;
+  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
+    raise exception 'Review decision must be approved or rejected';
+  end if;
+
+  select r.* into v_review
+  from public.schoolpro_class_result_batch_reviews r
+  where r.batch_id=p_batch_id and r.student_id=p_student_id
+  for update;
+
+  if not found then
+    raise exception 'The student is not part of this class-result batch';
+  end if;
+
+  if lower(trim(p_decision))='approved' then
+    if p_output_id is null or not exists (
+      select 1
+      from public.schoolpro_generated_result_outputs o
+      where o.id=p_output_id
+        and o.school_id=v_batch.school_id
+        and o.student_id=p_student_id
+        and o.term=v_batch.term
+        and o.session=v_batch.session
+        and o.format='xlsx'
+        and o.template_assignment_id=v_batch.template_assignment_id
+        and o.template_id=v_batch.template_id
+        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
+        and o.template_config_snapshot=v_batch.template_config_snapshot
+        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
+        and exists (
+          select 1 from storage.objects so
+          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
+        )
+    ) then
+      raise exception 'Approval requires the matching official individual student workbook output';
+    end if;
+  elsif p_output_id is not null then
+    raise exception 'A rejected student review cannot link an official output';
+  end if;
+
+  update public.schoolpro_class_result_batch_reviews
+  set review_status=lower(trim(p_decision)),
+      reviewed_by=auth.uid(),reviewed_at=now(),
+      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
+  where id=v_review.id;
+
+  select count(*) filter (where review_status='rejected'),
+         count(*) filter (where review_status='pending')
+    into v_rejected,v_pending
+  from public.schoolpro_class_result_batch_reviews
+  where batch_id=p_batch_id;
+
+  v_next_status:=case
+    when v_rejected>0 then 'needs_attention'
+    when v_pending=0 then 'completed'
+    else 'reviewing'
+  end;
+
+  update public.schoolpro_class_result_batches
+  set status=v_next_status,updated_at=now()
+  where id=p_batch_id;
+
+  return v_next_status;
+end;
+$$;
+revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
+grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
+
+-- Dedicated private storage namespace. There is no student/guardian policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-class-result-batches',
+  'schoolpro-class-result-batches',
+  false,
+  52428800,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+);
+
+create policy schoolpro_class_result_batches_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-class-result-batches'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status='uploading'
+        and b.created_by=(select auth.uid())
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+create policy schoolpro_class_result_batches_storage_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+-- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
+-- reviewing, and completed class workbooks are immutable through Storage API.
+create policy schoolpro_class_result_batches_storage_delete_failed
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status in ('failed','cancelled')
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+     or octet_length(p_template_config_snapshot::text)>100000
+     or octet_length(p_subject_row_mappings_snapshot::text)>100000
+     or octet_length(p_formula_calculation_snapshot::text)>100000
+     or jsonb_typeof(p_students)<>'array' then
+    raise exception 'The class-result batch metadata is invalid';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_classes c
+    where c.id=p_class and c.school_id=p_school and c.archived_at is null
+  ) then
+    raise exception 'The selected class is unavailable in this school';
+  end if;
+
+  select count(*) into v_expected from jsonb_array_elements(p_students);
+  if v_expected<1 or v_expected>500 then
+    raise exception 'A class-result batch must contain between 1 and 500 students';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(p_students) x
+    where jsonb_typeof(x)<>'object'
+      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
+          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
+          or (x->>'subject_row_end')::integer>1048576))
+  ) then
+    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
+  end if;
+
+  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
+    into v_distinct_ids,v_distinct_orders
+  from jsonb_array_elements(p_students) x;
+
+  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
+     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
+     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
+    raise exception 'The roster must have unique student IDs and contiguous student order';
+  end if;
+
+  -- Resolve every submitted ID against the immutable session history.
+  select count(distinct eh.student_id) into v_members
+  from jsonb_array_elements(p_students) x
+  join public.schoolpro_enrollment_history eh
+    on eh.student_id=(x->>'student_id')::uuid
+   and eh.school_id=p_school
+   and eh.class_id=p_class
+   and eh.session=trim(p_session)
+   and eh.status='active'
+  join public.schoolpro_students st
+    on st.id=eh.student_id and st.school_id=p_school;
+
+  if v_members<>v_expected then
+    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.id=p_template_assignment_id
+    and a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+
+  if not found
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
+     or not exists (
+       select 1 from public.schoolpro_result_template_library t
+       where t.id=p_template_id and t.school_id=p_school and t.is_active
+     ) then
+    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
+  end if;
+
+  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
+
+  insert into public.schoolpro_class_result_batches(
+    id,school_id,class_id,term,session,template_assignment_id,template_id,
+    template_assignment_updated_at,template_config_snapshot,
+    subject_row_mappings_snapshot,formula_calculation_snapshot,
+    storage_path,expected_student_count,created_by
+  ) values (
+    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings,
+    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
+  );
+
+  insert into public.schoolpro_class_result_batch_reviews(
+    batch_id,school_id,class_id,session,term,student_id,student_order,
+    subject_row_start,subject_row_end
+  )
+  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
+    (x->>'student_id')::uuid,(x->>'student_order')::integer,
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -9946,10 +9946,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or not (coalesce(x->>'student_id','') ~* $re$^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$re$)
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -10029,8 +10029,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -10254,10 +10254,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -10329,8 +10329,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -10554,10 +10554,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -10637,8 +10637,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -10862,10 +10862,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -10937,8 +10937,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -11162,10 +11162,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -11245,8 +11245,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -11470,10 +11470,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -11545,8 +11545,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -11770,10 +11770,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -11853,8 +11853,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -12078,10 +12078,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -12153,8 +12153,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -12377,10 +12377,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -12460,8 +12460,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -12685,10 +12685,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -12760,8 +12760,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -12985,10 +12985,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -13068,8 +13068,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -13293,10 +13293,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -13368,8 +13368,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -13593,10 +13593,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -13676,8 +13676,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -13901,10 +13901,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -13976,8 +13976,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -14201,10 +14201,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -14284,8 +14284,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -14509,10 +14509,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -14584,8 +14584,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -14808,10 +14808,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -14891,8 +14891,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -15116,10 +15116,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -15191,8 +15191,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -15416,10 +15416,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -15499,8 +15499,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -15724,10 +15724,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -15799,8 +15799,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -16024,10 +16024,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -16107,8 +16107,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -16332,10 +16332,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -16407,8 +16407,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -16632,10 +16632,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -16715,8 +16715,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -16940,10 +16940,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -17015,8 +17015,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -17239,10 +17239,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -17322,8 +17322,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -17547,10 +17547,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -17622,8 +17622,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -17847,618 +17847,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
-          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
-          or (x->>'subject_row_end')::integer>1048576))
-  ) then
-    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
-  end if;
-
-  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
-    into v_distinct_ids,v_distinct_orders
-  from jsonb_array_elements(p_students) x;
-
-  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
-     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
-     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
-    raise exception 'The roster must have unique student IDs and contiguous student order';
-  end if;
-
-  -- Resolve every submitted ID against the immutable session history.
-  select count(distinct eh.student_id) into v_members
-  from jsonb_array_elements(p_students) x
-  join public.schoolpro_enrollment_history eh
-    on eh.student_id=(x->>'student_id')::uuid
-   and eh.school_id=p_school
-   and eh.class_id=p_class
-   and eh.session=trim(p_session)
-   and eh.status='active'
-   and not exists (
-     select 1 from public.schoolpro_enrollment_history other
-     where other.school_id=eh.school_id
-       and other.student_id=eh.student_id
-       and other.session=eh.session
-       and other.status='active'
-       and other.class_id is distinct from p_class
-   )
-  join public.schoolpro_students st
-    on st.id=eh.student_id and st.school_id=p_school;
-
-  if v_members<>v_expected then
-    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
-  end if;
-
-  select a.* into v_assignment
-  from public.schoolpro_result_template_assignments a
-  where a.id=p_template_assignment_id
-    and a.school_id=p_school and a.class_id=p_class
-    and a.term=trim(p_term) and a.session=trim(p_session)
-  for update;
-
-  if not found
-     or v_assignment.template_id<>p_template_id
-     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
-     or v_assignment.template_config is distinct from p_template_config_snapshot
-     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
-     or not exists (
-       select 1 from public.schoolpro_result_template_library t
-       where t.id=p_template_id and t.school_id=p_school and t.is_active
-     ) then
-    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
-  end if;
-
-  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
-
-  insert into public.schoolpro_class_result_batches(
-    id,school_id,class_id,term,session,template_assignment_id,template_id,
-    template_assignment_updated_at,template_config_snapshot,
-    subject_row_mappings_snapshot,formula_calculation_snapshot,
-    storage_path,expected_student_count,created_by
-  ) values (
-    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
-    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
-    v_assignment.template_config,v_assignment.subject_row_mappings,
-    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
-  );
-
-  insert into public.schoolpro_class_result_batch_reviews(
-    batch_id,school_id,class_id,session,term,student_id,student_order,
-    subject_row_start,subject_row_end
-  )
-  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
-    (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
-  from jsonb_array_elements(p_students) x;
-
-  return v_batch_id;
-end;
-$$;
-revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
-grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
-
-create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
-returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status<>'uploading' then
-    raise exception 'Only an uploading class-result batch can be marked ready';
-  end if;
-  if not exists (
-    select 1 from storage.objects o
-    where o.bucket_id='schoolpro-class-result-batches'
-      and o.name=v_batch.storage_path
-      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
-  ) then
-    raise exception 'The private class workbook upload could not be verified';
-  end if;
-
-  update public.schoolpro_class_result_batches
-  set status='prepared',updated_at=now()
-  where id=p_batch_id;
-  return 'prepared';
-end;
-$$;
-revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
-grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
-
-create or replace function public.schoolpro_review_class_result_batch_student(
-  p_batch_id uuid,
-  p_student_id uuid,
-  p_decision text,
-  p_output_id uuid default null
-) returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-  v_review public.schoolpro_class_result_batch_reviews%rowtype;
-  v_rejected integer;
-  v_pending integer;
-  v_next_status text;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status not in ('prepared','reviewing','needs_attention') then
-    raise exception 'This class-result batch is not open for review';
-  end if;
-  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
-    raise exception 'Review decision must be approved or rejected';
-  end if;
-
-  select r.* into v_review
-  from public.schoolpro_class_result_batch_reviews r
-  where r.batch_id=p_batch_id and r.student_id=p_student_id
-  for update;
-
-  if not found then
-    raise exception 'The student is not part of this class-result batch';
-  end if;
-
-  if lower(trim(p_decision))='approved' then
-    if p_output_id is null or not exists (
-      select 1
-      from public.schoolpro_generated_result_outputs o
-      where o.id=p_output_id
-        and o.school_id=v_batch.school_id
-        and o.student_id=p_student_id
-        and o.term=v_batch.term
-        and o.session=v_batch.session
-        and o.format='xlsx'
-        and o.template_assignment_id=v_batch.template_assignment_id
-        and o.template_id=v_batch.template_id
-        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
-        and o.template_config_snapshot=v_batch.template_config_snapshot
-        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
-        and exists (
-          select 1 from storage.objects so
-          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
-        )
-    ) then
-      raise exception 'Approval requires the matching official individual student workbook output';
-    end if;
-  elsif p_output_id is not null then
-    raise exception 'A rejected student review cannot link an official output';
-  end if;
-
-  update public.schoolpro_class_result_batch_reviews
-  set review_status=lower(trim(p_decision)),
-      reviewed_by=auth.uid(),reviewed_at=now(),
-      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
-  where id=v_review.id;
-
-  select count(*) filter (where review_status='rejected'),
-         count(*) filter (where review_status='pending')
-    into v_rejected,v_pending
-  from public.schoolpro_class_result_batch_reviews
-  where batch_id=p_batch_id;
-
-  v_next_status:=case
-    when v_rejected>0 then 'needs_attention'
-    when v_pending=0 then 'completed'
-    else 'reviewing'
-  end;
-
-  update public.schoolpro_class_result_batches
-  set status=v_next_status,updated_at=now()
-  where id=p_batch_id;
-
-  return v_next_status;
-end;
-$$;
-revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
-grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
-
--- Dedicated private storage namespace. There is no student/guardian policy.
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values (
-  'schoolpro-class-result-batches',
-  'schoolpro-class-result-batches',
-  false,
-  52428800,
-  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-);
-
-create policy schoolpro_class_result_batches_storage_insert
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id='schoolpro-class-result-batches'
-    and owner_id=(select auth.uid())::text
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status='uploading'
-        and b.created_by=(select auth.uid())
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-create policy schoolpro_class_result_batches_storage_read
-  on storage.objects for select to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
--- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
--- reviewing, and completed class workbooks are immutable through Storage API.
-create policy schoolpro_class_result_batches_storage_delete_failed
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-     or octet_length(p_template_config_snapshot::text)>100000
-     or octet_length(p_subject_row_mappings_snapshot::text)>100000
-     or octet_length(p_formula_calculation_snapshot::text)>100000
-     or jsonb_typeof(p_students)<>'array' then
-    raise exception 'The class-result batch metadata is invalid';
-  end if;
-
-  if not exists (
-    select 1 from public.schoolpro_classes c
-    where c.id=p_class and c.school_id=p_school and c.archived_at is null
-  ) then
-    raise exception 'The selected class is unavailable in this school';
-  end if;
-
-  select count(*) into v_expected from jsonb_array_elements(p_students);
-  if v_expected<1 or v_expected>500 then
-    raise exception 'A class-result batch must contain between 1 and 500 students';
-  end if;
-
-  if exists (
-    select 1 from jsonb_array_elements(p_students) x
-    where jsonb_typeof(x)<>'object'
-      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
-          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
-          or (x->>'subject_row_end')::integer>1048576))
-  ) then
-    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
-  end if;
-
-  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
-    into v_distinct_ids,v_distinct_orders
-  from jsonb_array_elements(p_students) x;
-
-  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
-     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
-     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
-    raise exception 'The roster must have unique student IDs and contiguous student order';
-  end if;
-
-  -- Resolve every submitted ID against the immutable session history.
-  select count(distinct eh.student_id) into v_members
-  from jsonb_array_elements(p_students) x
-  join public.schoolpro_enrollment_history eh
-    on eh.student_id=(x->>'student_id')::uuid
-   and eh.school_id=p_school
-   and eh.class_id=p_class
-   and eh.session=trim(p_session)
-   and eh.status='active'
-  join public.schoolpro_students st
-    on st.id=eh.student_id and st.school_id=p_school;
-
-  if v_members<>v_expected then
-    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
-  end if;
-
-  select a.* into v_assignment
-  from public.schoolpro_result_template_assignments a
-  where a.id=p_template_assignment_id
-    and a.school_id=p_school and a.class_id=p_class
-    and a.term=trim(p_term) and a.session=trim(p_session)
-  for update;
-
-  if not found
-     or v_assignment.template_id<>p_template_id
-     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
-     or v_assignment.template_config is distinct from p_template_config_snapshot
-     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
-     or not exists (
-       select 1 from public.schoolpro_result_template_library t
-       where t.id=p_template_id and t.school_id=p_school and t.is_active
-     ) then
-    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
-  end if;
-
-  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
-
-  insert into public.schoolpro_class_result_batches(
-    id,school_id,class_id,term,session,template_assignment_id,template_id,
-    template_assignment_updated_at,template_config_snapshot,
-    subject_row_mappings_snapshot,formula_calculation_snapshot,
-    storage_path,expected_student_count,created_by
-  ) values (
-    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
-    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
-    v_assignment.template_config,v_assignment.subject_row_mappings,
-    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
-  );
-
-  insert into public.schoolpro_class_result_batch_reviews(
-    batch_id,school_id,class_id,session,term,student_id,student_order,
-    subject_row_start,subject_row_end
-  )
-  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
-    (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
-  from jsonb_array_elements(p_students) x;
-
-  return v_batch_id;
-end;
-$$;
-revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
-grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
-
-create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
-returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status<>'uploading' then
-    raise exception 'Only an uploading class-result batch can be marked ready';
-  end if;
-  if not exists (
-    select 1 from storage.objects o
-    where o.bucket_id='schoolpro-class-result-batches'
-      and o.name=v_batch.storage_path
-      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
-  ) then
-    raise exception 'The private class workbook upload could not be verified';
-  end if;
-
-  update public.schoolpro_class_result_batches
-  set status='prepared',updated_at=now()
-  where id=p_batch_id;
-  return 'prepared';
-end;
-$$;
-revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
-grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
-
-create or replace function public.schoolpro_review_class_result_batch_student(
-  p_batch_id uuid,
-  p_student_id uuid,
-  p_decision text,
-  p_output_id uuid default null
-) returns text
-language plpgsql security definer set search_path=''
-as $$
-declare
-  v_batch public.schoolpro_class_result_batches%rowtype;
-  v_review public.schoolpro_class_result_batch_reviews%rowtype;
-  v_rejected integer;
-  v_pending integer;
-  v_next_status text;
-begin
-  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
-    raise exception 'An active account is required';
-  end if;
-
-  select b.* into v_batch
-  from public.schoolpro_class_result_batches b
-  where b.id=p_batch_id
-  for update;
-
-  if not found
-     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
-     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
-    raise exception 'The class-result batch is unavailable';
-  end if;
-  if v_batch.status not in ('prepared','reviewing','needs_attention') then
-    raise exception 'This class-result batch is not open for review';
-  end if;
-  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
-    raise exception 'Review decision must be approved or rejected';
-  end if;
-
-  select r.* into v_review
-  from public.schoolpro_class_result_batch_reviews r
-  where r.batch_id=p_batch_id and r.student_id=p_student_id
-  for update;
-
-  if not found then
-    raise exception 'The student is not part of this class-result batch';
-  end if;
-
-  if lower(trim(p_decision))='approved' then
-    if p_output_id is null or not exists (
-      select 1
-      from public.schoolpro_generated_result_outputs o
-      where o.id=p_output_id
-        and o.school_id=v_batch.school_id
-        and o.student_id=p_student_id
-        and o.term=v_batch.term
-        and o.session=v_batch.session
-        and o.format='xlsx'
-        and o.template_assignment_id=v_batch.template_assignment_id
-        and o.template_id=v_batch.template_id
-        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
-        and o.template_config_snapshot=v_batch.template_config_snapshot
-        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
-        and exists (
-          select 1 from storage.objects so
-          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
-        )
-    ) then
-      raise exception 'Approval requires the matching official individual student workbook output';
-    end if;
-  elsif p_output_id is not null then
-    raise exception 'A rejected student review cannot link an official output';
-  end if;
-
-  update public.schoolpro_class_result_batch_reviews
-  set review_status=lower(trim(p_decision)),
-      reviewed_by=auth.uid(),reviewed_at=now(),
-      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
-  where id=v_review.id;
-
-  select count(*) filter (where review_status='rejected'),
-         count(*) filter (where review_status='pending')
-    into v_rejected,v_pending
-  from public.schoolpro_class_result_batch_reviews
-  where batch_id=p_batch_id;
-
-  v_next_status:=case
-    when v_rejected>0 then 'needs_attention'
-    when v_pending=0 then 'completed'
-    else 'reviewing'
-  end;
-
-  update public.schoolpro_class_result_batches
-  set status=v_next_status,updated_at=now()
-  where id=p_batch_id;
-
-  return v_next_status;
-end;
-$$;
-revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
-grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
-
--- Dedicated private storage namespace. There is no student/guardian policy.
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values (
-  'schoolpro-class-result-batches',
-  'schoolpro-class-result-batches',
-  false,
-  52428800,
-  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-);
-
-create policy schoolpro_class_result_batches_storage_insert
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id='schoolpro-class-result-batches'
-    and owner_id=(select auth.uid())::text
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status='uploading'
-        and b.created_by=(select auth.uid())
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-create policy schoolpro_class_result_batches_storage_read
-  on storage.objects for select to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
--- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
--- reviewing, and completed class workbooks are immutable through Storage API.
-create policy schoolpro_class_result_batches_storage_delete_failed
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
-     or octet_length(p_template_config_snapshot::text)>100000
-     or octet_length(p_subject_row_mappings_snapshot::text)>100000
-     or octet_length(p_formula_calculation_snapshot::text)>100000
-     or jsonb_typeof(p_students)<>'array' then
-    raise exception 'The class-result batch metadata is invalid';
-  end if;
-
-  if not exists (
-    select 1 from public.schoolpro_classes c
-    where c.id=p_class and c.school_id=p_school and c.archived_at is null
-  ) then
-    raise exception 'The selected class is unavailable in this school';
-  end if;
-
-  select count(*) into v_expected from jsonb_array_elements(p_students);
-  if v_expected<1 or v_expected>500 then
-    raise exception 'A class-result batch must contain between 1 and 500 students';
-  end if;
-
-  if exists (
-    select 1 from jsonb_array_elements(p_students) x
-    where jsonb_typeof(x)<>'object'
-      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -18538,8 +17930,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -18763,10 +18155,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -18838,8 +18230,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -19063,10 +18455,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -19146,8 +18538,8 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;
@@ -19371,10 +18763,10 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     where jsonb_typeof(x)<>'object'
       or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
-      or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
-      or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
-      or ((x ? 'subject_row_start') <> (x ? 'subject_row_end'))
-      or (x ? 'subject_row_start' and ((x->>'subject_row_start')::integer<1
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
           or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
           or (x->>'subject_row_end')::integer>1048576))
   ) then
@@ -19446,8 +18838,616 @@ create policy schoolpro_class_result_batches_storage_delete_failed
   )
   select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
     (x->>'student_id')::uuid,(x->>'student_order')::integer,
-    case when x ? 'subject_row_start' then (x->>'subject_row_start')::integer end,
-    case when x ? 'subject_row_end' then (x->>'subject_row_end')::integer end
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
+  from jsonb_array_elements(p_students) x;
+
+  return v_batch_id;
+end;
+$$;
+revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
+grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
+
+create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
+returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status<>'uploading' then
+    raise exception 'Only an uploading class-result batch can be marked ready';
+  end if;
+  if not exists (
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-class-result-batches'
+      and o.name=v_batch.storage_path
+      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+  ) then
+    raise exception 'The private class workbook upload could not be verified';
+  end if;
+
+  update public.schoolpro_class_result_batches
+  set status='prepared',updated_at=now()
+  where id=p_batch_id;
+  return 'prepared';
+end;
+$$;
+revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
+grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
+
+create or replace function public.schoolpro_review_class_result_batch_student(
+  p_batch_id uuid,
+  p_student_id uuid,
+  p_decision text,
+  p_output_id uuid default null
+) returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+  v_review public.schoolpro_class_result_batch_reviews%rowtype;
+  v_rejected integer;
+  v_pending integer;
+  v_next_status text;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status not in ('prepared','reviewing','needs_attention') then
+    raise exception 'This class-result batch is not open for review';
+  end if;
+  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
+    raise exception 'Review decision must be approved or rejected';
+  end if;
+
+  select r.* into v_review
+  from public.schoolpro_class_result_batch_reviews r
+  where r.batch_id=p_batch_id and r.student_id=p_student_id
+  for update;
+
+  if not found then
+    raise exception 'The student is not part of this class-result batch';
+  end if;
+
+  if lower(trim(p_decision))='approved' then
+    if p_output_id is null or not exists (
+      select 1
+      from public.schoolpro_generated_result_outputs o
+      where o.id=p_output_id
+        and o.school_id=v_batch.school_id
+        and o.student_id=p_student_id
+        and o.term=v_batch.term
+        and o.session=v_batch.session
+        and o.format='xlsx'
+        and o.template_assignment_id=v_batch.template_assignment_id
+        and o.template_id=v_batch.template_id
+        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
+        and o.template_config_snapshot=v_batch.template_config_snapshot
+        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
+        and exists (
+          select 1 from storage.objects so
+          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
+        )
+    ) then
+      raise exception 'Approval requires the matching official individual student workbook output';
+    end if;
+  elsif p_output_id is not null then
+    raise exception 'A rejected student review cannot link an official output';
+  end if;
+
+  update public.schoolpro_class_result_batch_reviews
+  set review_status=lower(trim(p_decision)),
+      reviewed_by=auth.uid(),reviewed_at=now(),
+      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
+  where id=v_review.id;
+
+  select count(*) filter (where review_status='rejected'),
+         count(*) filter (where review_status='pending')
+    into v_rejected,v_pending
+  from public.schoolpro_class_result_batch_reviews
+  where batch_id=p_batch_id;
+
+  v_next_status:=case
+    when v_rejected>0 then 'needs_attention'
+    when v_pending=0 then 'completed'
+    else 'reviewing'
+  end;
+
+  update public.schoolpro_class_result_batches
+  set status=v_next_status,updated_at=now()
+  where id=p_batch_id;
+
+  return v_next_status;
+end;
+$$;
+revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
+grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
+
+-- Dedicated private storage namespace. There is no student/guardian policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-class-result-batches',
+  'schoolpro-class-result-batches',
+  false,
+  52428800,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+);
+
+create policy schoolpro_class_result_batches_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-class-result-batches'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status='uploading'
+        and b.created_by=(select auth.uid())
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+create policy schoolpro_class_result_batches_storage_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+-- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
+-- reviewing, and completed class workbooks are immutable through Storage API.
+create policy schoolpro_class_result_batches_storage_delete_failed
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status in ('failed','cancelled')
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+     or octet_length(p_template_config_snapshot::text)>100000
+     or octet_length(p_subject_row_mappings_snapshot::text)>100000
+     or octet_length(p_formula_calculation_snapshot::text)>100000
+     or jsonb_typeof(p_students)<>'array' then
+    raise exception 'The class-result batch metadata is invalid';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_classes c
+    where c.id=p_class and c.school_id=p_school and c.archived_at is null
+  ) then
+    raise exception 'The selected class is unavailable in this school';
+  end if;
+
+  select count(*) into v_expected from jsonb_array_elements(p_students);
+  if v_expected<1 or v_expected>500 then
+    raise exception 'A class-result batch must contain between 1 and 500 students';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(p_students) x
+    where jsonb_typeof(x)<>'object'
+      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
+          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
+          or (x->>'subject_row_end')::integer>1048576))
+  ) then
+    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
+  end if;
+
+  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
+    into v_distinct_ids,v_distinct_orders
+  from jsonb_array_elements(p_students) x;
+
+  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
+     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
+     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
+    raise exception 'The roster must have unique student IDs and contiguous student order';
+  end if;
+
+  -- Resolve every submitted ID against the immutable session history.
+  select count(distinct eh.student_id) into v_members
+  from jsonb_array_elements(p_students) x
+  join public.schoolpro_enrollment_history eh
+    on eh.student_id=(x->>'student_id')::uuid
+   and eh.school_id=p_school
+   and eh.class_id=p_class
+   and eh.session=trim(p_session)
+   and eh.status='active'
+   and not exists (
+     select 1 from public.schoolpro_enrollment_history other
+     where other.school_id=eh.school_id
+       and other.student_id=eh.student_id
+       and other.session=eh.session
+       and other.status='active'
+       and other.class_id is distinct from p_class
+   )
+  join public.schoolpro_students st
+    on st.id=eh.student_id and st.school_id=p_school;
+
+  if v_members<>v_expected then
+    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.id=p_template_assignment_id
+    and a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+
+  if not found
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
+     or not exists (
+       select 1 from public.schoolpro_result_template_library t
+       where t.id=p_template_id and t.school_id=p_school and t.is_active
+     ) then
+    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
+  end if;
+
+  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
+
+  insert into public.schoolpro_class_result_batches(
+    id,school_id,class_id,term,session,template_assignment_id,template_id,
+    template_assignment_updated_at,template_config_snapshot,
+    subject_row_mappings_snapshot,formula_calculation_snapshot,
+    storage_path,expected_student_count,created_by
+  ) values (
+    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings,
+    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
+  );
+
+  insert into public.schoolpro_class_result_batch_reviews(
+    batch_id,school_id,class_id,session,term,student_id,student_order,
+    subject_row_start,subject_row_end
+  )
+  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
+    (x->>'student_id')::uuid,(x->>'student_order')::integer,
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
+  from jsonb_array_elements(p_students) x;
+
+  return v_batch_id;
+end;
+$$;
+revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
+grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
+
+create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
+returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status<>'uploading' then
+    raise exception 'Only an uploading class-result batch can be marked ready';
+  end if;
+  if not exists (
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-class-result-batches'
+      and o.name=v_batch.storage_path
+      and coalesce(o.owner_id,o.owner::text)=(select auth.uid())::text
+  ) then
+    raise exception 'The private class workbook upload could not be verified';
+  end if;
+
+  update public.schoolpro_class_result_batches
+  set status='prepared',updated_at=now()
+  where id=p_batch_id;
+  return 'prepared';
+end;
+$$;
+revoke all on function public.schoolpro_mark_class_result_batch_ready(uuid) from public,anon;
+grant execute on function public.schoolpro_mark_class_result_batch_ready(uuid) to authenticated;
+
+create or replace function public.schoolpro_review_class_result_batch_student(
+  p_batch_id uuid,
+  p_student_id uuid,
+  p_decision text,
+  p_output_id uuid default null
+) returns text
+language plpgsql security definer set search_path=''
+as $$
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+  v_review public.schoolpro_class_result_batch_reviews%rowtype;
+  v_rejected integer;
+  v_pending integer;
+  v_next_status text;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status not in ('prepared','reviewing','needs_attention') then
+    raise exception 'This class-result batch is not open for review';
+  end if;
+  if lower(trim(coalesce(p_decision,''))) not in ('approved','rejected') then
+    raise exception 'Review decision must be approved or rejected';
+  end if;
+
+  select r.* into v_review
+  from public.schoolpro_class_result_batch_reviews r
+  where r.batch_id=p_batch_id and r.student_id=p_student_id
+  for update;
+
+  if not found then
+    raise exception 'The student is not part of this class-result batch';
+  end if;
+
+  if lower(trim(p_decision))='approved' then
+    if p_output_id is null or not exists (
+      select 1
+      from public.schoolpro_generated_result_outputs o
+      where o.id=p_output_id
+        and o.school_id=v_batch.school_id
+        and o.student_id=p_student_id
+        and o.term=v_batch.term
+        and o.session=v_batch.session
+        and o.format='xlsx'
+        and o.template_assignment_id=v_batch.template_assignment_id
+        and o.template_id=v_batch.template_id
+        and o.template_assignment_updated_at=v_batch.template_assignment_updated_at
+        and o.template_config_snapshot=v_batch.template_config_snapshot
+        and o.subject_row_mappings_snapshot=v_batch.subject_row_mappings_snapshot
+        and exists (
+          select 1 from storage.objects so
+          where so.bucket_id='schoolpro-result-outputs' and so.name=o.storage_path
+        )
+    ) then
+      raise exception 'Approval requires the matching official individual student workbook output';
+    end if;
+  elsif p_output_id is not null then
+    raise exception 'A rejected student review cannot link an official output';
+  end if;
+
+  update public.schoolpro_class_result_batch_reviews
+  set review_status=lower(trim(p_decision)),
+      reviewed_by=auth.uid(),reviewed_at=now(),
+      generated_result_output_id=case when lower(trim(p_decision))='approved' then p_output_id else null end
+  where id=v_review.id;
+
+  select count(*) filter (where review_status='rejected'),
+         count(*) filter (where review_status='pending')
+    into v_rejected,v_pending
+  from public.schoolpro_class_result_batch_reviews
+  where batch_id=p_batch_id;
+
+  v_next_status:=case
+    when v_rejected>0 then 'needs_attention'
+    when v_pending=0 then 'completed'
+    else 'reviewing'
+  end;
+
+  update public.schoolpro_class_result_batches
+  set status=v_next_status,updated_at=now()
+  where id=p_batch_id;
+
+  return v_next_status;
+end;
+$$;
+revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
+grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
+
+-- Dedicated private storage namespace. There is no student/guardian policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-class-result-batches',
+  'schoolpro-class-result-batches',
+  false,
+  52428800,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+);
+
+create policy schoolpro_class_result_batches_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-class-result-batches'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status='uploading'
+        and b.created_by=(select auth.uid())
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+create policy schoolpro_class_result_batches_storage_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+-- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
+-- reviewing, and completed class workbooks are immutable through Storage API.
+create policy schoolpro_class_result_batches_storage_delete_failed
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status in ('failed','cancelled')
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+     or octet_length(p_template_config_snapshot::text)>100000
+     or octet_length(p_subject_row_mappings_snapshot::text)>100000
+     or octet_length(p_formula_calculation_snapshot::text)>100000
+     or jsonb_typeof(p_students)<>'array' then
+    raise exception 'The class-result batch metadata is invalid';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_classes c
+    where c.id=p_class and c.school_id=p_school and c.archived_at is null
+  ) then
+    raise exception 'The selected class is unavailable in this school';
+  end if;
+
+  select count(*) into v_expected from jsonb_array_elements(p_students);
+  if v_expected<1 or v_expected>500 then
+    raise exception 'A class-result batch must contain between 1 and 500 students';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(p_students) x
+    where jsonb_typeof(x)<>'object'
+      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
+      or (jsonb_exists(x,'subject_row_start') and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
+      or (jsonb_exists(x,'subject_row_end') and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')
+      or ((jsonb_exists(x,'subject_row_start')) <> (jsonb_exists(x,'subject_row_end')))
+      or (jsonb_exists(x,'subject_row_start') and ((x->>'subject_row_start')::integer<1
+          or (x->>'subject_row_end')::integer<(x->>'subject_row_start')::integer
+          or (x->>'subject_row_end')::integer>1048576))
+  ) then
+    raise exception 'The roster contains an invalid student ID, order, or worksheet row range';
+  end if;
+
+  select count(distinct x->>'student_id'),count(distinct x->>'student_order')
+    into v_distinct_ids,v_distinct_orders
+  from jsonb_array_elements(p_students) x;
+
+  if v_distinct_ids<>v_expected or v_distinct_orders<>v_expected
+     or (select min((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>1
+     or (select max((x->>'student_order')::integer) from jsonb_array_elements(p_students) x)<>v_expected then
+    raise exception 'The roster must have unique student IDs and contiguous student order';
+  end if;
+
+  -- Resolve every submitted ID against the immutable session history.
+  select count(distinct eh.student_id) into v_members
+  from jsonb_array_elements(p_students) x
+  join public.schoolpro_enrollment_history eh
+    on eh.student_id=(x->>'student_id')::uuid
+   and eh.school_id=p_school
+   and eh.class_id=p_class
+   and eh.session=trim(p_session)
+   and eh.status='active'
+  join public.schoolpro_students st
+    on st.id=eh.student_id and st.school_id=p_school;
+
+  if v_members<>v_expected then
+    raise exception 'The submitted roster does not match this school, class, and academic-session enrollment history';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.id=p_template_assignment_id
+    and a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+
+  if not found
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot
+     or not exists (
+       select 1 from public.schoolpro_result_template_library t
+       where t.id=p_template_id and t.school_id=p_school and t.is_active
+     ) then
+    raise exception 'The assigned result design changed or is no longer active. Refresh the template and generate a new preview.';
+  end if;
+
+  v_storage_path:=p_school::text||'/'||p_class::text||'/'||v_batch_id::text||'/workbook.xlsx';
+
+  insert into public.schoolpro_class_result_batches(
+    id,school_id,class_id,term,session,template_assignment_id,template_id,
+    template_assignment_updated_at,template_config_snapshot,
+    subject_row_mappings_snapshot,formula_calculation_snapshot,
+    storage_path,expected_student_count,created_by
+  ) values (
+    v_batch_id,p_school,p_class,trim(p_term),trim(p_session),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings,
+    p_formula_calculation_snapshot,v_storage_path,v_expected,auth.uid()
+  );
+
+  insert into public.schoolpro_class_result_batch_reviews(
+    batch_id,school_id,class_id,session,term,student_id,student_order,
+    subject_row_start,subject_row_end
+  )
+  select v_batch_id,p_school,p_class,trim(p_session),trim(p_term),
+    (x->>'student_id')::uuid,(x->>'student_order')::integer,
+    case when jsonb_exists(x,'subject_row_start') then (x->>'subject_row_start')::integer end,
+    case when jsonb_exists(x,'subject_row_end') then (x->>'subject_row_end')::integer end
   from jsonb_array_elements(p_students) x;
 
   return v_batch_id;

@@ -199,7 +199,7 @@ begin
      or p_formula_calculation_snapshot->>'engineVersion' is distinct from '4.0.0'
      or p_formula_calculation_snapshot->>'calculationMode' is distinct from 'same-sheet-dependency-graph'
      or jsonb_typeof(p_formula_calculation_snapshot->'formulaCount') is distinct from 'number'
-     or coalesce(p_formula_calculation_snapshot->>'formulaCount','') !~ '^[0-9]+     or octet_length(p_subject_row_mappings_snapshot::text)>100000
+     or coalesce(p_formula_calculation_snapshot->>'formulaCount','') !~ '^[0-9]+
      or octet_length(p_formula_calculation_snapshot::text)>100000
      or jsonb_typeof(p_students)<>'array' then
     raise exception 'The class-result batch metadata is invalid';
@@ -505,6 +505,7 @@ create policy schoolpro_class_result_batches_storage_delete_failed
         and private.schoolpro_module_allowed(b.school_id,'results')
     )
   );
+
      or octet_length(p_subject_row_mappings_snapshot::text)>100000
      or octet_length(p_formula_calculation_snapshot::text)>100000
      or jsonb_typeof(p_students)<>'array' then

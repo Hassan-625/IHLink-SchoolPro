@@ -52,7 +52,7 @@ jobs:
           mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
           # Use a dedicated database port to avoid parallel-runner collisions.
           printf '\n[db]\nport = 55432\n' >> supabase/config.toml
-          supabase start -x studio,edge-runtime,logflare,vector,imgproxy,inbucket
+          supabase start -x studio,edge-runtime,logflare,vector,imgproxy,mailpit
           rmdir supabase/migrations
           mv "$RUNNER_TEMP/schoolpro-candidate-migrations" supabase/migrations
 

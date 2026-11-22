@@ -78,3 +78,21 @@ alter table public.schoolpro_subject_assignments
   add column if not exists ended_at timestamptz,
   add column if not exists ended_by uuid,
   add column if not exists end_reason text;
+
+-- The C0 snapshot also predates the immutable assignment/formula snapshots
+-- added to generated outputs by the class/term assignment migration.
+alter table public.schoolpro_generated_result_outputs
+  add column if not exists template_assignment_id uuid,
+  add column if not exists template_id uuid,
+  add column if not exists template_assignment_updated_at timestamptz,
+  add column if not exists template_config_snapshot jsonb,
+  add column if not exists subject_row_mappings_snapshot jsonb,
+  add column if not exists formula_calculation_snapshot jsonb not null default '{}'::jsonb;
+
+alter table public.schoolpro_generated_result_outputs
+  drop constraint if exists schoolpro_generated_result_outputs_template_config_snapshot_object,
+  add constraint schoolpro_generated_result_outputs_template_config_snapshot_object
+    check (template_config_snapshot is null or jsonb_typeof(template_config_snapshot)='object'),
+  drop constraint if exists schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object,
+  add constraint schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object
+    check (subject_row_mappings_snapshot is null or jsonb_typeof(subject_row_mappings_snapshot)='object');

@@ -4290,3 +4290,11 @@ Added regression coverage that executes the production conversion helper against
 - Follow-up run `45015279356` is running against PR #238 head `319719ccd02ba44f1b84af6cfee0ff9c8580a838`. Candidate migration and SQL security regression are still pending.
 - Do not commit the CLI-generated candidate migration or integrate persistence into the workbook UI until the disposable migration and security regression both pass.
 - No production Supabase changes, PR merge, or Render deployment occurred.
+
+
+### 2026-11-22 — class-result batch SQL parser correction
+- SQL workflow run `45022866062` successfully started disposable Supabase, restored the sanitized C0 schema and prerequisite overlay, and applied the first candidate DDL statements. It then failed while compiling the batch-create PL/pgSQL function at the student worksheet row-range JSON expressions. The logged PostgreSQL error was an unterminated quoted string at the `subject_row_end` cast; the earlier statement that this was a regex failure was incorrect.
+- Updated the candidate draft to replace JSONB `?` key-existence expressions for `subject_row_start` and `subject_row_end` with explicit `jsonb_exists(...)` calls, including validation and insert expressions. Commit: `ee886f904ad38bab885dff29a5c6c1092d679a21`.
+- Corrected the Supabase CLI exclusion list from the unsupported `inbucket` alias to the supported `mailpit` container name. Commit: `9e34a0b0b784a2f86768c31053ffcb98197e8506`.
+- The next disposable SQL run must confirm whether the function now compiles and whether runtime authorization, historical enrollment, template snapshot, storage readiness, and per-student approval tests pass. The candidate remains a draft and is not yet a timestamped committed migration.
+- No production Supabase changes, PR merge, or Render deployment occurred.

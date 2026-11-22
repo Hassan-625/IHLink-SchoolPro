@@ -4305,3 +4305,12 @@ Added regression coverage that executes the production conversion helper against
 - Corrected the draft expression to `!~ '^[0-9]+$'`. Commit: `1a312cdcb70d8fc7cca8539f5820cd110539f5b6`.
 - This correction is in the draft only. Wait for the new disposable SQL regression and build validation before generating/committing a timestamped migration or integrating the workbook UI.
 - No production Supabase changes, PR merge, or Render deployment occurred.
+
+
+### 2026-11-22 — class-result batch persistence SQL regression passed
+- PR #238 head before committing the migration: `0d550d3a0fe4a7039c584200cc612b9ae3829737`.
+- Disposable Supabase SQL workflow run [`45031021515`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45031021515) completed successfully. It generated the candidate migration with Supabase CLI v2.122.1, started a disposable local Supabase instance, restored the sanitized C0 baseline and template-assignment prerequisite overlay, applied the candidate migration, and ran `supabase/tests/schoolpro_class_result_batch_security.sql` successfully. Both metadata/RLS/grant/storage assertions and transaction-scoped runtime authorization/enrollment/review tests passed; the fixture transaction rolled back.
+- TypeScript validation (`npx tsc --noEmit -p tsconfig.app.json`) and production build (`npm run build`) both passed in [run `45031021541`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45031021541).
+- The CLI-generated timestamp from the successful SQL workflow was `20261122140656`. Committed the exact validated draft SQL as `supabase/migrations/20261122140656_schoolpro_class_result_batch_persistence.sql` in the PR branch (commit `d0f4bf6c0d5ad511322992d97380274492a85bdc`).
+- This migration is now part of the unmerged PR branch. It has **not** been applied to production. PR #238 remains draft and unmerged; no Render deployment or production data/storage change occurred.
+- Next: verify checks on the migration-bearing branch, then implement and test integration with the real class workbook generation/review UI. Do not merge or apply production migration without explicit approval.

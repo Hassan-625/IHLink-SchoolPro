@@ -64,3 +64,7 @@ revoke insert,update,delete on public.schoolpro_result_template_assignments from
 
 -- The C0 snapshot predates class archival metadata used by current helpers.
 alter table public.schoolpro_classes add column if not exists archived_at timestamptz;
+
+-- Match the current production membership lifecycle columns missing from C0.
+alter table public.schoolpro_members
+  add column if not exists status text not null default 'active';

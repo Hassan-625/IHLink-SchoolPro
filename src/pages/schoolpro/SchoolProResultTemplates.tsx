@@ -343,16 +343,18 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    const found=await supabase.from("schoolpro_class_result_batches").select("id,school_id,class_id,term,session,template_assignment_id,template_id,template_assignment_updated_at,template_config_snapshot,subject_row_mappings_snapshot,formula_calculation_snapshot,status,created_at").eq("school_id",schoolId).eq("class_id",classId).eq("term",term).eq("session",session).in("status",["prepared","reviewing","needs_attention"]).order("created_at",{ascending:false}).limit(1).maybeSingle();
    if(found.error||!found.data)throw new Error("No resumable class batch was found for this class, term and session.");
    const batch=found.data;
-   const reviews=await supabase.from("schoolpro_class_result_batch_reviews").select("student_id,student_order,student_storage_path,review_status").eq("batch_id",batch.id).in("review_status",["pending","rejected"]).order("student_order");
+   const reviews=await supabase.from("schoolpro_class_result_batch_reviews").select("student_id,student_order,student_storage_path,review_status").eq("batch_id",batch.id).order("student_order");
    if(reviews.error)throw reviews.error;
+   const pendingReviews=(reviews.data||[]).filter((row:any)=>row.review_status==="pending"||row.review_status==="rejected");
    const restored:Array<{id:string;label:string;payload:{workbook:Blob;meta:any;preview:Array<{cell:string;value:string;formula:boolean}>}}>= [];
-   for(const review of reviews.data||[]){
+   for(const review of pendingReviews){
     const student=students.find(row=>row.id===review.student_id);
     if(!student)throw new Error("A student in the saved batch is not present in the currently loaded session roster. Refresh the class roster before resuming.");
     const file=await supabase.storage.from("schoolpro-class-result-batches").download(review.student_storage_path);
     if(file.error||!file.data)throw new Error("A private student workbook could not be restored. The saved batch remains unchanged.");
     const workbook=new ExcelJS.Workbook();await workbook.xlsx.load(await file.data.arrayBuffer());
     const sheet=workbook.worksheets[0];if(!sheet)throw new Error("A saved student workbook has no worksheet.");
+    const formulaCalculation=calculateWorkbookFormulas(workbook);
     const preview:Array<{cell:string;value:string;formula:boolean}>=[];
     sheet.eachRow((row:any)=>row.eachCell((cell:any)=>{if(preview.length<1000)preview.push({cell:cell.address,value:workbookCellText(cell),formula:isFormulaCell(cell)});}));
     const published=await supabase.from("schoolpro_results").select("status").eq("school_id",batch.school_id).eq("student_id",student.id).eq("term",batch.term).eq("session",batch.session);
@@ -360,8 +362,8 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
     const meta={
      schoolId:batch.school_id,classId:batch.class_id,studentId:student.id,student:{...student},
      schoolName:ctx.schoolName,term:batch.term,session:batch.session,isPublished,
-     hasFormulaCells:Number(batch.formula_calculation_snapshot?.formulaCount||0)>0,
-     formulaCalculationVerified:true,formulaCalculation:batch.formula_calculation_snapshot,
+     hasFormulaCells:formulaCalculation.formulaCount>0,
+     formulaCalculationVerified:true,formulaCalculation:{...formulaCalculation,calculatedAt:new Date().toISOString()},
      verificationBaseUrl:"https://ihlink-schoolpro.onrender.com",
      template:{...batch.template_config_snapshot},
      templateAssignment:{id:batch.template_assignment_id,template_id:batch.template_id,updated_at:batch.template_assignment_updated_at,template_config:{...batch.template_config_snapshot},subject_row_mappings:{...batch.subject_row_mappings_snapshot}}
@@ -369,7 +371,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
     restored.push({id:student.id,label:[student.first_name,student.middle_name,student.last_name].filter(Boolean).join(" ")||student.admission_number,payload:{workbook:file.data,meta,preview}});
    }
    setPersistedBatchId(batch.id);setPersistedBatchStatus(batch.status);setBatchReviewQueue(restored);
-   setBatchProgress({completed:(reviews.data||[]).length,total:restored.length+(reviews.data||[]).filter((row:any)=>row.review_status==="approved").length,success:(reviews.data||[]).filter((row:any)=>row.review_status==="approved").length,failed:(reviews.data||[]).filter((row:any)=>row.review_status==="rejected").map((row:any)=>row.student_id)});
+   setBatchProgress({completed:(reviews.data||[]).filter((row:any)=>row.review_status!=="pending").length,total:(reviews.data||[]).length,success:(reviews.data||[]).filter((row:any)=>row.review_status==="approved").length,failed:(reviews.data||[]).filter((row:any)=>row.review_status==="rejected").map((row:any)=>row.student_id)});
    setMessage("Saved batch restored from private storage. Pending and rejected student workbooks are available for review.");
   }catch(err){setError(err instanceof Error?err.message:"The saved class batch could not be restored.");}
   finally{setBatchRunning(false);}

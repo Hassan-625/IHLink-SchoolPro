@@ -70,6 +70,13 @@ begin
     raise exception 'Mark-ready RPC execute grants are incorrect';
   end if;
 
+  select p.prosrc into v_source from pg_proc p
+  where p.oid=to_regprocedure('public.schoolpro_mark_class_result_batch_ready(uuid)');
+  if position('student_storage_path' in v_source)=0
+     or position('schoolpro-class-result-batches' in v_source)=0 then
+    raise exception 'Mark-ready RPC must verify every private per-student workbook upload';
+  end if;
+
   v_function:='public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')

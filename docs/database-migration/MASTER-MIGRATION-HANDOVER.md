@@ -4282,3 +4282,11 @@ Added regression coverage that executes the production conversion helper against
 
 
 - CI sequencing correction: Supabase CLI startup applies files found under `supabase/migrations` before the baseline restore. The test workflow now temporarily withholds the generated candidate migration during `supabase start`, restores the sanitized baseline first, then applies only that generated candidate with `psql`. This avoids applying the candidate against the empty initial database. The workflow is PR-triggered (plus manual dispatch) to avoid duplicate push/PR database jobs.
+
+
+### 2026-11-22 — class-result batch persistence regression follow-up
+- Disposable SQL workflow run `45014998218` successfully started Supabase and restored the sanitized C0 baseline plus the template-assignment prerequisite overlay, then failed while applying the candidate migration because the C0 snapshot lacks `schoolpro_classes.archived_at`.
+- Added `archived_at timestamptz` to the test-only overlay `supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql`; this does not alter the production schema.
+- Follow-up run `45015279356` is running against PR #238 head `319719ccd02ba44f1b84af6cfee0ff9c8580a838`. Candidate migration and SQL security regression are still pending.
+- Do not commit the CLI-generated candidate migration or integrate persistence into the workbook UI until the disposable migration and security regression both pass.
+- No production Supabase changes, PR merge, or Render deployment occurred.

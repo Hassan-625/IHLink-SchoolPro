@@ -221,7 +221,7 @@ begin
   if exists (
     select 1 from jsonb_array_elements(p_students) x
     where jsonb_typeof(x)<>'object'
-      or coalesce(x->>'student_id','') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      or not (coalesce(x->>'student_id','') ~* $re$^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$re$)
       or coalesce(x->>'student_order','') !~ '^[0-9]{1,3}$'
       or (x ? 'subject_row_start' and coalesce(x->>'subject_row_start','') !~ '^[0-9]{1,7}$')
       or (x ? 'subject_row_end' and coalesce(x->>'subject_row_end','') !~ '^[0-9]{1,7}$')

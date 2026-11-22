@@ -204,7 +204,7 @@ begin
     v_assignment_updated_at,v_config,v_mappings,v_formula,v_roster
   );
 
-  foreach v_unassigned_member in array array[v_unassigned_member,v_student,v_guardian] loop
+  foreach v_unassigned_member in array array[v_unassigned_teacher,v_student,v_guardian] loop
     perform set_config('request.jwt.claim.sub',v_unassigned_member::text,true);
     v_denied:=false;
     begin

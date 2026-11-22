@@ -504,3 +504,108 @@ create policy schoolpro_class_result_batches_storage_delete_failed
         and private.schoolpro_module_allowed(b.school_id,'results')
     )
   );
+
+
+-- Align official per-student output persistence with the same historical
+-- school/class/session enrollment contract enforced by class-batch creation.
+create or replace function public.schoolpro_record_generated_result_output(
+  p_school uuid,
+  p_student uuid,
+  p_class uuid,
+  p_term text,
+  p_session text,
+  p_storage_path text,
+  p_template_assignment_id uuid,
+  p_template_id uuid,
+  p_template_assignment_updated_at timestamptz,
+  p_template_config_snapshot jsonb,
+  p_subject_row_mappings_snapshot jsonb,
+  p_formula_calculation_snapshot jsonb
+) returns uuid
+language plpgsql
+security definer
+set search_path=''
+as $$
+declare
+  v_assignment public.schoolpro_result_template_assignments%rowtype;
+  v_output_id uuid;
+begin
+  if auth.uid() is null or not private.is_active_account()
+     or not private.has_school_access(p_school) then
+    raise exception 'An active member of this school is required to save a generated result';
+  end if;
+  if p_school is null or p_student is null or p_class is null
+     or p_template_assignment_id is null or p_template_id is null
+     or p_template_assignment_updated_at is null
+     or p_term not in ('First Term','Second Term','Third Term')
+     or char_length(trim(coalesce(p_session,''))) not between 4 and 20
+     or nullif(trim(coalesce(p_storage_path,'')),'') is null
+     or p_storage_path not like p_school::text||'/'||p_student::text||'/%'
+     or position('..' in coalesce(p_storage_path,''))>0
+     or jsonb_typeof(p_template_config_snapshot)<>'object'
+     or jsonb_typeof(p_subject_row_mappings_snapshot)<>'object'
+     or jsonb_typeof(p_formula_calculation_snapshot)<>'object'
+     or p_formula_calculation_snapshot->>'engine' is distinct from 'hot-formula-parser'
+     or p_formula_calculation_snapshot->>'engineVersion' is distinct from '4.0.0'
+     or coalesce((p_formula_calculation_snapshot->>'formulaCount')::integer,-1)<0
+     or p_formula_calculation_snapshot->>'calculationMode' is distinct from 'same-sheet-dependency-graph' then
+    raise exception 'The generated result metadata is invalid';
+  end if;
+
+  if not exists (
+    select 1 from public.schoolpro_enrollment_history eh
+    join public.schoolpro_students st on st.id=eh.student_id and st.school_id=eh.school_id
+    where eh.school_id=p_school and eh.student_id=p_student
+      and eh.class_id=p_class and eh.session=trim(p_session)
+      and eh.status='active'
+      and not exists (
+        select 1 from public.schoolpro_enrollment_history other
+        where other.school_id=eh.school_id and other.student_id=eh.student_id
+          and other.session=eh.session and other.status='active'
+          and other.class_id is distinct from p_class
+      )
+  ) then
+    raise exception 'The selected student is not actively enrolled in this school, class and academic session';
+  end if;
+
+  select a.* into v_assignment
+  from public.schoolpro_result_template_assignments a
+  where a.school_id=p_school and a.class_id=p_class
+    and a.term=trim(p_term) and a.session=trim(p_session)
+  for update;
+  if not found
+     or v_assignment.id<>p_template_assignment_id
+     or v_assignment.template_id<>p_template_id
+     or v_assignment.updated_at is distinct from p_template_assignment_updated_at
+     or v_assignment.template_config is distinct from p_template_config_snapshot
+     or v_assignment.subject_row_mappings is distinct from p_subject_row_mappings_snapshot then
+    raise exception 'The class result design or subject mapping changed after preview. Refresh and generate a new preview.';
+  end if;
+
+  if not exists(
+    select 1 from storage.objects o
+    where o.bucket_id='schoolpro-result-outputs' and o.name=p_storage_path
+  ) then
+    raise exception 'The generated workbook upload could not be verified';
+  end if;
+
+  insert into public.schoolpro_generated_result_outputs(
+    school_id,student_id,term,session,format,storage_path,generated_by,
+    template_assignment_id,template_id,template_assignment_updated_at,
+    template_config_snapshot,subject_row_mappings_snapshot,formula_calculation_snapshot
+  ) values (
+    p_school,p_student,trim(p_term),trim(p_session),'xlsx',p_storage_path,auth.uid(),
+    v_assignment.id,v_assignment.template_id,v_assignment.updated_at,
+    v_assignment.template_config,v_assignment.subject_row_mappings,p_formula_calculation_snapshot
+  ) returning id into v_output_id;
+
+  return v_output_id;
+end;
+$$;
+revoke all on function public.schoolpro_record_generated_result_output(
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb
+) from public,anon;
+grant execute on function public.schoolpro_record_generated_result_output(
+  uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb
+) to authenticated;
+

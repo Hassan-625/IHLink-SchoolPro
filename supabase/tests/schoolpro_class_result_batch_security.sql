@@ -76,6 +76,21 @@ begin
     raise exception 'Approval does not require the matching individual official output';
   end if;
 
+  v_function:='public.schoolpro_record_generated_result_output(uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb)';
+  if to_regprocedure(v_function) is null
+     or has_function_privilege('anon',v_function,'EXECUTE')
+     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
+    raise exception 'Individual output RPC execute grants are incorrect';
+  end if;
+  select p.prosrc into v_source from pg_proc p where p.oid=to_regprocedure(v_function);
+  if position('schoolpro_enrollment_history' in v_source)=0
+     or position('eh.class_id=p_class' in v_source)=0
+     or position('eh.session=trim(p_session)' in v_source)=0
+     or position('eh.status=''active''' in v_source)=0
+     or position('st.class_id' in v_source)>0 then
+    raise exception 'Individual output RPC must validate historical enrollment, not current student class';
+  end if;
+
   select * into v_bucket from storage.buckets
   where id='schoolpro-class-result-batches';
   if not found or v_bucket.public is distinct from false

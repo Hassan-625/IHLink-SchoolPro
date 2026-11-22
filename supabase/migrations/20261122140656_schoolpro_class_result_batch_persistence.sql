@@ -466,66 +466,6 @@ $$;
 revoke all on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) from public,anon;
 grant execute on function public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid) to authenticated;
 
--- Dedicated private storage namespace. There is no student/guardian policy.
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values (
-  'schoolpro-class-result-batches',
-  'schoolpro-class-result-batches',
-  false,
-  52428800,
-  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
-);
-
-create policy schoolpro_class_result_batches_storage_insert
-  on storage.objects for insert to authenticated
-  with check (
-    bucket_id='schoolpro-class-result-batches'
-    and owner_id=(select auth.uid())::text
-    and exists (
-      select 1
-      from public.schoolpro_class_result_batches b
-      where b.status='uploading' and b.created_by=(select auth.uid())
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-        and (
-          b.storage_path=name
-          or exists (
-            select 1 from public.schoolpro_class_result_batch_reviews r
-            where r.batch_id=b.id and r.student_storage_path=name
-          )
-        )
-    )
-  );
-
-create policy schoolpro_class_result_batches_storage_read
-  on storage.objects for select to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where (b.storage_path=name or exists (
-        select 1 from public.schoolpro_class_result_batch_reviews r
-        where r.batch_id=b.id and r.student_storage_path=name
-      ))
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
--- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
--- reviewing, and completed class workbooks are immutable through Storage API.
-create policy schoolpro_class_result_batches_storage_delete_failed
-  on storage.objects for delete to authenticated
-  using (
-    bucket_id='schoolpro-class-result-batches'
-    and exists (
-      select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
-    )
-  );
-
 
 -- Align official per-student output persistence with the same historical
 -- school/class/session enrollment contract enforced by class-batch creation.
@@ -630,3 +570,63 @@ grant execute on function public.schoolpro_record_generated_result_output(
   uuid,uuid,uuid,text,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb
 ) to authenticated;
 
+
+-- Dedicated private storage namespace. There is no student/guardian policy.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-class-result-batches',
+  'schoolpro-class-result-batches',
+  false,
+  52428800,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+);
+
+create policy schoolpro_class_result_batches_storage_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-class-result-batches'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1
+      from public.schoolpro_class_result_batches b
+      where b.status='uploading' and b.created_by=(select auth.uid())
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+        and (
+          b.storage_path=name
+          or exists (
+            select 1 from public.schoolpro_class_result_batch_reviews r
+            where r.batch_id=b.id and r.student_storage_path=name
+          )
+        )
+    )
+  );
+
+create policy schoolpro_class_result_batches_storage_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where (b.storage_path=name or exists (
+        select 1 from public.schoolpro_class_result_batch_reviews r
+        where r.batch_id=b.id and r.student_storage_path=name
+      ))
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
+
+-- Failed uploads may be removed by authorized staff for a clean retry. Prepared,
+-- reviewing, and completed class workbooks are immutable through Storage API.
+create policy schoolpro_class_result_batches_storage_delete_failed
+  on storage.objects for delete to authenticated
+  using (
+    bucket_id='schoolpro-class-result-batches'
+    and exists (
+      select 1 from public.schoolpro_class_result_batches b
+      where b.storage_path=name and b.status in ('failed','cancelled')
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );

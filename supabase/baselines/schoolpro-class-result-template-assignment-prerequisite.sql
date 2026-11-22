@@ -72,3 +72,9 @@ alter table public.schoolpro_members
 -- Match the current production employment lifecycle field missing from C0.
 alter table public.schoolpro_members
   add column if not exists employment_status text not null default 'active';
+
+-- Match production's subject-assignment lifecycle fields missing from C0.
+alter table public.schoolpro_subject_assignments
+  add column if not exists ended_at timestamptz,
+  add column if not exists ended_by uuid,
+  add column if not exists end_reason text;

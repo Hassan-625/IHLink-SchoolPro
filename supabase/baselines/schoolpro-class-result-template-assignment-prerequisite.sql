@@ -96,3 +96,19 @@ alter table public.schoolpro_generated_result_outputs
   drop constraint if exists schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object,
   add constraint schoolpro_generated_result_outputs_subject_row_mappings_snapshot_object
     check (subject_row_mappings_snapshot is null or jsonb_typeof(subject_row_mappings_snapshot)='object');
+
+-- The sanitized baseline omits the private result-output bucket that exists
+-- in production. Recreate only its bucket metadata for the disposable test.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values (
+  'schoolpro-result-outputs',
+  'schoolpro-result-outputs',
+  false,
+  10485760,
+  array['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/octet-stream']
+)
+on conflict (id) do update
+set name=excluded.name,
+    public=false,
+    file_size_limit=excluded.file_size_limit,
+    allowed_mime_types=excluded.allowed_mime_types;

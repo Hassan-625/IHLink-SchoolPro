@@ -68,3 +68,7 @@ alter table public.schoolpro_classes add column if not exists archived_at timest
 -- Match the current production membership lifecycle columns missing from C0.
 alter table public.schoolpro_members
   add column if not exists status text not null default 'active';
+
+-- Match the current production employment lifecycle field missing from C0.
+alter table public.schoolpro_members
+  add column if not exists employment_status text not null default 'active';

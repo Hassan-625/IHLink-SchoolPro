@@ -2,11 +2,14 @@ import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import { populateRosterSubjectRows } from "../src/lib/resultTemplateRosterBinding.mjs";
+import { buildSchoolProCustomClassResultWorkbook } from "../src/lib/schoolproCustomClassWorkbook.mjs";
 import { repeatedBlockImageAnchor, storedWorkbookImageFormat } from "../src/lib/resultTemplateMediaLayout.mjs";
 
 const resultPage = readFileSync(new URL("../src/pages/schoolpro/SchoolProResultTemplates.tsx", import.meta.url), "utf8");
 assert.match(resultPage, /Repeated student block \(for class-wide custom workbooks\)/);
 assert.match(resultPage, /student_block:studentBlock/);
+assert.match(resultPage, /buildSchoolProCustomClassResultWorkbook/);
+assert.match(resultPage, /assignedTemplateConfig\.student_block/);
 assert.match(resultPage, /student_block:\{startRow:String\(t\.student_block\?\.startRow/);
 assert.match(resultPage, /Repeated student row stride must fit the configured block height/);
 
@@ -165,5 +168,72 @@ assert.throws(()=>populateRosterSubjectRows({
 assert.equal(noExplicitBlock.rowCount,0,"missing block configuration must fail before worksheet mutation");
 
 
+
+console.log("SchoolPro custom class workbook binding regression passed.");
+
+const customSource = new ExcelJS.Workbook();
+const customSheet = customSource.addWorksheet("Class");
+customSheet.getCell("A3").value = "Student";
+customSheet.getCell("B3").value = "Subject";
+customSheet.getCell("C3").value = 0;
+customSheet.getCell("D3").value = 0;
+customSheet.getCell("E3").value = { formula: "SUM(C3:D3)" };
+customSheet.getCell("B4").value = "English";
+customSheet.getCell("C4").value = 0;
+customSheet.getCell("D4").value = 0;
+customSheet.getCell("E4").value = { formula: "SUM(C4:D4)" };
+const customResults = [];
+for (const student of roster) {
+  customResults.push(
+    { student_id: student.id, subject_id: "math-id", total_score: 75, assessment_scheme_id: "scheme-1", assessment_scores: { ca: 25, exam: 50 }, status: "published" },
+    { student_id: student.id, subject_id: "english-id", total_score: 68, assessment_scheme_id: "scheme-1", assessment_scores: { ca: 28, exam: 40 }, status: "published" },
+  );
+}
+const customTemplateBuffer = await customSource.xlsx.writeBuffer();
+const customOutput = await buildSchoolProCustomClassResultWorkbook({
+  templateBuffer: customTemplateBuffer,
+  templateConfig: {
+    sheet_name: "Class",
+    student_block: { startRow: 3, endRow: 4, rowStride: 2 },
+    field_cells: { student_name: "A3", admission_number: "F3" },
+    columns: { subject: "B" },
+    component_columns: { ca: "C", exam: "D" },
+    custom_fields: [{ id: "motto", label: "School motto", cell: "G3", source: "literal", value: "Nigeria Greater Tomorrow", valueType: "text" }],
+  },
+  roster, subjects, subjectRowMappings: { "math-id": 3, "english-id": 4 },
+  results: customResults,
+  assessmentSchemes: [{ id: "scheme-1", components: [{ key: "ca", label: "CA", maxScore: 30 }, { key: "exam", label: "Exam", maxScore: 70 }] }],
+  schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
+});
+const customReopened = new ExcelJS.Workbook();
+await customReopened.xlsx.load(customOutput.buffer);
+const customResultSheet = customReopened.getWorksheet("Class");
+assert.equal(customOutput.studentCount, 2);
+assert.equal(customOutput.boundResultCount, 4);
+assert.equal(customResultSheet.getCell("A3").value, "Amina M Ali");
+assert.equal(customResultSheet.getCell("A5").value, "Bala Bello");
+assert.equal(customResultSheet.getCell("F5").value, "B002");
+assert.equal(customResultSheet.getCell("B5").value, "Mathematics");
+assert.equal(customResultSheet.getCell("C5").value, 25);
+assert.equal(customResultSheet.getCell("D5").value, 50);
+assert.equal(customResultSheet.getCell("G5").value, "Nigeria Greater Tomorrow");
+assert.equal(customResultSheet.getCell("E5").value.formula, "SUM(C5:D5)");
+assert.equal(customOutput.formulaCalculation.engine, "hot-formula-parser");
+await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
+  templateBuffer: customTemplateBuffer,
+  templateConfig: { sheet_name: "Class", columns: { subject: "B" }, component_columns: { ca: "C", exam: "D" } },
+  roster, subjects, subjectRowMappings: { "math-id": 3, "english-id": 4 },
+  results: customResults,
+  assessmentSchemes: [{ id: "scheme-1", components: [{ key: "ca", label: "CA", maxScore: 30 }, { key: "exam", label: "Exam", maxScore: 70 }] }],
+  schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
+}), /Configure a valid repeated student block/);
+await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
+  templateBuffer: customTemplateBuffer,
+  templateConfig: { sheet_name: "Class", student_block: { startRow: 3, endRow: 4 }, columns: { subject: "B" }, component_columns: { ca: "C", exam: "D" } },
+  roster, subjects, subjectRowMappings: { "math-id": 3, "english-id": 4 },
+  results: customResults.map((row, index) => index === 0 ? { ...row, status: "draft" } : row),
+  assessmentSchemes: [{ id: "scheme-1", components: [{ key: "ca", label: "CA", maxScore: 30 }, { key: "exam", label: "Exam", maxScore: 70 }] }],
+  schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
+}), /Every class subject result must be published/);
 
 console.log("SchoolPro custom class workbook binding regression passed.");

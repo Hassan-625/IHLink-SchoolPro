@@ -4423,3 +4423,14 @@ Added regression coverage that executes the production conversion helper against
 - Rebased custom workbook roster binding foundation onto current main after PR #241. Preserve canonical subject-ID matching, repeated student blocks, typed custom fields, media anchors, formula-cell protection and class batch lifecycle safeguards.
 - The custom workbook binding helper is not considered fully integrated into the live result-generation lifecycle until page-level validation and review flow are tested. ExcelJS preserves formulas; it is not a formula calculation engine.
 - No production database migration or production data changes are authorized by this PR.
+
+
+## 2026-11-23 — custom class workbook batch-generation wiring
+
+- Merged PR #243 at b3cf6b06c8ecf49e976a924fdb21dbf1eb388049. Its repeated-student-block configuration is now consumed by the class batch-generation path.
+- Added src/lib/schoolproCustomClassWorkbook.mjs. When the saved class template snapshot has an explicit student_block, batch generation downloads that exact saved workbook from the existing private template bucket, expands the configured block for the session-resolved class roster, and binds subject rows using the saved canonical subject-ID mappings.
+- The builder validates a complete published result matrix, consistent per-subject assessment schemes, mapped component columns, student identity fields, and typed custom fields. It preserves formula cells, runs the existing supported formula-calculation engine, and stores the resulting custom workbook at the existing private batch workbook path.
+- Existing per-student report-card previews and private artifacts remain separate. The existing approve/reject review queue is unchanged; approving a student still finalizes only that student's individual official result output. Batch creation, private storage, resume, and review RPC lifecycle are unchanged.
+- Legacy assignments without student_block retain the existing generic consolidated score workbook path. Custom-field sources outside the currently supported student identity/context fields, and unsupported student-level field mappings, fail closed with an actionable error rather than silently writing incomplete values.
+- Added integration coverage to scripts/test-schoolpro-custom-class-workbook-binding.mjs for multi-student block expansion, canonical subject mapping, assessment component values, custom literal fields, formula translation/calculation, missing block configuration, and unpublished-result rejection.
+- Validation is pending on the new branch/PR. The GitHub connector was used to edit source; no local Node/typecheck/build was run in this environment. No Supabase migration, production data/storage write, manual Render deployment, or Android release was performed.

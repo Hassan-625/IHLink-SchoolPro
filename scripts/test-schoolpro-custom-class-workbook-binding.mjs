@@ -236,4 +236,33 @@ await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
   schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
 }), /Every class subject result must be published/);
 
+
+const collisionWorksheet = new ExcelJS.Workbook().addWorksheet("Mapping collision");
+collisionWorksheet.getCell("A3").value = "Student name";
+assert.throws(() => populateRosterSubjectRows({
+  worksheet: collisionWorksheet,
+  roster: [{ id: "student-a", first_name: "Amina" }],
+  subjects: [{ subject_id: "math-id", name: "Mathematics" }],
+  subjectRowMappings: { "math-id": 3 },
+  results: [{ student_id: "student-a", subject_id: "math-id", total_score: 10, assessment_scores: { ca: 10 } }],
+  studentBlock: { startRow: 3, endRow: 3 },
+  studentFieldCells: { student_name: "A3" },
+  componentColumns: { ca: "A" },
+  assessmentComponentsBySubject: { "math-id": [{ key: "ca", label: "CA", maxScore: 10 }] },
+}), /Workbook mapping collision at A3/);
+assert.equal(collisionWorksheet.getCell("A3").value, "Student name", "mapping collisions must fail before worksheet expansion or writes");
+assert.equal(collisionWorksheet.rowCount, 3, "mapping collisions must fail before row expansion");
+
+const duplicateResultColumnWorksheet = new ExcelJS.Workbook().addWorksheet("Duplicate result columns");
+assert.throws(() => populateRosterSubjectRows({
+  worksheet: duplicateResultColumnWorksheet,
+  roster: [{ id: "student-a" }],
+  subjects: [{ subject_id: "math-id", name: "Mathematics" }],
+  subjectRowMappings: { "math-id": 1 },
+  results: [{ student_id: "student-a", subject_id: "math-id", total_score: 10 }],
+  studentBlock: { startRow: 1, endRow: 1 },
+  columns: { total: "B", grade: "B" },
+}), /Workbook mapping collision at B1/);
+assert.equal(duplicateResultColumnWorksheet.rowCount, 0, "duplicate result destinations must fail before row expansion");
+
 console.log("SchoolPro custom class workbook binding regression passed.");

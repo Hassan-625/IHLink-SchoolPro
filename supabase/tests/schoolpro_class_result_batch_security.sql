@@ -63,6 +63,13 @@ begin
     raise exception 'Each batch review must have a durable private student workbook path';
   end if;
 
+  v_function:='public.schoolpro_fail_class_result_batch_upload(uuid)';
+  if to_regprocedure(v_function) is null
+     or has_function_privilege('anon',v_function,'EXECUTE')
+     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
+    raise exception 'Fail-upload RPC execute grants are incorrect';
+  end if;
+
   v_function:='public.schoolpro_mark_class_result_batch_ready(uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')
@@ -118,6 +125,21 @@ begin
     and policyname like 'schoolpro_class_result_batches_storage_%';
   if v_policy_count<>3 then
     raise exception 'Expected exactly three dedicated class-result storage policies; found %',v_policy_count;
+  end if;
+
+  if position('student_storage_path' in (
+    select qual from pg_policies
+    where schemaname='storage' and tablename='objects'
+      and policyname='schoolpro_class_result_batches_storage_delete_failed'
+  ))=0 then
+    raise exception 'Failed-upload cleanup policy must permit deleting per-student workbook objects';
+  end if;
+
+  if position('approved student review cannot be changed' in (
+    select p.prosrc from pg_proc p
+    where p.oid=to_regprocedure('public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid)')
+  ))=0 then
+    raise exception 'Approved batch reviews must be immutable';
   end if;
 
   if exists (

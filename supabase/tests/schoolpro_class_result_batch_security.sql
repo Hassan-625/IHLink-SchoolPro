@@ -67,7 +67,12 @@ begin
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')
      or not has_function_privilege('authenticated',v_function,'EXECUTE') then
-    raise exception 'Fail-upload RPC execute grants are incorrect';
+    raise exception 'Fail-upload RPC execute grants are incorrect (exists=%, anon_execute=%, authenticated_execute=%, acl=%, anon_member_authenticated=%)',
+      to_regprocedure(v_function) is not null,
+      has_function_privilege('anon',v_function,'EXECUTE'),
+      has_function_privilege('authenticated',v_function,'EXECUTE'),
+      (select coalesce(p.proacl::text,'<default>') from pg_proc p where p.oid=to_regprocedure(v_function)),
+      pg_has_role('anon','authenticated','MEMBER');
   end if;
 
   v_function:='public.schoolpro_mark_class_result_batch_ready(uuid)';

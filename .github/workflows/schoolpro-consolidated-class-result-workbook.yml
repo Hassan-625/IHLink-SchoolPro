@@ -1,0 +1,36 @@
+name: SchoolPro consolidated class result workbook
+on:
+  pull_request:
+    paths:
+      - "src/lib/schoolproClassResultWorkbook.mjs"
+      - "src/lib/schoolproClassResultWorkbook.d.mts"
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "src/lib/excelFormulaCalculation.mjs"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "scripts/test-schoolpro-consolidated-class-result-workbook.mjs"
+      - "package.json"
+      - ".github/workflows/schoolpro-consolidated-class-result-workbook.yml"
+  push:
+    branches:
+      - feat/schoolpro-consolidated-class-result-workbook
+    paths:
+      - "src/lib/schoolproClassResultWorkbook.mjs"
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "src/lib/excelFormulaCalculation.mjs"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "scripts/test-schoolpro-consolidated-class-result-workbook.mjs"
+      - "package.json"
+      - ".github/workflows/schoolpro-consolidated-class-result-workbook.yml"
+jobs:
+  consolidated-class-result-workbook:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:schoolpro-consolidated-class-result-workbook
+      - run: npm run typecheck
+      - run: npm run build

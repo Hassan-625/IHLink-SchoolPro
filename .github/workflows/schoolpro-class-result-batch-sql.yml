@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "docs/database-migration/drafts/schoolpro_class_result_batch_upload_recovery.sql"
+      - "supabase/migrations/*_schoolpro_class_result_batch_upload_recovery.sql"
       - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
@@ -38,6 +40,11 @@ jobs:
           test -n "$migration_file"
           cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
           echo "Generated and populated $migration_file"
+          supabase migration new schoolpro_class_result_batch_upload_recovery
+          recovery_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_upload_recovery.sql' -print -quit)"
+          test -n "$recovery_file"
+          cp docs/database-migration/drafts/schoolpro_class_result_batch_upload_recovery.sql "$recovery_file"
+          echo "Generated and populated $recovery_file"
 
       - name: Start disposable Supabase
         shell: bash
@@ -80,8 +87,11 @@ jobs:
           set -euo pipefail
           database_url="postgresql://postgres:postgres@127.0.0.1:55432/postgres"
           migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          recovery_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_upload_recovery.sql' -print -quit)"
           test -n "$migration_file"
+          test -n "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
 
       - name: Stop disposable Supabase

@@ -1,4 +1,4 @@
-import ExcelJS from "exceljs/dist/exceljs.min.js";
+import ExcelJS from "exceljs";
 import { populateRosterSubjectRows } from "./resultTemplateRosterBinding.mjs";
 import { calculateWorkbookFormulas } from "./excelFormulaCalculation.mjs";
 
@@ -60,10 +60,14 @@ export async function buildSchoolProCustomClassResultWorkbook(options) {
     if (!scheme || !Array.isArray(scheme.components) || !scheme.components.length) {
       throw new Error("A published subject references a missing assessment scheme definition.");
     }
-    assessmentComponentsBySubject[id] = scheme.components.map(component => ({
-      key: String(component.key), label: String(component.label || component.name || component.key),
-      maxScore: Number(component.maxScore),
-    }));
+    assessmentComponentsBySubject[id] = scheme.components.map(component => {
+      const key = requiredText(component?.key, "Assessment component key");
+      const maxScore = Number(component?.maxScore);
+      if (!Number.isFinite(maxScore) || maxScore <= 0) {
+        throw new Error("An assessment component has an invalid maximum score.");
+      }
+      return { key, label: String(component.label || component.name || key), maxScore };
+    });
     for (const component of scheme.components) {
       const column = config.component_columns?.[component.key];
       if (typeof column !== "string" || !/^[A-Z]{1,3}$/.test(column.toUpperCase())) {

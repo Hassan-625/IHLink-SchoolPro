@@ -44,7 +44,8 @@
     "test:schoolpro-excel-formula-calculation": "node scripts/test-schoolpro-excel-formula-calculation.mjs",
     "test:schoolpro-exceljs-row-expansion": "node scripts/test-schoolpro-exceljs-row-expansion.mjs",
     "test:schoolpro-class-result-batch-roster": "node scripts/test-schoolpro-class-result-batch-roster.mjs",
-    "test:schoolpro-consolidated-class-result-workbook": "node scripts/test-schoolpro-consolidated-class-result-workbook.mjs"
+    "test:schoolpro-consolidated-class-result-workbook": "node scripts/test-schoolpro-consolidated-class-result-workbook.mjs",
+    "test:schoolpro-form-master-subject-selection": "node scripts/test-schoolpro-form-master-subject-selection.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

@@ -1,0 +1,26 @@
+name: SchoolPro Form Master subject selection
+on:
+  pull_request:
+    paths:
+      - "src/components/schoolpro/SchoolProFormMasterSubjects.tsx"
+      - "src/pages/schoolpro/SchoolProSubjects.tsx"
+      - "supabase/migrations/20261123090000_schoolpro_form_master_subject_selection.sql"
+      - "scripts/test-schoolpro-form-master-subject-selection.mjs"
+      - "package.json"
+      - ".github/workflows/schoolpro-form-master-subject-selection.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:schoolpro-form-master-subject-selection
+      - run: npm run typecheck
+      - run: npm run build

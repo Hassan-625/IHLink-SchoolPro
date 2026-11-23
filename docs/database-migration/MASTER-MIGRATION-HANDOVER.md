@@ -4397,3 +4397,12 @@ Added regression coverage that executes the production conversion helper against
 - The database RPC remains the security boundary and independently verifies every student against `schoolpro_enrollment_history` for the exact school, class and session. No client-side check replaces that server validation.
 - Added a focused regression and declaration file; the dedicated workflow runs the contract regression and TypeScript typecheck.
 - This integrates the contract directly into PR #240's implementation branch while PR #239 remains a separate draft stack branch pending conflict resolution. No production schema/data/storage changes, merge or Render deployment occurred.
+
+
+## 2026-11-23 — Form Master class-subject selection (rebased after PR #240)
+
+- Rebased the Form Master subject-selection implementation onto the merged class-result workbook baseline, commit a2993757bc39a9d6694ce8efd656b94ccc060e87, preserving the current main-branch Subjects page and package scripts.
+- Adds a Form Master-only workflow to select existing canonical catalogue subjects for classes assigned through schoolpro_classes.form_teacher_id; the selection is session-scoped and does not create catalogue records or grant score-entry permissions.
+- The security-definer RPC checks active account, operational school, Results entitlement, active teacher membership, exact Form Master class appointment, same-school canonical subject, and idempotent class/subject/session assignment. Existing teacher allocations are not overwritten; new selections are audit logged.
+- Adds the focused source-contract test and dedicated CI workflow. Migration and synchronized draft remain branch-only; no production migration, class assignment, score, or other production row has been changed.
+- Next: run the focused regression, typecheck, production build, and full PR CI against this rebased head before merging.

@@ -304,7 +304,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
   const queued:Array<{id:string;label:string;payload:{workbook:Blob;meta:any;preview:Array<{cell:string;value:string;formula:boolean}>}}>= [];
   for(const pupil of roster){
    const label=[pupil.first_name,pupil.middle_name,pupil.last_name].filter(Boolean).join(" ")||pupil.admission_number;
-   try{const generated=await generate(pupil.id);if(!generated)failed.push(label);else queued.push({id:pupil.id,label,payload:generated});}
+   try{const generated=await generate(pupil.id);if(!generated){failed.push(label);}else{queued.push({id:pupil.id,label,payload:generated});}}
    catch{failed.push(label);}
    setBatchProgress({completed:queued.length+failed.length,total:roster.length,success:0,failed:[...failed]});
   }

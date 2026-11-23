@@ -1,3 +1,14 @@
+## PR preparation — explicit repeated student block configuration — 2026-11-23
+
+- Branch: `feat/schoolpro-custom-workbook-student-block-config`.
+- Extends the school-owned custom workbook mapping editor with explicit repeated student block start/end rows and an optional row stride. The exact block is stored in the saved template configuration as `student_block`; the range is never inferred from subject-row mappings.
+- Existing templates without this configuration remain loadable and saveable. Class-wide custom workbook binding remains gated until a school administrator explicitly configures and saves a valid block. A supplied stride must be at least the block height.
+- Extends the custom class workbook binding regression with source-contract assertions for editor capture, persisted configuration, and validation. The existing helper regression continues to exercise exact block expansion and fail-closed behavior.
+- This is a preparatory UI/configuration increment; it does not yet connect the helper to class batch generation or change individual output/review lifecycle behavior.
+- No production Supabase migration, data change, generated result, or manual Render deployment is included. CI and PR review remain pending.
+
+---
+
 ## PR #240 — interrupted class-result batch upload recovery — 2026-11-22
 
 - PR [#240](https://github.com/Hassan-625/IHLink-SchoolPro/pull/240), branch `feat/schoolpro-consolidated-class-result-workbook`.

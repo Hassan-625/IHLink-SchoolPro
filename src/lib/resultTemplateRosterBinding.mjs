@@ -56,6 +56,55 @@ export function populateRosterSubjectRows({
     throw new Error("Every selected student must have exactly one result row for every allocated class subject before class workbook generation.");
   }
 
+  // Validate every configured destination before row expansion or any cell write.
+  // A repeated-block template must never silently overwrite student identity with
+  // marks (or one result field with another) when two mappings share a cell.
+  const normalizeColumn = (value, label) => {
+    const column = String(value ?? "").trim().toUpperCase();
+    if (!/^[A-Z]{1,3}$/.test(column)) throw new Error(label + " must map to a valid worksheet column.");
+    return column;
+  };
+  const normalizeBlockCell = (value, label) => {
+    const address = String(value ?? "").trim().toUpperCase().split(":")[0];
+    const match = /^([A-Z]{1,3})([1-9][0-9]*)$/.exec(address);
+    if (!match) throw new Error(label + " must map to one valid worksheet cell inside the repeated block.");
+    const row = Number(match[2]);
+    if (row < plan.blockStartRow || row > plan.blockEndRow) {
+      throw new Error(label + " must be mapped inside the configured repeated student block.");
+    }
+    return { column: match[1], row };
+  };
+  const studentCellMappings = [];
+  for (const [field, address] of Object.entries(studentFieldCells || {})) {
+    if (address) studentCellMappings.push({ ...normalizeBlockCell(address, "Student field " + field), label: "Student field " + field });
+  }
+  for (const field of (customFields || []).filter(item => item && item.enabled !== false && item.cell)) {
+    studentCellMappings.push({ ...normalizeBlockCell(field.cell, "Custom field " + (field.label || field.id)), label: "Custom field " + (field.label || field.id) });
+  }
+  const resultColumns = [];
+  for (const [key, value] of Object.entries(columns || {})) {
+    if (value) resultColumns.push({ column: normalizeColumn(value, "Result column " + key), label: "Result column " + key });
+  }
+  for (const [key, value] of Object.entries(componentColumns || {})) {
+    if (value) resultColumns.push({ column: normalizeColumn(value, "Assessment component " + key), label: "Assessment component " + key });
+  }
+  for (const studentPlan of plan.students) {
+    const claimed = new Map();
+    const claim = (address, label) => {
+      const previous = claimed.get(address);
+      if (previous) throw new Error("Workbook mapping collision at " + address + ": " + previous + " conflicts with " + label + ". Adjust the template mappings before generating the class workbook.");
+      claimed.set(address, label);
+    };
+    for (const mapping of studentCellMappings) {
+      claim(mapping.column + (mapping.row + studentPlan.rowOffset), mapping.label);
+    }
+    for (const subject of subjects) {
+      const subjectId = String(subject.subject_id ?? subject.id);
+      const row = studentPlan.subjectRows[subjectId];
+      for (const mapping of resultColumns) claim(mapping.column + row, mapping.label + " for subject " + subjectId);
+    }
+  }
+
   expandWorksheetRowsForRoster(worksheet, {
     startRow: plan.blockStartRow,
     endRow: plan.blockEndRow,

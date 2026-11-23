@@ -380,7 +380,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    setPersistedBatchStatus(String(ready.data||"prepared"));setBatchReviewQueue(queued);
    setPendingWorkbook(null);setPendingResultMeta(null);setGeneratedPreview([]);
    setBatchProgress({completed:roster.length,total:roster.length,success:0,failed:[]});
-   setMessage("assignedTemplateConfig.student_block?"The assigned custom class workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output.":"The consolidated class score workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output."");
+   setMessage(assignedTemplateConfig.student_block?"The assigned custom class workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output.":"The consolidated class score workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output.");
   }catch(err){
    let recovered=false;
    if(createdBatchId&&supabase){

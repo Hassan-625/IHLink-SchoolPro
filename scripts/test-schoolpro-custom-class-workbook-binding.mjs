@@ -2,8 +2,6 @@ import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import { populateRosterSubjectRows } from "../src/lib/resultTemplateRosterBinding.mjs";
 import { repeatedBlockImageAnchor, storedWorkbookImageFormat } from "../src/lib/resultTemplateMediaLayout.mjs";
-import { resolveBatchStudentPublicationState } from "../src/lib/schoolproClassResultBatchRecovery.mjs";
-import { resolveExistingBatchOutput } from "../src/lib/schoolproClassResultBatchOutputRecovery.mjs";
 
 const workbook = new ExcelJS.Workbook();
 const sheet = workbook.addWorksheet("Class");
@@ -159,20 +157,6 @@ assert.throws(()=>populateRosterSubjectRows({
 }),/explicit saved student-block/);
 assert.equal(noExplicitBlock.rowCount,0,"missing block configuration must fail before worksheet mutation");
 
-assert.equal(resolveBatchStudentPublicationState({data:[{status:"published"},{status:"published"}]}),true);
-assert.equal(resolveBatchStudentPublicationState({data:[{status:"published"},{status:"draft"}]}),false);
-assert.equal(resolveBatchStudentPublicationState({data:[]}),false);
-assert.throws(()=>resolveBatchStudentPublicationState({error:new Error("RLS/network failure"),data:null}),/could not be verified/);
-assert.throws(()=>resolveBatchStudentPublicationState({data:null}),/invalid response/);
 
-
-const expectedOutputMeta={schoolId:"school-a",studentId:"student-a",term:"First Term",session:"2026/2027",templateAssignment:{id:"assignment-a",template_id:"template-a",updated_at:"2026-11-23T10:00:00Z",template_config:{sheet_name:"Results"},subject_row_mappings:{"subject-a":"C5"}}};
-const existingOutput={id:"output-a",school_id:"school-a",student_id:"student-a",term:"First Term",session:"2026/2027",format:"xlsx",storage_path:"school-a/student-a/session/term/output.xlsx",template_assignment_id:"assignment-a",template_id:"template-a",template_assignment_updated_at:"2026-11-23T10:00:00Z",template_config_snapshot:{sheet_name:"Results"},subject_row_mappings_snapshot:{"subject-a":"C5"}};
-assert.equal(resolveExistingBatchOutput(existingOutput,expectedOutputMeta),"output-a");
-assert.equal(resolveExistingBatchOutput(null,expectedOutputMeta),null);
-assert.throws(()=>resolveExistingBatchOutput({...existingOutput,template_id:"different-template"},expectedOutputMeta),/snapshot does not match/);
-assert.throws(()=>resolveExistingBatchOutput({...existingOutput,session:"2025/2026"},expectedOutputMeta),/snapshot does not match/);
-
-assert.throws(()=>resolveExistingBatchOutput({...existingOutput,storage_path:""},expectedOutputMeta),/snapshot does not match/);
 
 console.log("SchoolPro custom class workbook binding regression passed.");

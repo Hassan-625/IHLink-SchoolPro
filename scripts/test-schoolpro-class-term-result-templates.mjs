@@ -261,7 +261,8 @@ assert.throws(()=>typedCustomValue('maybe','boolean','Eligible'),/true\/false/);
 const rosterPlan=buildRosterSubjectRowPlan(
   [{id:'student-a'},{id:'student-b'},{id:'student-c'}],
   [{subject_id:'subject-math'},{subject_id:'subject-english'}],
-  {'subject-math':'13','subject-english':'14'}
+  {'subject-math':'13','subject-english':'14'},
+  {studentBlock:{startRow:13,endRow:14}}
 );
 assert.equal(rosterPlan.rowStride,2);
 assert.equal(rosterPlan.students[0].subjectRows['subject-math'],13);
@@ -277,11 +278,11 @@ assert.throws(
   /same workbook row/
 );
 assert.throws(
-  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{rowStride:0}),
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{studentBlock:{startRow:13,endRow:13},rowStride:0}),
   /row stride/
 );
 assert.throws(
-  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{maxRows:13}),
+  ()=>buildRosterSubjectRowPlan([{id:'student-a'},{id:'student-b'}],[{subject_id:'subject-math'}],{'subject-math':'13'},{studentBlock:{startRow:13,endRow:13},maxRows:13}),
   /worksheet row limit/
 );
 

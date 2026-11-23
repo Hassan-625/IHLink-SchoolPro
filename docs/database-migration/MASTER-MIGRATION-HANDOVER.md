@@ -4237,3 +4237,12 @@ Added regression coverage that executes the production conversion helper against
 - Important scope boundary: this commit establishes and tests the row-expansion contract only. It does **not** yet duplicate worksheet rows, populate one shared class workbook, create class-batch review records, or change official per-student output storage. The existing per-student generation/finalization flow remains unchanged until the class-level storage and staff-only review model is implemented.
 - Production inspection was read-only. `schoolpro_generated_result_outputs` is student-keyed and its unique constraint and storage read policy are student-specific. A shared class workbook must not be stored under a student output path, because student/guardian access could expose other students' results.
 - No Supabase migration was created or applied, no production rows changed, no PR was merged, and no Render deployment was triggered. The next implementation increment must add a staff-only class-batch artifact and per-student review state with database-enforced school/class scope, then integrate actual worksheet expansion and gate class finalization on every required student review.
+
+
+## 2026-11-20 — ExcelJS class-roster row-expansion implementation
+
+- Added `src/lib/excelWorksheetRowExpansion.mjs` on the stacked branch `feat/schoolpro-exceljs-row-expansion` (PR #237 pending creation).
+- The ExcelJS helper inserts repeated student row blocks, preserves row heights and cell styles/values, duplicates wholly-contained merged ranges, shifts existing merged ranges and formula references below the insertion point, and translates relative formula references for copied blocks.
+- It fails closed for cross-sheet, external, structured, broken, shared and array formulas; merges crossing the repeated-block or insertion boundaries; invalid row ranges/strides; and Excel row-limit overflow.
+- Added `scripts/test-schoolpro-exceljs-row-expansion.mjs`, registered it in `package.json`, and added it to the main CI workflow.
+- This is a tested worksheet-operation layer only. The existing UI still produces individual student workbooks; the class-level staff-only artifact, per-student review records, and integration into the existing generation/finalization path remain outstanding. No production migration, data write, Render deployment, or merge was performed.

@@ -1,0 +1,89 @@
+name: SchoolPro class-result batch SQL security
+
+on:
+  pull_request:
+    paths:
+      - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "supabase/baselines/schoolpro-c0-baseline.sql"
+      - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
+      - "supabase/tests/schoolpro_class_result_batch_security.sql"
+      - ".github/workflows/schoolpro-class-result-batch-sql.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: schoolpro-class-result-batch-sql-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  batch-sql-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.1
+
+      - name: Generate candidate migration through Supabase CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          # This repository's legacy migration chain has no complete initial
+          # schema. Keep it out of local startup; use the sanitized baseline.
+          mv supabase/migrations "$RUNNER_TEMP/schoolpro-existing-migrations"
+          mkdir -p supabase/migrations
+          supabase migration new schoolpro_class_result_batch_persistence
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          test -n "$migration_file"
+          cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
+          echo "Generated and populated $migration_file"
+
+      - name: Start disposable Supabase
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Supabase CLI startup auto-applies files in supabase/migrations.
+          # Withhold the candidate until after the sanitized baseline is restored.
+          mv supabase/migrations "$RUNNER_TEMP/schoolpro-candidate-migrations"
+          mkdir -p supabase/migrations
+          # The certificate worker has an unrelated missing design.ts import.
+          # Edge Functions are not needed for this database-only regression.
+          mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
+          # Use a dedicated database port to avoid parallel-runner collisions.
+          printf '\n[db]\nport = 55432\n' >> supabase/config.toml
+          supabase start -x studio,edge-runtime,logflare,vector,imgproxy,mailpit
+          rmdir supabase/migrations
+          mv "$RUNNER_TEMP/schoolpro-candidate-migrations" supabase/migrations
+
+      - name: Restore sanitized production schema baseline
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:55432/postgres"
+          # The local Supabase database already owns public; omit the dump's
+          # CREATE SCHEMA public statement, as in the established C0 harness.
+          grep -n -m 3 'schoolpro_schools' supabase/baselines/schoolpro-c0-baseline.sql
+          sed '/^CREATE SCHEMA public;$/d' supabase/baselines/schoolpro-c0-baseline.sql \
+            | psql "$database_url" --set ON_ERROR_STOP=1
+          restored_school_table="$(psql "$database_url" --tuples-only --no-align --command "select to_regclass('public.schoolpro_schools')")"
+          test "$restored_school_table" = "schoolpro_schools"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql
+
+      - name: Apply candidate migration and run SQL security regression
+        env:
+          PGPASSWORD: postgres
+        shell: bash
+        run: |
+          set -euo pipefail
+          database_url="postgresql://postgres:postgres@127.0.0.1:55432/postgres"
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          test -n "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
+
+      - name: Stop disposable Supabase
+        if: always()
+        run: supabase stop --no-backup

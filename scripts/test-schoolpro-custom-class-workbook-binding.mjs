@@ -189,8 +189,9 @@ for (const student of roster) {
     { student_id: student.id, subject_id: "english-id", total_score: 68, assessment_scheme_id: "scheme-1", assessment_scores: { ca: 28, exam: 40 }, status: "published" },
   );
 }
+const customTemplateBuffer = await customSource.xlsx.writeBuffer();
 const customOutput = await buildSchoolProCustomClassResultWorkbook({
-  templateBuffer: await customSource.xlsx.writeBuffer(),
+  templateBuffer: customTemplateBuffer,
   templateConfig: {
     sheet_name: "Class",
     student_block: { startRow: 3, endRow: 4, rowStride: 2 },
@@ -219,7 +220,7 @@ assert.equal(customResultSheet.getCell("G5").value, "Nigeria Greater Tomorrow");
 assert.equal(customResultSheet.getCell("E5").value.formula, "SUM(C5:D5)");
 assert.equal(customOutput.formulaCalculation.engine, "hot-formula-parser");
 await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
-  templateBuffer: await customSource.xlsx.writeBuffer(),
+  templateBuffer: customTemplateBuffer,
   templateConfig: { sheet_name: "Class", columns: { subject: "B" }, component_columns: { ca: "C", exam: "D" } },
   roster, subjects, subjectRowMappings: { "math-id": 3, "english-id": 4 },
   results: customResults,

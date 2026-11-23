@@ -21,6 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:schoolpro-custom-result-templates
+      - run: npm run test:schoolpro-custom-class-workbook-binding
       - run: npm run test:schoolpro-excel-formula-calculation
       - run: npm run test:schoolpro-exceljs-row-expansion
       - run: node scripts/test-startup-diagnostic.mjs

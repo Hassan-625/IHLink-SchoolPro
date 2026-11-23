@@ -4434,3 +4434,12 @@ Added regression coverage that executes the production conversion helper against
 - Legacy assignments without student_block retain the existing generic consolidated score workbook path. Custom-field sources outside the currently supported student identity/context fields, and unsupported student-level field mappings, fail closed with an actionable error rather than silently writing incomplete values.
 - Added integration coverage to scripts/test-schoolpro-custom-class-workbook-binding.mjs for multi-student block expansion, canonical subject mapping, assessment component values, custom literal fields, formula translation/calculation, missing block configuration, and unpublished-result rejection.
 - Validation is pending on the new branch/PR. The GitHub connector was used to edit source; no local Node/typecheck/build was run in this environment. No Supabase migration, production data/storage write, manual Render deployment, or Android release was performed.
+
+
+## 2026-11-23 — custom class workbook mapping collision guard
+
+- Follow-up correction to merged PR #244: the repeated-block planner already rejects duplicate subject rows and subject mappings outside the configured block, but cell destinations across student identity/custom fields and result columns also need to be mutually exclusive.
+- Added a preflight destination-claim pass in `src/lib/resultTemplateRosterBinding.mjs`. It validates student/custom field cell addresses and result/component column names, then checks every student's expanded destination cells for collisions before worksheet row expansion or any cell writes.
+- The guard rejects identity-vs-score collisions, custom-field-vs-result collisions, duplicate student-field destinations, and duplicate result/component columns with the conflicting cell and mapping labels in the error.
+- Added regressions proving a student-name/component-column collision and duplicate total/grade result columns fail before worksheet mutation.
+- Branch: `fix/schoolpro-custom-workbook-mapping-collisions`. Validation and PR review are pending. No production Supabase migration/data/storage operation or manual Render deployment is part of this correction.

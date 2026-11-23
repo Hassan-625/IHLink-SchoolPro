@@ -235,4 +235,5 @@ await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
   assessmentSchemes: [{ id: "scheme-1", components: [{ key: "ca", label: "CA", maxScore: 30 }, { key: "exam", label: "Exam", maxScore: 70 }] }],
   schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
 }), /Every class subject result must be published/);
-\nconsole.log("SchoolPro custom class workbook binding regression passed.");\n
+
+console.log("SchoolPro custom class workbook binding regression passed.");

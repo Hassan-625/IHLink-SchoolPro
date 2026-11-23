@@ -319,7 +319,7 @@ grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,t
 create or replace function public.schoolpro_fail_class_result_batch_upload(p_batch_id uuid)
 returns text
 language plpgsql security definer set search_path=''
-as $
+as $fail_upload$
 declare
   v_batch public.schoolpro_class_result_batches%rowtype;
 begin
@@ -347,7 +347,7 @@ begin
   where id=p_batch_id;
   return 'failed';
 end;
-$;
+$fail_upload$;
 revoke all on function public.schoolpro_fail_class_result_batch_upload(uuid) from public,anon;
 grant execute on function public.schoolpro_fail_class_result_batch_upload(uuid) to authenticated;
 

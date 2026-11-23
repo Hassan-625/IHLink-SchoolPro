@@ -7,6 +7,7 @@ import {SchoolStudentFilters} from '@/components/SchoolStudentFilters';
 import {workbookCellText} from '@/lib/workbookText';
 import {calculateWorkbookFormulas} from '@/lib/excelFormulaCalculation.mjs';
 import {buildSchoolProConsolidatedClassResultWorkbook} from '@/lib/schoolproClassResultWorkbook.mjs';
+import {buildSchoolProCustomClassResultWorkbook} from '@/lib/schoolproCustomClassWorkbook.mjs';
 import {typedCustomValue} from '@/lib/resultTemplateTypedValues.mjs';
 const isFormulaCell=(cell:any)=>Boolean(cell?.formula||cell?.value?.sharedFormula||cell?.value?.shareType==='array');
 import {saveSchoolFile,downloadSchoolFile,schoolFileName,XLSX_MIME} from '@/lib/schoolDownloads';

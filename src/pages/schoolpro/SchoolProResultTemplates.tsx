@@ -273,7 +273,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
  async function generateClassBatch(){
   const classId=selectedPupil?.class_id;
   if(!classId||!selectedStudent||busy||batchRunning)return;
-  if(batchReviewQueue.length||(persistedBatchId&&["uploading","prepared","reviewing","needs_attention"].includes(persistedBatchStatus||""))){setError("Complete the existing class batch before starting another.");return;}
+  if(batchReviewQueue.length||(persistedBatchId&&["uploading","prepared","reviewing","needs_attention"].includes(persistedBatchStatus||""))){setError("Review or finalize the prepared student workbooks before starting another batch. Complete the existing class batch before starting another.");return;}
   if(persistedBatchStatus==="completed"){setPersistedBatchId(null);setPersistedBatchStatus(null);setPersistedBatchClassId(null);}
   const roster=students.filter(student=>student.class_id===classId);
   let rosterContract;

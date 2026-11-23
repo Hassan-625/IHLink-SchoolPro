@@ -327,16 +327,35 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    const schemeIds=[...new Set((classResults.data||[]).map((row:any)=>row.assessment_scheme_id).filter(Boolean))];
    const schemeRows=schemeIds.length?await fetchSchoolRows(supabase.from("schoolpro_assessment_schemes").select("id,components").eq("school_id",first.schoolId).in("id",schemeIds)):{data:[],error:null};
    if(schemeRows.error)throw new Error("The assessment scheme definitions could not be loaded for the consolidated workbook.");
-   const consolidated=await buildSchoolProConsolidatedClassResultWorkbook({
-    roster:queued.map(item=>item.payload.meta.student),
-    subjects:classSubjects,
-    results:classResults.data||[],
-    assessmentSchemes:schemeRows.data||[],
-    schoolName:first.schoolName,
-    className:first.student.class_name,
-    term:first.term,
-    session:first.session
-   });
+   const assignedTemplateConfig=first.templateAssignment.template_config||{};
+   const assignedTemplatePath=String(assignedTemplateConfig.storage_path||"");
+   if(!assignedTemplatePath)throw new Error("The saved class template snapshot has no workbook storage path. Reassign the custom workbook before generating this batch.");
+   const templateDownload=await supabase.storage.from("school-result-templates").download(assignedTemplatePath);
+   if(templateDownload.error||!templateDownload.data)throw new Error("The saved class custom workbook could not be downloaded. No class batch was created.");
+   const consolidated=assignedTemplateConfig.student_block
+    ?await buildSchoolProCustomClassResultWorkbook({
+      templateBuffer:await templateDownload.data.arrayBuffer(),
+      templateConfig:assignedTemplateConfig,
+      roster:queued.map(item=>item.payload.meta.student),
+      subjects:classSubjects,
+      subjectRowMappings:first.templateAssignment.subject_row_mappings,
+      results:classResults.data||[],
+      assessmentSchemes:schemeRows.data||[],
+      schoolName:first.schoolName,
+      className:first.student.class_name,
+      term:first.term,
+      session:first.session
+     })
+    :await buildSchoolProConsolidatedClassResultWorkbook({
+      roster:queued.map(item=>item.payload.meta.student),
+      subjects:classSubjects,
+      results:classResults.data||[],
+      assessmentSchemes:schemeRows.data||[],
+      schoolName:first.schoolName,
+      className:first.student.class_name,
+      term:first.term,
+      session:first.session
+     });
    const created=await supabase.rpc("schoolpro_create_class_result_batch",{
     p_school:first.schoolId,p_class:first.classId,p_term:first.term,p_session:first.session,
     p_template_assignment_id:first.templateAssignment.id,p_template_id:first.templateAssignment.template_id,
@@ -361,7 +380,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    setPersistedBatchStatus(String(ready.data||"prepared"));setBatchReviewQueue(queued);
    setPendingWorkbook(null);setPendingResultMeta(null);setGeneratedPreview([]);
    setBatchProgress({completed:roster.length,total:roster.length,success:0,failed:[]});
-   setMessage("The consolidated class score workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output.");
+   setMessage("assignedTemplateConfig.student_block?"The assigned custom class workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output.":"The consolidated class score workbook and separate student review workbooks are stored in private staff storage. Approving a student still creates only that student’s official output."");
   }catch(err){
    let recovered=false;
    if(createdBatchId&&supabase){

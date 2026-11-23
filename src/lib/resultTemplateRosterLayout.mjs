@@ -40,15 +40,27 @@ export function buildRosterSubjectRowPlan(roster, subjects, subjectRowMappings, 
     throw new Error("Two subjects cannot be mapped to the same workbook row.");
   }
 
+  const configuredBlock = options.studentBlock;
+  if (!configuredBlock || !Number.isInteger(Number(configuredBlock.startRow)) ||
+      !Number.isInteger(Number(configuredBlock.endRow)) ||
+      Number(configuredBlock.startRow) < 1 ||
+      Number(configuredBlock.endRow) < Number(configuredBlock.startRow)) {
+    throw new Error("An explicit saved student-block start and end row are required; the block is never inferred from subject mappings.");
+  }
+  const blockStartRow = Number(configuredBlock.startRow);
+  const blockEndRow = Number(configuredBlock.endRow);
+  if (rows.some(({ row }) => row < blockStartRow || row > blockEndRow)) {
+    throw new Error("Every allocated subject mapping must be inside the configured repeated student block.");
+  }
   const firstSubjectRow = Math.min(...rows.map(({ row }) => row));
   const lastSubjectRow = Math.max(...rows.map(({ row }) => row));
-  const subjectBlockHeight = lastSubjectRow - firstSubjectRow + 1;
-  const rowStride = Number(options.rowStride ?? subjectBlockHeight);
+  const subjectBlockHeight = blockEndRow - blockStartRow + 1;
+  const rowStride = Number(options.rowStride ?? configuredBlock.rowStride ?? subjectBlockHeight);
   if (!Number.isInteger(rowStride) || rowStride < subjectBlockHeight) {
     throw new Error("The repeated student row stride must fit the complete subject block.");
   }
   const maxRows = Number(options.maxRows ?? 100000);
-  const finalRow = firstSubjectRow + (roster.length - 1) * rowStride + subjectBlockHeight - 1;
+  const finalRow = blockStartRow + (roster.length - 1) * rowStride + subjectBlockHeight - 1;
   if (!Number.isInteger(maxRows) || maxRows < 1 || finalRow > maxRows) {
     throw new Error("The expanded class workbook exceeds the supported worksheet row limit.");
   }
@@ -63,12 +75,16 @@ export function buildRosterSubjectRowPlan(roster, subjects, subjectRowMappings, 
       subjectRows,
       firstSubjectRow: firstSubjectRow + offset,
       lastSubjectRow: lastSubjectRow + offset,
+      blockStartRow: blockStartRow + offset,
+      blockEndRow: blockEndRow + offset,
     };
   });
 
   return {
     firstSubjectRow,
     lastSubjectRow,
+    blockStartRow,
+    blockEndRow,
     subjectBlockHeight,
     rowStride,
     finalRow,

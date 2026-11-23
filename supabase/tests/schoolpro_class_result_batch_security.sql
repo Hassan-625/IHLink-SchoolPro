@@ -367,6 +367,30 @@ begin
     raise exception 'Batch did not transition to prepared after verified private upload';
   end if;
 
+  -- Rejection must leave the official output unlinked and the batch
+  -- recoverable. A later resumed review may approve the same rejected item.
+  if public.schoolpro_review_class_result_batch_student(
+    v_batch_id,v_student_record,'rejected',null
+  )<>'needs_attention' then
+    raise exception 'Rejected student review did not flag the batch for attention';
+  end if;
+
+  -- Inspect persisted state as the database owner so RLS policy helpers
+  -- remain tested only through the public SECURITY DEFINER RPC boundary.
+  execute 'reset role';
+  if not exists (
+    select 1 from public.schoolpro_class_result_batch_reviews r
+    join public.schoolpro_class_result_batches b on b.id=r.batch_id
+    where r.batch_id=v_batch_id and r.student_id=v_student_record
+      and r.review_status='rejected' and r.generated_result_output_id is null
+      and b.status='needs_attention'
+  ) then
+    raise exception 'Rejected review must not link an official output and must remain resumable';
+  end if;
+
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+
   if public.schoolpro_review_class_result_batch_student(
     v_batch_id,v_student_record,'approved',v_output_id
   )<>'completed' then

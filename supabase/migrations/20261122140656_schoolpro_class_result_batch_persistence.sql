@@ -316,6 +316,41 @@ $$;
 revoke all on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) from public,anon;
 grant execute on function public.schoolpro_create_class_result_batch(uuid,uuid,text,text,uuid,uuid,timestamptz,jsonb,jsonb,jsonb,jsonb) to authenticated;
 
+create or replace function public.schoolpro_fail_class_result_batch_upload(p_batch_id uuid)
+returns text
+language plpgsql security definer set search_path=''
+as $
+declare
+  v_batch public.schoolpro_class_result_batches%rowtype;
+begin
+  if auth.uid() is null or not coalesce(private.is_active_account(),false) then
+    raise exception 'An active account is required';
+  end if;
+
+  select b.* into v_batch
+  from public.schoolpro_class_result_batches b
+  where b.id=p_batch_id
+  for update;
+
+  if not found
+     or v_batch.created_by<>(select auth.uid())
+     or not private.schoolpro_can_manage_class_result_batch(v_batch.school_id,v_batch.class_id,v_batch.session)
+     or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
+    raise exception 'The class-result batch is unavailable';
+  end if;
+  if v_batch.status<>'uploading' then
+    raise exception 'Only an uploading class-result batch can be failed';
+  end if;
+
+  update public.schoolpro_class_result_batches
+  set status='failed',updated_at=now()
+  where id=p_batch_id;
+  return 'failed';
+end;
+$;
+revoke all on function public.schoolpro_fail_class_result_batch_upload(uuid) from public,anon;
+grant execute on function public.schoolpro_fail_class_result_batch_upload(uuid) to authenticated;
+
 create or replace function public.schoolpro_mark_class_result_batch_ready(p_batch_id uuid)
 returns text
 language plpgsql security definer set search_path=''
@@ -410,6 +445,9 @@ begin
 
   if not found then
     raise exception 'The student is not part of this class-result batch';
+  end if;
+  if v_review.review_status='approved' then
+    raise exception 'An approved student review cannot be changed';
   end if;
 
   if lower(trim(p_decision))='approved' then
@@ -625,7 +663,11 @@ create policy schoolpro_class_result_batches_storage_delete_failed
     bucket_id='schoolpro-class-result-batches'
     and exists (
       select 1 from public.schoolpro_class_result_batches b
-      where b.storage_path=name and b.status in ('failed','cancelled')
+      where b.status in ('failed','cancelled')
+        and (b.storage_path=name or exists (
+          select 1 from public.schoolpro_class_result_batch_reviews r
+          where r.batch_id=b.id and r.student_storage_path=name
+        ))
         and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
         and private.schoolpro_module_allowed(b.school_id,'results')
     )

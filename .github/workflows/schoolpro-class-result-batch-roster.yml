@@ -1,0 +1,36 @@
+name: SchoolPro class-result batch roster
+
+on:
+  pull_request:
+    paths:
+      - "src/lib/schoolproClassResultBatchRoster.mjs"
+      - "src/lib/schoolproClassResultBatchRoster.d.mts"
+      - "scripts/test-schoolpro-class-result-batch-roster.mjs"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "package.json"
+      - ".github/workflows/schoolpro-class-result-batch-roster.yml"
+  push:
+    branches:
+      - feat/schoolpro-consolidated-class-result-workbook
+    paths:
+      - "src/lib/schoolproClassResultBatchRoster.mjs"
+      - "scripts/test-schoolpro-class-result-batch-roster.mjs"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "package.json"
+      - ".github/workflows/schoolpro-class-result-batch-roster.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  roster-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:schoolpro-class-result-batch-roster
+      - run: npm run typecheck

@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - "docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql"
+      - "docs/database-migration/drafts/schoolpro_class_result_batch_upload_recovery.sql"
+      - "supabase/migrations/*_schoolpro_class_result_batch_upload_recovery.sql"
       - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
@@ -38,6 +40,11 @@ jobs:
           test -n "$migration_file"
           cp docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql "$migration_file"
           echo "Generated and populated $migration_file"
+          supabase migration new schoolpro_class_result_batch_upload_recovery
+          recovery_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_upload_recovery.sql' -print -quit)"
+          test -n "$recovery_file"
+          cp docs/database-migration/drafts/schoolpro_class_result_batch_upload_recovery.sql "$recovery_file"
+          echo "Generated and populated $recovery_file"
 
       - name: Start disposable Supabase
         shell: bash
@@ -50,8 +57,10 @@ jobs:
           # The certificate worker has an unrelated missing design.ts import.
           # Edge Functions are not needed for this database-only regression.
           mv supabase/functions/schoolpro-testing-certificate-worker "$RUNNER_TEMP/schoolpro-testing-certificate-worker"
-          # Use a dedicated database port to avoid parallel-runner collisions.
-          printf '\n[db]\nport = 55432\n' >> supabase/config.toml
+          # Allocate a run-specific database port so concurrent PR jobs cannot collide.
+          database_port=$((55000 + GITHUB_RUN_ID % 10000))
+          printf '\n[db]\nport = %s\n' "$database_port" >> supabase/config.toml
+          echo "SCHOOLPRO_DB_PORT=$database_port" >> "$GITHUB_ENV"
           supabase start -x studio,edge-runtime,logflare,vector,imgproxy,mailpit
           rmdir supabase/migrations
           mv "$RUNNER_TEMP/schoolpro-candidate-migrations" supabase/migrations
@@ -62,7 +71,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          database_url="postgresql://postgres:postgres@127.0.0.1:55432/postgres"
+          database_url="postgresql://postgres:postgres@127.0.0.1:${SCHOOLPRO_DB_PORT}/postgres"
           # The local Supabase database already owns public; omit the dump's
           # CREATE SCHEMA public statement, as in the established C0 harness.
           grep -n -m 3 'schoolpro_schools' supabase/baselines/schoolpro-c0-baseline.sql
@@ -78,10 +87,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          database_url="postgresql://postgres:postgres@127.0.0.1:55432/postgres"
+          database_url="postgresql://postgres:postgres@127.0.0.1:${SCHOOLPRO_DB_PORT}/postgres"
           migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_persistence.sql' -print -quit)"
+          recovery_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_schoolpro_class_result_batch_upload_recovery.sql' -print -quit)"
           test -n "$migration_file"
+          test -n "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$migration_file"
+          psql "$database_url" --set ON_ERROR_STOP=1 --file "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
 
       - name: Stop disposable Supabase

@@ -1,3 +1,15 @@
+## PR #240 — interrupted class-result batch upload recovery — 2026-11-22
+
+- PR [#240](https://github.com/Hassan-625/IHLink-SchoolPro/pull/240), branch `feat/schoolpro-consolidated-class-result-workbook`.
+- Added forward migration `20261122173000_schoolpro_class_result_batch_upload_recovery.sql` and byte-identical review draft `docs/database-migration/drafts/schoolpro_class_result_batch_upload_recovery.sql`.
+- When a Storage upload returns an error after the batch row was created, the client now calls `schoolpro_fail_class_result_batch_upload`, transitions only the creator's still-`uploading` batch to `failed`, and removes its partial register/student workbook objects. The UI clears the failed batch reference and permits a clean retry; no official result output is created by this recovery path.
+- For browser/process termination (where the catch handler cannot run), the next attempt for the same school/class/term/session calls `schoolpro_recover_stale_class_result_batch_uploads`. Uploads older than 45 minutes are marked failed and the RPC returns the exact private object paths for client-side cleanup. The 45-minute grace period avoids prematurely retiring slow uploads.
+- Corrected the failed/cancelled Storage delete policy to cover both the batch register path and per-student workbook paths. Normal prepared/reviewing/completed artifacts remain immutable through the Storage API.
+- Extended `supabase/tests/schoolpro_class_result_batch_security.sql` with execute-grant, creator/status transition, stale-age, object-path and cleanup-policy assertions.
+- Status: implementation is on PR #240 only. CI/disposable PostgreSQL validation is pending. No Supabase production migration, business-data change, PR merge, or Render deployment has occurred. Production rollout remains approval-gated.
+
+---
+
 ## Tenant acceptance — three-school pairwise coverage — 2026-11-17
 
 - Extends the required live tenant acceptance job to use existing School A, B and C accounts and school IDs; GitHub Actions requires `SCHOOL_C_EMAIL`, `SCHOOL_C_PASSWORD` and `SCHOOL_C_ID` alongside the existing A/B secrets.
@@ -4340,3 +4352,48 @@ Added regression coverage that executes the production conversion helper against
 - Candidate draft and timestamped migration were synchronized byte-for-byte in commit `8d67de4`; test fixture extension is in `68284aa`.
 - Validation on latest implementation commit `68284aa9f81d81d696899f2e6e5c42c8c14f7883`: disposable Supabase migration + SQL regression [run `45032676435`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45032676435) passed; TypeScript and production build [run `45032676491`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45032676491) passed.
 - Remaining: integrate ExcelJS row expansion into an actual consolidated multi-student score sheet; the current batch XLSX is a private roster/review register and individual result workbooks remain separate. Add browser-level tests for batch creation, reload/resume and review actions. No production Supabase changes, PR merge, or Render deployment.
+
+
+### 2026-11-22 — consolidated class-result workbook integration
+- Added `src/lib/schoolproClassResultWorkbook.mjs` to generate a real class-wide score workbook with one row per student and one column per canonical school subject ID. It writes student identity/admission fields and published subject totals, plus per-student total and average formulas.
+- The builder uses the tested ExcelJS row-expansion helper to repeat the formula-bearing student row and translate formula references. It recalculates the generated workbook with the existing `hot-formula-parser` engine and returns the calculation snapshot separately from individual report-card formula snapshots.
+- The builder rejects duplicate roster/subject IDs, out-of-roster or unallocated result rows, duplicate student-subject results, missing student-subject combinations, non-published results, invalid scores, and rosters over 500. It does not create a partial class sheet.
+- Integrated `generateClassBatch()` to load the selected class/session/term's result rows and create the consolidated workbook before creating the batch. The private batch `workbook.xlsx` is now the actual consolidated score workbook; individual student report-card files remain in their existing private per-student paths and approval still creates only the corresponding official individual output.
+- Added a private signed-download action for the consolidated workbook, plus a dedicated Node regression workflow covering three students, stable subject IDs, row/formula translation, calculated totals/averages, workbook reload, missing scores, draft results and duplicate result rows.
+- The consolidated artifact is a class-wide tabular score sheet, not a stack of duplicated branded report-card layouts. Individual branded report cards continue to be reviewed and finalized independently. It currently contains each subject's published total score, not every assessment-component breakdown.
+- No Supabase schema or data change is required for this artifact replacement: the existing private batch workbook path and staff-only bucket policies remain in use. No production migration, merge, or Render deployment has occurred.
+
+
+### 2026-11-22 — consolidated class workbook: assessment detail and class positions
+- Extended `src/lib/schoolproClassResultWorkbook.mjs` to include each published assessment component as a distinct subject-specific column, followed by that subject's component-sum total. Column notes retain the canonical subject ID, stable assessment component key, and configured maximum score.
+- The batch integration now retrieves complete paged result rows including `assessment_scheme_id` and `assessment_scores`, then fetches the referenced school-scoped assessment-scheme component definitions. Paging uses `fetchSchoolRows` so classes with more than 1,000 subject-result rows are not silently truncated by the Supabase API page limit.
+- The workbook builder rejects absent or duplicate scheme definitions, different schemes within the same subject/class result set, missing/extra component keys, non-numeric or out-of-range component scores, component totals that do not reconcile to `total_score`, unpublished rows, duplicates, missing student-subject pairs, and out-of-scope roster/subject rows.
+- Grand total and average formulas now reference only subject-total cells (not the raw component cells), preventing double-counting. The existing formula engine calculates and caches those formulas before XLSX serialization.
+- Added class position using competition ranking by grand total: equal totals share the same position and the next position reflects the tied places (e.g. 1, 1, 3). The rank is generated from the verified component sums and is not an Excel formula.
+- Updated the dedicated regression to reopen the workbook and verify component values, subject totals, grand totals, averages, tied positions, formula translation, canonical subject notes, missing/draft/duplicate rows, incomplete components, out-of-range values, and inconsistent subject schemes.
+- This remains a tabular consolidated class score workbook. It does not change official per-student report-card approval, result rows, class roster, or assessment data. No production migration, data change, merge, or Render deployment has occurred.
+
+
+### 2026-11-22 — class-result batch review browser coverage
+- Extracted the per-student review queue from `SchoolProResultTemplates.tsx` into `src/components/schoolpro/SchoolProClassResultBatchReview.tsx`. The page continues to own the persistence and authorization-sensitive approve/reject callbacks; the extracted component only renders the per-student review controls and workbook preview.
+- Added `scripts/test-schoolpro-class-result-batch-review-browser.mjs` and a dedicated Playwright workflow. The browser regression mounts the real review component with synthetic fixtures and checks per-student preview rendering, formula-value display, approve/reject callback routing, and disabled controls while a batch operation is busy.
+- Scope limitation: this is a browser interaction regression for the review-queue component, not a full authenticated end-to-end test of batch creation, Supabase persistence/RPCs, storage upload/download, reload/resume or official-output creation. Those persistence/security contracts remain covered by the SQL and Node regressions; full UI orchestration remains outstanding.
+- The component, browser script and workflow are on the draft PR #240 branch. Latest branch head at this note: `acfda7a634876a186ff16d8518a1361f4e183bf2`. Browser, typecheck and build checks are still running; do not claim pass until their run completes.
+- Operational correction: an initial component-file creation accidentally targeted `main` (default branch) rather than the PR branch. The file was immediately removed in follow-up commit `07321807c5924c199b3ace5a5ddf626a8cc62c0d`. Render briefly deployed the temporary main-branch commit `e1ab5282d4fdc9c345f8930fb3ea9dcec7462446`; the removal commit is now live as deploy `dep-dc1ghudq2lqc73c2pa00`. The final main-branch source is restored to its prior application content. No Supabase schema/data/storage changes were made.
+
+
+### 2026-11-22 — consolidated class-result workbook browser regression passed
+- Latest PR #240 head: `02b054c57207c0ff2bff124c0916ebb78693a25c`.
+- Corrected the browser regression script to use plain JavaScript syntax (the earlier TypeScript cast was invalid in the `.mjs` Node script).
+- Playwright browser review regression passed: [run `45038896494`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45038896494). It mounts the real batch-review component and verifies per-student preview rendering, formula-value display, approve/reject callback routing, and disabled controls during busy state.
+- Latest consolidated workbook regression passed: [run `45038905346`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45038905346); ExcelJS row-expansion regression passed: [run `45038905330`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45038905330); payment-page validation passed: [run `45038905324`](https://github.com/Hassan-625/IHLink-SchoolPro/actions/runs/45038905324). The browser workflow also passed TypeScript typecheck and production build.
+- Browser coverage is component-level, not a full authenticated end-to-end test of batch creation, Supabase persistence/RPCs, storage upload/download, reload/resume or official-output creation. Those backend contracts remain covered by the SQL/Node regressions; full UI orchestration remains outstanding.
+- PR #240 remains open and draft, stacked on PR #238, pending integration review. No production Supabase changes, data writes, merge, or Render deployment occurred from this PR.
+
+
+### 2026-11-22 — session-resolved roster contract wired into class-batch creation
+- Integrated `buildClassResultBatchRoster` into `SchoolProResultTemplates.tsx` before any batch RPC is called. The input roster is the already session-resolved list loaded through `schoolSessionStudents(schoolId, session, ...)`; validation uses its historical `class_id`, not `current_class_id`.
+- The client contract now rejects malformed academic-session labels, missing/duplicate student IDs, cross-class rows, empty rosters, and batches above 500 students. It supplies a deterministic student order to the create-batch RPC.
+- The database RPC remains the security boundary and independently verifies every student against `schoolpro_enrollment_history` for the exact school, class and session. No client-side check replaces that server validation.
+- Added a focused regression and declaration file; the dedicated workflow runs the contract regression and TypeScript typecheck.
+- This integrates the contract directly into PR #240's implementation branch while PR #239 remains a separate draft stack branch pending conflict resolution. No production schema/data/storage changes, merge or Render deployment occurred.

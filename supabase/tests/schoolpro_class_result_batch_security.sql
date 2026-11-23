@@ -75,6 +75,20 @@ begin
       pg_has_role('anon','authenticated','MEMBER');
   end if;
 
+  v_function:='public.schoolpro_recover_stale_class_result_batch_uploads(uuid,uuid,text,text)';
+  if to_regprocedure(v_function) is null
+     or has_function_privilege('anon',v_function,'EXECUTE')
+     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
+    raise exception 'Stale-upload recovery RPC execute grants are incorrect';
+  end if;
+  select p.prosrc into v_source from pg_proc p where p.oid=to_regprocedure(v_function);
+  if position('45 minutes' in v_source)=0
+     or position('status=''uploading''' in v_source)=0
+     or position('status=''failed''' in v_source)=0
+     or position('student_storage_path' in v_source)=0 then
+    raise exception 'Stale-upload recovery must retire old uploading batches and return their student object paths';
+  end if;
+
   v_function:='public.schoolpro_mark_class_result_batch_ready(uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')

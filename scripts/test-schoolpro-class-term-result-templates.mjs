@@ -136,7 +136,8 @@ assert.match(page,/for\(const pupil of roster\)/,'Each student workbook preview 
 assert.match(page,/queued\.push\(\{id:pupil\.id,label,payload:generated\}\)/,'Each student workbook must be retained with its own preview and metadata for review.');
 assert.match(page,/setBatchReviewQueue\(queued\)/,'Batch preparation must stage all successful student previews before any official finalization.');
 assert.match(page,/async function finalizeBatchWorkbook\(/,'Each staged workbook must have an independent explicit finalization action.');
-assert.match(page,/confirmGeneratedResult\(item\.payload\)/,'Finalization must use the exact workbook payload that the user reviewed.');
+assert.match(page,/confirmGeneratedResult\(item\.payload(?:,true)?\)/,'Finalization must use the exact workbook payload that the user reviewed.');
+assert.match(page,/confirmGeneratedResult\(item\.payload,true\)/,'Batch finalization must explicitly require official-output finalization for the reviewed student workbook.');
 assert.match(page,/Review each student workbook before finalizing/,'The batch UI must clearly require individual student workbook review.');
 assert.match(page,/Inspect populated workbook preview/,'The batch UI must expose the populated cell preview before confirmation.');
 assert.match(page,/No verification codes or official output records have been created yet/,'Batch preparation must not issue verification or persist official outputs.');

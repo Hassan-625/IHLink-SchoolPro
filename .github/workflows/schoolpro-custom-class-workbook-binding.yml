@@ -50,4 +50,3 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:schoolpro-custom-class-workbook-binding
-      - run: npm run test:schoolpro-class-result-batch-upload

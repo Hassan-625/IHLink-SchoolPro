@@ -4406,3 +4406,9 @@ Added regression coverage that executes the production conversion helper against
 - The security-definer RPC checks active account, operational school, Results entitlement, active teacher membership, exact Form Master class appointment, same-school canonical subject, and idempotent class/subject/session assignment. Existing teacher allocations are not overwritten; new selections are audit logged.
 - Adds the focused source-contract test and dedicated CI workflow. Migration and synchronized draft remain branch-only; no production migration, class assignment, score, or other production row has been changed.
 - Next: run the focused regression, typecheck, production build, and full PR CI against this rebased head before merging.
+
+## PR #242 — custom class workbook roster binding — 2026-11-23
+
+- Rebased custom workbook roster binding foundation onto current main after PR #241. Preserve canonical subject-ID matching, repeated student blocks, typed custom fields, media anchors, formula-cell protection and class batch lifecycle safeguards.
+- The custom workbook binding helper is not considered fully integrated into the live result-generation lifecycle until page-level validation and review flow are tested. ExcelJS preserves formulas; it is not a formula calculation engine.
+- No production database migration or production data changes are authorized by this PR.

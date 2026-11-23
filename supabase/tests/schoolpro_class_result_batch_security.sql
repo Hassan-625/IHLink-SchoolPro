@@ -63,32 +63,6 @@ begin
     raise exception 'Each batch review must have a durable private student workbook path';
   end if;
 
-  v_function:='public.schoolpro_fail_class_result_batch_upload(uuid)';
-  if to_regprocedure(v_function) is null
-     or has_function_privilege('anon',v_function,'EXECUTE')
-     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
-    raise exception 'Fail-upload RPC execute grants are incorrect (exists=%, anon_execute=%, authenticated_execute=%, acl=%, anon_member_authenticated=%)',
-      to_regprocedure(v_function) is not null,
-      has_function_privilege('anon',v_function,'EXECUTE'),
-      has_function_privilege('authenticated',v_function,'EXECUTE'),
-      (select coalesce(p.proacl::text,'<default>') from pg_proc p where p.oid=to_regprocedure(v_function)),
-      pg_has_role('anon','authenticated','MEMBER');
-  end if;
-
-  v_function:='public.schoolpro_recover_stale_class_result_batch_uploads(uuid,uuid,text,text)';
-  if to_regprocedure(v_function) is null
-     or has_function_privilege('anon',v_function,'EXECUTE')
-     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
-    raise exception 'Stale-upload recovery RPC execute grants are incorrect';
-  end if;
-  select p.prosrc into v_source from pg_proc p where p.oid=to_regprocedure(v_function);
-  if position('45 minutes' in v_source)=0
-     or position('status=''uploading''' in v_source)=0
-     or position('status=''failed''' in v_source)=0
-     or position('student_storage_path' in v_source)=0 then
-    raise exception 'Stale-upload recovery must retire old uploading batches and return their student object paths';
-  end if;
-
   v_function:='public.schoolpro_mark_class_result_batch_ready(uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')
@@ -103,7 +77,34 @@ begin
     raise exception 'Mark-ready RPC must verify every private per-student workbook upload';
   end if;
 
-  v_function:='public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid)';
+  v_function:='public.schoolpro_fail_class_result_batch_upload(uuid)';
+  if to_regprocedure(v_function) is null
+     or has_function_privilege('anon',v_function,'EXECUTE')
+     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
+    raise exception 'Fail-upload RPC execute grants are incorrect';
+  end if;
+  select p.prosrc into v_source from pg_proc p where p.oid=to_regprocedure(v_function);
+  if position('created_by' in v_source)=0
+     or position('v_batch.status<>''uploading''' in v_source)=0
+     or position('status=''failed''' in v_source)=0 then
+    raise exception 'Fail-upload RPC must restrict the transition to the creator and uploading state';
+  end if;
+
+    v_function:='public.schoolpro_recover_stale_class_result_batch_uploads(uuid,uuid,text,text)';
+  if to_regprocedure(v_function) is null
+     or has_function_privilege('anon',v_function,'EXECUTE')
+     or not has_function_privilege('authenticated',v_function,'EXECUTE') then
+    raise exception 'Stale-upload recovery RPC execute grants are incorrect';
+  end if;
+  select p.prosrc into v_source from pg_proc p where p.oid=to_regprocedure(v_function);
+  if position('45 minutes' in v_source)=0
+     or position('status=''uploading''' in v_source)=0
+     or position('status=''failed''' in v_source)=0
+     or position('student_storage_path' in v_source)=0 then
+    raise exception 'Stale-upload recovery must retire old uploading batches and return their student object paths';
+  end if;
+
+    v_function:='public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid)';
   if to_regprocedure(v_function) is null
      or has_function_privilege('anon',v_function,'EXECUTE')
      or not has_function_privilege('authenticated',v_function,'EXECUTE') then
@@ -146,22 +147,15 @@ begin
     raise exception 'Expected exactly three dedicated class-result storage policies; found %',v_policy_count;
   end if;
 
-  if position('student_storage_path' in (
-    select qual from pg_policies
+  if coalesce(position('student_storage_path' in (
+    select coalesce(qual,'') from pg_policies
     where schemaname='storage' and tablename='objects'
       and policyname='schoolpro_class_result_batches_storage_delete_failed'
-  ))=0 then
-    raise exception 'Failed-upload cleanup policy must permit deleting per-student workbook objects';
+  )),0)=0 then
+    raise exception 'Failed-batch cleanup policy must cover per-student workbook objects';
   end if;
 
-  if position('approved student review cannot be changed' in (
-    select p.prosrc from pg_proc p
-    where p.oid=to_regprocedure('public.schoolpro_review_class_result_batch_student(uuid,uuid,text,uuid)')
-  ))=0 then
-    raise exception 'Approved batch reviews must be immutable';
-  end if;
-
-  if exists (
+    if exists (
     select 1 from pg_policies
     where schemaname='storage' and tablename='objects'
       and policyname like 'schoolpro_class_result_batches_storage_%'
@@ -367,10 +361,33 @@ begin
     raise exception 'Batch did not transition to prepared after verified private upload';
   end if;
 
+  -- Rejection must leave the official output unlinked and the batch
+  -- recoverable. A later resumed review may approve the same rejected item.
+  if public.schoolpro_review_class_result_batch_student(
+    v_batch_id,v_student_record,'rejected',null
+  )<>'needs_attention' then
+    raise exception 'Rejected student review did not flag the batch for attention';
+  end if;
+
+  -- Inspect persisted state as the database owner so RLS policy helpers
+  -- remain tested only through the public SECURITY DEFINER RPC boundary.
+  execute 'reset role';
+  if not exists (
+    select 1 from public.schoolpro_class_result_batch_reviews r
+    join public.schoolpro_class_result_batches b on b.id=r.batch_id
+    where r.batch_id=v_batch_id and r.student_id=v_student_record
+      and r.review_status='rejected' and r.generated_result_output_id is null
+      and b.status='needs_attention'
+  ) then
+    raise exception 'Rejected review must not link an official output and must remain resumable';
+  end if;
+
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
   if public.schoolpro_review_class_result_batch_student(
     v_batch_id,v_student_record,'approved',v_output_id
   )<>'completed' then
-    raise exception 'Approved final student review did not complete the batch';
+    raise exception 'Re-approving a rejected student after resume did not complete the batch';
   end if;
 
   execute 'reset role';
@@ -381,7 +398,7 @@ begin
     where r.batch_id=v_batch_id and r.review_status='approved'
       and o.student_id=v_student_record and b.status='completed'
   ) then
-    raise exception 'Approved batch review was not linked to its official individual output';
+    raise exception 'Approved batch review was not linked to its official individual output after retry';
   end if;
 
   -- Duplicate IDs, another class's historical enrollment and stale design

@@ -1,0 +1,53 @@
+name: SchoolPro custom class workbook binding
+on:
+  pull_request:
+    paths:
+      - "src/lib/resultTemplateRosterBinding.mjs"
+      - "src/lib/resultTemplateRosterBinding.d.mts"
+      - "src/lib/resultTemplateTypedValues.mjs"
+      - "src/lib/resultTemplateMediaLayout.mjs"
+      - "src/lib/resultTemplateMediaLayout.d.mts"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "src/lib/resultTemplateRosterLayout.mjs"
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "scripts/test-schoolpro-custom-class-workbook-binding.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/schoolpro-custom-class-workbook-binding.yml"
+      - "src/lib/schoolproClassResultBatchRecovery.mjs"
+      - "src/lib/schoolproClassResultBatchRecovery.d.mts"
+      - "src/lib/schoolproClassResultBatchOutputRecovery.mjs"
+      - "src/lib/schoolproClassResultBatchOutputRecovery.d.mts"
+      - "src/lib/schoolproClassResultBatchUpload.mjs"
+      - "src/lib/schoolproClassResultBatchUpload.d.mts"
+      - "scripts/test-schoolpro-class-result-batch-upload.mjs"
+  push:
+    branches:
+      - feat/schoolpro-custom-class-workbook-binding
+    paths:
+      - "src/lib/resultTemplateRosterBinding.mjs"
+      - "src/lib/resultTemplateRosterBinding.d.mts"
+      - "src/lib/resultTemplateRosterLayout.mjs"
+      - "src/lib/excelWorksheetRowExpansion.mjs"
+      - "scripts/test-schoolpro-custom-class-workbook-binding.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/schoolpro-custom-class-workbook-binding.yml"
+      - "src/lib/schoolproClassResultBatchRecovery.mjs"
+      - "src/pages/schoolpro/SchoolProResultTemplates.tsx"
+      - "src/lib/resultTemplateMediaLayout.mjs"
+      - "src/lib/schoolproClassResultBatchRecovery.d.mts"
+      - "src/lib/schoolproClassResultBatchOutputRecovery.mjs"
+      - "src/lib/schoolproClassResultBatchOutputRecovery.d.mts"
+jobs:
+  custom-class-workbook-binding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run test:schoolpro-custom-class-workbook-binding
+      - run: npm run test:schoolpro-class-result-batch-upload

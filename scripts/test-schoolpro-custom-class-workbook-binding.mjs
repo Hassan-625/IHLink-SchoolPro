@@ -1,7 +1,14 @@
+import { readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import ExcelJS from "exceljs";
 import { populateRosterSubjectRows } from "../src/lib/resultTemplateRosterBinding.mjs";
 import { repeatedBlockImageAnchor, storedWorkbookImageFormat } from "../src/lib/resultTemplateMediaLayout.mjs";
+
+const resultPage = readFileSync(new URL("../src/pages/schoolpro/SchoolProResultTemplates.tsx", import.meta.url), "utf8");
+assert.match(resultPage, /Repeated student block \(for class-wide custom workbooks\)/);
+assert.match(resultPage, /student_block:studentBlock/);
+assert.match(resultPage, /student_block:\{startRow:String\(t\.student_block\?\.startRow/);
+assert.match(resultPage, /Repeated student row stride must fit the configured block height/);
 
 const workbook = new ExcelJS.Workbook();
 const sheet = workbook.addWorksheet("Class");

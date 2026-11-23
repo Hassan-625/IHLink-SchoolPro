@@ -85,7 +85,9 @@ export async function buildSchoolProCustomClassResultWorkbook(options) {
 
   const supportedFieldCells = {};
   for (const [field, address] of Object.entries(config.field_cells || {})) {
-    if (address && STUDENT_FIELDS.has(field)) supportedFieldCells[field] = String(address).split(":")[0];
+    if (!address) continue;
+    if (!STUDENT_FIELDS.has(field)) throw new Error("Student field " + field + " is not yet supported by the class-wide custom workbook data contract; remove or remap it before generating this batch.");
+    supportedFieldCells[field] = String(address).split(":")[0];
   }
   const customFields = (config.custom_fields || []).filter(field => field && field.enabled !== false && field.cell);
   const customFieldValuesByStudent = {};

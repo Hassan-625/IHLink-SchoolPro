@@ -228,10 +228,11 @@ await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
   schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
 }), /Configure a valid repeated student block/);
 await assert.rejects(() => buildSchoolProCustomClassResultWorkbook({
-  templateBuffer: await customSource.xlsx.writeBuffer(),
+  templateBuffer: customTemplateBuffer,
   templateConfig: { sheet_name: "Class", student_block: { startRow: 3, endRow: 4 }, columns: { subject: "B" }, component_columns: { ca: "C", exam: "D" } },
   roster, subjects, subjectRowMappings: { "math-id": 3, "english-id": 4 },
   results: customResults.map((row, index) => index === 0 ? { ...row, status: "draft" } : row),
   assessmentSchemes: [{ id: "scheme-1", components: [{ key: "ca", label: "CA", maxScore: 30 }, { key: "exam", label: "Exam", maxScore: 70 }] }],
   schoolName: "IH Academy", className: "Basic 1 A", term: "First Term", session: "2026/2027",
 }), /Every class subject result must be published/);
+\nconsole.log("SchoolPro custom class workbook binding regression passed.");\n

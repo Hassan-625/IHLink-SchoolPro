@@ -4474,3 +4474,12 @@ Added regression coverage that executes the production conversion helper against
 - The browser test now returns a matching published result row from the scoped printable-result RPC and class-results REST query, including assessment scheme/component scores. This supplies the generation path with a coherent published record rather than a status-only REST stub.
 - The template object is removed during fixture cleanup. All setup remains confined to the disposable local Supabase instance; no production migration or data changes.
 - Commit: `b4057f921946c466f4984cf29d094031b1dd6ae9`. CI must pass on this updated PR head before merge.
+
+
+## 2026-11-24 — UI-driven class-result batch creation E2E (follow-up to merged PR #249)
+
+- Follow-up branch `test/schoolpro-ui-driven-batch-creation-e2e` changes the routed Playwright regression so it no longer seeds a class-result batch through `schoolpro_create_class_result_batch` or pre-uploads batch workbooks in test setup.
+- The browser authenticates as the disposable fixture staff user, navigates to `/schoolpro/result-templates`, selects the historical session, Primary section, fixture class and student, then clicks the actual **Generate separate workbooks for all students** action.
+- The test then verifies that the UI action created the persisted batch and pending review row, and that the consolidated class workbook and individual student workbook exist in private batch Storage. It continues through the already-covered routed approval, official-output linkage, and authenticated official-output retrieval.
+- The fixture still creates only disposable local Supabase school/student/template/subject/result data. The only browser stubs remain the published-result lookup and verification-code edge endpoint. No production data, migration, or Storage object is changed.
+- Validation and PR review are pending. The next acceptance boundary after this test is successful CI plus confirmation that the complete routed generation → review → approval → official-output lifecycle remains green. Stage C is not yet declared complete.

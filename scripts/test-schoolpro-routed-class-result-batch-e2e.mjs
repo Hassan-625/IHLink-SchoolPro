@@ -66,7 +66,7 @@ try{
  browser=await chromium.launch({headless:true});
  const page=await browser.newPage();
  await page.addInitScript(({key,session})=>{localStorage.setItem(key,JSON.stringify(session));},{key:browserAuth.auth.storageKey,session:browserSession});
- await page.route(/\\/rest\\/v1\\/schoolpro_results\\?/,route=>route.request().method()==="GET"?route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}):route.continue());
+ await page.route(/\/rest\/v1\/schoolpro_results\?/,route=>route.request().method()==="GET"?route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}):route.continue());
  await page.route("**/rest/v1/rpc/schoolpro_printable_result",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}));
  await page.route("**/functions/v1/schoolpro-issue-result-verification",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify({verification_code:"LOCAL-E2E-VERIFICATION"})}));
  await page.goto(`http://127.0.0.1:${port}/schoolpro/result-templates`);

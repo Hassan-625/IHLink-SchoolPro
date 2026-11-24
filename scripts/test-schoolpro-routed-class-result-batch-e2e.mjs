@@ -67,7 +67,7 @@ try{
  await studentSelect.selectOption(ids.student);
  const createBatchButton=page.getByRole("button",{name:/Generate separate workbooks for all 1 students/});
  await createBatchButton.click({timeout:60000});
- await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:90000});
+ try{await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:90000});}catch(error){const visible=await page.locator("body").innerText().catch(()=>"<body unavailable>");throw new Error("UI batch creation did not reach review queue. Visible page text: "+visible.slice(-12000)+"; original: "+error.message);}
  assert.equal(await page.getByTestId("batch-review-item").count(),1,"The routed page did not create and display the student review from the UI");
  const createdBatch=await ok(admin.from("schoolpro_class_result_batches").select("id,status,expected_student_count,created_by").eq("school_id",ids.school).eq("class_id",ids.class).eq("term","First Term").eq("session","2026/2027").single(),"Inspect UI-created class batch");
  batchId=createdBatch.id;

@@ -13,7 +13,7 @@ const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshT
 const email=`batch-${randomUUID()}@example.invalid`,password=`Local-test-${randomUUID()}-Aa9!`;
 const ids={school:randomUUID(),member:randomUUID(),class:randomUUID(),student:randomUUID(),subject:randomUUID(),template:randomUUID(),assignment:randomUUID()};
 const config={name:"Batch Integration Template",sheet_name:"Results",storage_path:"",start_row:10,field_cells:{student_name:"A1",admission_number:"A2",class_name:"A3",term:"A4",session:"A5"},columns:{subject:"A",total:"G",grade:"H",status:""},component_columns:{assignment_1:"B",assignment_2:"C",test_1:"D",test_2:"E",exam:"F"},custom_fields:[]},mappings={},formula={engine:"hot-formula-parser",engineVersion:"4.0.0",formulaCount:0,calculationMode:"same-sheet-dependency-graph"};
-const bucket="schoolpro-class-result-batches",uploaded=[],officialPaths=[];let userId,batchId,server,browser;
+const bucket="schoolpro-class-result-batches",officialPaths=[];let userId,batchId,server,browser;
 async function ok(p,label){const r=await p;if(r.error)throw new Error(label+": "+r.error.message);return r.data;}
 async function workbook(label){const w=new ExcelJS.Workbook();w.addWorksheet("Results").getCell("A1").value=label;return Buffer.from(await w.xlsx.writeBuffer());}
 try{
@@ -36,21 +36,6 @@ try{
  await ok(admin.from("schoolpro_result_template_section_mappings").insert({school_id:ids.school,template_id:ids.template,section_key:"primary",mapped_by:userId}),"Map template to Primary section");
  const a=await ok(admin.from("schoolpro_result_template_assignments").insert({id:ids.assignment,school_id:ids.school,class_id:ids.class,term:"First Term",session:"2026/2027",template_name:"Batch Integration Template",template_config:config,subject_row_mappings:mappings,updated_by:userId,template_id:ids.template}).select("id,updated_at,template_id,template_config,subject_row_mappings").single(),"Assign template");
  const resultRow={school_id:ids.school,student_id:ids.student,subject_id:ids.subject,term:"First Term",session:"2026/2027",total_score:82,status:"published",assessment_scheme_id:scheme.id,assessment_scores:{assignment_1:9,assignment_2:9,test_1:8,test_2:8,exam:48}};
- const client=createClient(url,anonKey,{auth:{persistSession:false,autoRefreshToken:false}});
- await ok(client.auth.signInWithPassword({email,password}),"Auth sign-in");
- batchId=await ok(client.rpc("schoolpro_create_class_result_batch",{p_school:ids.school,p_class:ids.class,p_term:"First Term",p_session:"2026/2027",p_template_assignment_id:a.id,p_template_id:a.template_id,p_template_assignment_updated_at:a.updated_at,p_template_config_snapshot:a.template_config,p_subject_row_mappings_snapshot:a.subject_row_mappings,p_formula_calculation_snapshot:formula,p_students:[{student_id:ids.student,student_order:1}]}),"Create batch");
- const register=ids.school+"/"+ids.class+"/"+batchId+"/workbook.xlsx",studentPath=ids.school+"/"+ids.class+"/"+batchId+"/students/"+ids.student+".xlsx";
- await ok(client.storage.from(bucket).upload(register,await workbook("Class register"),{contentType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"Upload register");uploaded.push(register);
- await ok(client.storage.from(bucket).upload(studentPath,await workbook("Amina Fixture"),{contentType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"Upload student workbook");uploaded.push(studentPath);
- assert.equal(await ok(client.rpc("schoolpro_mark_class_result_batch_ready",{p_batch_id:batchId}),"Mark ready"),"prepared");
- await ok(client.auth.signOut(),"Sign out for simulated reload");
- const reloaded=createClient(url,anonKey,{auth:{persistSession:false,autoRefreshToken:false}});
- await ok(reloaded.auth.signInWithPassword({email,password}),"Re-authenticate after reload");
- const b=await ok(reloaded.from("schoolpro_class_result_batches").select("id,status,expected_student_count").eq("id",batchId).single(),"Reload batch");
- assert.equal(b.status,"prepared");assert.equal(b.expected_student_count,1);
- const q=await ok(reloaded.from("schoolpro_class_result_batch_reviews").select("student_id,student_order,student_storage_path,review_status").eq("batch_id",batchId),"Reload review queue");
- assert.equal(q.length,1);assert.equal(q[0].student_id,ids.student);assert.equal(q[0].review_status,"pending");
- const file=await ok(reloaded.storage.from(bucket).download(studentPath),"Download workbook after reload");assert(file.size>100);
  const browserAuth=createClient(url,anonKey,{auth:{persistSession:true,autoRefreshToken:false}});
  await ok(browserAuth.auth.signInWithPassword({email,password}),"Create browser session");
  const {data:{session:browserSession}}=await browserAuth.auth.getSession();
@@ -78,20 +63,34 @@ try{
  const studentSelect=page.locator("select").filter({hasText:"Amina Fixture"}).first();
  await studentSelect.waitFor({timeout:30000});
  await studentSelect.selectOption(ids.student);
- await page.getByRole("button",{name:"Resume saved class batch"}).click();
- await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:30000});
- assert.equal(await page.getByTestId("batch-review-item").count(),1,"The routed page did not restore the persisted student review");
+ const createBatchButton=page.getByRole("button",{name:/Generate separate workbooks for all 1 students/});
+ await createBatchButton.click({timeout:60000});
+ await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:90000});
+ assert.equal(await page.getByTestId("batch-review-item").count(),1,"The routed page did not create and display the student review from the UI");
+ const createdBatch=await ok(admin.from("schoolpro_class_result_batches").select("id,status,expected_student_count,created_by").eq("school_id",ids.school).eq("class_id",ids.class).eq("term","First Term").eq("session","2026/2027").single(),"Inspect UI-created class batch");
+ batchId=createdBatch.id;
+ assert.equal(createdBatch.status,"prepared");
+ assert.equal(createdBatch.expected_student_count,1);
+ assert.equal(createdBatch.created_by,userId);
+ const createdReviews=await ok(admin.from("schoolpro_class_result_batch_reviews").select("student_id,review_status,student_storage_path").eq("batch_id",batchId),"Inspect UI-created review queue");
+ assert.equal(createdReviews.length,1);
+ assert.equal(createdReviews[0].student_id,ids.student);
+ assert.equal(createdReviews[0].review_status,"pending");
+ const storedRegister=await ok(admin.storage.from(bucket).download(ids.school+"/"+ids.class+"/"+batchId+"/workbook.xlsx"),"Download UI-created consolidated workbook");
+ assert(storedRegister.size>100);
+ const storedStudent=await ok(admin.storage.from(bucket).download(createdReviews[0].student_storage_path),"Download UI-created student workbook");
+ assert(storedStudent.size>100);
  await page.getByRole("button",{name:"Approve and finalize Amina Fixture"}).click();
  await page.getByText("Student output finalized and the batch review was recorded.",{exact:false}).waitFor({timeout:30000});
  const approved=await ok(admin.from("schoolpro_class_result_batch_reviews").select("review_status,reviewed_by,generated_result_output_id").eq("batch_id",batchId).single(),"Inspect UI-approved review");
  assert.equal(approved.review_status,"approved");assert.equal(approved.reviewed_by,userId);assert(approved.generated_result_output_id,"UI approval did not link an official output");
  const official=await ok(admin.from("schoolpro_generated_result_outputs").select("id,storage_path,student_id,term,session").eq("id",approved.generated_result_output_id).single(),"Inspect official output");
  assert.equal(official.student_id,ids.student);assert.equal(official.term,"First Term");assert.equal(official.session,"2026/2027");officialPaths.push(official.storage_path);
- const officialFile=await ok(reloaded.storage.from("schoolpro-result-outputs").download(official.storage_path),"Retrieve official output through authenticated Storage");assert(officialFile.size>100);
- const finalBatch=await ok(reloaded.from("schoolpro_class_result_batches").select("status").eq("id",batchId).single(),"Reload UI-approved batch");
+ const officialFile=await ok(browserAuth.storage.from("schoolpro-result-outputs").download(official.storage_path),"Retrieve official output through authenticated Storage");assert(officialFile.size>100);
+ const finalBatch=await ok(admin.from("schoolpro_class_result_batches").select("status").eq("id",batchId).single(),"Reload UI-approved batch");
  assert.equal(finalBatch.status,"completed");
- console.log("PASS: authenticated batch persistence and reload, routed UI approval, official output linkage, and authenticated private-output retrieval.");
+ console.log("PASS: UI-driven class batch creation, private workbook persistence, routed UI approval, official output linkage, and authenticated private-output retrieval.");
 }finally{
  await browser?.close();server?.kill();
- if(userId){try{await admin.storage.from("school-result-templates").remove([ids.school+"/templates/batch.xlsx"]);}catch{}try{if(uploaded.length)await admin.storage.from(bucket).remove(uploaded);if(officialPaths.length)await admin.storage.from("schoolpro-result-outputs").remove(officialPaths);}catch{}try{await admin.from("schoolpro_schools").delete().eq("id",ids.school);}catch{}try{await admin.auth.admin.deleteUser(userId);}catch{}}
+ if(userId){try{await admin.storage.from("school-result-templates").remove([ids.school+"/templates/batch.xlsx"]);}catch{}try{if(officialPaths.length)await admin.storage.from("schoolpro-result-outputs").remove(officialPaths);}catch{}try{await admin.from("schoolpro_schools").delete().eq("id",ids.school);}catch{}try{await admin.auth.admin.deleteUser(userId);}catch{}}
 }

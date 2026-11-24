@@ -60,6 +60,8 @@ try{
  await page.goto(`http://127.0.0.1:${port}/schoolpro/result-templates`);
  await page.getByRole("heading",{name:"Custom Excel Results"}).waitFor({timeout:30000});
  await page.getByLabel("Academic session").selectOption({label:"2026/2027"});
+ await page.getByLabel("School section").selectOption({label:"Primary"});
+ await page.getByLabel("School class").selectOption({label:"Batch Fixture Class"});
  const studentSelect=page.locator("select").filter({hasText:"Amina Fixture"}).first();
  await studentSelect.waitFor({timeout:30000});
  await studentSelect.selectOption(ids.student);

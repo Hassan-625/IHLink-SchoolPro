@@ -17,6 +17,8 @@ const bucket="schoolpro-class-result-batches",batchPaths=[],officialPaths=[];let
 async function ok(p,label){const r=await p;if(r.error)throw new Error(label+": "+r.error.message);return r.data;}
 async function workbook(label){const w=new ExcelJS.Workbook();w.addWorksheet("Results").getCell("A1").value=label;return Buffer.from(await w.xlsx.writeBuffer());}
 try{
+ const buckets=await ok(admin.storage.listBuckets(),"List fixture Storage buckets");
+ if(!buckets.some(bucket=>bucket.name==="school-result-templates")) await ok(admin.storage.createBucket("school-result-templates",{public:false,fileSizeLimit:52428800,allowedMimeTypes:["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"]}),"Create private result-template bucket");
  const auth=await ok(admin.auth.admin.createUser({email,password,email_confirm:true}),"Create Auth fixture");userId=auth.user.id;
  await ok(admin.from("profiles").upsert({id:userId,email,status:"active",role:"customer"}),"Create active fixture profile");
  await ok(admin.from("schoolpro_schools").insert({id:ids.school,owner_id:userId,name:"Disposable Batch Integration School",code:"BATCH"+ids.school.replaceAll("-","").slice(0,16),status:"active"}),"Create school");

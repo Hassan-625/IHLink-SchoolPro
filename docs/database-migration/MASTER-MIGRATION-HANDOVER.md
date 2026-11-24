@@ -4451,3 +4451,11 @@ Added regression coverage that executes the production conversion helper against
 - The test seeds and cleans up its own fixture school, staff membership, class, student, historical enrollment, and template assignment; generates valid XLSX bytes with ExcelJS; uploads the class workbook and per-student workbook through private Storage; marks the batch prepared; signs out and signs in with a fresh client; reloads the persisted batch/review queue; downloads the private workbook; and records/reloads a rejection.
 - The existing disposable-Supabase SQL workflow runs the integration test after restoring the sanitized baseline and applying candidate migrations. It does not connect to production.
 - Coverage boundary: authenticated API/Storage integration with fresh-session reload, not a full Playwright test of the routed Results page or official-output approval flow. The existing component browser test remains component-level.
+
+
+## 2026-11-24 — Authenticated routed class-result batch review E2E
+
+- Added `scripts/test-schoolpro-routed-class-result-batch-e2e.mjs`, which seeds a disposable local Supabase Auth user, school owner, class, student, historical enrollment, template assignment, and batch; uploads valid XLSX workbooks through authenticated private Storage; then opens the real Vite SchoolPro application in Playwright with that authenticated session.
+- The browser navigates to `/schoolpro/result-templates`, selects the historical session and student, resumes the persisted batch through the page's actual Resume saved class batch control, inspects the restored review queue, rejects the student from the routed review component, and verifies the resulting batch/review state through the authenticated Supabase client.
+- Added the script to package scripts and the existing disposable Supabase class-result SQL workflow. CI installs Chromium and runs this routed E2E after the authenticated Storage integration. It uses only local disposable Supabase and cleans up its school, user and private objects in `finally`.
+- Coverage boundary: this closes the routed-page restore/review/rejection gap. It does not yet automate the full workbook-generation UI path or official-output approval; those remain separate acceptance cases and are not claimed as covered by this test. No production Supabase or Render changes are made.

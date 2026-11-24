@@ -25,7 +25,7 @@ try{
  await ok(admin.from("schoolpro_classes").insert({id:ids.class,school_id:ids.school,name:"Batch Fixture Class",level:"primary",form_teacher_id:ids.member}),"Create class");
  await ok(admin.from("schoolpro_subjects").insert({id:ids.subject,school_id:ids.school,name:"Mathematics",code:"MTH",class_name:"Primary"}),"Create canonical subject");
  await ok(admin.from("schoolpro_subject_assignments").insert({school_id:ids.school,class_id:ids.class,subject_id:ids.subject,teacher_member_id:ids.member,session:"2026/2027"}),"Allocate subject to fixture class");
- const scheme=await ok(admin.from("schoolpro_assessment_schemes").select("id,components").eq("school_id",ids.school).eq("is_default",true).single(),"Load default assessment scheme");
+ const scheme=await ok(admin.from("schoolpro_assessment_schemes").insert({school_id:ids.school,name:"Batch E2E Assessment Scheme",school_level:"nursery_primary",components:[{key:"assignment_1",label:"1st CA Assignment",maxScore:10},{key:"assignment_2",label:"2nd CA Assignment",maxScore:10},{key:"test_1",label:"1st CA Test",maxScore:10},{key:"test_2",label:"2nd CA Test",maxScore:10},{key:"exam",label:"Examination",maxScore:60}],is_default:true}).select("id,components").single(),"Create fixture assessment scheme");
  mappings[ids.subject]=10;
  const templatePath=ids.school+"/templates/batch.xlsx";
  await ok(admin.storage.from("school-result-templates").upload(templatePath,await workbook("School result template"),{contentType:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),"Upload private result template");

@@ -4467,3 +4467,10 @@ Added regression coverage that executes the production conversion helper against
 - The browser test asserts the review is approved by the authenticated fixture user, the review row links to the matching `schoolpro_generated_result_outputs` record for the same student/term/session, and the resulting workbook can be downloaded through the authenticated private `schoolpro-result-outputs` Storage bucket.
 - The test stubs only the published-result lookup and verification-code edge endpoint. Batch records, class-batch Storage, official-output recording RPC, review RPC, and official-output download remain real against the disposable local Supabase instance.
 - Coverage boundary: this adds routed approval and private official-output retrieval. The batch is still seeded through the RPC in this test; the complete UI-driven batch-generation action remains unverified and is the next Stage C acceptance gap. No production migration or production data/storage changes are included.
+
+
+### PR #249 follow-up — complete disposable published-result fixture
+- Updated the routed approval/output browser fixture to create a canonical Mathematics catalogue subject and allocate it to the fixture class/session, load the school's default assessment scheme, upload a real XLSX template to the private `school-result-templates` bucket, and persist a subject-ID-to-row mapping.
+- The browser test now returns a matching published result row from the scoped printable-result RPC and class-results REST query, including assessment scheme/component scores. This supplies the generation path with a coherent published record rather than a status-only REST stub.
+- The template object is removed during fixture cleanup. All setup remains confined to the disposable local Supabase instance; no production migration or data changes.
+- Commit: `b4057f921946c466f4984cf29d094031b1dd6ae9`. CI must pass on this updated PR head before merge.

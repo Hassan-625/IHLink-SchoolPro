@@ -4459,3 +4459,11 @@ Added regression coverage that executes the production conversion helper against
 - The browser navigates to `/schoolpro/result-templates`, selects the historical session and student, resumes the persisted batch through the page's actual Resume saved class batch control, inspects the restored review queue, rejects the student from the routed review component, and verifies the resulting batch/review state through the authenticated Supabase client.
 - Added the script to package scripts and the existing disposable Supabase class-result SQL workflow. CI installs Chromium and runs this routed E2E after the authenticated Storage integration. It uses only local disposable Supabase and cleans up its school, user and private objects in `finally`.
 - Coverage boundary: this closes the routed-page restore/review/rejection gap. It does not yet automate the full workbook-generation UI path or official-output approval; those remain separate acceptance cases and are not claimed as covered by this test. No production Supabase or Render changes are made.
+
+
+## 2026-11-24 — Routed class-result batch approval and official-output retrieval E2E (PR #249)
+
+- Extended `scripts/test-schoolpro-routed-class-result-batch-e2e.mjs` to exercise the actual routed Results-page approval action after restoring a prepared batch.
+- The browser test asserts the review is approved by the authenticated fixture user, the review row links to the matching `schoolpro_generated_result_outputs` record for the same student/term/session, and the resulting workbook can be downloaded through the authenticated private `schoolpro-result-outputs` Storage bucket.
+- The test stubs only the published-result lookup and verification-code edge endpoint. Batch records, class-batch Storage, official-output recording RPC, review RPC, and official-output download remain real against the disposable local Supabase instance.
+- Coverage boundary: this adds routed approval and private official-output retrieval. The batch is still seeded through the RPC in this test; the complete UI-driven batch-generation action remains unverified and is the next Stage C acceptance gap. No production migration or production data/storage changes are included.

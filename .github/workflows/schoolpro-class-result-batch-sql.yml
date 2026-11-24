@@ -8,6 +8,10 @@ on:
       - "supabase/migrations/*_schoolpro_class_result_batch_upload_recovery.sql"
       - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
+      - "scripts/test-schoolpro-class-result-batch-auth-storage.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
   workflow_dispatch:

@@ -59,12 +59,10 @@ try{
  await page.addInitScript(({key,session})=>{localStorage.setItem(key,JSON.stringify(session));},{key:browserAuth.auth.storageKey,session:browserSession});
  await page.goto(`http://127.0.0.1:${port}/schoolpro/result-templates`);
  await page.getByRole("heading",{name:"Custom Excel Results"}).waitFor({timeout:30000});
- await page.getByLabel("Academic session").selectOption({label:"2026/2027"});
+ await page.getByLabel("Working academic session",{exact:true}).selectOption({label:"2026/2027"});
+ await page.getByLabel("Academic session",{exact:true}).selectOption({label:"2026/2027"});
  await page.getByLabel("School section").selectOption({label:"Primary"});
  await page.getByLabel("School class").selectOption({label:"Batch Fixture Class"});
- await page.waitForTimeout(2500);
- console.log("ROUTED E2E PAGE:",(await page.locator("body").innerText()).slice(0,12000));
- console.log("ROUTED E2E SELECTS:",await page.locator("select").evaluateAll(nodes=>nodes.map(node=>({label:node.getAttribute("aria-label"),text:node.innerText,value:node.value,disabled:node.disabled}))));
  const studentSelect=page.locator("select").filter({hasText:"Amina Fixture"}).first();
  await studentSelect.waitFor({timeout:30000});
  await studentSelect.selectOption(ids.student);

@@ -13,7 +13,7 @@ const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshT
 const email=`batch-${randomUUID()}@example.invalid`,password=`Local-test-${randomUUID()}-Aa9!`;
 const ids={school:randomUUID(),member:randomUUID(),class:randomUUID(),student:randomUUID(),subject:randomUUID(),template:randomUUID(),assignment:randomUUID()};
 const config={name:"Batch Integration Template",sheet_name:"Results",storage_path:"",start_row:10,field_cells:{student_name:"A1",admission_number:"A2",class_name:"A3",term:"A4",session:"A5"},columns:{subject:"A",total:"G",grade:"H",status:""},component_columns:{assignment_1:"B",assignment_2:"C",test_1:"D",test_2:"E",exam:"F"},custom_fields:[]},mappings={},formula={engine:"hot-formula-parser",engineVersion:"4.0.0",formulaCount:0,calculationMode:"same-sheet-dependency-graph"};
-const bucket="schoolpro-class-result-batches",officialPaths=[];let userId,batchId,server,browser;
+const bucket="schoolpro-class-result-batches",batchPaths=[],officialPaths=[];let userId,batchId,server,browser;
 async function ok(p,label){const r=await p;if(r.error)throw new Error(label+": "+r.error.message);return r.data;}
 async function workbook(label){const w=new ExcelJS.Workbook();w.addWorksheet("Results").getCell("A1").value=label;return Buffer.from(await w.xlsx.writeBuffer());}
 try{
@@ -76,6 +76,7 @@ try{
  assert.equal(createdReviews.length,1);
  assert.equal(createdReviews[0].student_id,ids.student);
  assert.equal(createdReviews[0].review_status,"pending");
+ batchPaths.push(ids.school+"/"+ids.class+"/"+batchId+"/workbook.xlsx",...createdReviews.map(row=>row.student_storage_path));
  const storedRegister=await ok(admin.storage.from(bucket).download(ids.school+"/"+ids.class+"/"+batchId+"/workbook.xlsx"),"Download UI-created consolidated workbook");
  assert(storedRegister.size>100);
  const storedStudent=await ok(admin.storage.from(bucket).download(createdReviews[0].student_storage_path),"Download UI-created student workbook");
@@ -92,5 +93,5 @@ try{
  console.log("PASS: UI-driven class batch creation, private workbook persistence, routed UI approval, official output linkage, and authenticated private-output retrieval.");
 }finally{
  await browser?.close();server?.kill();
- if(userId){try{await admin.storage.from("school-result-templates").remove([ids.school+"/templates/batch.xlsx"]);}catch{}try{if(officialPaths.length)await admin.storage.from("schoolpro-result-outputs").remove(officialPaths);}catch{}try{await admin.from("schoolpro_schools").delete().eq("id",ids.school);}catch{}try{await admin.auth.admin.deleteUser(userId);}catch{}}
+ if(userId){try{await admin.storage.from("school-result-templates").remove([ids.school+"/templates/batch.xlsx"]);}catch{}try{if(batchPaths.length)await admin.storage.from(bucket).remove(batchPaths);if(officialPaths.length)await admin.storage.from("schoolpro-result-outputs").remove(officialPaths);}catch{}try{await admin.from("schoolpro_schools").delete().eq("id",ids.school);}catch{}try{await admin.auth.admin.deleteUser(userId);}catch{}}
 }

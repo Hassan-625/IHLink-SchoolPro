@@ -16,7 +16,7 @@ async function ok(p,label){const r=await p;if(r.error)throw new Error(label+": "
 async function workbook(label){const w=new ExcelJS.Workbook();w.addWorksheet("Results").getCell("A1").value=label;return Buffer.from(await w.xlsx.writeBuffer());}
 try{
  const auth=await ok(admin.auth.admin.createUser({email,password,email_confirm:true}),"Create Auth fixture");userId=auth.user.id;
- await ok(admin.from("profiles").update({status:"active",role:"customer"}).eq("id",userId),"Activate profile");
+ await ok(admin.from("profiles").upsert({id:userId,email,status:"active",role:"customer"}),"Create active fixture profile");
  await ok(admin.from("schoolpro_schools").insert({id:ids.school,owner_id:userId,name:"Disposable Batch Integration School",code:"BATCH"+ids.school.replaceAll("-","").slice(0,16),status:"active"}),"Create school");
  await ok(admin.from("schoolpro_subscriptions").insert({school_id:ids.school,tier:"standard",billing_cycle:"termly",status:"active",renews_at:new Date(Date.now()+90*86400000).toISOString()}),"Create subscription");
  await ok(admin.from("schoolpro_members").insert({id:ids.member,school_id:ids.school,user_id:userId,role:"teacher",status:"active",employment_status:"active"}),"Create staff");

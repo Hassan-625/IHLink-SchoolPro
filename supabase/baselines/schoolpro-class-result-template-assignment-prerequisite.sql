@@ -1,4 +1,9 @@
 -- Test-only schema overlay for the sanitized C0 baseline.
+-- The sanitized snapshot omits the private-schema USAGE grant required for
+-- authenticated Storage RLS policies to invoke the private authorization helpers.
+-- This grant is confined to the disposable CI database baseline.
+grant usage on schema private to authenticated;
+
 -- The production schema snapshot predates the class/term result-template
 -- assignment table. Reproduce its current contract here without replaying
 -- the unrelated legacy migration chain.

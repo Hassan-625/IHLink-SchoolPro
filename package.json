@@ -46,7 +46,8 @@
     "test:schoolpro-class-result-batch-roster": "node scripts/test-schoolpro-class-result-batch-roster.mjs",
     "test:schoolpro-consolidated-class-result-workbook": "node scripts/test-schoolpro-consolidated-class-result-workbook.mjs",
     "test:schoolpro-form-master-subject-selection": "node scripts/test-schoolpro-form-master-subject-selection.mjs",
-    "test:schoolpro-custom-class-workbook-binding": "node scripts/test-schoolpro-custom-class-workbook-binding.mjs"
+    "test:schoolpro-custom-class-workbook-binding": "node scripts/test-schoolpro-custom-class-workbook-binding.mjs",
+    "test:schoolpro-class-result-batch-auth-storage": "node scripts/test-schoolpro-class-result-batch-auth-storage.mjs"
   },
   "dependencies": {
     "@capacitor/app": "8.1.2",

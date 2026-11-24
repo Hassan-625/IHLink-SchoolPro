@@ -8,6 +8,10 @@ on:
       - "supabase/migrations/*_schoolpro_class_result_batch_upload_recovery.sql"
       - "supabase/baselines/schoolpro-c0-baseline.sql"
       - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
+      - "scripts/test-schoolpro-class-result-batch-auth-storage.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "supabase/baselines/schoolpro-class-result-template-assignment-prerequisite.sql"
       - "supabase/tests/schoolpro_class_result_batch_security.sql"
       - ".github/workflows/schoolpro-class-result-batch-sql.yml"
   workflow_dispatch:
@@ -95,6 +99,20 @@ jobs:
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$migration_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Node dependencies for authenticated integration
+        run: npm ci
+      - name: Run authenticated Storage and persisted-reload integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          export API_URL ANON_KEY SERVICE_ROLE_KEY
+          node scripts/test-schoolpro-class-result-batch-auth-storage.mjs
 
       - name: Stop disposable Supabase
         if: always()

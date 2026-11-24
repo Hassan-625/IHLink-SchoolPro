@@ -23,7 +23,7 @@ try{
  await ok(admin.from("schoolpro_subscriptions").insert({school_id:ids.school,tier:"standard",billing_cycle:"termly",status:"active",renews_at:new Date(Date.now()+90*86400000).toISOString()}),"Create subscription");
  await ok(admin.from("schoolpro_members").insert({id:ids.member,school_id:ids.school,user_id:userId,role:"teacher",status:"active",employment_status:"active"}),"Create staff");
  await ok(admin.from("schoolpro_classes").insert({id:ids.class,school_id:ids.school,name:"Batch Fixture Class",level:"primary",form_teacher_id:ids.member}),"Create class");
- await ok(admin.from("schoolpro_subjects").insert({id:ids.subject,school_id:ids.school,name:"Mathematics",code:"MTH",class_name:"Primary",is_catalogue_entry:true}),"Create canonical subject");
+ await ok(admin.from("schoolpro_subjects").insert({id:ids.subject,school_id:ids.school,name:"Mathematics",code:"MTH",class_name:"Primary"}),"Create canonical subject");
  await ok(admin.from("schoolpro_subject_assignments").insert({school_id:ids.school,class_id:ids.class,subject_id:ids.subject,teacher_member_id:ids.member,session:"2026/2027"}),"Allocate subject to fixture class");
  const scheme=await ok(admin.from("schoolpro_assessment_schemes").select("id,components").eq("school_id",ids.school).eq("is_default",true).single(),"Load default assessment scheme");
  mappings[ids.subject]=10;

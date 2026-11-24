@@ -96,6 +96,12 @@ jobs:
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install Node dependencies for authenticated integration
+        run: npm ci
       - name: Run authenticated Storage and persisted-reload integration
         shell: bash
         run: |

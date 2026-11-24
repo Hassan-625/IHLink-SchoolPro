@@ -59,8 +59,8 @@ try{
  await page.addInitScript(({key,session})=>{localStorage.setItem(key,JSON.stringify(session));},{key:browserAuth.auth.storageKey,session:browserSession});
  await page.goto(`http://127.0.0.1:${port}/schoolpro/result-templates`);
  await page.getByRole("heading",{name:"Custom Excel Results"}).waitFor({timeout:30000});
- await page.getByLabel("Working academic session",{exact:true}).selectOption({label:"2026/2027"});
- await page.getByLabel("Academic session",{exact:true}).selectOption({label:"2026/2027"});
+ await page.locator("select").filter({hasText:"2001/2002"}).selectOption({label:"2026/2027"});
+ await page.locator("select").filter({hasText:"2036/2037"}).selectOption({label:"2026/2027"});
  await page.getByLabel("School section").selectOption({label:"Primary"});
  await page.getByLabel("School class").selectOption({label:"Batch Fixture Class"});
  const studentSelect=page.locator("select").filter({hasText:"Amina Fixture"}).first();

@@ -4443,3 +4443,11 @@ Added regression coverage that executes the production conversion helper against
 - The guard rejects identity-vs-score collisions, custom-field-vs-result collisions, duplicate student-field destinations, and duplicate result/component columns with the conflicting cell and mapping labels in the error.
 - Added regressions proving a student-name/component-column collision and duplicate total/grade result columns fail before worksheet mutation.
 - Branch: `fix/schoolpro-custom-workbook-mapping-collisions`. Validation and PR review are pending. No production Supabase migration/data/storage operation or manual Render deployment is part of this correction.
+
+
+## 2026-11-24 — Authenticated class-result batch Storage/reload integration
+
+- Added `scripts/test-schoolpro-class-result-batch-auth-storage.mjs`, a disposable local-Supabase integration test using a real Auth user and authenticated client.
+- The test seeds and cleans up its own fixture school, staff membership, class, student, historical enrollment, and template assignment; generates valid XLSX bytes with ExcelJS; uploads the class workbook and per-student workbook through private Storage; marks the batch prepared; signs out and signs in with a fresh client; reloads the persisted batch/review queue; downloads the private workbook; and records/reloads a rejection.
+- The existing disposable-Supabase SQL workflow runs the integration test after restoring the sanitized baseline and applying candidate migrations. It does not connect to production.
+- Coverage boundary: authenticated API/Storage integration with fresh-session reload, not a full Playwright test of the routed Results page or official-output approval flow. The existing component browser test remains component-level.

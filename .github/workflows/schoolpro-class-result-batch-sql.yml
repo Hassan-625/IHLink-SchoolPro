@@ -96,6 +96,14 @@ jobs:
           psql "$database_url" --set ON_ERROR_STOP=1 --file "$recovery_file"
           psql "$database_url" --set ON_ERROR_STOP=1 --file supabase/tests/schoolpro_class_result_batch_security.sql
 
+      - name: Run authenticated Storage and persisted-reload integration
+        shell: bash
+        run: |
+          set -euo pipefail
+          eval "$(supabase status -o env)"
+          export API_URL ANON_KEY SERVICE_ROLE_KEY
+          node scripts/test-schoolpro-class-result-batch-auth-storage.mjs
+
       - name: Stop disposable Supabase
         if: always()
         run: supabase stop --no-backup

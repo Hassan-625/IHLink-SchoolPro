@@ -4517,3 +4517,11 @@ Added regression coverage that executes the production conversion helper against
 - Replaced that test-only predicate with the exact private `school-result-templates` SELECT policy from `20260916184238_school_result_templates.sql`: bucket-scoped access delegated to `private.has_school_access((storage.foldername(name))[1]::uuid)`.
 - The disposable baseline now reproduces the production authorization contract instead of adding a separate owner shortcut. This is test-harness parity only; no production schema, policy, data, or Supabase project was changed.
 - Re-run the authenticated Storage download assertion and routed UI-driven batch workflow before considering PR #250 mergeable.
+
+
+### PR #250 follow-up — routed approval failure diagnostics — 2026-11-25
+
+- The canonical Storage policy correction resolved the authenticated template download and the routed UI now creates/persists the class batch and displays its review queue.
+- The next CI failure moved to the UI approval stage: the click did not reach the expected successful-review message within 30 seconds.
+- Added failure-only browser diagnostics to capture visible UI errors, browser HTTP/console errors, persisted review state, and official-output rows. This is test instrumentation only and does not alter approval behavior or production data.
+- PR #250 remains unmerged until the failure is identified and the complete UI creation/approval workflow passes.

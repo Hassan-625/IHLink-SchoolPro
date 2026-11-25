@@ -346,6 +346,8 @@ begin
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":2048}'::jsonb
   from public.schoolpro_class_result_batch_reviews r where r.batch_id=v_batch_id;
 
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
   insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
   values (
     'schoolpro-result-outputs',
@@ -353,9 +355,6 @@ begin
     v_owner::text,v_owner,
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
   );
-
-  execute 'set local role authenticated';
-  perform set_config('request.jwt.claim.sub',v_owner::text,true);
   v_output_id:=public.schoolpro_record_generated_result_output(
     v_school,v_student_record,v_class,'First Term','2026/2027',
     v_school::text||'/'||v_student_record::text||'/official-result.xlsx',

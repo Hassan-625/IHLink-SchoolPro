@@ -12,6 +12,7 @@ for(const [k,v] of Object.entries({url,anonKey,serviceKey}))assert(v,`Missing lo
 const admin=createClient(url,serviceKey,{auth:{persistSession:false,autoRefreshToken:false}});
 const email=`batch-${randomUUID()}@example.invalid`,password=`Local-test-${randomUUID()}-Aa9!`;
 const ids={school:randomUUID(),member:randomUUID(),class:randomUUID(),student:randomUUID(),subject:randomUUID(),template:randomUUID(),assignment:randomUUID()};
+// Explicit empty media anchors prevent application defaults from colliding with fixture input/result cells.
 const config={name:"Batch Integration Template",sheet_name:"Results",storage_path:"",start_row:10,field_cells:{student_name:"A1",admission_number:"A2",class_name:"A3",term:"A4",session:"A5"},columns:{subject:"A",total:"G",grade:"H",status:""},component_columns:{assignment_1:"B",assignment_2:"C",test_1:"D",test_2:"E",exam:"F"},custom_fields:[],logo_cell:"",photo_cell:"",principal_signature_cell:"",teacher_signature_cell:"",qr_cell:""},mappings={},formula={engine:"hot-formula-parser",engineVersion:"4.0.0",formulaCount:0,calculationMode:"same-sheet-dependency-graph"};
 const bucket="schoolpro-class-result-batches",batchPaths=[],officialPaths=[];let userId,batchId,server,browser;
 async function ok(p,label){const r=await p;if(r.error)throw new Error(label+": "+r.error.message);return r.data;}

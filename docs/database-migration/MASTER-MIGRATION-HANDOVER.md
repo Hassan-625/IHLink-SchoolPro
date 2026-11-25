@@ -4502,3 +4502,10 @@ Added regression coverage that executes the production conversion helper against
 - The UI-driven class-result batch E2E uncovered two omissions in the sanitized C0 test baseline: `schoolpro_subjects.is_catalogue_entry` and the authenticated school-scoped read policy for private `school-result-templates` objects.
 - Correct the disposable prerequisite baseline by adding the canonical-subject marker with a safe `false` default and a school-folder-scoped authenticated Storage SELECT policy. Mark the fixture Mathematics row as canonical explicitly.
 - This is test-harness parity only; it does not alter production Supabase or create a production migration. The test continues to upload the workbook and exercise the actual browser batch workflow.
+
+
+### PR #250 follow-up — authenticated Storage identity diagnostics — 2026-11-25
+
+- The service-role Storage listing confirms the fixture workbook object exists, but authenticated download still returns Storage's masked `Object not found` response before the routed UI starts.
+- Added pre-download checks that the authenticated Supabase client resolves to the expected fixture user and can read the fixture school's owner row with the expected owner ID. These checks narrow the remaining failure to session identity, school-row visibility/ownership, or the private Storage policy/helper path instead of treating it as a generic upload failure.
+- Test-only diagnostics; no production Supabase migration or data change. PR #250 remains open until the authenticated Storage assertion and full UI-driven batch lifecycle pass.

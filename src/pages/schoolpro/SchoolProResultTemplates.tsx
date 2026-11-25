@@ -213,7 +213,7 @@ export function SchoolProResultTemplates(){const [visibleStudentIds,setVisibleSt
    setPendingResultMeta(resultMeta);
    setMessage("Populated result preview is ready. Review the student data, subject rows and calculated workbook formulas. "+(hasFormulaCells?formulaCalculation.formulaCount+" formulas were recalculated and their computed values are shown in the preview.":"No formula cells were found.")+" Verification is not issued before this review.");
    setBusy(false);return {workbook:generatedBlob,meta:resultMeta,preview};
-  }catch(err){setError(err instanceof Error&&/No matching row|repeats a subject|merged range|Merge the range|No published results|Publish this student|Result details could|space for eight/.test(err.message)?err.message:"Your result could not be generated. Check the workbook and selected records, then try again.");}
+  }catch(err){console.error("SchoolPro result workbook generation failed:",err);setError(err instanceof Error&&/No matching row|repeats a subject|merged range|Merge the range|No published results|Publish this student|Result details could|space for eight/.test(err.message)?err.message:"Your result could not be generated. Check the workbook and selected records, then try again.");}
   setBusy(false);
   return null;
  }

@@ -4543,3 +4543,10 @@ Added regression coverage that executes the production conversion helper against
 - The authenticated SQL regression exposed a test-ordering defect, not a new policy defect: it attempted the official-output Storage INSERT while the batch was still in `uploading`, but the production approval path only reaches official-output creation after the private workbooks are verified and the batch is `prepared`.
 - Move the authenticated `schoolpro_mark_class_result_batch_ready` call ahead of the official-output insert, then retain an idempotency assertion after output registration. The candidate Storage policy continues to require a pending review and a `prepared`/`reviewing` batch.
 - No production database or Storage changes have been applied. Re-run the disposable SQL security regression and routed browser approval workflow on the updated PR head.
+
+### PR #251 follow-up — evaluate official-output Storage scope without nested RLS filtering — 2026-11-25
+
+- The authenticated SQL regression still failed after correcting fixture lifecycle order. The policy's inline `EXISTS` queried batch/review tables under the caller's SELECT RLS and returned no eligible row in the Storage policy context.
+- Replace that inline query with `private.schoolpro_can_upload_class_result_output(uuid,uuid)`, a narrowly scoped SECURITY DEFINER predicate. It still requires an active authenticated account, a pending unlinked review for the exact school/student, matching school/class/session between review and batch, batch status `prepared` or `reviewing`, and the existing class-management and Results-entitlement checks. The Storage policy additionally requires the expected bucket and caller-owned object.
+- Revoke public/anon execution and grant authenticated execution only. This does not grant table access or permit arbitrary uploads.
+- Re-run disposable SQL security, authenticated Storage integration, and routed UI approval/download checks before merge. No production migration applied.

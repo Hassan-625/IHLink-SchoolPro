@@ -4569,3 +4569,9 @@ Added regression coverage that executes the production conversion helper against
 - The disposable SQL runner constructs its candidate migration from docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql, not directly from the committed timestamped migration. The official-output helper and Storage INSERT policy had been added to the timestamped migration but omitted from that executable draft, so CI was exercising the batch schema without the new approval-upload policy.
 - Synchronized the narrowly scoped private.schoolpro_can_upload_class_result_output(text) helper and schoolpro_class_result_outputs_batch_insert policy into the executable draft. The policy still requires a caller-owned object under the exact school/student folder, a pending unlinked review, a prepared/reviewing batch, active staff authorization, and Results entitlement.
 - This corrects the validation source-of-truth mismatch; no production Supabase migration or data changes were applied. Re-run disposable SQL and routed browser CI on the updated PR head.
+
+
+## 2026-11-25 — PR #251 readiness idempotency correction
+- The latest disposable SQL security run applied the generated candidate migrations and passed the official-output Storage policy creation, but the regression exposed that `schoolpro_mark_class_result_batch_ready` rejected a repeat readiness check after the batch had already transitioned to `prepared`.
+- Updated both the executable class-result batch SQL draft and timestamped migration `20261122140656_schoolpro_class_result_batch_persistence.sql`: an authorized call on an already `prepared` batch now returns `prepared` without changing state; all other non-`uploading` states still fail closed. The original upload-owner, private workbook verification, management, and Results-entitlement checks remain in force.
+- This is a local/disposable validation correction only. No production Supabase migration or data changes were made.

@@ -1,3 +1,11 @@
+## PR #250 — private template fixture isolation — 2026-11-25
+
+- The first routed UI batch-creation attempt reached the real Results page but failed while downloading the fixture workbook from private Storage; the page consequently reported that result details could not be loaded and did not persist a partial batch.
+- Added explicit pre-browser assertions that the service-role listing sees the uploaded `school-result-templates/{school_id}/templates/batch.xlsx` object and that the authenticated fixture user can download that same object under the school-folder Storage policy. This isolates fixture upload/persistence from authenticated Storage authorization before the UI workflow runs.
+- The failure is confined to the disposable CI database and fixture; no production Supabase migration or data change is involved. PR #250 remains open pending a passing rerun and the routed UI workflow's successful review-queue creation.
+
+---
+
 ## PR preparation — explicit repeated student block configuration — 2026-11-23
 
 - Branch: `feat/schoolpro-custom-workbook-student-block-config`.

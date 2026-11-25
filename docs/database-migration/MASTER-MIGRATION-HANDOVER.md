@@ -4489,3 +4489,8 @@ Added regression coverage that executes the production conversion helper against
 
 - Corrected the routed UI batch-creation fixture to explicitly set unused logo, student-photo, principal-signature, teacher-signature, and QR anchors to empty strings. The application fills omitted media anchors with defaults (including `A1` and `B40`), which collided with the fixture's student identity and assessment mappings and prevented the review queue from being reached.
 - This is test-only configuration; it does not change production templates, records, schema, or Supabase data. Required CI must pass on the resulting PR head before merge.
+
+## 2026-11-25 — PR #250 routed batch-creation fixture correction
+- The UI-driven class-result batch E2E uncovered two omissions in the sanitized C0 test baseline: `schoolpro_subjects.is_catalogue_entry` and the authenticated school-scoped read policy for private `school-result-templates` objects.
+- Correct the disposable prerequisite baseline by adding the canonical-subject marker with a safe `false` default and a school-folder-scoped authenticated Storage SELECT policy. Mark the fixture Mathematics row as canonical explicitly.
+- This is test-harness parity only; it does not alter production Supabase or create a production migration. The test continues to upload the workbook and exercise the actual browser batch workflow.

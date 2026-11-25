@@ -4483,3 +4483,9 @@ Added regression coverage that executes the production conversion helper against
 - The test then verifies that the UI action created the persisted batch and pending review row, and that the consolidated class workbook and individual student workbook exist in private batch Storage. It continues through the already-covered routed approval, official-output linkage, and authenticated official-output retrieval.
 - The fixture still creates only disposable local Supabase school/student/template/subject/result data. The only browser stubs remain the published-result lookup and verification-code edge endpoint. No production data, migration, or Storage object is changed.
 - Validation and PR review are pending. The next acceptance boundary after this test is successful CI plus confirmation that the complete routed generation → review → approval → official-output lifecycle remains green. Stage C is not yet declared complete.
+
+
+### PR #250 follow-up — fixture media-anchor defaults
+
+- Corrected the routed UI batch-creation fixture to explicitly set unused logo, student-photo, principal-signature, teacher-signature, and QR anchors to empty strings. The application fills omitted media anchors with defaults (including `A1` and `B40`), which collided with the fixture's student identity and assessment mappings and prevented the review queue from being reached.
+- This is test-only configuration; it does not change production templates, records, schema, or Supabase data. Required CI must pass on the resulting PR head before merge.

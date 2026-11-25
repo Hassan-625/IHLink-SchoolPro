@@ -102,7 +102,9 @@ try{
   const visible=await page.locator("body").innerText().catch(()=>"");
   const reviews=await admin.from("schoolpro_class_result_batch_reviews").select("review_status,reviewed_by,generated_result_output_id").eq("batch_id",batchId);
   const outputs=await admin.from("schoolpro_generated_result_outputs").select("id,storage_path,student_id").eq("school_id",ids.school);
-  throw new Error("UI batch approval did not complete. Visible page text: "+visible.slice(-10000)+"; browser errors: "+browserErrors.join(" | ")+"; review rows: "+JSON.stringify(reviews.data)+"; official outputs: "+JSON.stringify(outputs.data)+"; original: "+error.message);
+  const officialPath=outputs.data?.[0]?.storage_path||"";
+  const serviceDownload=officialPath?await admin.storage.from("schoolpro-result-outputs").download(officialPath):{data:null,error:{message:"No output path"}};
+  throw new Error("UI batch approval did not complete. Visible page text: "+visible.slice(-10000)+"; browser errors: "+browserErrors.join(" | ")+"; review rows: "+JSON.stringify(reviews.data)+"; official outputs: "+JSON.stringify(outputs.data)+"; service-role download: "+JSON.stringify({size:serviceDownload.data?.size,error:serviceDownload.error?.message})+"; original: "+error.message);
  }
  const approved=await ok(admin.from("schoolpro_class_result_batch_reviews").select("review_status,reviewed_by,generated_result_output_id").eq("batch_id",batchId).single(),"Inspect UI-approved review");
  assert.equal(approved.review_status,"approved");assert.equal(approved.reviewed_by,userId);assert(approved.generated_result_output_id,"UI approval did not link an official output");

@@ -672,3 +672,46 @@ create policy schoolpro_class_result_batches_storage_delete_failed
         and private.schoolpro_module_allowed(b.school_id,'results')
     )
   );
+
+-- Official per-student workbooks created during batch approval are stored in
+-- the existing private result-output bucket. Permit only the exact pending
+-- student review in a prepared/reviewing batch, for an authorized results
+-- reviewer uploading into that student's school-scoped folder.
+create or replace function private.schoolpro_can_upload_class_result_output(
+  p_storage_path text
+) returns boolean
+language sql stable security definer set search_path=''
+as $$
+  select auth.uid() is not null
+    and coalesce(private.is_active_account(),false)
+    and exists (
+      select 1
+      from public.schoolpro_class_result_batch_reviews r
+      join public.schoolpro_class_result_batches b on b.id=r.batch_id
+      where left(
+          p_storage_path,
+          length(r.school_id::text||'/'||r.student_id::text||'/')
+        )=r.school_id::text||'/'||r.student_id::text||'/'
+        and r.review_status='pending'
+        and r.generated_result_output_id is null
+        and b.status in ('prepared','reviewing')
+        and b.school_id=r.school_id
+        and b.class_id=r.class_id
+        and b.session=r.session
+        and private.schoolpro_can_manage_class_result_batch(
+          b.school_id,b.class_id,b.session
+        )
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    );
+$$;
+
+revoke all on function private.schoolpro_can_upload_class_result_output(text) from public,anon;
+grant execute on function private.schoolpro_can_upload_class_result_output(text) to authenticated;
+
+create policy schoolpro_class_result_outputs_batch_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-result-outputs'
+    and owner_id=(select auth.uid())::text
+    and private.schoolpro_can_upload_class_result_output(name)
+  );

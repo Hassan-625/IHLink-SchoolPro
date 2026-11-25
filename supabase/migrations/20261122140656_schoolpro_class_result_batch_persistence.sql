@@ -372,6 +372,12 @@ begin
      or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
     raise exception 'The class-result batch is unavailable';
   end if;
+  -- The ready transition is idempotent for a batch already prepared.
+  -- This is required when official outputs are registered after preparation
+  -- and callers re-check readiness before finalizing individual reviews.
+  if v_batch.status='prepared' then
+    return 'prepared';
+  end if;
   if v_batch.status<>'uploading' then
     raise exception 'Only an uploading class-result batch can be marked ready';
   end if;
@@ -671,4 +677,92 @@ create policy schoolpro_class_result_batches_storage_delete_failed
         and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
         and private.schoolpro_module_allowed(b.school_id,'results')
     )
+  );
+
+-- A batch reviewer must be able to upload the official per-student workbook
+-- produced by approving a pending review. Scope this insert to the exact
+-- school/student folder of a live pending batch review; ordinary staff cannot
+-- upload arbitrary official outputs through this policy.
+create or replace function private.schoolpro_can_upload_class_result_output(
+  p_storage_path text
+) returns boolean
+language sql stable security definer set search_path=''
+as $$
+  select auth.uid() is not null
+    and coalesce(private.is_active_account(),false)
+    and exists (
+      select 1
+      from public.schoolpro_class_result_batch_reviews r
+      join public.schoolpro_class_result_batches b on b.id=r.batch_id
+      where left(
+          p_storage_path,
+          length(r.school_id::text||'/'||r.student_id::text||'/')
+        )=r.school_id::text||'/'||r.student_id::text||'/'
+        and r.review_status='pending'
+        and r.generated_result_output_id is null
+        and b.status in ('prepared','reviewing')
+        and b.school_id=r.school_id
+        and b.class_id=r.class_id
+        and b.session=r.session
+        and private.schoolpro_can_manage_class_result_batch(
+          b.school_id,b.class_id,b.session
+        )
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    );
+$$;
+
+revoke all on function private.schoolpro_can_upload_class_result_output(text) from public,anon;
+grant execute on function private.schoolpro_can_upload_class_result_output(text) to authenticated;
+
+create policy schoolpro_class_result_outputs_batch_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-result-outputs'
+    and owner_id=(select auth.uid())::text
+    and private.schoolpro_can_upload_class_result_output(name)
+  );
+
+-- Authenticated reviewers must also be able to read the exact official object
+-- after it is uploaded and recorded, both while the review is pending and
+-- after it is approved. Do not grant general access to the output bucket.
+create or replace function private.schoolpro_can_read_class_result_output(
+  p_storage_path text
+) returns boolean
+language sql stable security definer set search_path=''
+as $$
+  select auth.uid() is not null
+    and coalesce(private.is_active_account(),false)
+    and exists (
+      select 1
+      from public.schoolpro_generated_result_outputs o
+      join public.schoolpro_class_result_batch_reviews r
+        on r.school_id=o.school_id and r.student_id=o.student_id
+       and r.term=o.term and r.session=o.session
+      join public.schoolpro_class_result_batches b on b.id=r.batch_id
+      where o.storage_path=p_storage_path
+        and (
+          (r.review_status='pending'
+            and r.generated_result_output_id is null
+            and o.generated_by=auth.uid()
+            and b.status in ('prepared','reviewing'))
+          or
+          (r.review_status='approved'
+            and r.generated_result_output_id=o.id
+            and b.status='completed')
+        )
+        and private.schoolpro_can_manage_class_result_batch(
+          b.school_id,b.class_id,b.session
+        )
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    );
+$$;
+
+revoke all on function private.schoolpro_can_read_class_result_output(text) from public,anon;
+grant execute on function private.schoolpro_can_read_class_result_output(text) to authenticated;
+
+create policy schoolpro_class_result_outputs_batch_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id='schoolpro-result-outputs'
+    and private.schoolpro_can_read_class_result_output(name)
   );

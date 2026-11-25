@@ -346,6 +346,13 @@ begin
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":2048}'::jsonb
   from public.schoolpro_class_result_batch_reviews r where r.batch_id=v_batch_id;
 
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  -- Official outputs are only eligible after all private review workbooks
+  -- have been verified and the batch has entered the prepared state.
+  if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
+    raise exception 'Batch did not transition to prepared before official output upload';
+  end if;
   insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
   values (
     'schoolpro-result-outputs',
@@ -353,9 +360,6 @@ begin
     v_owner::text,v_owner,
     '{"mimetype":"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet","size":1024}'::jsonb
   );
-
-  execute 'set local role authenticated';
-  perform set_config('request.jwt.claim.sub',v_owner::text,true);
   v_output_id:=public.schoolpro_record_generated_result_output(
     v_school,v_student_record,v_class,'First Term','2026/2027',
     v_school::text||'/'||v_student_record::text||'/official-result.xlsx',
@@ -363,8 +367,9 @@ begin
     v_config,v_mappings,v_formula
   );
   if v_output_id is null then raise exception 'Historical-session official output RPC returned no output ID'; end if;
+  -- Repeated readiness checks remain idempotent after official-output registration.
   if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
-    raise exception 'Batch did not transition to prepared after verified private upload';
+    raise exception 'Prepared batch did not remain ready after official-output registration';
   end if;
 
   -- Rejection must leave the official output unlinked and the batch

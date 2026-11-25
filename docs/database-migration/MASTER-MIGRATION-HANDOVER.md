@@ -1,3 +1,11 @@
+## PR #250 — private template fixture isolation — 2026-11-25
+
+- The first routed UI batch-creation attempt reached the real Results page but failed while downloading the fixture workbook from private Storage; the page consequently reported that result details could not be loaded and did not persist a partial batch.
+- Added explicit pre-browser assertions that the service-role listing sees the uploaded `school-result-templates/{school_id}/templates/batch.xlsx` object and that the authenticated fixture user can download that same object under the school-folder Storage policy. This isolates fixture upload/persistence from authenticated Storage authorization before the UI workflow runs.
+- The failure is confined to the disposable CI database and fixture; no production Supabase migration or data change is involved. PR #250 remains open pending a passing rerun and the routed UI workflow's successful review-queue creation.
+
+---
+
 ## PR preparation — explicit repeated student block configuration — 2026-11-23
 
 - Branch: `feat/schoolpro-custom-workbook-student-block-config`.
@@ -4474,3 +4482,102 @@ Added regression coverage that executes the production conversion helper against
 - The browser test now returns a matching published result row from the scoped printable-result RPC and class-results REST query, including assessment scheme/component scores. This supplies the generation path with a coherent published record rather than a status-only REST stub.
 - The template object is removed during fixture cleanup. All setup remains confined to the disposable local Supabase instance; no production migration or data changes.
 - Commit: `b4057f921946c466f4984cf29d094031b1dd6ae9`. CI must pass on this updated PR head before merge.
+
+
+## 2026-11-24 — UI-driven class-result batch creation E2E (follow-up to merged PR #249)
+
+- Follow-up branch `test/schoolpro-ui-driven-batch-creation-e2e` changes the routed Playwright regression so it no longer seeds a class-result batch through `schoolpro_create_class_result_batch` or pre-uploads batch workbooks in test setup.
+- The browser authenticates as the disposable fixture staff user, navigates to `/schoolpro/result-templates`, selects the historical session, Primary section, fixture class and student, then clicks the actual **Generate separate workbooks for all students** action.
+- The test then verifies that the UI action created the persisted batch and pending review row, and that the consolidated class workbook and individual student workbook exist in private batch Storage. It continues through the already-covered routed approval, official-output linkage, and authenticated official-output retrieval.
+- The fixture still creates only disposable local Supabase school/student/template/subject/result data. The only browser stubs remain the published-result lookup and verification-code edge endpoint. No production data, migration, or Storage object is changed.
+- Validation and PR review are pending. The next acceptance boundary after this test is successful CI plus confirmation that the complete routed generation → review → approval → official-output lifecycle remains green. Stage C is not yet declared complete.
+
+
+### PR #250 follow-up — fixture media-anchor defaults
+
+- Corrected the routed UI batch-creation fixture to explicitly set unused logo, student-photo, principal-signature, teacher-signature, and QR anchors to empty strings. The application fills omitted media anchors with defaults (including `A1` and `B40`), which collided with the fixture's student identity and assessment mappings and prevented the review queue from being reached.
+- This is test-only configuration; it does not change production templates, records, schema, or Supabase data. Required CI must pass on the resulting PR head before merge.
+
+## 2026-11-25 — PR #250 routed batch-creation fixture correction
+- The UI-driven class-result batch E2E uncovered two omissions in the sanitized C0 test baseline: `schoolpro_subjects.is_catalogue_entry` and the authenticated school-scoped read policy for private `school-result-templates` objects.
+- Correct the disposable prerequisite baseline by adding the canonical-subject marker with a safe `false` default and a school-folder-scoped authenticated Storage SELECT policy. Mark the fixture Mathematics row as canonical explicitly.
+- This is test-harness parity only; it does not alter production Supabase or create a production migration. The test continues to upload the workbook and exercise the actual browser batch workflow.
+
+
+### PR #250 follow-up — authenticated Storage identity diagnostics — 2026-11-25
+
+- The service-role Storage listing confirms the fixture workbook object exists, but authenticated download still returns Storage's masked `Object not found` response before the routed UI starts.
+- Added pre-download checks that the authenticated Supabase client resolves to the expected fixture user and can read the fixture school's owner row with the expected owner ID. These checks narrow the remaining failure to session identity, school-row visibility/ownership, or the private Storage policy/helper path instead of treating it as a generic upload failure.
+- Test-only diagnostics; no production Supabase migration or data change. PR #250 remains open until the authenticated Storage assertion and full UI-driven batch lifecycle pass.
+
+
+### PR #250 follow-up — mirror canonical template Storage policy — 2026-11-25
+
+- The authenticated Storage identity and school-owner diagnostics pass, while the test-only direct school-row predicate still returned Storage's masked `Object not found` response.
+- Replaced that test-only predicate with the exact private `school-result-templates` SELECT policy from `20260916184238_school_result_templates.sql`: bucket-scoped access delegated to `private.has_school_access((storage.foldername(name))[1]::uuid)`.
+- The disposable baseline now reproduces the production authorization contract instead of adding a separate owner shortcut. This is test-harness parity only; no production schema, policy, data, or Supabase project was changed.
+- Re-run the authenticated Storage download assertion and routed UI-driven batch workflow before considering PR #250 mergeable.
+
+
+### PR #250 follow-up — routed approval failure diagnostics — 2026-11-25
+
+- The canonical Storage policy correction resolved the authenticated template download and the routed UI now creates/persists the class batch and displays its review queue.
+- The next CI failure moved to the UI approval stage: the click did not reach the expected successful-review message within 30 seconds.
+- Added failure-only browser diagnostics to capture visible UI errors, browser HTTP/console errors, persisted review state, and official-output rows. This is test instrumentation only and does not alter approval behavior or production data.
+- PR #250 remains unmerged until the failure is identified and the complete UI creation/approval workflow passes.
+
+### PR #250 follow-up — official batch output Storage insert policy — 2026-11-25
+
+- The routed UI test now successfully creates the batch, persists its pending review, and uploads/downloads the private class/student workbooks. Approval then failed while uploading the individual official workbook to schoolpro-result-outputs: Storage returned HTTP 400 with 403 Unauthorized / new row violates row-level security policy.
+- Added an authenticated INSERT policy for the official-output bucket scoped to a matching pending class-batch review in the same school/student folder, a prepared/reviewing batch, an authorized class/session reviewer, and the results module entitlement. The policy requires the Storage object owner to be the authenticated user and does not grant general official-output upload access.
+- Existing authenticated official-output read/download behavior is unchanged. No production Supabase migration was applied and no production records or objects were modified; the policy is part of the candidate migration and must pass disposable-database SQL plus routed browser CI before merge.
+
+### PR #251 follow-up — align official-output upload policy with batch RLS — 2026-11-25
+
+- The first candidate policy still denied the routed upload. The class batch and pending review are already visible to the authenticated reviewer under the dedicated batch-table RLS policies, which enforce the active staff, class/session authorization and Results entitlement.
+- Simplified the Storage INSERT predicate to bind the exact school/student folder to that visible pending review and its prepared/reviewing batch, retaining authenticated ownership. This avoids re-evaluating authorization helpers and duplicated batch/review scope predicates inside Storage RLS while preserving the same table-level authorization boundary.
+- The next SQL security regression will exercise the Storage INSERT as the authenticated fixture user rather than only inserting a simulated Storage row as database owner. No production migration or data changes have been applied.
+
+### PR #251 follow-up — correct SQL fixture lifecycle ordering — 2026-11-25
+
+- The authenticated SQL regression exposed a test-ordering defect, not a new policy defect: it attempted the official-output Storage INSERT while the batch was still in `uploading`, but the production approval path only reaches official-output creation after the private workbooks are verified and the batch is `prepared`.
+- Move the authenticated `schoolpro_mark_class_result_batch_ready` call ahead of the official-output insert, then retain an idempotency assertion after output registration. The candidate Storage policy continues to require a pending review and a `prepared`/`reviewing` batch.
+- No production database or Storage changes have been applied. Re-run the disposable SQL security regression and routed browser approval workflow on the updated PR head.
+
+### PR #251 follow-up — evaluate official-output Storage scope without nested RLS filtering — 2026-11-25
+
+- The authenticated SQL regression still failed after correcting fixture lifecycle order. The policy's inline `EXISTS` queried batch/review tables under the caller's SELECT RLS and returned no eligible row in the Storage policy context.
+- Replace that inline query with `private.schoolpro_can_upload_class_result_output(uuid,uuid)`, a narrowly scoped SECURITY DEFINER predicate. It still requires an active authenticated account, a pending unlinked review for the exact school/student, matching school/class/session between review and batch, batch status `prepared` or `reviewing`, and the existing class-management and Results-entitlement checks. The Storage policy additionally requires the expected bucket and caller-owned object.
+- Revoke public/anon execution and grant authenticated execution only. This does not grant table access or permit arbitrary uploads.
+- Re-run disposable SQL security, authenticated Storage integration, and routed UI approval/download checks before merge. No production migration applied.
+
+
+### PR #251 follow-up — repair migration function quoting — 2026-11-25
+
+- The disposable C0 migration runner caught a malformed dollar-quoted SQL function body (`AS $` / `$;`) in the new official-output Storage authorization helper. Corrected the function delimiters to `AS $$` / `$$;` on the PR branch; the authorization predicate itself is unchanged.
+- This is a migration syntax correction only. No production Supabase migration, records, or Storage objects were changed. Re-run the disposable SQL security regression and routed browser approval workflow on the updated PR head before merge.
+
+
+### PR #251 follow-up — remove Storage folder-array parsing dependency — 2026-11-25
+
+- The latest disposable SQL run applies the candidate migration, but the official-output Storage insert remains denied after the fixture batch transitions to `prepared`. The batch-ready RPC confirms the caller is active, has class-management permission, and has the Results entitlement, so the remaining policy predicate is narrowed to matching the pending review/student path.
+- Updated `private.schoolpro_can_upload_class_result_output` to accept the full object path and match its exact `school_id/student_id/` prefix against the pending review row. This avoids relying on `storage.foldername()` array indexing while retaining active-account, prepared/reviewing batch, class/session, staff-management, Results-entitlement, bucket, and owner checks.
+- Re-run the disposable SQL security test and routed UI approval flow on the new head. No production Supabase changes were made.
+
+### PR #251 follow-up — synchronize executable draft with candidate migration — 2026-11-25
+
+- The disposable SQL runner constructs its candidate migration from docs/database-migration/drafts/schoolpro-class-result-batch-implementation.sql, not directly from the committed timestamped migration. The official-output helper and Storage INSERT policy had been added to the timestamped migration but omitted from that executable draft, so CI was exercising the batch schema without the new approval-upload policy.
+- Synchronized the narrowly scoped private.schoolpro_can_upload_class_result_output(text) helper and schoolpro_class_result_outputs_batch_insert policy into the executable draft. The policy still requires a caller-owned object under the exact school/student folder, a pending unlinked review, a prepared/reviewing batch, active staff authorization, and Results entitlement.
+- This corrects the validation source-of-truth mismatch; no production Supabase migration or data changes were applied. Re-run disposable SQL and routed browser CI on the updated PR head.
+
+
+## 2026-11-25 — PR #251 readiness idempotency correction
+- The latest disposable SQL security run applied the generated candidate migrations and passed the official-output Storage policy creation, but the regression exposed that `schoolpro_mark_class_result_batch_ready` rejected a repeat readiness check after the batch had already transitioned to `prepared`.
+- Updated both the executable class-result batch SQL draft and timestamped migration `20261122140656_schoolpro_class_result_batch_persistence.sql`: an authorized call on an already `prepared` batch now returns `prepared` without changing state; all other non-`uploading` states still fail closed. The original upload-owner, private workbook verification, management, and Results-entitlement checks remain in force.
+- This is a local/disposable validation correction only. No production Supabase migration or data changes were made.
+
+
+## 2026-11-25 — PR #251 authenticated official-output read authorization
+- The routed UI diagnostic proved the official XLSX object was present in private Storage (service-role download returned 6,607 bytes), while the authenticated signed-download request returned `404 NoSuchKey`. The existing PR policy authorized INSERT only; the disposable baseline had no matching authenticated SELECT policy for `schoolpro-result-outputs`.
+- Added `private.schoolpro_can_read_class_result_output(text)` and a bucket-scoped SELECT policy to both the timestamped class-batch migration and its executable draft. Read access is limited to the exact generated output tied to a batch review, requires an active authorized Results reviewer and the class/session management check, and is permitted only while that caller's output is pending (uploaded by that reviewer) or after the same output is linked to an approved review in a completed batch.
+- This is a narrowly scoped private-object read rule, not general bucket access. Re-run disposable SQL and the routed UI approval/download test. No production Supabase migration or data changes were made.

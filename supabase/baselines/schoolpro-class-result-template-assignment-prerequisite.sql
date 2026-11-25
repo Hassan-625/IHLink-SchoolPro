@@ -117,3 +117,22 @@ set name=excluded.name,
     public=false,
     file_size_limit=excluded.file_size_limit,
     allowed_mime_types=excluded.allowed_mime_types;
+
+-- Match the production canonical-subject marker omitted from the sanitized C0
+-- schema snapshot. The routed Results UI queries this field when loading the
+-- school's subject catalogue.
+alter table public.schoolpro_subjects
+  add column if not exists is_catalogue_entry boolean not null default false;
+
+-- Reproduce the exact private result-template Storage read policy from
+-- 20260916184238_school_result_templates.sql. Keep the production authorization
+-- helper as the single source of truth rather than introducing a test-only
+-- owner shortcut or broader bucket access.
+drop policy if exists school_result_templates_school_read on storage.objects;
+drop policy if exists "School users download result templates" on storage.objects;
+create policy "School users download result templates"
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'school-result-templates'
+    and private.has_school_access(((storage.foldername(name))[1])::uuid)
+  );

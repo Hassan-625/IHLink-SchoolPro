@@ -677,19 +677,42 @@ create policy schoolpro_class_result_batches_storage_delete_failed
 -- produced by approving a pending review. Scope this insert to the exact
 -- school/student folder of a live pending batch review; ordinary staff cannot
 -- upload arbitrary official outputs through this policy.
+create or replace function private.schoolpro_can_upload_class_result_output(
+  p_school uuid,p_student uuid
+) returns boolean
+language sql stable security definer set search_path=''
+as $
+  select auth.uid() is not null
+    and coalesce(private.is_active_account(),false)
+    and exists (
+      select 1
+      from public.schoolpro_class_result_batch_reviews r
+      join public.schoolpro_class_result_batches b on b.id=r.batch_id
+      where r.school_id=p_school
+        and r.student_id=p_student
+        and r.review_status='pending'
+        and r.generated_result_output_id is null
+        and b.status in ('prepared','reviewing')
+        and b.school_id=r.school_id
+        and b.class_id=r.class_id
+        and b.session=r.session
+        and private.schoolpro_can_manage_class_result_batch(
+          b.school_id,b.class_id,b.session
+        )
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    );
+$;
+
+revoke all on function private.schoolpro_can_upload_class_result_output(uuid,uuid) from public,anon;
+grant execute on function private.schoolpro_can_upload_class_result_output(uuid,uuid) to authenticated;
+
 create policy schoolpro_class_result_outputs_batch_insert
   on storage.objects for insert to authenticated
   with check (
     bucket_id='schoolpro-result-outputs'
     and owner_id=(select auth.uid())::text
-    and exists (
-      select 1
-      from public.schoolpro_class_result_batch_reviews r
-      join public.schoolpro_class_result_batches b on b.id=r.batch_id
-      where r.school_id=((storage.foldername(name))[1])::uuid
-        and r.student_id=((storage.foldername(name))[2])::uuid
-        and r.review_status='pending'
-        and r.generated_result_output_id is null
-        and b.status in ('prepared','reviewing')
+    and private.schoolpro_can_upload_class_result_output(
+      ((storage.foldername(name))[1])::uuid,
+      ((storage.foldername(name))[2])::uuid
     )
   );

@@ -43,6 +43,10 @@ try{
  await ok(browserAuth.auth.signInWithPassword({email,password}),"Create browser session");
  const {data:{session:browserSession}}=await browserAuth.auth.getSession();
  assert(browserSession,"Browser session was not created");
+ const storedTemplateObjects=await ok(admin.storage.from("school-result-templates").list(ids.school+"/templates"),"Verify uploaded private template object");
+ assert(storedTemplateObjects.some(item=>item.name==="batch.xlsx"),"Service-role Storage listing did not find the uploaded template object");
+ const authenticatedTemplate=await ok(browserAuth.storage.from("school-result-templates").download(templatePath),"Verify authenticated school-folder template download");
+ assert(authenticatedTemplate.size>100,"Authenticated fixture template download was empty");
  const port=Number(process.env.SCHOOLPRO_E2E_PORT||5174);
  server=spawn("node",["node_modules/vite/bin/vite.js","--host","127.0.0.1","--port",String(port),"--strictPort"],{
   stdio:"ignore",

@@ -124,18 +124,15 @@ set name=excluded.name,
 alter table public.schoolpro_subjects
   add column if not exists is_catalogue_entry boolean not null default false;
 
--- The sanitized baseline omits production's private template-storage read
--- policy. Permit an authenticated member with school access (including the
--- disposable fixture owner) to download only objects under that school folder.
+-- Reproduce the exact private result-template Storage read policy from
+-- 20260916184238_school_result_templates.sql. Keep the production authorization
+-- helper as the single source of truth rather than introducing a test-only
+-- owner shortcut or broader bucket access.
 drop policy if exists school_result_templates_school_read on storage.objects;
-create policy school_result_templates_school_read
+drop policy if exists "School users download result templates" on storage.objects;
+create policy "School users download result templates"
   on storage.objects for select to authenticated
   using (
     bucket_id = 'school-result-templates'
-    and exists (
-      select 1
-      from public.schoolpro_schools s
-      where s.id = (storage.foldername(name))[1]::uuid
-        and (s.owner_id = (select auth.uid()) or private.has_school_access(s.id))
-    )
+    and private.has_school_access(((storage.foldername(name))[1])::uuid)
   );

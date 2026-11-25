@@ -691,11 +691,5 @@ create policy schoolpro_class_result_outputs_batch_insert
         and r.review_status='pending'
         and r.generated_result_output_id is null
         and b.status in ('prepared','reviewing')
-        and r.school_id=b.school_id
-        and r.class_id=b.class_id
-        and r.session=b.session
-        and r.term=b.term
-        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
-        and private.schoolpro_module_allowed(b.school_id,'results')
     )
   );

@@ -97,7 +97,13 @@ try{
  const storedStudent=await ok(admin.storage.from(bucket).download(createdReviews[0].student_storage_path),"Download UI-created student workbook");
  assert(storedStudent.size>100);
  await page.getByRole("button",{name:"Approve and finalize Amina Fixture"}).click();
- await page.getByText("Student output finalized and the batch review was recorded.",{exact:false}).waitFor({timeout:30000});
+ try{await page.getByText("Student output finalized and the batch review was recorded.",{exact:false}).waitFor({timeout:30000});}
+ catch(error){
+  const visible=await page.locator("body").innerText().catch(()=>"");
+  const reviews=await admin.from("schoolpro_class_result_batch_reviews").select("review_status,reviewed_by,generated_result_output_id").eq("batch_id",batchId);
+  const outputs=await admin.from("schoolpro_generated_result_outputs").select("id,storage_path,student_id").eq("school_id",ids.school);
+  throw new Error("UI batch approval did not complete. Visible page text: "+visible.slice(-10000)+"; browser errors: "+browserErrors.join(" | ")+"; review rows: "+JSON.stringify(reviews.data)+"; official outputs: "+JSON.stringify(outputs.data)+"; original: "+error.message);
+ }
  const approved=await ok(admin.from("schoolpro_class_result_batch_reviews").select("review_status,reviewed_by,generated_result_output_id").eq("batch_id",batchId).single(),"Inspect UI-approved review");
  assert.equal(approved.review_status,"approved");assert.equal(approved.reviewed_by,userId);assert(approved.generated_result_output_id,"UI approval did not link an official output");
  const official=await ok(admin.from("schoolpro_generated_result_outputs").select("id,storage_path,student_id,term,session").eq("id",approved.generated_result_output_id).single(),"Inspect official output");

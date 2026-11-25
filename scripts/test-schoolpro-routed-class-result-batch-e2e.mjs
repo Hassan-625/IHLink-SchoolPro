@@ -55,6 +55,7 @@ try{
  const page=await browser.newPage();
  const browserErrors=[];
  page.on("console",message=>{if(message.type()==="error")browserErrors.push(message.text());});
+ page.on("response",async response=>{if(response.status()>=400){let body="";try{body=(await response.text()).slice(0,1200);}catch{}browserErrors.push("HTTP "+response.status()+" "+response.url()+" "+body);}});
  await page.addInitScript(({key,session})=>{localStorage.setItem(key,JSON.stringify(session));},{key:browserAuth.auth.storageKey,session:browserSession});
  await page.route(/\/rest\/v1\/schoolpro_results\?/,route=>route.request().method()==="GET"?route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}):route.continue());
  await page.route("**/rest/v1/rpc/schoolpro_printable_result",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}));

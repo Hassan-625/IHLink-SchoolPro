@@ -26,7 +26,7 @@ try{
  await ok(admin.from("schoolpro_subscriptions").insert({school_id:ids.school,tier:"standard",billing_cycle:"termly",status:"active",renews_at:new Date(Date.now()+90*86400000).toISOString()}),"Create subscription");
  await ok(admin.from("schoolpro_members").insert({id:ids.member,school_id:ids.school,user_id:userId,role:"teacher",status:"active",employment_status:"active"}),"Create staff");
  await ok(admin.from("schoolpro_classes").insert({id:ids.class,school_id:ids.school,name:"Batch Fixture Class",level:"primary",form_teacher_id:ids.member}),"Create class");
- await ok(admin.from("schoolpro_subjects").insert({id:ids.subject,school_id:ids.school,name:"Mathematics",code:"MTH",class_name:"Primary"}),"Create canonical subject");
+ await ok(admin.from("schoolpro_subjects").insert({id:ids.subject,school_id:ids.school,name:"Mathematics",code:"MTH",class_name:"Primary",is_catalogue_entry:true}),"Create canonical subject");
  await ok(admin.from("schoolpro_subject_assignments").insert({school_id:ids.school,class_id:ids.class,subject_id:ids.subject,teacher_member_id:ids.member,session:"2026/2027"}),"Allocate subject to fixture class");
  const scheme=await ok(admin.from("schoolpro_assessment_schemes").insert({school_id:ids.school,name:"Batch E2E Assessment Scheme",school_level:"nursery_primary",components:[{key:"assignment_1",label:"1st CA Assignment",maxScore:10},{key:"assignment_2",label:"2nd CA Assignment",maxScore:10},{key:"test_1",label:"1st CA Test",maxScore:10},{key:"test_2",label:"2nd CA Test",maxScore:10},{key:"exam",label:"Examination",maxScore:60}],is_default:true}).select("id,components").single(),"Create fixture assessment scheme");
  mappings[ids.subject]=10;

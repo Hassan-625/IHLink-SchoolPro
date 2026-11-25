@@ -372,6 +372,12 @@ begin
      or not private.schoolpro_module_allowed(v_batch.school_id,'results') then
     raise exception 'The class-result batch is unavailable';
   end if;
+  -- The ready transition is idempotent for a batch already prepared.
+  -- This is required when official outputs are registered after preparation
+  -- and callers re-check readiness before finalizing individual reviews.
+  if v_batch.status='prepared' then
+    return 'prepared';
+  end if;
   if v_batch.status<>'uploading' then
     raise exception 'Only an uploading class-result batch can be marked ready';
   end if;

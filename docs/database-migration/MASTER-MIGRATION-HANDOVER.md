@@ -4556,3 +4556,10 @@ Added regression coverage that executes the production conversion helper against
 
 - The disposable C0 migration runner caught a malformed dollar-quoted SQL function body (`AS $` / `$;`) in the new official-output Storage authorization helper. Corrected the function delimiters to `AS $$` / `$$;` on the PR branch; the authorization predicate itself is unchanged.
 - This is a migration syntax correction only. No production Supabase migration, records, or Storage objects were changed. Re-run the disposable SQL security regression and routed browser approval workflow on the updated PR head before merge.
+
+
+### PR #251 follow-up — remove Storage folder-array parsing dependency — 2026-11-25
+
+- The latest disposable SQL run applies the candidate migration, but the official-output Storage insert remains denied after the fixture batch transitions to `prepared`. The batch-ready RPC confirms the caller is active, has class-management permission, and has the Results entitlement, so the remaining policy predicate is narrowed to matching the pending review/student path.
+- Updated `private.schoolpro_can_upload_class_result_output` to accept the full object path and match its exact `school_id/student_id/` prefix against the pending review row. This avoids relying on `storage.foldername()` array indexing while retaining active-account, prepared/reviewing batch, class/session, staff-management, Results-entitlement, bucket, and owner checks.
+- Re-run the disposable SQL security test and routed UI approval flow on the new head. No production Supabase changes were made.

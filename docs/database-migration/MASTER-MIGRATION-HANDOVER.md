@@ -4525,3 +4525,9 @@ Added regression coverage that executes the production conversion helper against
 - The next CI failure moved to the UI approval stage: the click did not reach the expected successful-review message within 30 seconds.
 - Added failure-only browser diagnostics to capture visible UI errors, browser HTTP/console errors, persisted review state, and official-output rows. This is test instrumentation only and does not alter approval behavior or production data.
 - PR #250 remains unmerged until the failure is identified and the complete UI creation/approval workflow passes.
+
+### PR #250 follow-up — official batch output Storage insert policy — 2026-11-25
+
+- The routed UI test now successfully creates the batch, persists its pending review, and uploads/downloads the private class/student workbooks. Approval then failed while uploading the individual official workbook to schoolpro-result-outputs: Storage returned HTTP 400 with 403 Unauthorized / new row violates row-level security policy.
+- Added an authenticated INSERT policy for the official-output bucket scoped to a matching pending class-batch review in the same school/student folder, a prepared/reviewing batch, an authorized class/session reviewer, and the results module entitlement. The policy requires the Storage object owner to be the authenticated user and does not grant general official-output upload access.
+- Existing authenticated official-output read/download behavior is unchanged. No production Supabase migration was applied and no production records or objects were modified; the policy is part of the candidate migration and must pass disposable-database SQL plus routed browser CI before merge.

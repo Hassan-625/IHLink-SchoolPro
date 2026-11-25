@@ -4537,3 +4537,9 @@ Added regression coverage that executes the production conversion helper against
 - The first candidate policy still denied the routed upload. The class batch and pending review are already visible to the authenticated reviewer under the dedicated batch-table RLS policies, which enforce the active staff, class/session authorization and Results entitlement.
 - Simplified the Storage INSERT predicate to bind the exact school/student folder to that visible pending review and its prepared/reviewing batch, retaining authenticated ownership. This avoids re-evaluating authorization helpers and duplicated batch/review scope predicates inside Storage RLS while preserving the same table-level authorization boundary.
 - The next SQL security regression will exercise the Storage INSERT as the authenticated fixture user rather than only inserting a simulated Storage row as database owner. No production migration or data changes have been applied.
+
+### PR #251 follow-up — correct SQL fixture lifecycle ordering — 2026-11-25
+
+- The authenticated SQL regression exposed a test-ordering defect, not a new policy defect: it attempted the official-output Storage INSERT while the batch was still in `uploading`, but the production approval path only reaches official-output creation after the private workbooks are verified and the batch is `prepared`.
+- Move the authenticated `schoolpro_mark_class_result_batch_ready` call ahead of the official-output insert, then retain an idempotency assertion after output registration. The candidate Storage policy continues to require a pending review and a `prepared`/`reviewing` batch.
+- No production database or Storage changes have been applied. Re-run the disposable SQL security regression and routed browser approval workflow on the updated PR head.

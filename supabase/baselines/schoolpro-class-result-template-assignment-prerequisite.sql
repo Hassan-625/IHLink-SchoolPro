@@ -117,3 +117,25 @@ set name=excluded.name,
     public=false,
     file_size_limit=excluded.file_size_limit,
     allowed_mime_types=excluded.allowed_mime_types;
+
+-- Match the production canonical-subject marker omitted from the sanitized C0
+-- schema snapshot. The routed Results UI queries this field when loading the
+-- school's subject catalogue.
+alter table public.schoolpro_subjects
+  add column if not exists is_catalogue_entry boolean not null default false;
+
+-- The sanitized baseline omits production's private template-storage read
+-- policy. Permit an authenticated member with school access (including the
+-- disposable fixture owner) to download only objects under that school folder.
+drop policy if exists school_result_templates_school_read on storage.objects;
+create policy school_result_templates_school_read
+  on storage.objects for select to authenticated
+  using (
+    bucket_id = 'school-result-templates'
+    and exists (
+      select 1
+      from public.schoolpro_schools s
+      where s.id = (storage.foldername(name))[1]::uuid
+        and (s.owner_id = (select auth.uid()) or private.has_school_access(s.id))
+    )
+  );

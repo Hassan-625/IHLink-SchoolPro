@@ -53,6 +53,8 @@ try{
  assert(ready,"SchoolPro Vite server did not become ready");
  browser=await chromium.launch({headless:true});
  const page=await browser.newPage();
+ const browserErrors=[];
+ page.on("console",message=>{if(message.type()==="error")browserErrors.push(message.text());});
  await page.addInitScript(({key,session})=>{localStorage.setItem(key,JSON.stringify(session));},{key:browserAuth.auth.storageKey,session:browserSession});
  await page.route(/\/rest\/v1\/schoolpro_results\?/,route=>route.request().method()==="GET"?route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}):route.continue());
  await page.route("**/rest/v1/rpc/schoolpro_printable_result",route=>route.fulfill({status:200,contentType:"application/json",body:JSON.stringify([resultRow])}));
@@ -68,7 +70,7 @@ try{
  await studentSelect.selectOption(ids.student);
  const createBatchButton=page.getByRole("button",{name:/Generate separate workbooks for all 1 students/});
  await createBatchButton.click({timeout:60000});
- try{await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:90000});}catch(error){const visible=await page.locator("body").innerText().catch(()=>"<body unavailable>");throw new Error("UI batch creation did not reach review queue. Visible page text: "+visible.slice(-12000)+"; original: "+error.message);}
+ try{await page.getByRole("heading",{name:"Review each student workbook before finalizing"}).waitFor({timeout:90000});}catch(error){const visible=await page.locator("body").innerText().catch(()=>"<body unavailable>");throw new Error("UI batch creation did not reach review queue. Browser errors: "+browserErrors.join(" | ")+"; visible page text: "+visible.slice(-12000)+"; original: "+error.message);}
  assert.equal(await page.getByTestId("batch-review-item").count(),1,"The routed page did not create and display the student review from the UI");
  const createdBatch=await ok(admin.from("schoolpro_class_result_batches").select("id,status,expected_student_count,created_by").eq("school_id",ids.school).eq("class_id",ids.class).eq("term","First Term").eq("session","2026/2027").single(),"Inspect UI-created class batch");
  batchId=createdBatch.id;

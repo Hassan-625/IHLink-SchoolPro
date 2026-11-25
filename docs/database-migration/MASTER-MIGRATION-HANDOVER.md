@@ -4509,3 +4509,11 @@ Added regression coverage that executes the production conversion helper against
 - The service-role Storage listing confirms the fixture workbook object exists, but authenticated download still returns Storage's masked `Object not found` response before the routed UI starts.
 - Added pre-download checks that the authenticated Supabase client resolves to the expected fixture user and can read the fixture school's owner row with the expected owner ID. These checks narrow the remaining failure to session identity, school-row visibility/ownership, or the private Storage policy/helper path instead of treating it as a generic upload failure.
 - Test-only diagnostics; no production Supabase migration or data change. PR #250 remains open until the authenticated Storage assertion and full UI-driven batch lifecycle pass.
+
+
+### PR #250 follow-up — mirror canonical template Storage policy — 2026-11-25
+
+- The authenticated Storage identity and school-owner diagnostics pass, while the test-only direct school-row predicate still returned Storage's masked `Object not found` response.
+- Replaced that test-only predicate with the exact private `school-result-templates` SELECT policy from `20260916184238_school_result_templates.sql`: bucket-scoped access delegated to `private.has_school_access((storage.foldername(name))[1]::uuid)`.
+- The disposable baseline now reproduces the production authorization contract instead of adding a separate owner shortcut. This is test-harness parity only; no production schema, policy, data, or Supabase project was changed.
+- Re-run the authenticated Storage download assertion and routed UI-driven batch workflow before considering PR #250 mergeable.

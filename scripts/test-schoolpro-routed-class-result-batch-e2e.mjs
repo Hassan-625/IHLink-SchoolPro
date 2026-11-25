@@ -45,6 +45,11 @@ try{
  assert(browserSession,"Browser session was not created");
  const storedTemplateObjects=await ok(admin.storage.from("school-result-templates").list(ids.school+"/templates"),"Verify uploaded private template object");
  assert(storedTemplateObjects.some(item=>item.name==="batch.xlsx"),"Service-role Storage listing did not find the uploaded template object");
+ const authenticatedIdentity=await ok(browserAuth.auth.getUser(),"Resolve authenticated Storage fixture identity");
+ assert.equal(authenticatedIdentity.user.id,userId,"Authenticated Storage client resolved a different fixture user");
+ const authenticatedSchool=await ok(browserAuth.from("schoolpro_schools").select("id,owner_id").eq("id",ids.school).maybeSingle(),"Verify authenticated fixture school visibility");
+ assert(authenticatedSchool,"Authenticated fixture user cannot read its own school row");
+ assert.equal(authenticatedSchool.owner_id,userId,"Fixture school owner does not match the authenticated user");
  const authenticatedTemplate=await ok(browserAuth.storage.from("school-result-templates").download(templatePath),"Verify authenticated school-folder template download");
  assert(authenticatedTemplate.size>100,"Authenticated fixture template download was empty");
  const port=Number(process.env.SCHOOLPRO_E2E_PORT||5174);

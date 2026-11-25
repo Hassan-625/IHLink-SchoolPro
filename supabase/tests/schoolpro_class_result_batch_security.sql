@@ -348,6 +348,11 @@ begin
 
   execute 'set local role authenticated';
   perform set_config('request.jwt.claim.sub',v_owner::text,true);
+  -- Official outputs are only eligible after all private review workbooks
+  -- have been verified and the batch has entered the prepared state.
+  if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
+    raise exception 'Batch did not transition to prepared before official output upload';
+  end if;
   insert into storage.objects(bucket_id,name,owner_id,owner,metadata)
   values (
     'schoolpro-result-outputs',
@@ -362,8 +367,9 @@ begin
     v_config,v_mappings,v_formula
   );
   if v_output_id is null then raise exception 'Historical-session official output RPC returned no output ID'; end if;
+  -- Repeated readiness checks remain idempotent after official-output registration.
   if public.schoolpro_mark_class_result_batch_ready(v_batch_id)<>'prepared' then
-    raise exception 'Batch did not transition to prepared after verified private upload';
+    raise exception 'Prepared batch did not remain ready after official-output registration';
   end if;
 
   -- Rejection must leave the official output unlinked and the batch

@@ -672,3 +672,30 @@ create policy schoolpro_class_result_batches_storage_delete_failed
         and private.schoolpro_module_allowed(b.school_id,'results')
     )
   );
+
+-- A batch reviewer must be able to upload the official per-student workbook
+-- produced by approving a pending review. Scope this insert to the exact
+-- school/student folder of a live pending batch review; ordinary staff cannot
+-- upload arbitrary official outputs through this policy.
+create policy schoolpro_class_result_outputs_batch_insert
+  on storage.objects for insert to authenticated
+  with check (
+    bucket_id='schoolpro-result-outputs'
+    and owner_id=(select auth.uid())::text
+    and exists (
+      select 1
+      from public.schoolpro_class_result_batch_reviews r
+      join public.schoolpro_class_result_batches b on b.id=r.batch_id
+      where r.school_id=((storage.foldername(name))[1])::uuid
+        and r.student_id=((storage.foldername(name))[2])::uuid
+        and r.review_status='pending'
+        and r.generated_result_output_id is null
+        and b.status in ('prepared','reviewing')
+        and r.school_id=b.school_id
+        and r.class_id=b.class_id
+        and r.session=b.session
+        and r.term=b.term
+        and private.schoolpro_can_manage_class_result_batch(b.school_id,b.class_id,b.session)
+        and private.schoolpro_module_allowed(b.school_id,'results')
+    )
+  );
